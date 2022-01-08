@@ -125,9 +125,11 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public Value newOopForClass(JavaClass javaClass) {
-		var memory = allocateObjectMemory(javaClass);
+		Memory memory;
 		try {
-			setClass(memory, vm.findBootstrapClass("java/lang/Class"));
+			var jc = vm.findBootstrapClass("java/lang/Class");
+			memory = allocateObjectMemory(jc);
+			setClass(memory, jc);
 		} catch (Exception ex) {
 			throw new IllegalStateException("java/lang/Class is missing");
 		}

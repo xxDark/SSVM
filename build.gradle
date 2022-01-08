@@ -1,0 +1,15 @@
+plugins {
+    id 'java'
+}
+
+group 'dev.xdark'
+version '1.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly 'org.ow2.asm:asm:9.2'
+    compileOnly 'org.ow2.asm:asm-tree:9.2'
+}

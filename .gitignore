@@ -1,0 +1,28 @@
+# IntelliJ
+out/
+.idea/
+.idea_modules/
+*.iws
+*.iml
+
+# Eclipse
+.settings/
+.classpath
+.checkstyle
+.project
+
+# Gradle
+target/
+build/
+generated/
+gradle-app.setting
+.gradle
+.gradletasknamecache
+!gradle-wrapper.jar
+**/build/
+
+# Misc
+hs_err_pid*
+*.log
+*.ctxt
+temp/

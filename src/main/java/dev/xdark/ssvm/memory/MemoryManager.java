@@ -3,6 +3,7 @@ package dev.xdark.ssvm.memory;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.value.ObjectValue;
+import dev.xdark.ssvm.value.Value;
 
 /**
  * VM memory manager.
@@ -203,6 +204,21 @@ public interface MemoryManager {
 	Object readOop(ObjectValue object, long offset);
 
 	/**
+	 * Reads VM value from an object.
+	 *
+	 * @param object
+	 * 		Object to read value from.
+	 * @param offset
+	 * 		Field offset.
+	 *
+	 * @return read VM value.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	Value readValue(ObjectValue object, long offset);
+
+	/**
 	 * Reads object class form an object.
 	 *
 	 * @param object
@@ -214,4 +230,14 @@ public interface MemoryManager {
 	 * 		if {@code offset} is negative.
 	 */
 	JavaClass readClass(ObjectValue object);
+
+	/**
+	 * Creates new class oop.
+	 *
+	 * @param javaClass
+	 * 		Class to create oop for.
+	 *
+	 * @return oop.
+	 */
+	Value newOopForClass(JavaClass javaClass);
 }

@@ -2,6 +2,7 @@ package dev.xdark.ssvm.execution;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -42,6 +43,15 @@ public final class ExecutionContext {
 	 */
 	public VirtualMachine getVM() {
 		return virtualMachine;
+	}
+
+	/**
+	 * Returns VM helper.
+	 *
+	 * @return VM helper.
+	 */
+	public VMHelper getHelper() {
+		return virtualMachine.getHelper();
 	}
 
 	/**

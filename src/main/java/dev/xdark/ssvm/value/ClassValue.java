@@ -3,6 +3,11 @@ package dev.xdark.ssvm.value;
 import dev.xdark.ssvm.memory.Memory;
 import dev.xdark.ssvm.mirror.JavaClass;
 
+/**
+ * Oop for {@link JavaClass}.
+ *
+ * @author xDark
+ */
 public final class ClassValue extends ObjectValue {
 
 	private final JavaClass javaClass;

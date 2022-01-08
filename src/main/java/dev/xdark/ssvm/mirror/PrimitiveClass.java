@@ -14,6 +14,7 @@ public final class PrimitiveClass implements JavaClass {
 	private final String name;
 	private final String descriptor;
 	private final Value oop;
+	private final ClassLayout layout;
 
 	/**
 	 * @param name
@@ -22,11 +23,14 @@ public final class PrimitiveClass implements JavaClass {
 	 * 		Descriptor of the class.
 	 * @param oop
 	 * 		Class oop.
+	 * @param layout
+	 * 		Class layout.
 	 */
-	public PrimitiveClass(String name, String descriptor, Value oop) {
+	public PrimitiveClass(String name, String descriptor, Value oop, ClassLayout layout) {
 		this.name = name;
 		this.descriptor = descriptor;
 		this.oop = oop;
+		this.layout = layout;
 	}
 
 	@Override
@@ -57,5 +61,10 @@ public final class PrimitiveClass implements JavaClass {
 	@Override
 	public Value getOop() {
 		return oop;
+	}
+
+	@Override
+	public ClassLayout getLayout() {
+		return layout;
 	}
 }

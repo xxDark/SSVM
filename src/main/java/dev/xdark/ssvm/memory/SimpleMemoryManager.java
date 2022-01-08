@@ -1,14 +1,18 @@
 package dev.xdark.ssvm.memory;
 
+import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.util.UnsafeUtil;
 import dev.xdark.ssvm.value.ClassValue;
+import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
+import dev.xdark.ssvm.value.Value;
 import sun.misc.Unsafe;
 
 import java.nio.ByteBuffer;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 
@@ -19,8 +23,19 @@ import java.util.WeakHashMap;
  */
 public class SimpleMemoryManager implements MemoryManager {
 
-	private final long CLASS_HEADER_SIZE = Unsafe.ADDRESS_SIZE;
+	private static final long CLASS_HEADER_SIZE = Unsafe.ADDRESS_SIZE;
 	private final Set<Memory> memoryBlocks = Collections.newSetFromMap(new WeakHashMap<>());
+	private final Map<Memory, Value> objects = new WeakHashMap<>();
+
+	private final VirtualMachine vm;
+
+	/**
+	 * @param vm
+	 * 		VM instance.
+	 */
+	public SimpleMemoryManager(VirtualMachine vm) {
+		this.vm = vm;
+	}
 
 	@Override
 	public Memory allocateDirect(long bytes) {
@@ -44,12 +59,11 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public ObjectValue newObject(InstanceJavaClass javaClass) {
-		var objectSize = javaClass.getLayout().getSize();
-		var memory = allocateHeap(CLASS_HEADER_SIZE + objectSize);
-		var address = UnsafeUtil.addressOf(javaClass.getOop());
-		var data = memory.getData();
-		data.putLong(0, address);
-		return new ObjectValue(memory);
+		var memory = allocateObjectMemory(javaClass);
+		setClass(memory, javaClass);
+		var value = new InstanceValue(memory);
+		objects.put(memory, value);
+		return value;
 	}
 
 	@Override
@@ -99,8 +113,25 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
+	public Value readValue(ObjectValue object, long offset) {
+		var address = object.getMemory().getData().getLong((int) (CLASS_HEADER_SIZE + validate(offset)));
+		return objects.get(new Memory(null, null, address, false));
+	}
+
+	@Override
 	public JavaClass readClass(ObjectValue object) {
-		return ((ClassValue) UnsafeUtil.byAddress(object.getMemory().getData().getLong(0))).getJavaClass();
+		return (JavaClass) UnsafeUtil.byAddress(object.getMemory().getData().getLong(0));
+	}
+
+	@Override
+	public Value newOopForClass(JavaClass javaClass) {
+		var memory = allocateObjectMemory(javaClass);
+		try {
+			setClass(memory, vm.findBootstrapClass("java/lang/Class"));
+		} catch (Exception ex) {
+			throw new IllegalStateException("java/lang/Class is missing");
+		}
+		return new ClassValue(memory, javaClass);
 	}
 
 	private Memory newMemoryBlock(long size, boolean isDirect) {
@@ -110,6 +141,16 @@ public class SimpleMemoryManager implements MemoryManager {
 		var block = new Memory(this, ByteBuffer.allocate((int) size), System.currentTimeMillis(), isDirect);
 		memoryBlocks.add(block);
 		return block;
+	}
+
+	private Memory allocateObjectMemory(JavaClass javaClass) {
+		var objectSize = javaClass.getLayout().getSize();
+		return allocateHeap(CLASS_HEADER_SIZE + objectSize);
+	}
+
+	private void setClass(Memory memory, JavaClass jc) {
+		var address = UnsafeUtil.addressOf(jc);
+		memory.getData().putLong(0, address);
 	}
 
 	private static long validate(long off) {

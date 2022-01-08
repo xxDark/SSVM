@@ -73,6 +73,7 @@ final class NativeJava {
 			}
 		}
 		vmi.setInvoker(jlc, "getPrimitiveClass", "(Ljava/lang/String;)Ljava/lang/Class;", ctx -> {
+
 			throw new UnsupportedOperationException();
 		});
 	}

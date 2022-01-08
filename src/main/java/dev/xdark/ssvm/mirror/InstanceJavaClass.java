@@ -21,7 +21,7 @@ public final class InstanceJavaClass implements JavaClass {
 	private final Condition signal;
 	private final ClassReader classReader;
 	private final ClassNode node;
-	private final Value oop;
+	private Value oop;
 	private ClassLayout layout;
 	private InstanceJavaClass superClass;
 
@@ -54,6 +54,23 @@ public final class InstanceJavaClass implements JavaClass {
 		var lock = new ReentrantLock();
 		initializationLock = lock;
 		signal = lock.newCondition();
+	}
+
+	/**
+	 * This constructor must be invoked ONLY
+	 * by the VM.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 * @param classLoader
+	 * 		Loader of the class.
+	 * @param classReader
+	 * 		Source of the class.
+	 * @param node
+	 * 		ASM class data.
+	 */
+	public InstanceJavaClass(VirtualMachine vm, Value classLoader, ClassReader classReader, ClassNode node) {
+		this(vm, classLoader, classReader, node, null);
 	}
 
 	@Override
@@ -156,6 +173,16 @@ public final class InstanceJavaClass implements JavaClass {
 	}
 
 	/**
+	 * Returns class layout.
+	 *
+	 * @return class layout.
+	 */
+	@Override
+	public ClassLayout getLayout() {
+		return layout;
+	}
+
+	/**
 	 * Returns VM instance in which this class
 	 * was loaded.
 	 *
@@ -166,13 +193,12 @@ public final class InstanceJavaClass implements JavaClass {
 	}
 
 	/**
-	 * Returns class layout.
+	 * Sets oop of the class.
+	 * @param oop
 	 *
-	 * @return class layout.
 	 */
-	@Override
-	public ClassLayout getLayout() {
-		return layout;
+	public void setOop(Value oop) {
+		this.oop = oop;
 	}
 
 	/**
@@ -214,6 +240,11 @@ public final class InstanceJavaClass implements JavaClass {
 			default:
 				return 8L;
 		}
+	}
+
+	@Override
+	public String toString() {
+		return getName();
 	}
 
 	private enum State {

@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Simple and dumb implementation of a memory manager.
@@ -23,7 +24,7 @@ import java.util.WeakHashMap;
 public class SimpleMemoryManager implements MemoryManager {
 
 	private static final long OBJECT_HEADER_SIZE = Unsafe.ADDRESS_SIZE;
-	private static final long ARRAY_HEADER_SIZE = OBJECT_HEADER_SIZE + 4;
+	private static final long ARRAY_HEADER_SIZE = OBJECT_HEADER_SIZE + 4L;
 	private final Set<Memory> memoryBlocks = Collections.newSetFromMap(new WeakHashMap<>());
 	private final Map<Memory, Value> objects = new WeakHashMap<>();
 
@@ -244,7 +245,7 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public Value readValue(ArrayValue array, long offset) {
-		var address = array.getMemory().getData().getLong((int) (OBJECT_HEADER_SIZE + validate(offset)));
+		var address = array.getMemory().getData().getLong((int) (ARRAY_HEADER_SIZE + validate(offset)));
 		return objects.get(new Memory(null, null, address, false));
 	}
 
@@ -295,7 +296,7 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public void writeValue(ArrayValue array, long offset, Value value) {
-		array.getMemory().getData().putLong((int) (OBJECT_HEADER_SIZE + validate(offset)), ((ObjectValue) value).getMemory().getAddress());
+		array.getMemory().getData().putLong((int) (ARRAY_HEADER_SIZE + validate(offset)), ((ObjectValue) value).getMemory().getAddress());
 	}
 
 	@Override
@@ -314,11 +315,21 @@ public class SimpleMemoryManager implements MemoryManager {
 		return ByteOrder.BIG_ENDIAN;
 	}
 
+	@Override
+	public int addressSize() {
+		return Unsafe.ADDRESS_SIZE;
+	}
+
+	@Override
+	public int pageSize() {
+		return UnsafeUtil.getPageSize();
+	}
+
 	private Memory newMemoryBlock(long size, boolean isDirect) {
 		if (size > Integer.MAX_VALUE) {
 			throw new UnsupportedOperationException();
 		}
-		var block = new Memory(this, ByteBuffer.allocate((int) size), System.currentTimeMillis(), isDirect);
+		var block = new Memory(this, ByteBuffer.allocate((int) size), ThreadLocalRandom.current().nextLong() & 0xFFFFFFFFL, isDirect);
 		memoryBlocks.add(block);
 		return block;
 	}

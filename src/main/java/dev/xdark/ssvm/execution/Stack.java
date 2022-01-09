@@ -258,4 +258,11 @@ public final class Stack {
 	public boolean isEmpty() {
 		return cursor == 0;
 	}
+
+	/**
+	 * Resets stack.
+	 */
+	public void clear() {
+		cursor = 0;
+	}
 }

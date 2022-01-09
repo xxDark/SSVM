@@ -56,4 +56,11 @@ public interface Backtrace extends Iterable<ExecutionContext> {
 	 * @return popped frame.
 	 */
 	ExecutionContext pop();
+
+	/**
+	 * Copies backtrace.
+	 *
+	 * @return copied backtrace.
+	 */
+	Backtrace copy();
 }

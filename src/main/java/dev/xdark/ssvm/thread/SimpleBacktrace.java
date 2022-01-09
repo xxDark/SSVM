@@ -11,7 +11,15 @@ import java.util.*;
  */
 public final class SimpleBacktrace implements Backtrace {
 
-	private final List<ExecutionContext> backtrace = new ArrayList<>();
+	private final List<ExecutionContext> backtrace;
+
+	private SimpleBacktrace(List<ExecutionContext> backtrace) {
+		this.backtrace = backtrace;
+	}
+
+	public SimpleBacktrace() {
+		this(new ArrayList<>());
+	}
 
 	@Override
 	public ExecutionContext first() {
@@ -44,6 +52,11 @@ public final class SimpleBacktrace implements Backtrace {
 	public ExecutionContext pop() {
 		var backtrace = this.backtrace;
 		return backtrace.remove(backtrace.size() - 1);
+	}
+
+	@Override
+	public Backtrace copy() {
+		return new SimpleBacktrace(new ArrayList<>(backtrace));
 	}
 
 	@Override

@@ -15,6 +15,15 @@ public final class UnsafeUtil {
 	}
 
 	/**
+	 * Returns page size.
+	 *
+	 * @return page size.
+	 */
+	public static int getPageSize() {
+		return UNSAFE.pageSize();
+	}
+
+	/**
 	 * Returns size of the type.
 	 * @param desc
 	 * 		Type to get size from.

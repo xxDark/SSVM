@@ -89,4 +89,24 @@ public final class ArrayJavaClass implements JavaClass {
 	@Override
 	public void initialize() {
 	}
+
+	@Override
+	public boolean isAssignableFrom(JavaClass other) {
+		return componentType.isAssignableFrom(other);
+	}
+
+	@Override
+	public boolean isPrimitive() {
+		return false;
+	}
+
+	@Override
+	public boolean isArray() {
+		return true;
+	}
+
+	@Override
+	public boolean isInterface() {
+		return false;
+	}
 }

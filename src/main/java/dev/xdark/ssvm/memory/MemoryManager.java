@@ -736,4 +736,18 @@ public interface MemoryManager {
 	 * @return byte order of memory.
 	 */
 	ByteOrder getByteOrder();
+
+	/**
+	 * Returns address size.
+	 *
+	 * @return address size.
+	 */
+	int addressSize();
+
+	/**
+	 * Returns page size.
+	 *
+	 * @return page size.
+	 */
+	int pageSize();
 }

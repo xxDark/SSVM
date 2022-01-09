@@ -1,13 +1,13 @@
 package dev.xdark.ssvm;
 
+import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
+import dev.xdark.ssvm.classloading.ClassLoaderData;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.asm.*;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.NullValue;
-import dev.xdark.ssvm.value.Value;
+import dev.xdark.ssvm.value.*;
+import org.objectweb.asm.tree.FieldNode;
 
 import java.nio.ByteOrder;
 
@@ -20,6 +20,8 @@ import static org.objectweb.asm.Opcodes.*;
  */
 final class NativeJava {
 
+	private static final String CLASS_LOADER_OOP = "classLoaderOop";
+
 	/**
 	 * Sets up VM instance.
 	 *
@@ -28,6 +30,7 @@ final class NativeJava {
 	 */
 	static void vmInit(VirtualMachine vm) {
 		var vmi = vm.getVmInterface();
+		injectVMFields(vm);
 		setInstructions(vmi);
 		var symbols = vm.getSymbols();
 		// java/lang/Class.registerNatives()V
@@ -92,7 +95,32 @@ final class NativeJava {
 		vmi.setInvoker(sys, "registerNatives", "()V", ctx -> Result.ABORT);
 
 		var thread = symbols.java_lang_Thread;
+		// java/lang/Thread.registerNatives()V
 		vmi.setInvoker(thread, "registerNatives", "()V", ctx -> Result.ABORT);
+
+		var classLoader = symbols.java_lang_ClassLoader;
+		// java/lang/ClassLoader
+		var clInitHook = (MethodInvoker) ctx -> {
+			var oop = vm.getMemoryManager().newJavaInstance(object, new ClassLoaderData());
+			ctx.getLocals().<InstanceValue>load(0)
+					.setValue(CLASS_LOADER_OOP, "Ljava/lang/Object", oop);
+			return Result.CONTINUE;
+		};
+		if (!vmi.setInvoker(classLoader, "<init>", "(Ljava/lang/Void;Ljava/lang/String;Ljava/lang/ClassLoader;)V", clInitHook)) {
+			if (!vmi.setInvoker(classLoader, "<init>", "(Ljava/lang/Void;Ljava/lang/ClassLoader;)V", clInitHook)) {
+				throw new IllegalStateException("Unable to locate ClassLoader init constructor");
+			}
+		}
+
+		var throwable = symbols.java_lang_Throwable;
+		// java/lang/Throwable.fillInStackTrace(I)Ljava/lang/Throwable;
+		vmi.setInvoker(throwable, "fillInStackTrace", "(I)Ljava/lang/Throwable;", ctx -> {
+			var exception = ctx.getLocals().<InstanceValue>load(0);
+			var backtrace = vm.getMemoryManager().newJavaInstance(object, vm.currentThread().getBacktrace().copy());
+			exception.setValue("backtrace", "Ljava/lang/Object;", backtrace);
+			ctx.setResult(exception);
+			return Result.ABORT;
+		});
 
 		// JDK9+
 		var utf16 = (InstanceJavaClass) vm.findBootstrapClass("java/lang/StringUTF16", false);
@@ -102,6 +130,23 @@ final class NativeJava {
 				return Result.ABORT;
 			});
 		}
+	}
+
+	/**
+	 * Injects VM fields.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void injectVMFields(VirtualMachine vm) {
+		var classLoader = vm.getSymbols().java_lang_ClassLoader;
+		classLoader.getNode().fields.add(new FieldNode(
+				ACC_PRIVATE | ACC_FINAL,
+				CLASS_LOADER_OOP,
+				"Ljava/lang/Object;",
+				null,
+				null
+		));
 	}
 
 	/**
@@ -284,10 +329,12 @@ final class NativeJava {
 
 		vmi.setProcessor(NEW, new NewProcessor());
 		vmi.setProcessor(ANEWARRAY, new InstanceArrayProcessor());
-		// TODO
 		vmi.setProcessor(NEWARRAY, new PrimitiveArrayProcessor());
-
 		vmi.setProcessor(ARRAYLENGTH, new ArrayLengthProcessor());
+
+		vmi.setProcessor(ATHROW, new ThrowProcessor());
+
+		vmi.setProcessor(INSTANCEOF, new InstanceofProcessor());
 
 		vmi.setProcessor(MONITORENTER, new MonitorEnterProcessor());
 		vmi.setProcessor(MONITOREXIT, new MonitorExitProcessor());

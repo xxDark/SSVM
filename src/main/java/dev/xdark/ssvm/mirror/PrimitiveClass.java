@@ -87,4 +87,24 @@ public final class PrimitiveClass implements JavaClass {
 	@Override
 	public void initialize() {
 	}
+
+	@Override
+	public boolean isAssignableFrom(JavaClass other) {
+		return this == other;
+	}
+
+	@Override
+	public boolean isPrimitive() {
+		return true;
+	}
+
+	@Override
+	public boolean isArray() {
+		return false;
+	}
+
+	@Override
+	public boolean isInterface() {
+		return false;
+	}
 }

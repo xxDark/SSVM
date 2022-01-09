@@ -1,6 +1,7 @@
 package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.value.Value;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -11,7 +12,7 @@ public final class VirtualMachineArrayHelperTest {
 	private static VMHelper helper;
 
 	@BeforeAll
-	private static void setUp() {
+	private static void setup() {
 		helper = new VirtualMachine().getHelper();
 	}
 
@@ -69,5 +70,12 @@ public final class VirtualMachineArrayHelperTest {
 		var array = new boolean[]{true, false, true, true, false, true, false};
 		var wrapper = helper.toVMBooleans(array);
 		assertArrayEquals(array, helper.toJavaBooleans(wrapper));
+	}
+
+	@Test
+	public void testValueArray() {
+		var array = new Value[] {helper.newUtf8("Hello"), helper.newUtf8("World"), helper.newUtf8("!")};
+		var wrapper = helper.toVMValues(array);
+		assertArrayEquals(array, helper.toJavaValues(wrapper));
 	}
 }

@@ -8,6 +8,7 @@ import dev.xdark.ssvm.classloading.RuntimeBootClassLoader;
 import dev.xdark.ssvm.classloading.SimpleClassDefiner;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.memory.SimpleMemoryManager;
 import dev.xdark.ssvm.mirror.ClassLayout;
@@ -16,15 +17,14 @@ import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.thread.SimpleThreadManager;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.VMThread;
+import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.util.VMPrimitives;
 import dev.xdark.ssvm.util.VMSymbols;
-import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.NullValue;
-import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
+import dev.xdark.ssvm.value.*;
 import org.objectweb.asm.Opcodes;
 
+import java.nio.ByteOrder;
 import java.util.Collections;
 
 public class VirtualMachine {
@@ -83,7 +83,6 @@ public class VirtualMachine {
 		oop.setValue("group", "Ljava/lang/ThreadGroup;", sysGroup);
 		helper.invokeExact(groupClass, "add", "(Ljava/lang/Thread;)V", new Value[0], new Value[]{sysGroup, oop});
 
-
 		sysClass.initialize();
 		var initializeSystemClass = sysClass.getMethod("initializeSystemClass", "()V");
 		if (initializeSystemClass != null) {
@@ -92,6 +91,15 @@ public class VirtualMachine {
 			var classLoaderClass = symbols.java_lang_ClassLoader;
 			classLoaderClass.initialize();
 			helper.invokeStatic(classLoaderClass, "getSystemClassLoader", "()Ljava/lang/ClassLoader;", new Value[0], new Value[0]);
+		} else {
+			var unsafeConstants = (InstanceJavaClass) findBootstrapClass("jdk/internal/misc/UnsafeConstants", true);
+			if (unsafeConstants != null) {
+				// Inject constants
+				unsafeConstants.initialize();
+				unsafeConstants.setFieldValue("ADDRESS_SIZE0", "I", new IntValue(memoryManager.addressSize()));
+				unsafeConstants.setFieldValue("PAGE_SIZE", "I", new IntValue(memoryManager.pageSize()));
+				unsafeConstants.setFieldValue("BIG_ENDIAN", "Z", new IntValue(memoryManager.getByteOrder() == ByteOrder.BIG_ENDIAN ? 1 : 0));
+			}
 		}
 	}
 
@@ -212,7 +220,8 @@ public class VirtualMachine {
 		if (loader.isNull()) {
 			jc = findBootstrapClass(name, initialize);
 		} else {
-			jc = memoryManager.readClass((ObjectValue) helper.invokeVirtual(symbols.java_lang_ClassLoader, "loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;", new Value[0], new Value[0]).getResult());
+			var helper = this.helper;
+			jc = memoryManager.readClass((ObjectValue) helper.invokeVirtual(symbols.java_lang_ClassLoader, "loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;", new Value[0], new Value[]{loader, helper.newUtf8(name), new IntValue(initialize ? 1 : 0)}).getResult());
 		}
 		return jc;
 	}
@@ -243,20 +252,38 @@ public class VirtualMachine {
 			if ((mn.access & Opcodes.ACC_NATIVE) != 0) {
 				throw new IllegalStateException("Native method not implemented: " + ctx.getOwner().getInternalName() + '.' + mn.name + mn.desc);
 			}
-			// TODO exception handling.
 			var instructions = mn.instructions;
+			exec:
 			while (true) {
-				var pos = ctx.getInsnPosition();
-				ctx.setInsnPosition(pos + 1);
-				var insn = instructions.get(pos);
-				// TODO handle misc. instructions
-				if (insn.getOpcode() == -1) continue;
-				var processor = vmi.getProcessor(insn);
-				if (processor == null) {
-					throw new IllegalStateException("No implemented processor for " + insn.getOpcode());
+				try {
+					var pos = ctx.getInsnPosition();
+					ctx.setInsnPosition(pos + 1);
+					var insn = instructions.get(pos);
+					// TODO handle misc. instructions
+					if (insn.getOpcode() == -1) continue;
+					var processor = vmi.getProcessor(insn);
+					if (processor == null) {
+						throw new IllegalStateException("No implemented processor for " + insn.getOpcode());
+					}
+					var result = processor.execute(insn, ctx);
+					if (result == Result.ABORT) break;
+				} catch (VMException ex) {
+					var oop = ex.getOop();
+					var tryCatchBlocks = mn.tryCatchBlocks;
+					var index = ctx.getInsnPosition() - 1;
+					for (int i = 0, j = tryCatchBlocks.size(); i < j; i++) {
+						var block = tryCatchBlocks.get(i);
+						var type = block.type;
+						if (type == null) continue;
+						if (index < AsmUtil.getIndex(block.start) || index > AsmUtil.getIndex(block.end)) continue;
+						var stack = ctx.getStack();
+						stack.clear();
+						stack.push(oop);
+						ctx.setInsnPosition(AsmUtil.getIndex(block.handler));
+						continue exec;
+					}
+					throw ex;
 				}
-				var result = processor.execute(insn, ctx);
-				if (result == Result.ABORT) break;
 			}
 		} catch (Exception ex) {
 			throw new IllegalStateException("Uncaught VM error at: " + ctx.getOwner().getInternalName() + '.' + mn.name + mn.desc, ex);

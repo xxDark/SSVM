@@ -22,7 +22,8 @@ final class BootClassLoaderHolder {
 
 	/**
 	 * Boot class loader to get classes from.
-	 *  @param vm
+	 *
+	 * @param vm
 	 * 		VM instance.
 	 * @param bootClassLoader
 	 * 		Boot class loader.
@@ -41,18 +42,21 @@ final class BootClassLoaderHolder {
 	 * @return Resolved class or {@code null}, if not found.
 	 */
 	JavaClass findBootClass(String name) {
+		var dimensions = 0;
+		while (name.charAt(dimensions) == '[') dimensions++;
 		var data = this.data;
-		var jc = data.getClass(name);
+		var trueName = dimensions == 0 ? name : name.substring(dimensions);
+		var jc = data.getClass(trueName);
 		if (jc == null) {
-			var result = bootClassLoader.findBootClass(name);
+			var result = bootClassLoader.findBootClass(trueName);
 			if (result == null) return null;
 			var vm = this.vm;
-			var $jc = new InstanceJavaClass(vm, NullValue.INSTANCE, result.getClassReader(), result.getNode(), null);
-			var oop = (InstanceValue) vm.getMemoryManager().newOopForClass($jc);
-			$jc.setOop(oop);
-			data.linkClass($jc);
+			jc = new InstanceJavaClass(vm, NullValue.INSTANCE, result.getClassReader(), result.getNode(), null);
+			var oop = (InstanceValue) vm.getMemoryManager().newOopForClass(jc);
+			((InstanceJavaClass) jc).setOop(oop);
+			data.linkClass(jc);
 			vm.getHelper().initializeDefaultValues(oop, this.jc);
-			return $jc;
+			while (dimensions-- != 0) jc = jc.newArrayClass();
 		}
 		return jc;
 	}

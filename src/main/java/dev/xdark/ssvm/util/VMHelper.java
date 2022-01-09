@@ -4,6 +4,7 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Stack;
+import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.thread.VMThread;
 import dev.xdark.ssvm.value.*;
@@ -631,7 +632,7 @@ public final class VMHelper {
 	 *
 	 * @return VM array.
 	 */
-	public ArrayValue tOVMValues(Value[] array, int startIndex, int endIndex) {
+	public ArrayValue toVMValues(Value[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
 		var vm = this.vm;
 		var wrapper = vm.getMemoryManager().newArray(vm.getSymbols().java_lang_Object.newArrayClass(), newLength, 8L);
@@ -649,8 +650,8 @@ public final class VMHelper {
 	 *
 	 * @return VM array.
 	 */
-	public ArrayValue tOVMValues(Value[] array) {
-		return tOVMValues(array, 0, array.length);
+	public ArrayValue toVMValues(Value[] array) {
+		return toVMValues(array, 0, array.length);
 	}
 
 	/**
@@ -757,6 +758,69 @@ public final class VMHelper {
 		oop.setBoolean("daemon", javaThread.isDaemon());
 		// Copy thread state (JVMTI_THREAD_STATE_RUNNABLE)
 		oop.setInt("threadStatus", 0x0004);
+	}
+
+	/**
+	 * Throws exception.
+	 *
+	 * @param javaClass
+	 * 		Exception class.
+	 * @param message
+	 * 		Message.
+	 * @param cause
+	 * 		Exception cause.
+	 */
+	public void throwException(InstanceJavaClass javaClass, String message, Value cause) {
+		var vm = this.vm;
+		if (vm != javaClass.getVM()) {
+			throw new IllegalStateException("Wrong helper!");
+		}
+		javaClass.initialize();
+		var instance = vm.getMemoryManager().newInstance(javaClass);
+		invokeExact(javaClass, "<init>", "(V", new Value[0], new Value[]{instance});
+		if (message != null) {
+			instance.setValue("detailMessage", "Ljava/lang/String;", newUtf8(message));
+		}
+		if (cause != null) {
+			instance.setValue("cause", "Ljava/lang/Throwable;", cause);
+		}
+		throw new VMException(instance);
+	}
+
+	/**
+	 * Throws exception.
+	 *
+	 * @param javaClass
+	 * 		Exception class.
+	 * @param message
+	 * 		Message.
+	 */
+	public void throwException(InstanceJavaClass javaClass, String message) {
+		throwException(javaClass, message, null);
+	}
+
+	/**
+	 * Throws exception.
+	 *
+	 * @param javaClass
+	 * 		Exception class.
+	 */
+	public void throwException(InstanceJavaClass javaClass) {
+		throwException(javaClass, null, null);
+	}
+
+	/**
+	 * Performs array bounds check.
+	 *
+	 * @param array
+	 * 		Array to check in.
+	 * @param index
+	 * 		Index to check.
+	 */
+	public void rangeCheck(ArrayValue array, int index) {
+		if (index < 0 || index >= array.getLength()) {
+			throwException(vm.getSymbols().java_lang_ArrayIndexOutOfBoundsException);
+		}
 	}
 
 	private static void contextPrepare(ExecutionContext ctx, Value[] stack, Value[] locals, int localIndex) {

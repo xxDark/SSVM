@@ -92,11 +92,12 @@ public final class VMInterface {
 	 * @throws IllegalStateException
 	 * 		If method was not found.
 	 */
-	public void setInvoker(InstanceJavaClass jc, String name, String desc, MethodInvoker invoker) {
+	public boolean setInvoker(InstanceJavaClass jc, String name, String desc, MethodInvoker invoker) {
 		var method = jc.getMethod(name, desc);
 		if (method == null) {
-			throw new IllegalStateException("Method not found: " + name + desc);
+			return false;
 		}
 		setInvoker(new VMCall(jc, method), invoker);
+		return true;
 	}
 }

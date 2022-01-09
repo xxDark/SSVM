@@ -83,4 +83,43 @@ public interface JavaClass {
 	 * Initializes class data.
 	 */
 	void initialize();
+
+	/**
+	 * @param other
+	 * 		The Class object to be checked.
+	 *
+	 * @return {@code boolean} value indicating whether objects
+	 * of the type cls can be assigned to objects of this class.
+	 *
+	 * @see Class#isAssignableFrom(Class)
+	 */
+	boolean isAssignableFrom(JavaClass other);
+
+	/**
+	 * Returns whether this class
+	 * is primitive or not.
+	 *
+	 * @return {@code true} if this class is primitive,
+	 * {@code false} otherwise.
+	 */
+	boolean isPrimitive();
+
+	/**
+	 * Returns whether this class
+	 * is an array or not.
+	 *
+	 * @return {@code true} if this class is an array,
+	 * {@code false} otherwise.
+	 */
+	boolean isArray();
+
+	/**
+	 * Returns whether this class
+	 * is an interface or not.
+	 *
+	 * @return {@code true} if this class is an interface,
+	 * {@code false} otherwise.
+	 */
+	boolean isInterface();
+
 }

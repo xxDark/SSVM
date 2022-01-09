@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.mirror;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.util.UnsafeUtil;
 import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.Value;
@@ -9,9 +10,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -26,7 +25,7 @@ public final class InstanceJavaClass implements JavaClass {
 	private final Lock initializationLock;
 	private final Condition signal;
 	private final ClassReader classReader;
-	public final ClassNode node;
+	private final ClassNode node;
 	private Value oop;
 	private ClassLayout layout;
 	private InstanceJavaClass superClass;
@@ -128,8 +127,8 @@ public final class InstanceJavaClass implements JavaClass {
 		}
 		if (state == State.FAILED) {
 			lock.unlock();
-			// TODO
-			throw new IllegalStateException();
+			var vm = this.vm;
+			vm.getHelper().throwException(vm.getSymbols().java_lang_ExceptionInInitializerError, getInternalName());
 		}
 		if (state == State.IN_PROGRESS) {
 			if (Thread.currentThread() == initializer) {
@@ -185,14 +184,102 @@ public final class InstanceJavaClass implements JavaClass {
 		if (virtualFields.isEmpty()) {
 			buildVirtualFields();
 		}
-		var clinit = getMethod("<clinit>", "()V"); // TODO handle failure
-		if (clinit != null) {
-			helper.invokeStatic(this, clinit, new Value[0], new Value[0]);
+		var clinit = getMethod("<clinit>", "()V");
+		try {
+			if (clinit != null) {
+				helper.invokeStatic(this, clinit, new Value[0], new Value[0]);
+			}
+			state = State.COMPLETE;
+		} catch (VMException ex) {
+			state = State.FAILED;
+			throw ex;
+		} finally {
+			signal.signalAll();
+			lock.unlock();
+			initializer = null;
 		}
-		state = State.COMPLETE;
-		signal.signalAll();
-		lock.unlock();
-		initializer = null;
+	}
+
+	@Override
+	public boolean isAssignableFrom(JavaClass other) {
+		if (other == null) {
+			var vm = this.vm;
+			vm.getHelper().throwException(vm.getSymbols().java_lang_NullPointerException);
+			// keep javac happy.
+			return false;
+		}
+		if (other.isPrimitive()) {
+			return false;
+		}
+		if (other.isArray()) {
+			if (isInterface()) {
+				var internalName = node.name;
+				return "java/io/Serializable".equals(internalName) || "java/lang/Cloneable".equals(internalName);
+			} else {
+				return this == vm.getSymbols().java_lang_Object;
+			}
+		} else if (other.isInterface()) {
+			if (isInterface()) {
+				if (this == other) {
+					return true;
+				}
+
+				var toCheck = new ArrayDeque<>(Arrays.asList(other.getInterfaces()));
+				JavaClass popped;
+				while ((popped = toCheck.poll()) != null) {
+					if (popped == this) {
+						return true;
+					}
+					toCheck.addAll(Arrays.asList(popped.getInterfaces()));
+				}
+				return false;
+			} else {
+				return this == vm.getSymbols().java_lang_Object;
+			}
+		} else {
+			var toCheck = new ArrayDeque<JavaClass>();
+			if (isInterface()) {
+				var superClass = other.getSuperClass();
+				if (superClass != null)
+					toCheck.add(superClass);
+				toCheck.addAll(Arrays.asList(other.getInterfaces()));
+				JavaClass popped;
+				while ((popped = toCheck.poll()) != null) {
+					if (popped == this) return true;
+					superClass = popped.getSuperClass();
+					if (superClass != null)
+						toCheck.add(superClass);
+					toCheck.addAll(Arrays.asList(popped.getInterfaces()));
+				}
+			} else {
+				var superClass = other.getSuperClass();
+				if (superClass != null)
+					toCheck.add(superClass);
+				JavaClass popped;
+				while ((popped = toCheck.poll()) != null) {
+					if (popped == this) return true;
+					superClass = popped.getSuperClass();
+					if (superClass != null)
+						toCheck.add(superClass);
+				}
+			}
+			return false;
+		}
+	}
+
+	@Override
+	public boolean isPrimitive() {
+		return false;
+	}
+
+	@Override
+	public boolean isArray() {
+		return false;
+	}
+
+	@Override
+	public boolean isInterface() {
+		return (node.access & Opcodes.ACC_INTERFACE) != 0;
 	}
 
 	/**
@@ -335,6 +422,21 @@ public final class InstanceJavaClass implements JavaClass {
 	}
 
 	/**
+	 * Searches for field offset.
+	 *
+	 * @param name
+	 * 		Field name.
+	 * @param desc
+	 * 		Field desc.
+	 *
+	 * @return field offset or {@code -1L} if not found.
+	 */
+	public long getFieldOffset(String name, String desc) {
+		initialize();
+		return layout.getFieldOffset(new FieldInfo(this, name, desc));
+	}
+
+	/**
 	 * Searches for field offset recursively.
 	 *
 	 * @param name
@@ -396,6 +498,15 @@ public final class InstanceJavaClass implements JavaClass {
 			javaClass = javaClass.superClass;
 		} while (javaClass != null);
 		return new ClassLayout(Collections.unmodifiableMap(offsetMap), offset);
+	}
+
+	/**
+	 * Returns ASM node.
+	 *
+	 * @return asm node.
+	 */
+	public ClassNode getNode() {
+		return node;
 	}
 
 	@Override

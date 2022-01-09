@@ -19,6 +19,7 @@ public final class LoadArrayValueProcessor implements InstructionProcessor<Abstr
 		var stack = ctx.getStack();
 		var index = stack.pop().asInt();
 		var array = stack.<ArrayValue>pop();
+		ctx.getHelper().rangeCheck(array, index);
 		stack.push(array.getValue(index));
 		return Result.CONTINUE;
 	}

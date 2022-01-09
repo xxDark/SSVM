@@ -50,13 +50,15 @@ public final class FieldInfo {
 
 		FieldInfo fieldInfo = (FieldInfo) o;
 
+		if (!owner.equals(fieldInfo.owner)) return false;
 		if (!name.equals(fieldInfo.name)) return false;
 		return desc.equals(fieldInfo.desc);
 	}
 
 	@Override
 	public int hashCode() {
-		int result = name.hashCode();
+		int result = owner.hashCode();
+		result = 31 * result + name.hashCode();
 		result = 31 * result + desc.hashCode();
 		return result;
 	}

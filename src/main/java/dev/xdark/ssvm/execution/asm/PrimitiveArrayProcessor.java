@@ -19,8 +19,9 @@ public final class PrimitiveArrayProcessor implements InstructionProcessor<IntIn
 	public Result execute(IntInsnNode insn, ExecutionContext ctx) {
 		var stack = ctx.getStack();
 		var length = stack.pop().asInt();
-		var operand = insn.operand;
 		var vm = ctx.getVM();
+		vm.getHelper().checkArrayLength(length);
+		var operand = insn.operand;
 		var primitives = vm.getPrimitives();
 		var memoryManager = vm.getMemoryManager();
 		ArrayValue array;

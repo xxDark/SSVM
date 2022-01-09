@@ -17,9 +17,4 @@ public final class SimpleClassDefiner implements ClassDefiner {
 		var cr = new ClassReader(classBytes, off, len);
 		return new ClassParseResult(cr, ClassUtil.readNode(cr));
 	}
-
-	@Override
-	public ClassParseResult parseClass(String name, ByteBuffer buffer, String source) {
-		throw new UnsupportedOperationException("TODO!");
-	}
 }

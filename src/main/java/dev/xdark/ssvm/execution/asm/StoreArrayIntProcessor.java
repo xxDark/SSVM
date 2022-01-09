@@ -19,6 +19,7 @@ public final class StoreArrayIntProcessor implements InstructionProcessor<Abstra
 		var value = stack.pop().asInt();
 		var index = stack.pop().asInt();
 		var array = stack.<ArrayValue>pop();
+		ctx.getHelper().rangeCheck(array, index);
 		array.setInt(index, value);
 		return Result.CONTINUE;
 	}

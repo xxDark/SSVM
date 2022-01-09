@@ -1,11 +1,14 @@
 package dev.xdark.ssvm.util;
 
+import dev.xdark.ssvm.NativeJava;
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.classloading.ClassLoaderData;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.thread.VMThread;
 import dev.xdark.ssvm.value.*;
 import org.objectweb.asm.Opcodes;
@@ -177,7 +180,7 @@ public final class VMHelper {
 		if (cst instanceof Integer || cst instanceof Short || cst instanceof Byte)
 			return new IntValue(((Number) cst).intValue());
 		if (cst instanceof Character) return new IntValue((Character) cst);
-		if (cst instanceof Float) return new DoubleValue((Float) cst);
+		if (cst instanceof Float) return new FloatValue((Float) cst);
 		if (cst instanceof Boolean) return new IntValue((Boolean) cst ? 1 : 0);
 		if (cst instanceof String) return newUtf8((String) cst);
 		if (cst instanceof Type) {
@@ -192,7 +195,7 @@ public final class VMHelper {
 					var dimensions = 0;
 					var name = type.getInternalName();
 					while (name.charAt(dimensions) == '[') dimensions++;
-					var base = vm.findClass(loader, name.substring(dimensions), false);
+					var base = findType(loader, name.substring(dimensions));
 					while (dimensions-- != 0) {
 						base = base.newArrayClass();
 					}
@@ -202,6 +205,30 @@ public final class VMHelper {
 			}
 		}
 		throw new UnsupportedOperationException("TODO: " + cst);
+	}
+
+	private JavaClass findType(Value loader, String name) {
+		var vm = this.vm;
+		switch (name) {
+			case "J":
+				return vm.getPrimitives().longPrimitive;
+			case "D":
+				return vm.getPrimitives().doublePrimitive;
+			case "I":
+				return vm.getPrimitives().intPrimitive;
+			case "F":
+				return vm.getPrimitives().floatPrimitive;
+			case "C":
+				return vm.getPrimitives().charPrimitive;
+			case "S":
+				return vm.getPrimitives().shortPrimitive;
+			case "B":
+				return vm.getPrimitives().bytePrimitive;
+			case "Z":
+				return vm.getPrimitives().booleanPrimitive;
+			default:
+				return vm.findClass(loader, name, false);
+		}
 	}
 
 	/**
@@ -676,6 +703,19 @@ public final class VMHelper {
 	}
 
 	/**
+	 * Converts VM string to Java string.
+	 *
+	 * @param value
+	 * 		VM string.
+	 *
+	 * @return Java string.
+	 */
+	public String readUtf8(Value value) {
+		if (value == null) return null;
+		return readUtf8((InstanceValue) value);
+	}
+
+	/**
 	 * Allocates VM string.
 	 *
 	 * @param str
@@ -688,7 +728,16 @@ public final class VMHelper {
 		var jc = vm.getSymbols().java_lang_String;
 		jc.initialize();
 		var wrapper = vm.getMemoryManager().newInstance(jc);
-		invokeExact(jc, "<init>", "([C)V", new Value[0], new Value[]{wrapper, toVMChars(str.toCharArray())});
+		if (str.isEmpty()) {
+			if (jc.hasVirtualField("value", "[C")) {
+				// JDK 8
+				wrapper.setValue("value", "[C", toVMChars(new char[0]));
+			} else {
+				wrapper.setValue("value", "[B", toVMBytes(new byte[0]));
+			}
+		} else {
+			invokeExact(jc, "<init>", "([C)V", new Value[0], new Value[]{wrapper, toVMChars(str.toCharArray())});
+		}
 		return wrapper;
 	}
 
@@ -777,7 +826,7 @@ public final class VMHelper {
 		}
 		javaClass.initialize();
 		var instance = vm.getMemoryManager().newInstance(javaClass);
-		invokeExact(javaClass, "<init>", "(V", new Value[0], new Value[]{instance});
+		invokeExact(javaClass, "<init>", "()V", new Value[0], new Value[]{instance});
 		if (message != null) {
 			instance.setValue("detailMessage", "Ljava/lang/String;", newUtf8(message));
 		}
@@ -820,6 +869,77 @@ public final class VMHelper {
 	public void rangeCheck(ArrayValue array, int index) {
 		if (index < 0 || index >= array.getLength()) {
 			throwException(vm.getSymbols().java_lang_ArrayIndexOutOfBoundsException);
+		}
+	}
+
+	/**
+	 * Performs array length check.
+	 *
+	 * @param length
+	 * 		Length to check.
+	 */
+	public void checkArrayLength(int length) {
+		if (length < 0) {
+			throwException(vm.getSymbols().java_lang_NegativeArraySizeException);
+		}
+	}
+
+	/**
+	 * Sets class fields, just like normal JVM.
+	 *
+	 * @param oop
+	 * 		Class to set fields for.
+	 * @param classLoader
+	 * 		Class loader.
+	 * @param protectionDomain
+	 * 		Protection domain of the class.
+	 */
+	public void setClassFields(InstanceValue oop, Value classLoader, Value protectionDomain) {
+		oop.setValue("classLoader", "Ljava/lang/ClassLoader;", classLoader);
+		oop.setValue("protectionDomain", "Ljava/security/ProtectionDomain;", protectionDomain);
+	}
+
+	public JavaClass defineClass(Value classLoader, String name, byte[] b, int off, int len, Value protectionDomain, String source) {
+		var vm = this.vm;
+		if ((off | len | (off + len) | (b.length - (off + len))) < 0) {
+			throwException(vm.getSymbols().java_lang_ArrayIndexOutOfBoundsException);
+			return null;
+		}
+		ClassLoaderData classLoaderData;
+		if (classLoader.isNull()) {
+			classLoaderData = vm.getBootClassLoaderData();
+		} else {
+			classLoaderData = ((JavaValue<ClassLoaderData>) ((InstanceValue) classLoader).getValue(NativeJava.CLASS_LOADER_OOP, "Ljava/lang/Object;")).getValue();
+		}
+		var parsed = vm.getClassDefiner().parseClass(name, b, off, len, source);
+		if (parsed == null) {
+			throwException(vm.getSymbols().java_lang_NoClassDefFoundError);
+			return null;
+		}
+		var actualName = parsed.getClassReader().getClassName();
+		if (name == null) {
+			name = actualName;
+		} else if (!actualName.equals(name.replace('.', '/'))) {
+			throwException(vm.getSymbols().java_lang_ClassNotFoundException, "Expected class name: " + actualName.replace('/', '.') + " but received: " + name);
+			return null;
+		}
+		synchronized (classLoaderData) {
+			if (classLoaderData.getClass(name) != null) {
+				throwException(vm.getSymbols().java_lang_ClassNotFoundException, "Class already exists: " + name);
+				return null;
+			}
+			// Create class
+			var javaClass = new InstanceJavaClass(vm, classLoader, parsed.getClassReader(), parsed.getNode());
+			classLoaderData.linkClass(javaClass);
+			var oop = (InstanceValue) vm.getMemoryManager().newOopForClass(javaClass);
+			javaClass.setOop(oop);
+			vm.getHelper().initializeDefaultValues(oop, vm.getSymbols().java_lang_Class);
+			setClassFields(oop, classLoader, protectionDomain);
+			if (!classLoader.isNull()) {
+				var classes = ((InstanceValue) classLoader).getValue("classes", "Ljava/util/Vector;");
+				invokeVirtual(vm.getSymbols().java_util_Vector, "add", "(Ljava/lang/Object;)Z", new Value[0], new Value[]{classes, javaClass.getOop()});
+			}
+			return javaClass;
 		}
 	}
 

@@ -17,7 +17,7 @@ public final class VMException extends RuntimeException {
 	 * 		Throwable oop.
 	 */
 	public VMException(InstanceValue oop) {
-		super(null, null, false, false);
+		//super(null, null, false, false);
 		this.oop = oop;
 	}
 

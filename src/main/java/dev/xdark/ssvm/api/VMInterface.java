@@ -4,7 +4,6 @@ import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.MethodNode;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -89,8 +88,8 @@ public final class VMInterface {
 	 * @param invoker
 	 * 		Method invoker.
 	 *
-	 * @throws IllegalStateException
-	 * 		If method was not found.
+	 * @return {@code true} if method was registeed,
+	 * {@code false} otherwise.
 	 */
 	public boolean setInvoker(InstanceJavaClass jc, String name, String desc, MethodInvoker invoker) {
 		var method = jc.getMethod(name, desc);

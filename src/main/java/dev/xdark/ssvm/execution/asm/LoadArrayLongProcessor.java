@@ -21,6 +21,7 @@ public final class LoadArrayLongProcessor implements InstructionProcessor<Abstra
 		var stack = ctx.getStack();
 		var index = stack.pop().asInt();
 		var array = stack.<ArrayValue>pop();
+		ctx.getHelper().rangeCheck(array, index);
 		stack.pushWide(new LongValue(array.getLong(index)));
 		return Result.CONTINUE;
 	}

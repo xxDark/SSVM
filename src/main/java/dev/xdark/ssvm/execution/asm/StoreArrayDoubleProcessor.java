@@ -19,6 +19,7 @@ public final class StoreArrayDoubleProcessor implements InstructionProcessor<Abs
 		var value = stack.popWide().asDouble();
 		var index = stack.pop().asInt();
 		var array = stack.<ArrayValue>pop();
+		ctx.getHelper().rangeCheck(array, index);
 		array.setDouble(index, value);
 		return Result.CONTINUE;
 	}

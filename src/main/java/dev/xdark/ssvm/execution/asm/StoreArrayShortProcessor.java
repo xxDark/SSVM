@@ -19,6 +19,7 @@ public final class StoreArrayShortProcessor implements InstructionProcessor<Abst
 		var value = stack.pop().asShort();
 		var index = stack.pop().asInt();
 		var array = stack.<ArrayValue>pop();
+		ctx.getHelper().rangeCheck(array, index);
 		array.setShort(index, value);
 		return Result.CONTINUE;
 	}

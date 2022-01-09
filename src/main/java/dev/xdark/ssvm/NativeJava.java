@@ -3,6 +3,7 @@ package dev.xdark.ssvm;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.classloading.ClassLoaderData;
+import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.asm.*;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
@@ -18,9 +19,9 @@ import static org.objectweb.asm.Opcodes.*;
  *
  * @author xDark
  */
-final class NativeJava {
+public final class NativeJava {
 
-	private static final String CLASS_LOADER_OOP = "classLoaderOop";
+	public static final String CLASS_LOADER_OOP = "classLoaderOop";
 
 	/**
 	 * Sets up VM instance.
@@ -33,10 +34,8 @@ final class NativeJava {
 		injectVMFields(vm);
 		setInstructions(vmi);
 		var symbols = vm.getSymbols();
-		// java/lang/Class.registerNatives()V
 		var jlc = symbols.java_lang_Class;
 		vmi.setInvoker(jlc, "registerNatives", "()V", ctx -> Result.ABORT);
-		// java/lang/Class.getPrimitiveClass(Ljava/lang/String;)Ljava/lang/Class;
 		vmi.setInvoker(jlc, "getPrimitiveClass", "(Ljava/lang/String;)Ljava/lang/Class;", ctx -> {
 			var name = vm.getHelper().readUtf8(ctx.getLocals().load(0));
 			var primitives = vm.getPrimitives();
@@ -75,31 +74,43 @@ final class NativeJava {
 			ctx.setResult(result);
 			return Result.ABORT;
 		});
-		// java/lang/Class.desiredAssertionStatus0(Ljava/lang/Class;)Z
 		vmi.setInvoker(jlc, "desiredAssertionStatus0", "(Ljava/lang/Class;)Z", ctx -> {
 			ctx.setResult(new IntValue(0));
 			return Result.ABORT;
 		});
 
 		var object = symbols.java_lang_Object;
-		// java/lang/Object.registerNatives()V
 		vmi.setInvoker(object, "registerNatives", "()V", ctx -> Result.ABORT);
-		// java/lang/Object.<init>()V
 		vmi.setInvoker(object, "<init>", "()V", ctx -> {
 			ctx.getLocals().<InstanceValue>load(0).initialize();
 			return Result.ABORT;
 		});
 
 		var sys = symbols.java_lang_System;
-		// java/lang/System.registerNatives()V
 		vmi.setInvoker(sys, "registerNatives", "()V", ctx -> Result.ABORT);
+		vmi.setInvoker(sys, "currentTimeMillis", "()J", ctx -> {
+			ctx.setResult(new LongValue(System.currentTimeMillis()));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(sys, "nanoTime", "()J", ctx -> {
+			ctx.setResult(new LongValue(System.nanoTime()));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(sys, "arraycopy", "(Ljava/lang/Object;ILjava/lang/Object;II)V", ctx -> {
+			vm.getHelper().throwException(vm.getSymbols().java_lang_UnsatisfiedLinkError, "TODO");
+			return Result.ABORT;
+		});
+		vmi.setInvoker(sys, "identityHashCode", "(Ljava/lang/Object;)I", ctx -> {
+			ctx.setResult(new IntValue(ctx.getLocals().load(0).hashCode()));
+			return Result.ABORT;
+		});
 
 		var thread = symbols.java_lang_Thread;
-		// java/lang/Thread.registerNatives()V
 		vmi.setInvoker(thread, "registerNatives", "()V", ctx -> Result.ABORT);
 
+
 		var classLoader = symbols.java_lang_ClassLoader;
-		// java/lang/ClassLoader
+		vmi.setInvoker(classLoader, "registerNatives", "()V", ctx -> Result.ABORT);
 		var clInitHook = (MethodInvoker) ctx -> {
 			var oop = vm.getMemoryManager().newJavaInstance(object, new ClassLoaderData());
 			ctx.getLocals().<InstanceValue>load(0)
@@ -111,9 +122,24 @@ final class NativeJava {
 				throw new IllegalStateException("Unable to locate ClassLoader init constructor");
 			}
 		}
+		vmi.setInvoker(classLoader, "defineClass1", "(Ljava/lang/ClassLoader;Ljava/lang/String;[BIILjava/security/ProtectionDomain;Ljava/lang/String;)Ljava/lang/Class;", ctx -> {
+			var locals = ctx.getLocals();
+			var loader = locals.<ObjectValue>load(0);
+			var name = locals.load(1);
+			var b = locals.<ArrayValue>load(2);
+			var off = locals.load(3).asInt();
+			var length = locals.load(4).asInt();
+			var pd = locals.load(5);
+			var source = locals.load(6);
+			var helper = vm.getHelper();
+			var bytes = helper.toJavaBytes(b);
+			var defined = helper.defineClass(loader, helper.readUtf8(name), bytes, off, length, pd, helper.readUtf8(source));
+			//noinspection ConstantConditions
+			ctx.setResult(defined.getOop());
+			return Result.ABORT;
+		});
 
 		var throwable = symbols.java_lang_Throwable;
-		// java/lang/Throwable.fillInStackTrace(I)Ljava/lang/Throwable;
 		vmi.setInvoker(throwable, "fillInStackTrace", "(I)Ljava/lang/Throwable;", ctx -> {
 			var exception = ctx.getLocals().<InstanceValue>load(0);
 			var backtrace = vm.getMemoryManager().newJavaInstance(object, vm.currentThread().getBacktrace().copy());
@@ -123,13 +149,81 @@ final class NativeJava {
 		});
 
 		// JDK9+
-		var utf16 = (InstanceJavaClass) vm.findBootstrapClass("java/lang/StringUTF16", false);
+		var utf16 = (InstanceJavaClass) vm.findBootstrapClass("java/lang/StringUTF16");
 		if (utf16 != null) {
 			vmi.setInvoker(utf16, "isBigEndian", "()Z", ctx -> {
 				ctx.setResult(new IntValue(vm.getMemoryManager().getByteOrder() == ByteOrder.BIG_ENDIAN ? 1 : 0));
 				return Result.ABORT;
 			});
 		}
+		var unsafe = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/Unsafe");
+		var newUnsafe = unsafe != null;
+		if (unsafe == null) {
+			unsafe = (InstanceJavaClass) vm.findBootstrapClass("sun/misc/Unsafe");
+		}
+		vmi.setInvoker(unsafe, "registerNatives", "()V", ctx -> Result.ABORT);
+		if (newUnsafe) {
+			initNewUnsafe(vm, unsafe);
+		}
+	}
+
+	/**
+	 * Sets up jdk/internal/misc/Unsafe.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 * @param unsafe
+	 * 		Unsafe class.
+	 */
+	private static void initNewUnsafe(VirtualMachine vm, InstanceJavaClass unsafe) {
+		var vmi = vm.getVmInterface();
+		vmi.setInvoker(unsafe, "allocateMemory0", "(J)J", ctx -> {
+			var memoryManager = vm.getMemoryManager();
+			var block = memoryManager.allocateDirect(ctx.getLocals().load(0).asLong());
+			if (block == null) {
+				vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError);
+				return Result.ABORT;
+			}
+			ctx.setResult(new LongValue(block.getAddress()));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(unsafe, "reallocateMemory0", "(JJ)J", ctx -> {
+			var memoryManager = vm.getMemoryManager();
+			var locals = ctx.getLocals();
+			var address = locals.load(0).asLong();
+			var bytes = locals.load(2).asLong();
+			var block = memoryManager.reallocateDirect(address, bytes);
+			if (block == null) {
+				vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError);
+				return Result.ABORT;
+			}
+			ctx.setResult(new LongValue(block.getAddress()));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(unsafe, "freeMemory", "(J)V", ctx -> {
+			var memoryManager = vm.getMemoryManager();
+			var locals = ctx.getLocals();
+			var address = locals.load(0).asLong();
+			memoryManager.freeMemory(address);
+			return Result.ABORT;
+		});
+		vmi.setInvoker(unsafe, "setMemory0", "(Ljava/lang/Object;JJB)V", ctx -> {
+			var locals = ctx.getLocals();
+			var value = locals.load(0);
+			if (!(value instanceof ObjectValue)) {
+				throw new PanicException("Segfault");
+			}
+			var memory = ((ObjectValue) value).getMemory().getData();
+			var offset = locals.load(1).asLong();
+			var bytes = locals.load(3).asLong();
+			var b = locals.load(5).asByte();
+			for (; offset < bytes; offset++) {
+				memory.put((int) offset, b);
+			}
+			return Result.ABORT;
+		});
+		// TODO rest of the methods.
+
 	}
 
 	/**
@@ -327,6 +421,7 @@ final class NativeJava {
 		vmi.setProcessor(INVOKESPECIAL, new SpecialCallProcessor());
 		vmi.setProcessor(INVOKESTATIC, new StaticCallProcessor());
 
+		vmi.setProcessor(INVOKEDYNAMIC, new InvokeDynamicLinkerProcessor());
 		vmi.setProcessor(NEW, new NewProcessor());
 		vmi.setProcessor(ANEWARRAY, new InstanceArrayProcessor());
 		vmi.setProcessor(NEWARRAY, new PrimitiveArrayProcessor());
@@ -334,6 +429,7 @@ final class NativeJava {
 
 		vmi.setProcessor(ATHROW, new ThrowProcessor());
 
+		vmi.setProcessor(CHECKCAST, new CastProcessor());
 		vmi.setProcessor(INSTANCEOF, new InstanceofProcessor());
 
 		vmi.setProcessor(MONITORENTER, new MonitorEnterProcessor());

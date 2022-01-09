@@ -19,6 +19,7 @@ public final class LoadArrayDoubleProcessor implements InstructionProcessor<Abst
 		var stack = ctx.getStack();
 		var index = stack.pop().asInt();
 		var array = stack.<ArrayValue>pop();
+		ctx.getHelper().rangeCheck(array, index);
 		stack.pushWide(new DoubleValue(array.getDouble(index)));
 		return Result.CONTINUE;
 	}

@@ -19,6 +19,7 @@ public final class StoreArrayByteProcessor implements InstructionProcessor<Abstr
 		var value = stack.pop().asByte();
 		var index = stack.pop().asInt();
 		var array = stack.<ArrayValue>pop();
+		ctx.getHelper().rangeCheck(array, index);
 		array.setByte(index, value);
 		return Result.CONTINUE;
 	}

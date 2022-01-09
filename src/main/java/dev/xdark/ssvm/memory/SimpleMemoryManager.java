@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.memory;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
@@ -10,9 +11,8 @@ import sun.misc.Unsafe;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -25,7 +25,7 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	private static final long OBJECT_HEADER_SIZE = Unsafe.ADDRESS_SIZE;
 	private static final long ARRAY_HEADER_SIZE = OBJECT_HEADER_SIZE + 4L;
-	private final Set<Memory> memoryBlocks = Collections.newSetFromMap(new WeakHashMap<>());
+	private final Map<Long, Memory> memoryBlocks = new HashMap<>();
 	private final Map<Memory, Value> objects = new WeakHashMap<>();
 
 	private final VirtualMachine vm;
@@ -45,18 +45,49 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
+	public Memory reallocateDirect(long address, long bytes) {
+		var memory = memoryBlocks.remove(address);
+		if (memory == null || !memory.isDirect()) {
+			throw new PanicException("Segfault");
+		}
+		if (bytes == 0L) {
+			return new Memory(this, null, 0L, true);
+		}
+		var buffer = memory.getData();
+		var capacity = buffer.capacity();
+		if (bytes < capacity) {
+			// can we do that?
+			// TODO verify
+			throw new PanicException("Segfault");
+		}
+		var newBuffer = ByteBuffer.allocate((int) bytes);
+		newBuffer.put(buffer);
+		newBuffer.position(0);
+		memory = new Memory(this, newBuffer, address, true);
+		memoryBlocks.put(address, memory);
+		return memory;
+	}
+
+	@Override
 	public Memory allocateHeap(long bytes) {
 		return newMemoryBlock(bytes, false);
 	}
 
 	@Override
-	public boolean freeMemory(long address) {
-		return memoryBlocks.remove(new Memory(null, null, address, false));
+	public void freeMemory(long address) {
+		if (memoryBlocks.remove(address) == null) {
+			throw new PanicException("Segfault");
+		}
+	}
+
+	@Override
+	public Memory getMemory(long address) {
+		return memoryBlocks.get(address);
 	}
 
 	@Override
 	public boolean isValidAddress(long address) {
-		return memoryBlocks.contains(new Memory(null, null, address, false));
+		return memoryBlocks.containsKey(address);
 	}
 
 	@Override
@@ -304,7 +335,7 @@ public class SimpleMemoryManager implements MemoryManager {
 		var jc = vm.findBootstrapClass("java/lang/Class");
 		var memory = allocateObjectMemory(jc);
 		setClass(memory, jc);
-		var value = new InstanceValue(memory);
+		var value = new JavaValue<>(memory, javaClass);
 		value.initialize();
 		objects.put(memory, value);
 		return value;
@@ -327,10 +358,11 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	private Memory newMemoryBlock(long size, boolean isDirect) {
 		if (size > Integer.MAX_VALUE) {
-			throw new UnsupportedOperationException();
+			vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError);
+			return null;
 		}
 		var block = new Memory(this, ByteBuffer.allocate((int) size), ThreadLocalRandom.current().nextLong() & 0xFFFFFFFFL, isDirect);
-		memoryBlocks.add(block);
+		memoryBlocks.put(block.getAddress(), block);
 		return block;
 	}
 
@@ -349,7 +381,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	private static long validate(long off) {
-		if (off < 0L) throw new IllegalStateException();
+		if (off < 0L) throw new PanicException("Segfault");
 		return off;
 	}
 }

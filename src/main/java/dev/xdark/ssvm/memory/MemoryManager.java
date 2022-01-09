@@ -27,6 +27,18 @@ public interface MemoryManager {
 	Memory allocateDirect(long bytes);
 
 	/**
+	 * Reallocates {@literal direct} memory.
+	 *
+	 * @param address
+	 * 		Address of the block.
+	 * @param bytes
+	 * 		How much memory to reallocate.
+	 *
+	 * @return Buffer representing allocated memory.
+	 */
+	Memory reallocateDirect(long address, long bytes);
+
+	/**
 	 * Allocates {@literal heap} memory.
 	 *
 	 * @param bytes
@@ -41,11 +53,19 @@ public interface MemoryManager {
 	 *
 	 * @param address
 	 * 		Address of the memory block.
-	 *
-	 * @return {@code true} if memory was deallocated,
-	 * {@code false} if address is invalid.
 	 */
-	boolean freeMemory(long address);
+	void freeMemory(long address);
+
+	/**
+	 * Returns memory block based off it's address.
+	 *
+	 * @param address
+	 * 		Memory address.
+	 *
+	 * @return memory block or {@code null},
+	 * if not found.
+	 */
+	Memory getMemory(long address);
 
 	/**
 	 * Returns true if the address is valid.

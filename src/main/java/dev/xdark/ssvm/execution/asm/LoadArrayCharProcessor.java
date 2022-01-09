@@ -19,6 +19,7 @@ public final class LoadArrayCharProcessor implements InstructionProcessor<Abstra
 		var stack = ctx.getStack();
 		var index = stack.pop().asInt();
 		var array = stack.<ArrayValue>pop();
+		ctx.getHelper().rangeCheck(array, index);
 		stack.push(new FloatValue(array.getChar(index)));
 		return Result.CONTINUE;
 	}

@@ -458,6 +458,35 @@ public final class InstanceJavaClass implements JavaClass {
 	}
 
 	/**
+	 * Checks whether virtual field exists.
+	 *
+	 * @param info
+	 * 		Field info.
+	 *
+	 * @return {@code true} if field exists, {@code  false}
+	 * otherwise.
+	 */
+	public boolean hasVirtualField(FieldInfo info) {
+		initialize();
+		return virtualFields.containsKey(info);
+	}
+
+	/**
+	 * Checks whether virtual field exists.
+	 *
+	 * @param name
+	 * 		Field name.
+	 * @param desc
+	 * 		Field desc.
+	 *
+	 * @return {@code true} if field exists, {@code  false}
+	 * otherwise.
+	 */
+	public boolean hasVirtualField(String name, String desc) {
+return hasVirtualField(new FieldInfo(this, name, desc));
+	}
+
+	/**
 	 * Returns all virtual fields this class defines.
 	 *
 	 * @return virtual fields this class defines.

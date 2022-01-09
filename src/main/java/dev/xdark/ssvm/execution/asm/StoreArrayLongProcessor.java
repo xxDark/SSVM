@@ -19,6 +19,7 @@ public final class StoreArrayLongProcessor implements InstructionProcessor<Abstr
 		var value = stack.popWide().asLong();
 		var index = stack.pop().asInt();
 		var array = stack.<ArrayValue>pop();
+		ctx.getHelper().rangeCheck(array, index);
 		array.setLong(index, value);
 		return Result.CONTINUE;
 	}

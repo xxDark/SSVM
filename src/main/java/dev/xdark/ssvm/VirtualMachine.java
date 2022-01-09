@@ -2,10 +2,7 @@ package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.api.VMCall;
 import dev.xdark.ssvm.api.VMInterface;
-import dev.xdark.ssvm.classloading.BootClassLoader;
-import dev.xdark.ssvm.classloading.ClassDefiner;
-import dev.xdark.ssvm.classloading.RuntimeBootClassLoader;
-import dev.xdark.ssvm.classloading.SimpleClassDefiner;
+import dev.xdark.ssvm.classloading.*;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.VMException;
@@ -67,6 +64,7 @@ public class VirtualMachine {
 	 */
 	public void bootstrap() {
 		var symbols = this.symbols;
+		symbols.java_lang_ClassLoader.initialize();
 		var helper = this.helper;
 		var sysClass = symbols.java_lang_System;
 		var memoryManager = this.memoryManager;
@@ -101,6 +99,7 @@ public class VirtualMachine {
 				unsafeConstants.setFieldValue("BIG_ENDIAN", "Z", new IntValue(memoryManager.getByteOrder() == ByteOrder.BIG_ENDIAN ? 1 : 0));
 			}
 		}
+		findBootstrapClass("java/lang/StringUTF16", true);
 	}
 
 	/**
@@ -173,6 +172,15 @@ public class VirtualMachine {
 	 */
 	public VMThread currentThread() {
 		return threadManager.getVmThread(Thread.currentThread());
+	}
+
+	/**
+	 * Returns boot class loader data.
+	 *
+	 * @return boot class loader data.
+	 */
+	public ClassLoaderData getBootClassLoaderData() {
+		return bootClassLoader.getData();
 	}
 
 	/**
@@ -250,7 +258,7 @@ public class VirtualMachine {
 				}
 			}
 			if ((mn.access & Opcodes.ACC_NATIVE) != 0) {
-				throw new IllegalStateException("Native method not implemented: " + ctx.getOwner().getInternalName() + '.' + mn.name + mn.desc);
+				helper.throwException(symbols.java_lang_UnsatisfiedLinkError, ctx.getOwner().getInternalName() + '.' + mn.name + mn.desc);
 			}
 			var instructions = mn.instructions;
 			exec:
@@ -263,7 +271,8 @@ public class VirtualMachine {
 					if (insn.getOpcode() == -1) continue;
 					var processor = vmi.getProcessor(insn);
 					if (processor == null) {
-						throw new IllegalStateException("No implemented processor for " + insn.getOpcode());
+						helper.throwException(symbols.java_lang_InternalError, "No implemented processor for " + insn.getOpcode());
+						continue;
 					}
 					var result = processor.execute(insn, ctx);
 					if (result == Result.ABORT) break;
@@ -285,6 +294,8 @@ public class VirtualMachine {
 					throw ex;
 				}
 			}
+		} catch (VMException ex) {
+			throw ex;
 		} catch (Exception ex) {
 			throw new IllegalStateException("Uncaught VM error at: " + ctx.getOwner().getInternalName() + '.' + mn.name + mn.desc, ex);
 		} finally {

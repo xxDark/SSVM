@@ -46,19 +46,21 @@ final class BootClassLoaderHolder {
 		while (name.charAt(dimensions) == '[') dimensions++;
 		var data = this.data;
 		var trueName = dimensions == 0 ? name : name.substring(dimensions);
-		var jc = data.getClass(trueName);
-		if (jc == null) {
-			var result = bootClassLoader.findBootClass(trueName);
-			if (result == null) return null;
-			var vm = this.vm;
-			jc = new InstanceJavaClass(vm, NullValue.INSTANCE, result.getClassReader(), result.getNode(), null);
-			var oop = (InstanceValue) vm.getMemoryManager().newOopForClass(jc);
-			((InstanceJavaClass) jc).setOop(oop);
-			data.linkClass(jc);
-			vm.getHelper().initializeDefaultValues(oop, this.jc);
-			while (dimensions-- != 0) jc = jc.newArrayClass();
+		synchronized (data) {
+			var jc = data.getClass(trueName);
+			if (jc == null) {
+				var result = bootClassLoader.findBootClass(trueName);
+				if (result == null) return null;
+				var vm = this.vm;
+				jc = new InstanceJavaClass(vm, NullValue.INSTANCE, result.getClassReader(), result.getNode(), null);
+				var oop = (InstanceValue) vm.getMemoryManager().newOopForClass(jc);
+				((InstanceJavaClass) jc).setOop(oop);
+				data.linkClass(jc);
+				vm.getHelper().initializeDefaultValues(oop, this.jc);
+				while (dimensions-- != 0) jc = jc.newArrayClass();
+			}
+			return jc;
 		}
-		return jc;
 	}
 
 	/**
@@ -84,5 +86,14 @@ final class BootClassLoaderHolder {
 			this.jc = (InstanceJavaClass) jc;
 		}
 		data.forceLinkClass(jc);
+	}
+
+	/**
+	 * Returns class loader data.
+	 *
+	 * @return class loader data.
+	 */
+	ClassLoaderData getData() {
+		return data;
 	}
 }

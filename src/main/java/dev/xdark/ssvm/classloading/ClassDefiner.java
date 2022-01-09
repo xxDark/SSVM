@@ -1,7 +1,5 @@
 package dev.xdark.ssvm.classloading;
 
-import java.nio.ByteBuffer;
-
 /**
  * Responsible for transforming user input to class nodes.
  *
@@ -26,18 +24,4 @@ public interface ClassDefiner {
 	 * @return parsed class or {@code null}, if failed.
 	 */
 	ClassParseResult parseClass(String name, byte[] classBytes, int off, int len, String source);
-
-	/**
-	 * Convers buffer of bytes into an instance of {@link ClassParseResult}.
-	 *
-	 * @param name
-	 * 		Name of the class.
-	 * @param buffer
-	 * 		Class buffer.
-	 * @param source
-	 * 		Source of class parsing.
-	 *
-	 * @return parsed class or {@code null}, if failed.
-	 */
-	ClassParseResult parseClass(String name, ByteBuffer buffer, String source);
 }

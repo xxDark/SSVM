@@ -41,17 +41,17 @@ public class VirtualMachine {
 		jc.setOop(memoryManager.newOopForClass(jc));
 		symbols = createSymbols();
 		helper = new VMHelper(this);
+		try {
+			NativeJava.vmInit(this);
+		} catch (Exception ex) {
+			throw new IllegalStateException("Could not initialize VM", ex);
+		}
 	}
 
 	/**
 	 * Bootstraps virtual machine.
-	 *
-	 * @throws Exception
-	 * 		If any error occurs.
 	 */
-	public void bootstrap() throws Exception {
-		NativeJava.vmInit(this);
-		findBootstrapClass("java/lang/Class");
+	public void bootstrap() {
 	}
 
 	/**

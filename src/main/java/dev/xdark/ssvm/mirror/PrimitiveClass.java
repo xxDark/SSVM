@@ -83,4 +83,8 @@ public final class PrimitiveClass implements JavaClass {
 	public ArrayJavaClass newArrayClass() {
 		return new ArrayJavaClass(vm, '[' + descriptor, 1, this);
 	}
+
+	@Override
+	public void initialize() {
+	}
 }

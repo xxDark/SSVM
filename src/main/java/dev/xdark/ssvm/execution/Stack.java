@@ -101,9 +101,7 @@ public final class Stack {
 	 * @return generic value popped off the stack.
 	 */
 	public <V extends Value> V popGeneric() {
-		var stack = this.stack;
-		int cursor = this.cursor;
-		Value top = stack[--cursor];
+		var top = pop();
 		if (top == TopValue.INSTANCE) {
 			return pop();
 		}
@@ -216,7 +214,7 @@ public final class Stack {
 				pushWide(v1);
 				push(v3);
 				push(v2);
-				push(v1);
+				pushWide(v1);
 			}
 		} else {
 			var v3 = popGeneric();
@@ -249,5 +247,15 @@ public final class Stack {
 		var v2 = stack[cursor - 2];
 		stack[cursor - 1] = v2;
 		stack[cursor - 2] = v1;
+	}
+
+	/**
+	 * Returns whether the stack is empty.
+	 *
+	 * @return {@code true} if stack is empty,
+	 * {@code false} otherwise.
+	 */
+	public boolean isEmpty() {
+		return cursor == 0;
 	}
 }

@@ -6,12 +6,23 @@ package dev.xdark.ssvm.mirror;
  */
 public final class FieldInfo {
 
+	private final JavaClass owner;
 	private final String name;
 	private final String desc;
 
-	public FieldInfo(String name, String desc) {
+	public FieldInfo(JavaClass owner, String name, String desc) {
+		this.owner = owner;
 		this.name = name;
 		this.desc = desc;
+	}
+
+	/**
+	 * Returns owner of the field.
+	 *
+	 * @return field owner.
+	 */
+	public JavaClass getOwner() {
+		return owner;
 	}
 
 	/**

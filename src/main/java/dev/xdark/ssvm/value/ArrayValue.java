@@ -153,7 +153,7 @@ public final class ArrayValue extends ObjectValue {
 	 * 		Value to set.
 	 */
 	public void setInt(int index, int value) {
-		getMemoryManager().writeInt(this, validate(index) * 8L, value);
+		getMemoryManager().writeInt(this, validate(index) * 4L, value);
 	}
 
 	/**
@@ -165,7 +165,7 @@ public final class ArrayValue extends ObjectValue {
 	 * 		Value to set.
 	 */
 	public void setFloat(int index, float value) {
-		getMemoryManager().writeFloat(this, validate(index) * 8L, value);
+		getMemoryManager().writeFloat(this, validate(index) * 4L, value);
 	}
 
 	/**
@@ -177,7 +177,7 @@ public final class ArrayValue extends ObjectValue {
 	 * 		Value to set.
 	 */
 	public void setChar(int index, char value) {
-		getMemoryManager().writeChar(this, validate(index) * 8L, value);
+		getMemoryManager().writeChar(this, validate(index) * 2L, value);
 	}
 
 	/**
@@ -189,7 +189,7 @@ public final class ArrayValue extends ObjectValue {
 	 * 		Value to set.
 	 */
 	public void setShort(int index, short value) {
-		getMemoryManager().writeShort(this, validate(index) * 8L, value);
+		getMemoryManager().writeShort(this, validate(index) * 2L, value);
 	}
 
 	/**
@@ -201,7 +201,7 @@ public final class ArrayValue extends ObjectValue {
 	 * 		Value to set.
 	 */
 	public void setByte(int index, byte value) {
-		getMemoryManager().writeByte(this, validate(index) * 8L, value);
+		getMemoryManager().writeByte(this, validate(index), value);
 	}
 
 	/**
@@ -213,7 +213,7 @@ public final class ArrayValue extends ObjectValue {
 	 * 		Value to set.
 	 */
 	public void setBoolean(int index, boolean value) {
-		getMemoryManager().writeBoolean(this, validate(index) * 8L, value);
+		getMemoryManager().writeBoolean(this, validate(index), value);
 	}
 
 	/**

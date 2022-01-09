@@ -5,6 +5,7 @@ import dev.xdark.ssvm.classloading.ClassLoaderData;
 import dev.xdark.ssvm.classloading.ClassParseResult;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.NullValue;
 
 /**
@@ -17,14 +18,14 @@ final class BootClassLoaderHolder {
 	private final ClassLoaderData data = new ClassLoaderData();
 	private final VirtualMachine vm;
 	private final BootClassLoader bootClassLoader;
+	private InstanceJavaClass jc;
 
 	/**
 	 * Boot class loader to get classes from.
-	 *
-	 * @param vm
+	 *  @param vm
 	 * 		VM instance.
 	 * @param bootClassLoader
-	 * 		User-defined boot class loader.
+	 * 		Boot class loader.
 	 */
 	BootClassLoaderHolder(VirtualMachine vm, BootClassLoader bootClassLoader) {
 		this.vm = vm;
@@ -47,8 +48,10 @@ final class BootClassLoaderHolder {
 			if (result == null) return null;
 			var vm = this.vm;
 			var $jc = new InstanceJavaClass(vm, NullValue.INSTANCE, result.getClassReader(), result.getNode(), null);
-			$jc.setOop(vm.getMemoryManager().newOopForClass($jc));
+			var oop = (InstanceValue) vm.getMemoryManager().newOopForClass($jc);
+			$jc.setOop(oop);
 			data.linkClass($jc);
+			vm.getHelper().initializeDefaultValues(oop, this.jc);
 			return $jc;
 		}
 		return jc;
@@ -61,11 +64,8 @@ final class BootClassLoaderHolder {
 	 * 		Name of the class.
 	 *
 	 * @return class info or {@code null}, if not found.
-	 *
-	 * @throws Exception
-	 * 		If any error occurs.
 	 */
-	ClassParseResult lookup(String name) throws Exception {
+	ClassParseResult lookup(String name) {
 		return bootClassLoader.findBootClass(name);
 	}
 
@@ -76,6 +76,9 @@ final class BootClassLoaderHolder {
 	 * 		Class to link.
 	 */
 	void forceLink(JavaClass jc) {
+		if ("java/lang/Class".equals(jc.getInternalName())) {
+			this.jc = (InstanceJavaClass) jc;
+		}
 		data.forceLinkClass(jc);
 	}
 }

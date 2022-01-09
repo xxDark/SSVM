@@ -15,7 +15,7 @@ public final class GotoProcessor implements InstructionProcessor<JumpInsnNode> {
 
 	@Override
 	public Result execute(JumpInsnNode insn, ExecutionContext ctx) {
-		ctx.setInsnPosition(AsmUtil.getIndex(insn));
+		ctx.setInsnPosition(AsmUtil.getIndex(insn.label));
 		return Result.CONTINUE;
 	}
 }

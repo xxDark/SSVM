@@ -5,11 +5,11 @@ import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.util.UnsafeUtil;
-import dev.xdark.ssvm.value.ClassValue;
 import dev.xdark.ssvm.value.*;
 import sun.misc.Unsafe;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -35,6 +35,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	 */
 	public SimpleMemoryManager(VirtualMachine vm) {
 		this.vm = vm;
+		objects.put(NullValue.INSTANCE.getMemory(), NullValue.INSTANCE);
 	}
 
 	@Override
@@ -67,11 +68,22 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
+	public <V> JavaValue<V> newJavaInstance(InstanceJavaClass javaClass, V value) {
+		var memory = allocateObjectMemory(javaClass);
+		setClass(memory, javaClass);
+		var wrapper = new JavaValue<>(memory, value);
+		objects.put(memory, wrapper);
+		return wrapper;
+	}
+
+	@Override
 	public ArrayValue newArray(ArrayJavaClass javaClass, int length, long componentSize) {
 		var memory = allocateArrayMemory(length, componentSize);
 		setClass(memory, javaClass);
 		memory.getData().putInt((int) OBJECT_HEADER_SIZE, length);
-		return new ArrayValue(memory);
+		var value = new ArrayValue(memory);
+		objects.put(memory, value);
+		return value;
 	}
 
 	@Override
@@ -182,7 +194,7 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public void writeValue(InstanceValue object, long offset, Value value) {
-		writeOop(object, offset, value);
+		object.getMemory().getData().putLong((int) (OBJECT_HEADER_SIZE + validate(offset)), ((ObjectValue) value).getMemory().getAddress());
 	}
 
 	@Override
@@ -283,20 +295,23 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public void writeValue(ArrayValue array, long offset, Value value) {
-		writeOop(array, offset, value);
+		array.getMemory().getData().putLong((int) (OBJECT_HEADER_SIZE + validate(offset)), ((ObjectValue) value).getMemory().getAddress());
 	}
 
 	@Override
 	public Value newOopForClass(JavaClass javaClass) {
-		Memory memory;
-		try {
-			var jc = vm.findBootstrapClass("java/lang/Class");
-			memory = allocateObjectMemory(jc);
-			setClass(memory, jc);
-		} catch (Exception ex) {
-			throw new IllegalStateException("java/lang/Class is missing");
-		}
-		return new ClassValue(memory, javaClass);
+		var jc = vm.findBootstrapClass("java/lang/Class");
+		var memory = allocateObjectMemory(jc);
+		setClass(memory, jc);
+		var value = new InstanceValue(memory);
+		value.initialize();
+		objects.put(memory, value);
+		return value;
+	}
+
+	@Override
+	public ByteOrder getByteOrder() {
+		return ByteOrder.BIG_ENDIAN;
 	}
 
 	private Memory newMemoryBlock(long size, boolean isDirect) {

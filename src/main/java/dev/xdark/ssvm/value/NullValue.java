@@ -1,15 +1,20 @@
 package dev.xdark.ssvm.value;
 
+import dev.xdark.ssvm.memory.Memory;
+
+import java.nio.ByteBuffer;
+
 /**
  * represents {@code null} value.
  *
  * @author xDark
  */
-public final class NullValue implements Value {
+public final class NullValue extends ObjectValue {
 
 	public static final NullValue INSTANCE = new NullValue();
 
 	private NullValue() {
+		super(new Memory(null, ByteBuffer.allocate(0), 0L, false));
 	}
 
 	@Override

@@ -3,10 +3,9 @@ package dev.xdark.ssvm.memory;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
-import dev.xdark.ssvm.value.ArrayValue;
-import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
+import dev.xdark.ssvm.value.*;
+
+import java.nio.ByteOrder;
 
 /**
  * VM memory manager.
@@ -70,6 +69,20 @@ public interface MemoryManager {
 	 * @return allocated object.
 	 */
 	InstanceValue newInstance(InstanceJavaClass javaClass);
+
+	/**
+	 * Allocates new Java wrapper.
+	 *
+	 * @param javaClass
+	 * 		Class of the object.
+	 * @param value
+	 * 		Java value.
+	 * @param <V>
+	 * 		Type of Jav value.
+	 *
+	 * @return allocated Java wrapper.
+	 */
+	<V> JavaValue<V> newJavaInstance(InstanceJavaClass javaClass, V value);
 
 	/**
 	 * Allocates new array.
@@ -716,4 +729,11 @@ public interface MemoryManager {
 	 * @return oop.
 	 */
 	Value newOopForClass(JavaClass javaClass);
+
+	/**
+	 * Returns byte order of memory.
+	 *
+	 * @return byte order of memory.
+	 */
+	ByteOrder getByteOrder();
 }

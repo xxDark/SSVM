@@ -27,6 +27,7 @@ public final class ExecutionContext {
 	 * @param stack
 	 * 		Execution stack.
 	 * @param locals
+	 * 		Local variable table.
 	 */
 	public ExecutionContext(VirtualMachine virtualMachine, InstanceJavaClass owner, MethodNode method, Stack stack, Locals locals) {
 		this.virtualMachine = virtualMachine;

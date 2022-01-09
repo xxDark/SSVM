@@ -13,7 +13,7 @@ import static org.objectweb.asm.Opcodes.*;
  *
  * @author xDark
  */
-public final class PrimitiverrayProcessor implements InstructionProcessor<IntInsnNode> {
+public final class PrimitiveArrayProcessor implements InstructionProcessor<IntInsnNode> {
 
 	@Override
 	public Result execute(IntInsnNode insn, ExecutionContext ctx) {

@@ -85,4 +85,8 @@ public final class ArrayJavaClass implements JavaClass {
 		}
 		return new ArrayJavaClass(vm, '[' + name, dimensions + 1, this);
 	}
+
+	@Override
+	public void initialize() {
+	}
 }

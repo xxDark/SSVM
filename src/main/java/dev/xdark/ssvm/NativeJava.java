@@ -4,8 +4,12 @@ import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.asm.*;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.value.InstanceValue;
+import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.Value;
+
+import java.nio.ByteOrder;
 
 import static org.objectweb.asm.Opcodes.*;
 
@@ -20,21 +24,84 @@ final class NativeJava {
 	 * Sets up VM instance.
 	 *
 	 * @param vm
-	 * 		VM to setup.
+	 * 		VM to set up.
 	 */
 	static void vmInit(VirtualMachine vm) {
 		var vmi = vm.getVmInterface();
 		setInstructions(vmi);
+		var symbols = vm.getSymbols();
 		// java/lang/Class.registerNatives()V
-		var jlc = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Class");
-		vmi.setInvoker(jlc, "registerNatives", "()V", ctx -> {
-			return Result.ABORT;
-		});
+		var jlc = symbols.java_lang_Class;
+		vmi.setInvoker(jlc, "registerNatives", "()V", ctx -> Result.ABORT);
 		// java/lang/Class.getPrimitiveClass(Ljava/lang/String;)Ljava/lang/Class;
 		vmi.setInvoker(jlc, "getPrimitiveClass", "(Ljava/lang/String;)Ljava/lang/Class;", ctx -> {
-
-			throw new UnsupportedOperationException();
+			var name = vm.getHelper().readUtf8(ctx.getLocals().load(0));
+			var primitives = vm.getPrimitives();
+			Value result;
+			switch (name) {
+				case "long":
+					result = primitives.longPrimitive.getOop();
+					break;
+				case "double":
+					result = primitives.doublePrimitive.getOop();
+					break;
+				case "int":
+					result = primitives.intPrimitive.getOop();
+					break;
+				case "float":
+					result = primitives.floatPrimitive.getOop();
+					break;
+				case "char":
+					result = primitives.charPrimitive.getOop();
+					break;
+				case "short":
+					result = primitives.shortPrimitive.getOop();
+					break;
+				case "byte":
+					result = primitives.bytePrimitive.getOop();
+					break;
+				case "boolean":
+					result = primitives.booleanPrimitive.getOop();
+					break;
+				case "void":
+					result = primitives.voidPrimitive.getOop();
+					break;
+				default:
+					throw new IllegalStateException(name);
+			}
+			ctx.setResult(result);
+			return Result.ABORT;
 		});
+		// java/lang/Class.desiredAssertionStatus0(Ljava/lang/Class;)Z
+		vmi.setInvoker(jlc, "desiredAssertionStatus0", "(Ljava/lang/Class;)Z", ctx -> {
+			ctx.setResult(new IntValue(0));
+			return Result.ABORT;
+		});
+
+		var object = symbols.java_lang_Object;
+		// java/lang/Object.registerNatives()V
+		vmi.setInvoker(object, "registerNatives", "()V", ctx -> Result.ABORT);
+		// java/lang/Object.<init>()V
+		vmi.setInvoker(object, "<init>", "()V", ctx -> {
+			ctx.getLocals().<InstanceValue>load(0).initialize();
+			return Result.ABORT;
+		});
+
+		var sys = symbols.java_lang_System;
+		// java/lang/System.registerNatives()V
+		vmi.setInvoker(sys, "registerNatives", "()V", ctx -> Result.ABORT);
+
+		var thread = symbols.java_lang_Thread;
+		vmi.setInvoker(thread, "registerNatives", "()V", ctx -> Result.ABORT);
+
+		// JDK9+
+		var utf16 = (InstanceJavaClass) vm.findBootstrapClass("java/lang/StringUTF16", false);
+		if (utf16 != null) {
+			vmi.setInvoker(utf16, "isBigEndian", "()Z", ctx -> {
+				ctx.setResult(new IntValue(vm.getMemoryManager().getByteOrder() == ByteOrder.BIG_ENDIAN ? 1 : 0));
+				return Result.ABORT;
+			});
+		}
 	}
 
 	/**
@@ -91,6 +158,12 @@ final class NativeJava {
 		vmi.setProcessor(BASTORE, new StoreArrayByteProcessor());
 		vmi.setProcessor(CASTORE, new StoreArrayCharProcessor());
 		vmi.setProcessor(SASTORE, new StoreArrayShortProcessor());
+
+		vmi.setProcessor(ISTORE, new IntStoreProcessor());
+		vmi.setProcessor(LSTORE, new LongStoreProcessor());
+		vmi.setProcessor(FSTORE, new FloatStoreProcessor());
+		vmi.setProcessor(DSTORE, new DoubleStoreProcessor());
+		vmi.setProcessor(ASTORE, new ValueStoreProcessor());
 
 		vmi.setProcessor(POP, new PopProcessor());
 		vmi.setProcessor(POP2, new Pop2Processor());
@@ -201,10 +274,23 @@ final class NativeJava {
 		vmi.setProcessor(ARETURN, new ReturnValueProcessor());
 		vmi.setProcessor(RETURN, new ReturnVoidProcessor());
 
+		vmi.setProcessor(GETSTATIC, new GetStaticProcessor());
+		vmi.setProcessor(PUTSTATIC, new PutStaticProcessor());
+		vmi.setProcessor(GETFIELD, new GetFieldProcessor());
+		vmi.setProcessor(PUTFIELD, new PutFieldProcessor());
+		vmi.setProcessor(INVOKEVIRTUAL, new VirtualCallProcessor());
+		vmi.setProcessor(INVOKESPECIAL, new SpecialCallProcessor());
+		vmi.setProcessor(INVOKESTATIC, new StaticCallProcessor());
+
+		vmi.setProcessor(NEW, new NewProcessor());
+		vmi.setProcessor(ANEWARRAY, new InstanceArrayProcessor());
 		// TODO
-		vmi.setProcessor(NEWARRAY, new PrimitiverrayProcessor());
+		vmi.setProcessor(NEWARRAY, new PrimitiveArrayProcessor());
 
 		vmi.setProcessor(ARRAYLENGTH, new ArrayLengthProcessor());
+
+		vmi.setProcessor(MONITORENTER, new MonitorEnterProcessor());
+		vmi.setProcessor(MONITOREXIT, new MonitorExitProcessor());
 
 		vmi.setProcessor(IFNONNULL, new ValueJumpProcessor(value -> !value.isNull()));
 		vmi.setProcessor(IFNULL, new ValueJumpProcessor(Value::isNull));

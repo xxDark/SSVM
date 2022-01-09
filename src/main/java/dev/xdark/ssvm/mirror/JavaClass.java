@@ -78,4 +78,9 @@ public interface JavaClass {
 	 * @return new array class.
 	 */
 	ArrayJavaClass newArrayClass();
+
+	/**
+	 * Initializes class data.
+	 */
+	void initialize();
 }

@@ -1,8 +1,6 @@
-package dev.xdark.ssvm;
+package dev.xdark.ssvm.thread;
 
-import dev.xdark.ssvm.execution.ExecutionContext;
-
-import java.util.Deque;
+import dev.xdark.ssvm.value.InstanceValue;
 
 /**
  * Represents attached native Java thread.
@@ -23,5 +21,12 @@ public interface VMThread {
 	 *
 	 * @return thread backtrace.
 	 */
-	Deque<ExecutionContext> getBacktrace();
+	Backtrace getBacktrace();
+
+	/**
+	 * Returns VM thread oop.
+	 *
+	 * @return thread oop.
+	 */
+	InstanceValue getOop();
 }

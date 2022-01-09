@@ -2,6 +2,7 @@ package dev.xdark.ssvm.value;
 
 import dev.xdark.ssvm.memory.Memory;
 import dev.xdark.ssvm.mirror.FieldInfo;
+import dev.xdark.ssvm.mirror.InstanceJavaClass;
 
 /**
  * Represents instance value.
@@ -11,12 +12,19 @@ import dev.xdark.ssvm.mirror.FieldInfo;
  */
 public class InstanceValue extends ObjectValue {
 
+	private boolean initialized;
+
 	/**
 	 * @param memory
 	 * 		Object data.
 	 */
 	public InstanceValue(Memory memory) {
 		super(memory);
+	}
+
+	@Override
+	public boolean isUninitialized() {
+		return !initialized;
 	}
 
 	/**
@@ -237,7 +245,14 @@ public class InstanceValue extends ObjectValue {
 		getMemoryManager().writeValue(this, getFieldOffset(field, desc), value);
 	}
 
+	/**
+	 * Marks this object as initialized.
+	 */
+	public void initialize() {
+		initialized = true;
+	}
+
 	private long getFieldOffset(String name, String desc) {
-		return getJavaClass().getLayout().getFieldOffset(new FieldInfo(name, desc));
+		return ((InstanceJavaClass) getJavaClass()).getFieldOffsetRecursively(name, desc);
 	}
 }

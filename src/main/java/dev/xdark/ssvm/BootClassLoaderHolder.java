@@ -2,6 +2,7 @@ package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.classloading.BootClassLoader;
 import dev.xdark.ssvm.classloading.ClassLoaderData;
+import dev.xdark.ssvm.classloading.ClassParseResult;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.value.NullValue;
@@ -37,18 +38,18 @@ final class BootClassLoaderHolder {
 	 * 		Name of the class.
 	 *
 	 * @return Resolved class or {@code null}, if not found.
-	 *
-	 * @throws Exception
-	 * 		if any error occurs.
 	 */
-	JavaClass findBootClass(String name) throws Exception {
+	JavaClass findBootClass(String name) {
 		var data = this.data;
 		var jc = data.getClass(name);
 		if (jc == null) {
 			var result = bootClassLoader.findBootClass(name);
 			if (result == null) return null;
-			jc = new InstanceJavaClass(vm, NullValue.INSTANCE, result.getClassReader(), result.getNode(), null);
-			data.linkClass(jc);
+			var vm = this.vm;
+			var $jc = new InstanceJavaClass(vm, NullValue.INSTANCE, result.getClassReader(), result.getNode(), null);
+			$jc.setOop(vm.getMemoryManager().newOopForClass($jc));
+			data.linkClass($jc);
+			return $jc;
 		}
 		return jc;
 	}
@@ -64,7 +65,7 @@ final class BootClassLoaderHolder {
 	 * @throws Exception
 	 * 		If any error occurs.
 	 */
-	BootClassLoader.LookupResult lookup(String name) throws Exception {
+	ClassParseResult lookup(String name) throws Exception {
 		return bootClassLoader.findBootClass(name);
 	}
 

@@ -1,7 +1,10 @@
 package dev.xdark.ssvm.memory;
 
+import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.value.ArrayValue;
+import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 
@@ -66,7 +69,21 @@ public interface MemoryManager {
 	 *
 	 * @return allocated object.
 	 */
-	ObjectValue newObject(InstanceJavaClass javaClass);
+	InstanceValue newInstance(InstanceJavaClass javaClass);
+
+	/**
+	 * Allocates new array.
+	 *
+	 * @param javaClass
+	 * 		Array class.
+	 * @param length
+	 * 		Array length.
+	 * @param componentSize
+	 * 		Size of each component.
+	 *
+	 * @return allocated array.
+	 */
+	ArrayValue newArray(ArrayJavaClass javaClass, int length, long componentSize);
 
 	/**
 	 * Reads long from an object.
@@ -81,7 +98,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	long readLong(ObjectValue object, long offset);
+	long readLong(InstanceValue object, long offset);
 
 	/**
 	 * Reads double from an object.
@@ -96,7 +113,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	double readDouble(ObjectValue object, long offset);
+	double readDouble(InstanceValue object, long offset);
 
 	/**
 	 * Reads int from an object.
@@ -111,7 +128,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	int readInt(ObjectValue object, long offset);
+	int readInt(InstanceValue object, long offset);
 
 	/**
 	 * Reads float from an object.
@@ -126,7 +143,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	float readFloat(ObjectValue object, long offset);
+	float readFloat(InstanceValue object, long offset);
 
 	/**
 	 * Reads char from an object.
@@ -141,7 +158,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	char readChar(ObjectValue object, long offset);
+	char readChar(InstanceValue object, long offset);
 
 	/**
 	 * Reads short from an object.
@@ -156,7 +173,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	short readShort(ObjectValue object, long offset);
+	short readShort(InstanceValue object, long offset);
 
 	/**
 	 * Reads byte from an object.
@@ -171,7 +188,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	byte readByte(ObjectValue object, long offset);
+	byte readByte(InstanceValue object, long offset);
 
 	/**
 	 * Reads boolean from an object.
@@ -186,7 +203,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	boolean readBoolean(ObjectValue object, long offset);
+	boolean readBoolean(InstanceValue object, long offset);
 
 	/**
 	 * Reads an object from an object.
@@ -201,7 +218,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	Object readOop(ObjectValue object, long offset);
+	Object readOop(InstanceValue object, long offset);
 
 	/**
 	 * Reads VM value from an object.
@@ -216,7 +233,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	Value readValue(ObjectValue object, long offset);
+	Value readValue(InstanceValue object, long offset);
 
 	/**
 	 * Reads object class form an object.
@@ -230,6 +247,465 @@ public interface MemoryManager {
 	 * 		if {@code offset} is negative.
 	 */
 	JavaClass readClass(ObjectValue object);
+
+	/**
+	 * Writes long to the object.
+	 *
+	 * @param object
+	 * 		Object to write to.
+	 * @param offset
+	 * 		Field offset.
+	 * @param value
+	 * 		Value to write.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	void writeLong(InstanceValue object, long offset, long value);
+
+	/**
+	 * Writes double to the object.
+	 *
+	 * @param object
+	 * 		Object to write to.
+	 * @param offset
+	 * 		Field offset.
+	 * @param value
+	 * 		Value to write.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	void writeDouble(InstanceValue object, long offset, double value);
+
+
+	/**
+	 * Writes int to the object.
+	 *
+	 * @param object
+	 * 		Object to write to.
+	 * @param offset
+	 * 		Field offset.
+	 * @param value
+	 * 		Value to write.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	void writeInt(InstanceValue object, long offset, int value);
+
+	/**
+	 * Writes float to the object.
+	 *
+	 * @param object
+	 * 		Object to write to.
+	 * @param offset
+	 * 		Field offset.
+	 * @param value
+	 * 		Value to write.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	void writeFloat(InstanceValue object, long offset, float value);
+
+	/**
+	 * Writes char to the object.
+	 *
+	 * @param object
+	 * 		Object to write to.
+	 * @param offset
+	 * 		Field offset.
+	 * @param value
+	 * 		Value to write.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	void writeChar(InstanceValue object, long offset, char value);
+
+	/**
+	 * Writes short to the object.
+	 *
+	 * @param object
+	 * 		Object to write to.
+	 * @param offset
+	 * 		Field offset.
+	 * @param value
+	 * 		Value to write.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	void writeShort(InstanceValue object, long offset, short value);
+
+	/**
+	 * Writes byte to the object.
+	 *
+	 * @param object
+	 * 		Object to write to.
+	 * @param offset
+	 * 		Field offset.
+	 * @param value
+	 * 		Value to write.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	void writeByte(InstanceValue object, long offset, byte value);
+
+	/**
+	 * Writes boolean to the object.
+	 *
+	 * @param object
+	 * 		Object to write to.
+	 * @param offset
+	 * 		Field offset.
+	 * @param value
+	 * 		Value to write.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	void writeBoolean(InstanceValue object, long offset, boolean value);
+
+	/**
+	 * Writes oop into the object.
+	 *
+	 * @param object
+	 * 		Object to write to.
+	 * @param offset
+	 * 		Field offset.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	void writeOop(InstanceValue object, long offset, Object value);
+
+	/**
+	 * Writes VM value to the object.
+	 *
+	 * @param object
+	 * 		Object to write to.
+	 * @param offset
+	 * 		Field offset.
+	 * @param value
+	 * 		Value to write.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	void writeValue(InstanceValue object, long offset, Value value);
+
+
+	/**
+	 * Reads long from an array.
+	 *
+	 * @param array
+	 * 		Array to read long from.
+	 * @param offset
+	 * 		Field offset.
+	 *
+	 * @return read long value.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	long readLong(ArrayValue array, long offset);
+
+	/**
+	 * Reads double from an array.
+	 *
+	 * @param array
+	 * 		Array to read double from.
+	 * @param offset
+	 * 		Field offset.
+	 *
+	 * @return read double value.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	double readDouble(ArrayValue array, long offset);
+
+	/**
+	 * Reads int from an array.
+	 *
+	 * @param array
+	 * 		Array to read int from.
+	 * @param offset
+	 * 		Field offset.
+	 *
+	 * @return read int value.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	int readInt(ArrayValue array, long offset);
+
+	/**
+	 * Reads float from an array.
+	 *
+	 * @param array
+	 * 		Array to read float from.
+	 * @param offset
+	 * 		Field offset.
+	 *
+	 * @return read float value.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	float readFloat(ArrayValue array, long offset);
+
+	/**
+	 * Reads char from an array.
+	 *
+	 * @param array
+	 * 		Array to read char from.
+	 * @param offset
+	 * 		Field offset.
+	 *
+	 * @return read char value.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	char readChar(ArrayValue array, long offset);
+
+	/**
+	 * Reads short from an array.
+	 *
+	 * @param array
+	 * 		Array to read short from.
+	 * @param offset
+	 * 		Field offset.
+	 *
+	 * @return read short value.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	short readShort(ArrayValue array, long offset);
+
+	/**
+	 * Reads byte from an array.
+	 *
+	 * @param array
+	 * 		Array to read byte from.
+	 * @param offset
+	 * 		Field offset.
+	 *
+	 * @return read byte value.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	byte readByte(ArrayValue array, long offset);
+
+	/**
+	 * Reads boolean from an array.
+	 *
+	 * @param array
+	 * 		Array to read boolean from.
+	 * @param offset
+	 * 		Field offset.
+	 *
+	 * @return read boolean value.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	boolean readBoolean(ArrayValue array, long offset);
+
+	/**
+	 * Reads an array from an array.
+	 *
+	 * @param array
+	 * 		Array to read array from.
+	 * @param offset
+	 * 		Field offset.
+	 *
+	 * @return read array value.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	Object readOop(ArrayValue array, long offset);
+
+	/**
+	 * Reads VM value from an array.
+	 *
+	 * @param array
+	 * 		Array to read value from.
+	 * @param offset
+	 * 		Field offset.
+	 *
+	 * @return read VM value.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	Value readValue(ArrayValue array, long offset);
+
+	/**
+	 * Reads array length.
+	 *
+	 * @param array
+	 * 		Array to get length from.
+	 *
+	 * @return length of the array.
+	 */
+	int readArrayLength(ArrayValue array);
+
+	/**
+	 * Writes long to the array.
+	 *
+	 * @param array
+	 * 		Array to write to.
+	 * @param offset
+	 * 		Field offset.
+	 * @param value
+	 * 		Value to write.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	void writeLong(ArrayValue array, long offset, long value);
+
+	/**
+	 * Writes double to the array.
+	 *
+	 * @param array
+	 * 		Array to write to.
+	 * @param offset
+	 * 		Field offset.
+	 * @param value
+	 * 		Value to write.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	void writeDouble(ArrayValue array, long offset, double value);
+
+
+	/**
+	 * Writes int to the array.
+	 *
+	 * @param array
+	 * 		Array to write to.
+	 * @param offset
+	 * 		Field offset.
+	 * @param value
+	 * 		Value to write.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	void writeInt(ArrayValue array, long offset, int value);
+
+	/**
+	 * Writes float to the array.
+	 *
+	 * @param array
+	 * 		Array to write to.
+	 * @param offset
+	 * 		Field offset.
+	 * @param value
+	 * 		Value to write.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	void writeFloat(ArrayValue array, long offset, float value);
+
+	/**
+	 * Writes char to the array.
+	 *
+	 * @param array
+	 * 		Array to write to.
+	 * @param offset
+	 * 		Field offset.
+	 * @param value
+	 * 		Value to write.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	void writeChar(ArrayValue array, long offset, char value);
+
+	/**
+	 * Writes short to the array.
+	 *
+	 * @param array
+	 * 		Array to write to.
+	 * @param offset
+	 * 		Field offset.
+	 * @param value
+	 * 		Value to write.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	void writeShort(ArrayValue array, long offset, short value);
+
+	/**
+	 * Writes byte to the array.
+	 *
+	 * @param array
+	 * 		Array to write to.
+	 * @param offset
+	 * 		Field offset.
+	 * @param value
+	 * 		Value to write.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	void writeByte(ArrayValue array, long offset, byte value);
+
+	/**
+	 * Writes boolean to the array.
+	 *
+	 * @param array
+	 * 		Array to write to.
+	 * @param offset
+	 * 		Field offset.
+	 * @param value
+	 * 		Value to write.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	void writeBoolean(ArrayValue array, long offset, boolean value);
+
+	/**
+	 * Writes oop into the array.
+	 *
+	 * @param array
+	 * 		Array to write to.
+	 * @param offset
+	 * 		Field offset.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	void writeOop(ArrayValue array, long offset, Object value);
+
+	/**
+	 * Writes VM value to the array.
+	 *
+	 * @param array
+	 * 		Array to write to.
+	 * @param offset
+	 * 		Field offset.
+	 * @param value
+	 * 		Value to write.
+	 *
+	 * @throws IllegalStateException
+	 * 		if {@code offset} is negative.
+	 */
+	void writeValue(ArrayValue array, long offset, Value value);
 
 	/**
 	 * Creates new class oop.

@@ -57,4 +57,25 @@ public interface JavaClass {
 	 * @return class layout.
 	 */
 	ClassLayout getLayout();
+
+	/**
+	 * Returns parent class of this class.
+	 *
+	 * @return parent class.
+	 */
+	JavaClass getSuperClass();
+
+	/**
+	 * Returns interfaces of this class.
+	 *
+	 * @return interfaces of this class.
+	 */
+	JavaClass[] getInterfaces();
+
+	/**
+	 * Creates new array class.
+	 *
+	 * @return new array class.
+	 */
+	ArrayJavaClass newArrayClass();
 }

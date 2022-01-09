@@ -1,20 +1,15 @@
 package dev.xdark.ssvm.mirror;
 
 import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.Opcodes;
 
-/**
- * Java class implementation for long, int, double, float, etc.
- *
- * @author xDark
- */
-public final class PrimitiveClass implements JavaClass {
+public final class ArrayJavaClass implements JavaClass {
 
 	private final VirtualMachine vm;
 	private final String name;
-	private final String descriptor;
+	private final int dimensions;
+	private final JavaClass componentType;
 	private final Value oop;
 	private final JavaClass objectClass;
 
@@ -22,14 +17,17 @@ public final class PrimitiveClass implements JavaClass {
 	 * @param vm
 	 * 		VM instance.
 	 * @param name
-	 * 		Name of the class.
-	 * @param descriptor
-	 * 		Descriptor of the class.
+	 * 		Name of the array class.
+	 * @param dimensions
+	 * 		Amount of dimensions.
+	 * @param componentType
+	 * 		Component of the array.
 	 */
-	public PrimitiveClass(VirtualMachine vm, String name, String descriptor) {
+	public ArrayJavaClass(VirtualMachine vm, String name, int dimensions, JavaClass componentType) {
 		this.vm = vm;
 		this.name = name;
-		this.descriptor = descriptor;
+		this.dimensions = dimensions;
+		this.componentType = componentType;
 		oop = vm.getMemoryManager().newOopForClass(this);
 		objectClass = vm.getSymbols().java_lang_Object;
 	}
@@ -46,7 +44,7 @@ public final class PrimitiveClass implements JavaClass {
 
 	@Override
 	public String getDescriptor() {
-		return descriptor;
+		return name;
 	}
 
 	@Override
@@ -56,7 +54,7 @@ public final class PrimitiveClass implements JavaClass {
 
 	@Override
 	public Value getClassLoader() {
-		return NullValue.INSTANCE;
+		return componentType.getClassLoader();
 	}
 
 	@Override
@@ -81,6 +79,10 @@ public final class PrimitiveClass implements JavaClass {
 
 	@Override
 	public ArrayJavaClass newArrayClass() {
-		return new ArrayJavaClass(vm, '[' + descriptor, 1, this);
+		int dimensions = this.dimensions;
+		if (dimensions == 256) {
+			throw new IllegalStateException();
+		}
+		return new ArrayJavaClass(vm, '[' + name, dimensions + 1, this);
 	}
 }

@@ -20,10 +20,11 @@ public final class InstanceJavaClass implements JavaClass {
 	private final Lock initializationLock;
 	private final Condition signal;
 	private final ClassReader classReader;
-	private final ClassNode node;
+	public final ClassNode node;
 	private Value oop;
 	private ClassLayout layout;
 	private InstanceJavaClass superClass;
+	private InstanceJavaClass[] interfaces;
 
 	// Initialization
 	private volatile State state = State.PENDING;
@@ -148,7 +149,12 @@ public final class InstanceJavaClass implements JavaClass {
 		}
 		state = State.IN_PROGRESS;
 		initializer = Thread.currentThread();
-		// TODO
+		var superName = node.superName;
+		if (superName != null) {
+			// Load parent class.
+
+		}
+		// TODO interfaces.
 		// Build class layout
 		var offsetMap = new HashMap<FieldInfo, Long>();
 		var offset = 0L;
@@ -182,6 +188,23 @@ public final class InstanceJavaClass implements JavaClass {
 		return layout;
 	}
 
+	@Override
+	public InstanceJavaClass getSuperClass() {
+		initialize();
+		return superClass;
+	}
+
+	@Override
+	public InstanceJavaClass[] getInterfaces() {
+		initialize();
+		return interfaces;
+	}
+
+	@Override
+	public ArrayJavaClass newArrayClass() {
+		return new ArrayJavaClass(vm, '[' + descriptor, 1, this);
+	}
+
 	/**
 	 * Returns VM instance in which this class
 	 * was loaded.
@@ -194,8 +217,9 @@ public final class InstanceJavaClass implements JavaClass {
 
 	/**
 	 * Sets oop of the class.
-	 * @param oop
 	 *
+	 * @param oop
+	 * 		Class oop.
 	 */
 	public void setOop(Value oop) {
 		this.oop = oop;

@@ -2,7 +2,7 @@ package dev.xdark.ssvm.util;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.mirror.PrimitiveClass;
 
 /**
  * Common VM symbols.
@@ -13,16 +13,15 @@ public final class VMSymbols {
 
 	public final InstanceJavaClass java_lang_Object;
 	public final InstanceJavaClass java_lang_String;
+	public final InstanceJavaClass java_lang_ClassLoader;
 
 	/**
 	 * @param vm
 	 * 		VM instance.
-	 *
-	 * @throws Exception
-	 * 		If vm cannot locate classes.
 	 */
-	public VMSymbols(VirtualMachine vm) throws Exception {
+	public VMSymbols(VirtualMachine vm) {
 		java_lang_Object = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Object", true);
 		java_lang_String = (InstanceJavaClass) vm.findBootstrapClass("java/lang/String", true);
+		java_lang_ClassLoader = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ClassLoader", true);
 	}
 }

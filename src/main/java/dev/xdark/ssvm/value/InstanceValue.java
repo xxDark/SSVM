@@ -127,6 +127,116 @@ public class InstanceValue extends ObjectValue {
 		return getMemoryManager().readValue(this, getFieldOffset(field, desc));
 	}
 
+	/**
+	 * Sets long value of a field.
+	 *
+	 * @param field
+	 * 		field name.
+	 * @param value
+	 * 		Value to set.
+	 */
+	public void setLong(String field, long value) {
+		getMemoryManager().writeLong(this, getFieldOffset(field, "J"), value);
+	}
+
+	/**
+	 * Sets double value of a field.
+	 *
+	 * @param field
+	 * 		field name.
+	 * @param value
+	 * 		Value to set.
+	 */
+	public void setDouble(String field, double value) {
+		getMemoryManager().writeDouble(this, getFieldOffset(field, "D"), value);
+	}
+
+	/**
+	 * Sets int value of a field.
+	 *
+	 * @param field
+	 * 		field name.
+	 * @param value
+	 * 		Value to set.
+	 */
+	public void setInt(String field, int value) {
+		getMemoryManager().writeInt(this, getFieldOffset(field, "I"), value);
+	}
+
+	/**
+	 * Sets float value of a field.
+	 *
+	 * @param field
+	 * 		field name.
+	 * @param value
+	 * 		Value to set.
+	 */
+	public void setFloat(String field, float value) {
+		getMemoryManager().writeFloat(this, getFieldOffset(field, "F"), value);
+	}
+
+	/**
+	 * Sets char value of a field.
+	 *
+	 * @param field
+	 * 		field name.
+	 * @param value
+	 * 		Value to set.
+	 */
+	public void setChar(String field, char value) {
+		getMemoryManager().writeChar(this, getFieldOffset(field, "C"), value);
+	}
+
+	/**
+	 * Sets short value of a field.
+	 *
+	 * @param field
+	 * 		field name.
+	 * @param value
+	 * 		Value to set.
+	 */
+	public void setShort(String field, short value) {
+		getMemoryManager().writeShort(this, getFieldOffset(field, "S"), value);
+	}
+
+	/**
+	 * Sets byte value of a field.
+	 *
+	 * @param field
+	 * 		field name.
+	 * @param value
+	 * 		Value to set.
+	 */
+	public void setByte(String field, byte value) {
+		getMemoryManager().writeByte(this, getFieldOffset(field, "B"), value);
+	}
+
+	/**
+	 * Sets boolean value of a field.
+	 *
+	 * @param field
+	 * 		field name.
+	 * @param value
+	 * 		Value to set.
+	 */
+	public void setBoolean(String field, boolean value) {
+		getMemoryManager().writeBoolean(this, getFieldOffset(field, "Z"), value);
+	}
+
+	/**
+	 * Sets VM value of a field.
+	 *
+	 * @param field
+	 * 		field name.
+	 * @param desc
+	 * 		Field descriptor.
+	 * @param value
+	 * 		Value to set.
+	 */
+	public void setValue(String field, String desc, Value value) {
+		getMemoryManager().writeValue(this, getFieldOffset(field, desc), value);
+	}
+
 	private long getFieldOffset(String name, String desc) {
 		return getJavaClass().getLayout().getFieldOffset(new FieldInfo(name, desc));
 	}

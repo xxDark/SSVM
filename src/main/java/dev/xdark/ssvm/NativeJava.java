@@ -7,8 +7,6 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.Value;
 
-import java.util.Arrays;
-
 import static org.objectweb.asm.Opcodes.*;
 
 /**
@@ -24,7 +22,7 @@ final class NativeJava {
 	 * @param vm
 	 * 		VM to setup.
 	 */
-	static void vmInit(VirtualMachine vm) throws Exception {
+	static void vmInit(VirtualMachine vm) {
 		var vmi = vm.getVmInterface();
 		setInstructions(vmi);
 		// java/lang/Class.registerNatives()V
@@ -33,52 +31,6 @@ final class NativeJava {
 			return Result.ABORT;
 		});
 		// java/lang/Class.getPrimitiveClass(Ljava/lang/String;)Ljava/lang/Class;
-		String[] primitiveNames = {
-				"long",
-				"double",
-				"int",
-				"float",
-				"char",
-				"short",
-				"byte",
-				"boolean",
-				"void"
-		};
-		Arrays.sort(primitiveNames);
-		var descriptors = new String[primitiveNames.length];
-		for (int i = 0, j = primitiveNames.length; i < j; i++) {
-			switch (primitiveNames[i]) {
-				case "long":
-					descriptors[i] = "J";
-					break;
-				case "int":
-					descriptors[i] = "I";
-					break;
-				case "double":
-					descriptors[i] = "D";
-					break;
-				case "float":
-					descriptors[i] = "F";
-					break;
-				case "char":
-					descriptors[i] = "C";
-					break;
-				case "short":
-					descriptors[i] = "S";
-					break;
-				case "byte":
-					descriptors[i] = "B";
-					break;
-				case "boolean":
-					descriptors[i] = "Z";
-					break;
-				case "void":
-					descriptors[i] = "V";
-					break;
-				default:
-					throw new AssertionError();
-			}
-		}
 		vmi.setInvoker(jlc, "getPrimitiveClass", "(Ljava/lang/String;)Ljava/lang/Class;", ctx -> {
 
 			throw new UnsupportedOperationException();
@@ -92,10 +44,14 @@ final class NativeJava {
 	 * 		VM interface.
 	 */
 	private static void setInstructions(VMInterface vmi) {
+		var nop = new NopProcessor();
+		vmi.setProcessor(NOP, nop);
+
 		vmi.setProcessor(ACONST_NULL, new ConstantProcessor(NullValue.INSTANCE));
+
 		// ICONST_M1..INCONST_5
 		for (int x = ICONST_M1; x <= ICONST_5; x++) {
-			vmi.setProcessor(x, new ConstantIntProcessor(x - ICONST_3));
+			vmi.setProcessor(x, new ConstantIntProcessor(x - ICONST_0));
 		}
 
 		vmi.setProcessor(LCONST_0, new ConstantLongProcessor(0L));
@@ -118,7 +74,23 @@ final class NativeJava {
 		vmi.setProcessor(DLOAD, new DoubleLoadProcessor());
 		vmi.setProcessor(ALOAD, new ValueLoadProcessor());
 
-		// TODO arrays
+		vmi.setProcessor(IALOAD, new LoadArrayIntProcessor());
+		vmi.setProcessor(LALOAD, new LoadArrayLongProcessor());
+		vmi.setProcessor(FALOAD, new LoadArrayFloatProcessor());
+		vmi.setProcessor(DALOAD, new LoadArrayDoubleProcessor());
+		vmi.setProcessor(AALOAD, new LoadArrayValueProcessor());
+		vmi.setProcessor(BALOAD, new LoadArrayByteProcessor());
+		vmi.setProcessor(CALOAD, new LoadArrayCharProcessor());
+		vmi.setProcessor(SALOAD, new LoadArrayShortProcessor());
+
+		vmi.setProcessor(IASTORE, new StoreArrayIntProcessor());
+		vmi.setProcessor(LASTORE, new StoreArrayLongProcessor());
+		vmi.setProcessor(FASTORE, new StoreArrayFloatProcessor());
+		vmi.setProcessor(DASTORE, new StoreArrayDoubleProcessor());
+		vmi.setProcessor(AASTORE, new StoreArrayValueProcessor());
+		vmi.setProcessor(BASTORE, new StoreArrayByteProcessor());
+		vmi.setProcessor(CASTORE, new StoreArrayCharProcessor());
+		vmi.setProcessor(SASTORE, new StoreArrayShortProcessor());
 
 		vmi.setProcessor(POP, new PopProcessor());
 		vmi.setProcessor(POP2, new Pop2Processor());
@@ -230,6 +202,9 @@ final class NativeJava {
 		vmi.setProcessor(RETURN, new ReturnVoidProcessor());
 
 		// TODO
+		vmi.setProcessor(NEWARRAY, new PrimitiverrayProcessor());
+
+		vmi.setProcessor(ARRAYLENGTH, new ArrayLengthProcessor());
 
 		vmi.setProcessor(IFNONNULL, new ValueJumpProcessor(value -> !value.isNull()));
 		vmi.setProcessor(IFNULL, new ValueJumpProcessor(Value::isNull));

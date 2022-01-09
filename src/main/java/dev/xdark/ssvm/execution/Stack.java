@@ -85,8 +85,6 @@ public final class Stack {
 	 * 		If wide value does not occupy two slots.
 	 */
 	public <V extends Value> V popWide() {
-		var stack = this.stack;
-		int cursor = this.cursor;
 		Value top = stack[--cursor];
 		if (top != TopValue.INSTANCE) {
 			throw new IllegalStateException("Expected to pop TOP value, but got: " + top);

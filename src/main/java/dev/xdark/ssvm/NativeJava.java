@@ -334,6 +334,11 @@ public final class NativeJava {
 			throw new IllegalStateException("Unable to locate ConstantPool class");
 		}
 		initConstantPool(vm, cpClass);
+
+		var fis = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileInputStream");
+		vmi.setInvoker(fis, "initIDs", "()V", ctx -> Result.ABORT);
+		var fd = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileDescriptor");
+		vmi.setInvoker(fd, "initIDs", "()V", ctx -> Result.ABORT);
 	}
 
 	/**

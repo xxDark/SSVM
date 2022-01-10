@@ -7,6 +7,7 @@ import dev.xdark.ssvm.execution.*;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.thread.Backtrace;
 import dev.xdark.ssvm.thread.VMThread;
 import dev.xdark.ssvm.value.*;
 import org.objectweb.asm.Opcodes;
@@ -14,6 +15,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * Provides additional functionality for
@@ -1226,6 +1228,55 @@ public final class VMHelper {
 	public void setComponentType(ArrayJavaClass javaClass, JavaClass componentType) {
 		var oop = (InstanceValue) javaClass.getOop();
 		oop.setValue("componentType", "Ljava/lang/Class;", componentType.getOop());
+	}
+
+	/**
+	 * Converts VM exception to Java exception.
+	 *
+	 * @param oop
+	 * 		VM exception to convert.
+	 *
+	 * @return Java exception.
+	 */
+	public Exception toJavaException(InstanceValue oop) {
+		var msg = readUtf8(oop.getValue("detailMessage", "Ljava/lang/String;"));
+		var exception = new Exception(msg);
+		var backtrace = oop.getValue("backtrace", "Ljava/lang/Object;");
+		if (backtrace != null) {
+			var unmarshalled = ((JavaValue<Backtrace>) backtrace).getValue();
+			var stackTrace = StreamSupport.stream(unmarshalled.spliterator(), false)
+					.map(ctx -> {
+						var methodName = ctx.getMethod().name;
+						var owner = ctx.getOwner();
+						var className = owner.getName();
+						var sourceFile = owner.getNode().sourceFile;
+						var lineNumber = ctx.getLineNumber();
+						return new StackTraceElement(className, methodName, sourceFile, lineNumber);
+					})
+					.toArray(StackTraceElement[]::new);
+			var len = stackTrace.length;
+			for (int i = 0, j = len / 2; i < j; i++) {
+				var temp = stackTrace[i];
+				var idx = len - i - 1;
+				stackTrace[i] = stackTrace[idx];
+				stackTrace[idx] = temp;
+			}
+			exception.setStackTrace(stackTrace);
+		}
+		var cause = oop.getValue("cause", "Ljava/lang/Throwable;");
+		if (!cause.isNull() && cause != oop) {
+			exception.initCause(toJavaException((InstanceValue) cause));
+		}
+		var suppressedExceptions = oop.getValue("suppressedExceptions", "Ljava/util/List;");
+		if (suppressedExceptions != null) {
+			var list = (InstanceJavaClass) vm.findBootstrapClass("java/util/List");
+			var size = invokeInterface(list, "size", "()I", new Value[0], new Value[]{suppressedExceptions}).getResult().asInt();
+			for (int i = 0; i < size; i++) {
+				var ex = invokeInterface(list, "get", "(I)Ljava/lang/Object;", new Value[]{new IntValue(i)}, new Value[]{suppressedExceptions}).getResult();
+				exception.addSuppressed(toJavaException((InstanceValue) ex));
+			}
+		}
+		return exception;
 	}
 
 	private static void contextPrepare(ExecutionContext ctx, Value[] stack, Value[] locals, int localIndex) {

@@ -13,7 +13,7 @@ import dev.xdark.ssvm.memory.SimpleMemoryManager;
 import dev.xdark.ssvm.mirror.ClassLayout;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
-import dev.xdark.ssvm.thread.SimpleThreadManager;
+import dev.xdark.ssvm.thread.NopThreadManager;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.VMThread;
 import dev.xdark.ssvm.util.AsmUtil;
@@ -376,7 +376,7 @@ public class VirtualMachine {
 	 * @return thread manager.
 	 */
 	protected ThreadManager createThreadManager() {
-		return new SimpleThreadManager(this);
+		return new NopThreadManager(this);
 	}
 
 	/**

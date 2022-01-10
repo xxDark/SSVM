@@ -1,5 +1,7 @@
 package dev.xdark.ssvm.thread;
 
+import dev.xdark.ssvm.value.InstanceValue;
+
 /**
  * VM thread manager.
  *
@@ -16,6 +18,14 @@ public interface ThreadManager {
 	 * @return VM thread.
 	 */
 	VMThread getVmThread(Thread thread);
+
+	/**
+	 * Returns VMThread by an instance.
+	 *
+	 * @param thread
+	 * 		VM thread oop.
+	 */
+	VMThread getVmThread(InstanceValue thread);
 
 	/**
 	 * Assigns VM thread.

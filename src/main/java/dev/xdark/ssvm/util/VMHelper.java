@@ -1285,6 +1285,38 @@ public final class VMHelper {
 		return exception;
 	}
 
+	/**
+	 * Constructs new VM StackTraceElement from backtrace frame.
+	 *
+	 * @param ctx
+	 * 		Java frame.
+	 * @param injectDeclaringClass
+	 * 		See {@link StackTraceElement#declaringClassObject} description.
+	 *
+	 * @return VM StackTraceElement.
+	 */
+	public InstanceValue newStackTraceElement(ExecutionContext ctx, boolean injectDeclaringClass) {
+		var methodName = ctx.getMethod().name;
+		var owner = ctx.getOwner();
+		var className = owner.getName();
+		var sourceFile = owner.getNode().sourceFile;
+		var lineNumber = ctx.getLineNumber();
+		var vm = this.vm;
+		var jc = vm.getSymbols().java_lang_StackTraceElement;
+		var element = vm.getMemoryManager().newInstance(jc);
+		invokeExact(jc, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V", new Value[0], new Value[]{
+				element,
+				newUtf8(className),
+				newUtf8(methodName),
+				newUtf8(sourceFile),
+				new IntValue(lineNumber)
+		});
+		if (injectDeclaringClass && jc.hasVirtualField("declaringClassObject", "Ljava/lang/Class;")) {
+			element.setValue("declaringClassObject", "Ljava/lang/Class;", owner.getOop());
+		}
+		return element;
+	}
+
 	private static void contextPrepare(ExecutionContext ctx, Value[] stack, Value[] locals, int localIndex) {
 		var lvt = ctx.getLocals();
 		for (var local : locals) {

@@ -87,10 +87,13 @@ public final class NativeJava {
 		vmi.setInvoker(jlc, "forName0", "(Ljava/lang/String;ZLjava/lang/ClassLoader;Ljava/lang/Class;)Ljava/lang/Class;", ctx -> {
 			var locals = ctx.getLocals();
 			var helper = vm.getHelper();
-			var name = helper.readUtf8(locals.load(0));
+			var $name = locals.load(0);
+			helper.checkNotNull($name);
+			var name = helper.readUtf8($name);
 			var initialize = locals.load(1).asBoolean();
 			var loader = locals.load(2);
-			var klass = vm.findClass(loader, name, initialize);
+			//noinspection ConstantConditions
+			var klass = vm.findClass(loader, name.replace('.', '/'), initialize);
 			if (klass == null) {
 				helper.throwException(symbols.java_lang_ClassNotFoundException, name);
 			} else {
@@ -109,6 +112,31 @@ public final class NativeJava {
 		}
 		vmi.setInvoker(jlc, "isArray", "()Z", ctx -> {
 			ctx.setResult(new IntValue(ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue().isArray() ? 1 : 0));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jlc, "isAssignableFrom", "(Ljava/lang/Class;)Z", ctx -> {
+			var locals = ctx.getLocals();
+			var _this = locals.<JavaValue<JavaClass>>load(0).getValue();
+			var arg = locals.<JavaValue<JavaClass>>load(1).getValue();
+			ctx.setResult(new IntValue(_this.isAssignableFrom(arg) ? 1 : 0));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jlc, "isInterface", "()Z", ctx -> {
+			var locals = ctx.getLocals();
+			var _this = locals.<JavaValue<JavaClass>>load(0).getValue();
+			ctx.setResult(new IntValue(_this.isInterface() ? 1 : 0));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jlc, "isPrimitive", "()Z", ctx -> {
+			var locals = ctx.getLocals();
+			var _this = locals.<JavaValue<JavaClass>>load(0).getValue();
+			ctx.setResult(new IntValue(_this.isPrimitive() ? 1 : 0));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jlc, "getSuperclass", "()Ljava/lang/Class;", ctx -> {
+			var locals = ctx.getLocals();
+			var _this = locals.<JavaValue<JavaClass>>load(0).getValue();
+			ctx.setResult(_this.getSuperClass().getOop());
 			return Result.ABORT;
 		});
 
@@ -137,6 +165,10 @@ public final class NativeJava {
 			} catch (InterruptedException ex) {
 				vm.getHelper().throwException(symbols.java_lang_InterruptedException);
 			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(object, "hashCode", "()I", ctx -> {
+			ctx.setResult(new IntValue(ctx.getLocals().load(0).hashCode()));
 			return Result.ABORT;
 		});
 
@@ -242,8 +274,24 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "interrupt", "()V", ctx -> {
-			var th = ctx.getLocals().<JavaValue<Thread>>load(0).getValue();
+			var th = vm.getThreadManager().getVmThread(ctx.getLocals().<InstanceValue>load(0));
 			th.interrupt();
+			return Result.ABORT;
+		});
+		vmi.setInvoker(thread, "setPriority0", "(I)V", ctx -> {
+			var locals = ctx.getLocals();
+			var th = vm.getThreadManager().getVmThread(locals.<InstanceValue>load(0));
+			th.setPriority(locals.load(1).asInt());
+			return Result.ABORT;
+		});
+		vmi.setInvoker(thread, "start0", "()V", ctx -> {
+			var th = vm.getThreadManager().getVmThread(ctx.getLocals().<InstanceValue>load(0));
+			th.start();
+			return Result.ABORT;
+		});
+		vmi.setInvoker(thread, "isAlive", "()Z", ctx -> {
+			var th = vm.getThreadManager().getVmThread(ctx.getLocals().<InstanceValue>load(0));
+			ctx.setResult(new IntValue(th.isAlive() ? 1 : 0));
 			return Result.ABORT;
 		});
 
@@ -370,9 +418,9 @@ public final class NativeJava {
 		var cpClass = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/ConstantPool");
 		if (cpClass == null) {
 			cpClass = (InstanceJavaClass) vm.findBootstrapClass("sun/reflect/ConstantPool");
-		}
-		if (cpClass == null) {
-			throw new IllegalStateException("Unable to locate ConstantPool class");
+			if (cpClass == null) {
+				throw new IllegalStateException("Unable to locate ConstantPool class");
+			}
 		}
 		initConstantPool(vm, cpClass);
 
@@ -412,25 +460,31 @@ public final class NativeJava {
 			helper.checkNotNull(ex);
 			var backtrace = ((JavaValue<Backtrace>) ((InstanceValue) ex).getValue("backtrace", "Ljava/lang/Object;")).getValue();
 			var storeTo = (ArrayValue) arr;
-			var memoryManager = vm.getMemoryManager();
 
 			for (int i = 0, j = backtrace.count(); i < j; i++) {
 				var frame = backtrace.get(i);
-				var methodName = frame.getMethod().name;
-				var owner = frame.getOwner();
-				var className = owner.getName();
-				var sourceFile = owner.getNode().sourceFile;
-				var lineNumber = frame.getLineNumber();
-				var element = memoryManager.newInstance(stackTraceElement);
-				helper.invokeExact(stackTraceElement, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V", new Value[0], new Value[]{
-						element,
-						helper.newUtf8(className),
-						helper.newUtf8(methodName),
-						helper.newUtf8(sourceFile),
-						new IntValue(lineNumber)
-				});
+				var element = helper.newStackTraceElement(frame, true);
 				storeTo.setValue(i, element);
 			}
+			return Result.ABORT;
+		});
+
+		var reflection = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/Reflection");
+		if (reflection == null) {
+			reflection = (InstanceJavaClass) vm.findBootstrapClass("sun/reflect/Reflection");
+			if (reflection == null) {
+				throw new IllegalStateException("Unable to locate Reflection class");
+			}
+		}
+		vmi.setInvoker(reflection, "getCallerClass", "()Ljava/lang/Class;", ctx -> {
+			var backtrace = vm.currentThread().getBacktrace();
+			ctx.setResult(backtrace.get(backtrace.count() - 2).getOwner().getOop());
+			return Result.ABORT;
+		});
+		var accController = (InstanceJavaClass) vm.findBootstrapClass("java/security/AccessController");
+		vmi.setInvoker(accController, "getStackAccessControlContext", "()Ljava/security/AccessControlContext;", ctx -> {
+			// TODO implement?
+			ctx.setResult(NullValue.INSTANCE);
 			return Result.ABORT;
 		});
 	}

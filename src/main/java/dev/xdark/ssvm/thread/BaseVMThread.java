@@ -3,24 +3,21 @@ package dev.xdark.ssvm.thread;
 import dev.xdark.ssvm.value.InstanceValue;
 
 /**
- * Basic implementation of a VM thread.
+ * Basic VMThread implementation.
  *
  * @author xDark
  */
-public final class SimpleVMThread implements VMThread {
+public abstract class BaseVMThread implements VMThread {
 
 	private final Backtrace backtrace = new SimpleBacktrace();
-	private final Thread thread;
 	private final InstanceValue oop;
 
-	public SimpleVMThread(Thread thread, InstanceValue oop) {
-		this.thread = thread;
+	/**
+	 * @param oop
+	 * 		VM thread oop.
+	 */
+	protected BaseVMThread(InstanceValue oop) {
 		this.oop = oop;
-	}
-
-	@Override
-	public Thread getJavaThread() {
-		return thread;
 	}
 
 	@Override

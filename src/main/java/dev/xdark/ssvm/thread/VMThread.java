@@ -29,4 +29,38 @@ public interface VMThread {
 	 * @return thread oop.
 	 */
 	InstanceValue getOop();
+
+	/**
+	 * Sets native thread priority.
+	 *
+	 * @param priority
+	 * 		Priority to set.
+	 */
+	void setPriority(int priority);
+
+	/**
+	 * Sets native thread name.
+	 *
+	 * @param name
+	 * 		Name to set.
+	 */
+	void setName(String name);
+
+	/**
+	 * Starts native thread.
+	 */
+	void start();
+
+	/**
+	 * Interrupts native thread.
+	 */
+	void interrupt();
+
+	/**
+	 * Returns whether thread is alive or not.
+	 *
+	 * @return {@code true} if thread is alive,
+	 * {@code false} otherwise.
+	 */
+	boolean isAlive();
 }

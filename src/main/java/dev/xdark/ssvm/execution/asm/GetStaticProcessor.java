@@ -16,9 +16,10 @@ public final class GetStaticProcessor implements InstructionProcessor<FieldInsnN
 	@Override
 	public Result execute(FieldInsnNode insn, ExecutionContext ctx) {
 		var vm = ctx.getVM();
-		var owner = (InstanceJavaClass) vm.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
+		var helper = vm.getHelper();
+		var owner = (InstanceJavaClass) helper.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
 		if (owner == null) {
-			vm.getHelper().throwException(vm.getSymbols().java_lang_ClassNotFoundException, insn.owner);
+			helper.throwException(vm.getSymbols().java_lang_ClassNotFoundException, insn.owner);
 		}
 		while (owner != null) {
 			var value = owner.getStaticValue(insn.name, insn.desc);
@@ -28,7 +29,7 @@ public final class GetStaticProcessor implements InstructionProcessor<FieldInsnN
 			}
 			owner = owner.getSuperClass();
 		}
-		vm.getHelper().throwException(vm.getSymbols().java_lang_NoSuchFieldError, insn.owner + '.' + insn.name + insn.desc);
+		helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, insn.owner + '.' + insn.name + insn.desc);
 		return Result.ABORT;
 	}
 }

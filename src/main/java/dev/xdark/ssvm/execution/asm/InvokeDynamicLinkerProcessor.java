@@ -28,7 +28,7 @@ public final class InvokeDynamicLinkerProcessor implements InstructionProcessor<
 				helper.throwException(symbols.java_lang_IllegalStateException, "Bootstrap tag is not static");
 			}
 			var owner = bootstrap.getOwner();
-			var jc = vm.findClass(classLoader, owner, true);
+			var jc = helper.findClass(classLoader, owner, true);
 			if (!(jc instanceof InstanceJavaClass)) {
 				helper.throwException(symbols.java_lang_ClassNotFoundException, owner);
 			}

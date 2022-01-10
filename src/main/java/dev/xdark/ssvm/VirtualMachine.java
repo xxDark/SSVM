@@ -108,6 +108,11 @@ public class VirtualMachine {
 			}
 			findBootstrapClass("java/lang/StringUTF16", true);
 			helper.invokeStatic(sysClass, "initPhase1", "()V", new Value[0], new Value[0]);
+			findBootstrapClass("java/lang/invoke/MethodHandle", true);
+			findBootstrapClass("java/lang/invoke/ResolvedMethodName", true);
+			findBootstrapClass("java/lang/invoke/MemberName", true);
+			findBootstrapClass("java/lang/invoke/MethodHandleNatives", true);
+
 			var result = helper.invokeStatic(sysClass, "initPhase2", "(ZZ)I", new Value[0], new Value[]{new IntValue(1), new IntValue(1)}).getResult().asInt();
 			if (result != 0) {
 				throw new IllegalStateException("VM initialization failed, initPhase2 returned " + result);

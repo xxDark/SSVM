@@ -17,8 +17,8 @@ public final class NewProcessor implements InstructionProcessor<TypeInsnNode> {
 	@Override
 	public Result execute(TypeInsnNode insn, ExecutionContext ctx) {
 		var vm = ctx.getVM();
-		var type = vm.findClass(ctx.getOwner().getClassLoader(), insn.desc, true);
 		var helper = vm.getHelper();
+		var type = helper.findClass(ctx.getOwner().getClassLoader(), insn.desc, true);
 		if (type == null) {
 			helper.throwException(vm.getSymbols().java_lang_NoClassDefFoundError, insn.desc);
 		}

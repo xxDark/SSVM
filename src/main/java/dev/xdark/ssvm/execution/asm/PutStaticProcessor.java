@@ -16,9 +16,10 @@ public final class PutStaticProcessor implements InstructionProcessor<FieldInsnN
 	@Override
 	public Result execute(FieldInsnNode insn, ExecutionContext ctx) {
 		var vm = ctx.getVM();
-		var owner = (InstanceJavaClass) vm.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
+		var helper = vm.getHelper();
+		var owner = (InstanceJavaClass) helper.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
 		if (owner == null) {
-			vm.getHelper().throwException(vm.getSymbols().java_lang_NoClassDefFoundError, insn.owner);
+			helper.throwException(vm.getSymbols().java_lang_NoClassDefFoundError, insn.owner);
 		}
 		var value = ctx.getStack().popGeneric();
 		if (!owner.setFieldValue(insn.name, insn.desc, value)) {

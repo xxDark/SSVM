@@ -18,7 +18,11 @@ public final class StaticCallProcessor implements InstructionProcessor<MethodIns
 	@Override
 	public Result execute(MethodInsnNode insn, ExecutionContext ctx) {
 		var vm = ctx.getVM();
-		var owner = vm.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
+		var helper = vm.getHelper();
+		var owner = helper.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
+		if (owner == null) {
+			helper.throwException(vm.getSymbols().java_lang_NoClassDefFoundError, insn.owner);
+		}
 		var stack = ctx.getStack();
 		var args = Type.getArgumentTypes(insn.desc);
 		var localsLength = args.length;
@@ -26,7 +30,7 @@ public final class StaticCallProcessor implements InstructionProcessor<MethodIns
 		while (localsLength-- != 0) {
 			locals[localsLength] = stack.popGeneric();
 		}
-		var result = vm.getHelper().invokeStatic((InstanceJavaClass) owner, insn.name, insn.desc, new Value[0], locals);
+		var result = helper.invokeStatic((InstanceJavaClass) owner, insn.name, insn.desc, new Value[0], locals);
 		if (Type.getReturnType(insn.desc) != Type.VOID_TYPE) {
 			stack.pushGeneric(result.getResult());
 		}

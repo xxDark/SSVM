@@ -91,11 +91,10 @@ public final class AsmUtil {
 			case "S":
 			case "B":
 			case "Z":
+			case "C":
 				return 0;
 			case "F":
 				return 0.0F;
-			case "C":
-				return '\0';
 			default:
 				return null;
 		}

@@ -156,18 +156,9 @@ public final class InstanceJavaClass implements JavaClass {
 		var helper = vm.getHelper();
 		var node = this.node;
 		helper.initializeStaticFields(this);
-		var superName = node.superName;
 		var classLoader = this.classLoader;
-		if (superName != null) {
-			// Load parent class.
-			superClass = (InstanceJavaClass) vm.findClass(classLoader, superName, true);
-		}
-		var _interfaces = node.interfaces;
-		var interfaces = new InstanceJavaClass[_interfaces.size()];
-		for (int i = 0, j = _interfaces.size(); i < j; i++) {
-			interfaces[i] = (InstanceJavaClass) vm.findClass(classLoader, _interfaces.get(i), true);
-		}
-		this.interfaces = interfaces;
+		loadSuperClass(true);
+		loadInterfaces(true);
 		// Build class layout
 		// VM might've set it already, do not override.
 		if (virtualLayout == null) {
@@ -221,10 +212,6 @@ public final class InstanceJavaClass implements JavaClass {
 			}
 		} else if (other.isInterface()) {
 			if (isInterface()) {
-				if (this == other) {
-					return true;
-				}
-
 				var toCheck = new ArrayDeque<>(Arrays.asList(other.getInterfaces()));
 				JavaClass popped;
 				while ((popped = toCheck.poll()) != null) {
@@ -674,9 +661,71 @@ public final class InstanceJavaClass implements JavaClass {
 		return classReader;
 	}
 
+	/**
+	 * Loads hierarchy of classes without marking them as resolved.
+	 */
+	public void loadClassesWithoutMarkingResolved() {
+		var lock = this.initializationLock;
+		lock.lock();
+		var vm = this.vm;
+		if (state == State.FAILED) {
+			lock.unlock();
+			vm.getHelper().throwException(vm.getSymbols().java_lang_ExceptionInInitializerError);
+		}
+		try {
+			loadSuperClass(false);
+			loadInterfaces(false);
+			for (var ifc : interfaces) {
+				ifc.loadClassesWithoutMarkingResolved();
+			}
+		} catch (VMException ex) {
+			state = State.FAILED;
+			throw ex;
+		} finally {
+			lock.unlock();
+		}
+	}
+
 	@Override
 	public String toString() {
 		return getName();
+	}
+
+	private void loadSuperClass(boolean initialize) {
+		var superClass = this.superClass;
+		if (superClass == null) {
+			var vm = this.vm;
+			var superName = node.superName;
+			if (superName != null) {
+				// Load parent class.
+				superClass = (InstanceJavaClass) vm.findClass(classLoader, superName, initialize);
+				if (superClass == null) {
+					vm.getHelper().throwException(vm.getSymbols().java_lang_NoClassDefFoundError, superName);
+				}
+				this.superClass = superClass;
+			}
+		}
+		if (initialize && superClass != null) superClass.initialize();
+	}
+
+	private void loadInterfaces(boolean initialize) {
+		var $interfaces = this.interfaces;
+		if ($interfaces == null) {
+			var _interfaces = node.interfaces;
+			var interfaces = new InstanceJavaClass[_interfaces.size()];
+			var vm = this.vm;
+			var classLoader = this.classLoader;
+			for (int i = 0, j = _interfaces.size(); i < j; i++) {
+				var iface = interfaces[i] = (InstanceJavaClass) vm.findClass(classLoader, _interfaces.get(i), initialize);
+				if (iface == null) {
+					vm.getHelper().throwException(vm.getSymbols().java_lang_NoClassDefFoundError, _interfaces.get(i));
+				}
+			}
+			this.interfaces = $interfaces = interfaces;
+		}
+		if (initialize) {
+			for (var ifc : $interfaces) ifc.initialize();
+		}
 	}
 
 	private enum State {

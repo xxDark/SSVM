@@ -18,7 +18,8 @@ public final class InterfaceCallProcessor implements InstructionProcessor<Method
 	@Override
 	public Result execute(MethodInsnNode insn, ExecutionContext ctx) {
 		var vm = ctx.getVM();
-		var owner = vm.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
+		var helper = vm.getHelper();
+		var owner = helper.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
 		var stack = ctx.getStack();
 		var args = Type.getArgumentTypes(insn.desc);
 		var localsLength = args.length + 1;
@@ -26,7 +27,7 @@ public final class InterfaceCallProcessor implements InstructionProcessor<Method
 		while (localsLength-- != 0) {
 			locals[localsLength] = stack.popGeneric();
 		}
-		var result = vm.getHelper().invokeInterface((InstanceJavaClass) owner, insn.name, insn.desc, new Value[0], locals);
+		var result = helper.invokeInterface((InstanceJavaClass) owner, insn.name, insn.desc, new Value[0], locals);
 		if (Type.getReturnType(insn.desc) != Type.VOID_TYPE) {
 			stack.pushGeneric(result.getResult());
 		}

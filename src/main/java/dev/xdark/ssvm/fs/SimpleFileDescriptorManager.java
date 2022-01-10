@@ -1,6 +1,5 @@
 package dev.xdark.ssvm.fs;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -41,34 +40,5 @@ public final class SimpleFileDescriptorManager implements FileDescriptorManager 
 	@Override
 	public boolean isAppend(int stream) {
 		return false;
-	}
-
-	private static final class NullInputStream extends InputStream {
-
-		NullInputStream() {
-		}
-
-		@Override
-		public int read() throws IOException {
-			return -1;
-		}
-	}
-
-	private static final class NullOutputStream extends OutputStream {
-
-		NullOutputStream() {
-		}
-
-		@Override
-		public void write(int b) throws IOException {
-		}
-
-		@Override
-		public void write(byte[] b) throws IOException {
-		}
-
-		@Override
-		public void write(byte[] b, int off, int len) throws IOException {
-		}
 	}
 }

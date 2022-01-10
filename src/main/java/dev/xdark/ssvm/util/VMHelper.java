@@ -850,7 +850,7 @@ public final class VMHelper {
 					memoryManager.writeFloat(oop, resultingOffset, (Float) cst);
 					break;
 				case "C":
-					memoryManager.writeChar(oop, resultingOffset, (Character) cst);
+					memoryManager.writeChar(oop, resultingOffset, (char) ((Integer) cst).intValue());
 					break;
 				case "S":
 					memoryManager.writeShort(oop, resultingOffset, ((Integer) cst).shortValue());
@@ -1315,6 +1315,51 @@ public final class VMHelper {
 			element.setValue("declaringClassObject", "Ljava/lang/Class;", owner.getOop());
 		}
 		return element;
+	}
+
+	public JavaClass findClass(Value loader, String name, boolean initialize) {
+		var dimensions = 0;
+		while (name.charAt(dimensions) == '[') dimensions++;
+		if (dimensions != 0) name = name.substring(dimensions);
+		JavaClass klass = null;
+		if (name.length() == 1) {
+			var primitives = vm.getPrimitives();
+			switch (name.charAt(0)) {
+				case 'J':
+					klass = primitives.longPrimitive;
+					break;
+				case 'D':
+					klass = primitives.doublePrimitive;
+					break;
+				case 'I':
+					klass = primitives.intPrimitive;
+					break;
+				case 'F':
+					klass = primitives.floatPrimitive;
+					break;
+				case 'C':
+					klass = primitives.charPrimitive;
+					break;
+				case 'S':
+					klass = primitives.shortPrimitive;
+					break;
+				case 'B':
+					klass = primitives.bytePrimitive;
+					break;
+				case 'Z':
+					klass = primitives.booleanPrimitive;
+					break;
+			}
+		} else {
+			if (dimensions != 0) {
+				name = name.substring(1, name.length() - 1);
+			}
+			klass = vm.findClass(loader, name, initialize);
+		}
+		if (klass != null) {
+			while (dimensions-- != 0) klass = klass.newArrayClass();
+		}
+		return klass;
 	}
 
 	private static void contextPrepare(ExecutionContext ctx, Value[] stack, Value[] locals, int localIndex) {

@@ -93,7 +93,7 @@ public final class NativeJava {
 			var initialize = locals.load(1).asBoolean();
 			var loader = locals.load(2);
 			//noinspection ConstantConditions
-			var klass = vm.findClass(loader, name.replace('.', '/'), initialize);
+			var klass = helper.findClass(loader, name.replace('.', '/'), initialize);
 			if (klass == null) {
 				helper.throwException(symbols.java_lang_ClassNotFoundException, name);
 			} else {
@@ -487,6 +487,7 @@ public final class NativeJava {
 			ctx.setResult(NullValue.INSTANCE);
 			return Result.ABORT;
 		});
+		initMethodHandles(vm);
 	}
 
 	/**
@@ -690,6 +691,12 @@ public final class NativeJava {
 			ctx.setResult(new IntValue(memoryManager.readInt((ObjectValue) value, offset)));
 			return Result.ABORT;
 		});
+		vmi.setInvoker(unsafe, "ensureClassInitialized0", "(Ljava/lang/Class;)V", ctx -> {
+			var value = ctx.getLocals().load(1);
+			vm.getHelper().checkNotNull(value);
+			((JavaValue<JavaClass>) value).getJavaClass().initialize();
+			return Result.ABORT;
+		});
 	}
 
 	/**
@@ -718,9 +725,10 @@ public final class NativeJava {
 			var index = cpRangeCheck(ctx, cr);
 			var offset = cr.getItem(index);
 			var className = cr.readClass(offset, new char[cr.getMaxStringLength()]);
-			var result = vm.findClass(ctx.getOwner().getClassLoader(), className, true);
+			var helper = vm.getHelper();
+			var result = helper.findClass(ctx.getOwner().getClassLoader(), className, true);
 			if (result == null) {
-				vm.getHelper().throwException(vm.getSymbols().java_lang_ClassNotFoundException, className);
+				helper.throwException(vm.getSymbols().java_lang_ClassNotFoundException, className);
 			}
 			ctx.setResult(result.getOop());
 			return Result.ABORT;
@@ -731,7 +739,7 @@ public final class NativeJava {
 			var index = cpRangeCheck(ctx, cr);
 			var offset = cr.getItem(index);
 			var className = cr.readClass(offset, new char[cr.getMaxStringLength()]);
-			var result = vm.findClass(ctx.getOwner().getClassLoader(), className, true);
+			var result = vm.getHelper().findClass(ctx.getOwner().getClassLoader(), className, true);
 			if (result == null) {
 				ctx.setResult(NullValue.INSTANCE);
 			} else {
@@ -822,6 +830,18 @@ public final class NativeJava {
 	private static void initWinFS(VirtualMachine vm, InstanceJavaClass jc) {
 		var vmi = vm.getInterface();
 		vmi.setInvoker(jc, "initIDs", "()V", ctx -> Result.ABORT);
+	}
+
+	/**
+	 * Initializes method handles related classes.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initMethodHandles(VirtualMachine vm) {
+		var vmi = vm.getInterface();
+		var natives = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/MethodHandleNatives");
+		vmi.setInvoker(natives, "registerNatives", "()V", ctx -> Result.ABORT);
 	}
 
 	/**

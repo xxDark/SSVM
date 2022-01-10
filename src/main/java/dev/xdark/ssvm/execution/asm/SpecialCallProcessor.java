@@ -18,7 +18,11 @@ public final class SpecialCallProcessor implements InstructionProcessor<MethodIn
 	@Override
 	public Result execute(MethodInsnNode insn, ExecutionContext ctx) {
 		var vm = ctx.getVM();
-		var owner = (InstanceJavaClass) vm.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
+		var helper = vm.getHelper();
+		var owner = (InstanceJavaClass) helper.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
+		if (owner == null) {
+			helper.throwException(vm.getSymbols().java_lang_NoClassDefFoundError, insn.owner);
+		}
 		var stack = ctx.getStack();
 		var args = Type.getArgumentTypes(insn.desc);
 		var localsLength = args.length + 1;
@@ -26,7 +30,6 @@ public final class SpecialCallProcessor implements InstructionProcessor<MethodIn
 		while (localsLength-- != 0) {
 			locals[localsLength] = stack.popGeneric();
 		}
-		var helper = vm.getHelper();
 		var result = helper.invokeExact(owner, insn.name, insn.desc, new Value[0], locals);
 		if (Type.getReturnType(insn.desc) != Type.VOID_TYPE) {
 			stack.pushGeneric(result.getResult());

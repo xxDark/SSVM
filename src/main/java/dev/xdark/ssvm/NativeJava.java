@@ -503,6 +503,13 @@ public final class NativeJava {
 			vmi.setInvoker(module, "addExportsToAll0", "(Ljava/lang/Module;Ljava/lang/String;)V", ctx -> Result.ABORT);
 			vmi.setInvoker(module, "addExportsToAllUnnamed0", "(Ljava/lang/Module;Ljava/lang/String;)V", ctx -> Result.ABORT);
 		}
+		var moduleLayer = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ModuleLayer");
+		if (moduleLayer != null) {
+			vmi.setInvoker(moduleLayer, "defineModules", "(Ljava/lang/module/Configuration;Ljava/util/function/Function;)Ljava/lang/ModuleLayer;", ctx -> {
+				ctx.setResult(ctx.getLocals().load(0));
+				return Result.ABORT;
+			});
+		}
 	}
 
 	/**

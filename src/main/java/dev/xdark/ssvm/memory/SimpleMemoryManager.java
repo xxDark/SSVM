@@ -74,10 +74,8 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public void freeMemory(long address) {
-		if (memoryBlocks.remove(address) == null) {
-			throw new PanicException("Segfault");
-		}
+	public boolean freeMemory(long address) {
+		return memoryBlocks.remove(address) != null;
 	}
 
 	@Override
@@ -419,7 +417,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	@Override
 	public long getStaticOffset(JavaClass jc) {
 		var jlc = vm.findBootstrapClass("java/lang/Class");
-		return jlc.getVirtualLayout().getSize();
+		return OBJECT_HEADER_SIZE + jlc.getVirtualLayout().getSize();
 	}
 
 	private Memory newMemoryBlock(long size, boolean isDirect) {

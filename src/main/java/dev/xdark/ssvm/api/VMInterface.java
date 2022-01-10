@@ -15,7 +15,9 @@ import java.util.Map;
  */
 public final class VMInterface {
 
-	private final InstructionProcessor[] processors = new InstructionProcessor[Opcodes.IFNONNULL + 1];
+	private static final int MAX_INSNS = 1024;
+	private static final int JVM_INSNS = Opcodes.IFNONNULL;
+	private final InstructionProcessor[] processors = new InstructionProcessor[MAX_INSNS];
 	private final Map<VMCall, MethodInvoker> invokerMap = new HashMap<>();
 
 	/**

@@ -35,6 +35,15 @@ public class JDKTest {
 		testMapImplementation(instance);
 	}
 
+	@Test
+	public void testTreeMap() {
+		var c = (InstanceJavaClass) vm.findBootstrapClass("java/util/TreeMap", true);
+		var helper = vm.getHelper();
+		var instance = vm.getMemoryManager().newInstance(c);
+		helper.invokeExact(c, "<init>", "()V", new Value[0], new Value[]{instance});
+		testMapImplementation(instance);
+	}
+
 	private static void testMapImplementation(InstanceValue map) {
 		var keyBase = "key";
 		var valueBase = "value";
@@ -47,5 +56,7 @@ public class JDKTest {
 			var v = helper.invokeVirtual("get", "(Ljava/lang/Object;)Ljava/lang/Object;", new Value[0], new Value[]{map, key});
 			assertEquals($value, helper.readUtf8(v.getResult()));
 		}
+		helper.invokeVirtual("clear", "()V",new Value[0], new Value[]{map});
+		assertTrue(helper.invokeVirtual("isEmpty", "()Z", new Value[0], new Value[]{map}).getResult().asBoolean());
 	}
 }

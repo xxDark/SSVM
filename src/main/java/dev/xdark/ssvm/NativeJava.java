@@ -360,7 +360,9 @@ public final class NativeJava {
 			var memoryManager = vm.getMemoryManager();
 			var locals = ctx.getLocals();
 			var address = locals.load(1).asLong();
-			memoryManager.freeMemory(address);
+			if (!memoryManager.freeMemory(address)) {
+				throw new PanicException("Segfault");
+			}
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "setMemory0", "(Ljava/lang/Object;JJB)V", ctx -> {

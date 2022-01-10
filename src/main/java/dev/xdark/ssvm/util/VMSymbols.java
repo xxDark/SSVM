@@ -40,6 +40,8 @@ public final class VMSymbols {
 	public final InstanceJavaClass java_lang_Float;
 	public final InstanceJavaClass java_lang_reflect_Array;
 	public final InstanceJavaClass java_lang_BootstrapMethodError;
+	public final InstanceJavaClass java_lang_IllegalStateException;
+	public final InstanceJavaClass java_lang_NoSuchMethodException;
 
 	/**
 	 * @param vm
@@ -76,5 +78,7 @@ public final class VMSymbols {
 		java_lang_Float = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Float");
 		java_lang_reflect_Array = (InstanceJavaClass) vm.findBootstrapClass("java/lang/reflect/Array");
 		java_lang_BootstrapMethodError = (InstanceJavaClass) vm.findBootstrapClass("java/lang/BootstrapMethodError");
+		java_lang_IllegalStateException = (InstanceJavaClass) vm.findBootstrapClass("java/lang/IllegalStateException");
+		java_lang_NoSuchMethodException = (InstanceJavaClass) vm.findBootstrapClass("java/lang/NoSuchMethodException");
 	}
 }

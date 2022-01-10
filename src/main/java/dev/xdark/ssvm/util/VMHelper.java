@@ -811,7 +811,7 @@ public final class VMHelper {
 	public void initializeStaticFields(InstanceJavaClass javaClass) {
 		var memoryManager = vm.getMemoryManager();
 		var oop = javaClass.getOop();
-		var baseOffset = memoryManager.valueBaseOffset(oop) + memoryManager.getStaticOffset(javaClass);
+		var baseOffset = memoryManager.getStaticOffset(javaClass);
 		var fields = javaClass.getStaticLayout().getOffsetMap();
 		var asmFields = javaClass.getNode().fields;
 		for (var entry : fields.entrySet()) {

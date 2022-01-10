@@ -53,8 +53,10 @@ public interface MemoryManager {
 	 *
 	 * @param address
 	 * 		Address of the memory block.
+	 *
+	 * @return {@code true} if block was deallocated.
 	 */
-	void freeMemory(long address);
+	boolean freeMemory(long address);
 
 	/**
 	 * Returns memory block based off it's address.

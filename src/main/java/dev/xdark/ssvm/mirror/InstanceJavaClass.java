@@ -635,9 +635,14 @@ public final class InstanceJavaClass implements JavaClass {
 	 */
 	public ClassLayout createVirtualLayout() {
 		var offsetMap = new HashMap<FieldInfo, Long>();
+		var deque = new ArrayDeque<InstanceJavaClass>();
 		var offset = 0L;
-		InstanceJavaClass javaClass = this;
-		do {
+		var javaClass = this;
+		while (javaClass != null) {
+			deque.addFirst(javaClass);
+			javaClass = javaClass.superClass;
+		}
+		while ((javaClass = deque.pollFirst()) != null) {
 			var fields = javaClass.node.fields;
 			for (int i = 0, j = fields.size(); i < j; i++) {
 				var field = fields.get(i);
@@ -647,8 +652,7 @@ public final class InstanceJavaClass implements JavaClass {
 					offset += UnsafeUtil.getSizeFor(desc);
 				}
 			}
-			javaClass = javaClass.superClass;
-		} while (javaClass != null);
+		}
 		return new ClassLayout(Collections.unmodifiableMap(offsetMap), offset);
 	}
 

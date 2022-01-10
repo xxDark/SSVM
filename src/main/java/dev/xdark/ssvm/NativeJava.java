@@ -479,6 +479,8 @@ public final class NativeJava {
 			var obj = (ObjectValue) value;
 			var offset = (int) locals.load(2).asLong();
 			var memoryManager = vm.getMemoryManager();
+			System.err.println(((ArrayValue)value).getLength());
+			System.err.println(offset);
 			ctx.setResult(memoryManager.readValue(obj, offset));
 			return Result.ABORT;
 		});
@@ -634,8 +636,8 @@ public final class NativeJava {
 
 		vmi.setProcessor(IREM, new BiIntProcessor((v1, v2) -> v1 % v2));
 		vmi.setProcessor(LREM, new BiLongProcessor((v1, v2) -> v1 % v2));
-		vmi.setProcessor(DREM, new BiFloatProcessor((v1, v2) -> v1 % v2));
-		vmi.setProcessor(FREM, new BiDoubleProcessor((v1, v2) -> v1 % v2));
+		vmi.setProcessor(FREM, new BiFloatProcessor((v1, v2) -> v1 % v2));
+		vmi.setProcessor(DREM, new BiDoubleProcessor((v1, v2) -> v1 % v2));
 
 		vmi.setProcessor(INEG, new NegativeIntProcessor());
 		vmi.setProcessor(LNEG, new NegativeLongProcessor());

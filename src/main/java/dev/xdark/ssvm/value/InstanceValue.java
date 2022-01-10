@@ -3,6 +3,7 @@ package dev.xdark.ssvm.value;
 import dev.xdark.ssvm.memory.Memory;
 import dev.xdark.ssvm.mirror.FieldInfo;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.JavaClass;
 
 /**
  * Represents instance value.
@@ -20,6 +21,11 @@ public class InstanceValue extends ObjectValue {
 	 */
 	public InstanceValue(Memory memory) {
 		super(memory);
+	}
+
+	@Override
+	public InstanceJavaClass getJavaClass() {
+		return (InstanceJavaClass) super.getJavaClass();
 	}
 
 	@Override

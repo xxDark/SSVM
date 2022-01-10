@@ -42,6 +42,7 @@ public final class VMSymbols {
 	public final InstanceJavaClass java_lang_BootstrapMethodError;
 	public final InstanceJavaClass java_lang_IllegalStateException;
 	public final InstanceJavaClass java_lang_NoSuchMethodException;
+	public final InstanceJavaClass java_lang_InterruptedException;
 
 	/**
 	 * @param vm
@@ -80,5 +81,6 @@ public final class VMSymbols {
 		java_lang_BootstrapMethodError = (InstanceJavaClass) vm.findBootstrapClass("java/lang/BootstrapMethodError");
 		java_lang_IllegalStateException = (InstanceJavaClass) vm.findBootstrapClass("java/lang/IllegalStateException");
 		java_lang_NoSuchMethodException = (InstanceJavaClass) vm.findBootstrapClass("java/lang/NoSuchMethodException");
+		java_lang_InterruptedException = (InstanceJavaClass) vm.findBootstrapClass("java/lang/InterruptedException");
 	}
 }

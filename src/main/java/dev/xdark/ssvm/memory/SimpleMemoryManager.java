@@ -26,7 +26,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	private static final long OBJECT_HEADER_SIZE = Unsafe.ADDRESS_SIZE + 4L;
 	private static final long ARRAY_LENGTH = Unsafe.ADDRESS_SIZE;
 	private final Map<Long, Memory> memoryBlocks = new HashMap<>();
-	private final Map<Memory, Value> objects = new WeakHashMap<>();
+	private final Map<Memory, ObjectValue> objects = new WeakHashMap<>();
 
 	private final VirtualMachine vm;
 
@@ -177,7 +177,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public Value readValue(ObjectValue object, long offset) {
+	public ObjectValue readValue(ObjectValue object, long offset) {
 		var address = object.getMemory().getData().getLong((int) (validate(offset)));
 		return objects.get(new Memory(null, null, address, false));
 	}
@@ -246,8 +246,8 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public void writeValue(ObjectValue object, long offset, Value value) {
-		object.getMemory().getData().putLong((int) (validate(offset)), ((ObjectValue) value).getMemory().getAddress());
+	public void writeValue(ObjectValue object, long offset, ObjectValue value) {
+		object.getMemory().getData().putLong((int) (validate(offset)), value.getMemory().getAddress());
 	}
 
 	@Override
@@ -296,7 +296,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public Value readValue(ArrayValue array, long offset) {
+	public ObjectValue readValue(ArrayValue array, long offset) {
 		return readValue((ObjectValue) array, offset);
 	}
 
@@ -346,7 +346,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public void writeValue(ArrayValue array, long offset, Value value) {
+	public void writeValue(ArrayValue array, long offset, ObjectValue value) {
 		writeValue((ObjectValue) array, offset, value);
 	}
 

@@ -1,6 +1,7 @@
 package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -74,7 +75,7 @@ public final class VirtualMachineArrayHelperTest {
 
 	@Test
 	public void testValueArray() {
-		var array = new Value[] {helper.newUtf8("Hello"), helper.newUtf8("World"), helper.newUtf8("!")};
+		var array = new ObjectValue[] {helper.newUtf8("Hello"), helper.newUtf8("World"), helper.newUtf8("!")};
 		var wrapper = helper.toVMValues(array);
 		assertArrayEquals(array, helper.toJavaValues(wrapper));
 	}

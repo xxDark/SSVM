@@ -9,6 +9,8 @@ import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.asm.*;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.thread.Backtrace;
+import dev.xdark.ssvm.thread.VMThread;
 import dev.xdark.ssvm.value.*;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.FieldNode;
@@ -120,6 +122,23 @@ public final class NativeJava {
 			ctx.setResult(ctx.getLocals().<ObjectValue>load(0).getJavaClass().getOop());
 			return Result.ABORT;
 		});
+		vmi.setInvoker(object, "notify", "()V", ctx -> {
+			ctx.getLocals().<ObjectValue>load(0).vmNotify();
+			return Result.ABORT;
+		});
+		vmi.setInvoker(object, "notifyAll", "()V", ctx -> {
+			ctx.getLocals().<ObjectValue>load(0).vmNotifyAll();
+			return Result.ABORT;
+		});
+		vmi.setInvoker(object, "wait", "(J)V", ctx -> {
+			var locals = ctx.getLocals();
+			try {
+				locals.<ObjectValue>load(0).vmWait(locals.load(1).asLong());
+			} catch (InterruptedException ex) {
+				vm.getHelper().throwException(symbols.java_lang_InterruptedException);
+			}
+			return Result.ABORT;
+		});
 
 		var sys = symbols.java_lang_System;
 		vmi.setInvoker(sys, "registerNatives", "()V", ctx -> Result.ABORT);
@@ -200,11 +219,31 @@ public final class NativeJava {
 			ctx.setResult(value);
 			return Result.ABORT;
 		});
+		vmi.setInvoker(sys, "setIn0", "(Ljava/io/InputStream;)V", ctx -> {
+			var stream = ctx.getLocals().load(0);
+			sys.setFieldValue("in", "Ljava/io/InputStream;", stream);
+			return Result.ABORT;
+		});
+		vmi.setInvoker(sys, "setOut0", "(Ljava/io/PrintStream;)V", ctx -> {
+			var stream = ctx.getLocals().load(0);
+			sys.setFieldValue("out", "Ljava/io/PrintStream;", stream);
+			return Result.ABORT;
+		});
+		vmi.setInvoker(sys, "setErr0", "(Ljava/io/PrintStream;)V", ctx -> {
+			var stream = ctx.getLocals().load(0);
+			sys.setFieldValue("err", "Ljava/io/PrintStream;", stream);
+			return Result.ABORT;
+		});
 
 		var thread = symbols.java_lang_Thread;
 		vmi.setInvoker(thread, "registerNatives", "()V", ctx -> Result.ABORT);
 		vmi.setInvoker(thread, "currentThread", "()Ljava/lang/Thread;", ctx -> {
 			ctx.setResult(vm.currentThread().getOop());
+			return Result.ABORT;
+		});
+		vmi.setInvoker(thread, "interrupt", "()V", ctx -> {
+			var th = ctx.getLocals().<JavaValue<Thread>>load(0).getValue();
+			th.interrupt();
 			return Result.ABORT;
 		});
 
@@ -224,12 +263,12 @@ public final class NativeJava {
 		vmi.setInvoker(classLoader, "defineClass1", "(Ljava/lang/ClassLoader;Ljava/lang/String;[BIILjava/security/ProtectionDomain;Ljava/lang/String;)Ljava/lang/Class;", ctx -> {
 			var locals = ctx.getLocals();
 			var loader = locals.<ObjectValue>load(0);
-			var name = locals.load(1);
+			var name = locals.<ObjectValue>load(1);
 			var b = locals.<ArrayValue>load(2);
 			var off = locals.load(3).asInt();
 			var length = locals.load(4).asInt();
-			var pd = locals.load(5);
-			var source = locals.load(6);
+			var pd = locals.<ObjectValue>load(5);
+			var source = locals.<ObjectValue>load(6);
 			var helper = vm.getHelper();
 			var bytes = helper.toJavaBytes(b);
 			var defined = helper.defineClass(loader, helper.readUtf8(name), bytes, off, length, pd, helper.readUtf8(source));
@@ -241,8 +280,10 @@ public final class NativeJava {
 		var throwable = symbols.java_lang_Throwable;
 		vmi.setInvoker(throwable, "fillInStackTrace", "(I)Ljava/lang/Throwable;", ctx -> {
 			var exception = ctx.getLocals().<InstanceValue>load(0);
-			var backtrace = vm.getMemoryManager().newJavaInstance(object, vm.currentThread().getBacktrace().copy());
+			var copy = vm.currentThread().getBacktrace().copy();
+			var backtrace = vm.getMemoryManager().newJavaInstance(object, copy);
 			exception.setValue("backtrace", "Ljava/lang/Object;", backtrace);
+			exception.setInt("depth", copy.count());
 			ctx.setResult(exception);
 			return Result.ABORT;
 		});
@@ -339,6 +380,59 @@ public final class NativeJava {
 		vmi.setInvoker(fis, "initIDs", "()V", ctx -> Result.ABORT);
 		var fd = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileDescriptor");
 		vmi.setInvoker(fd, "initIDs", "()V", ctx -> Result.ABORT);
+		vmi.setInvoker(fd, "getHandle", "(I)J", ctx -> {
+			ctx.setResult(new LongValue(vm.getFileDescriptorManager().newFD(ctx.getLocals().load(0).asInt())));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(fd, "getAppend", "(I)Z", ctx -> {
+			ctx.setResult(new IntValue(vm.getFileDescriptorManager().isAppend(ctx.getLocals().load(0).asInt()) ? 1 : 0));
+			return Result.ABORT;
+		});
+		var fos = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileOutputStream");
+		vmi.setInvoker(fos, "initIDs", "()V", ctx -> Result.ABORT);
+
+		var win32ErrorMode = (InstanceJavaClass) vm.findBootstrapClass("sun/io/Win32ErrorMode");
+		if (win32ErrorMode != null) {
+			vmi.setInvoker(win32ErrorMode, "setErrorMode", "(J)J", ctx -> {
+				ctx.setResult(new LongValue(0L));
+				return Result.ABORT;
+			});
+		}
+		var winNTfs = (InstanceJavaClass) vm.findBootstrapClass("java/io/WinNTFileSystem");
+		if (winNTfs != null) {
+			initWinFS(vm, winNTfs);
+		}
+		var stackTraceElement = (InstanceJavaClass) vm.findBootstrapClass("java/lang/StackTraceElement");
+		vmi.setInvoker(stackTraceElement, "initStackTraceElements", "([Ljava/lang/StackTraceElement;Ljava/lang/Throwable;)V", ctx -> {
+			var helper = vm.getHelper();
+			var locals = ctx.getLocals();
+			var arr = locals.load(0);
+			helper.checkNotNull(arr);
+			var ex = locals.load(1);
+			helper.checkNotNull(ex);
+			var backtrace = ((JavaValue<Backtrace>) ((InstanceValue) ex).getValue("backtrace", "Ljava/lang/Object;")).getValue();
+			var storeTo = (ArrayValue) arr;
+			var memoryManager = vm.getMemoryManager();
+
+			for (int i = 0, j = backtrace.count(); i < j; i++) {
+				var frame = backtrace.get(i);
+				var methodName = frame.getMethod().name;
+				var owner = frame.getOwner();
+				var className = owner.getName();
+				var sourceFile = owner.getNode().sourceFile;
+				var lineNumber = frame.getLineNumber();
+				var element = memoryManager.newInstance(stackTraceElement);
+				helper.invokeExact(stackTraceElement, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V", new Value[0], new Value[]{
+						element,
+						helper.newUtf8(className),
+						helper.newUtf8(methodName),
+						helper.newUtf8(sourceFile),
+						new IntValue(lineNumber)
+				});
+				storeTo.setValue(i, element);
+			}
+			return Result.ABORT;
+		});
 	}
 
 	/**
@@ -525,16 +619,21 @@ public final class NativeJava {
 			var locals = ctx.getLocals();
 			var o = locals.load(1);
 			helper.checkNotNull(o);
-			if (!(o instanceof ObjectValue)) {
-				vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
-			}
 			var offset = (int) locals.load(2).asLong();
 			var value = locals.load(4);
-			if (!(value instanceof ObjectValue)) {
-				vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
-			}
 			var memoryManager = vm.getMemoryManager();
-			memoryManager.writeValue((ObjectValue) o, offset, value);
+			memoryManager.writeValue((ObjectValue) o, offset, (ObjectValue) value);
+			return Result.ABORT;
+		});
+		vmi.setInvoker(unsafe, "getIntVolatile", "(Ljava/lang/Object;J)I", ctx -> {
+			var locals = ctx.getLocals();
+			var value = locals.load(1);
+			if (value.isNull()) {
+				throw new PanicException("Segfault");
+			}
+			var offset = locals.load(2).asInt();
+			var memoryManager = vm.getMemoryManager();
+			ctx.setResult(new IntValue(memoryManager.readInt((ObjectValue) value, offset)));
 			return Result.ABORT;
 		});
 	}
@@ -656,6 +755,19 @@ public final class NativeJava {
 			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
 		}
 		return (JavaClass) wrapper;
+	}
+
+	/**
+	 * Initializes win32 file system class.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 * @param jc
+	 * 		File system class.
+	 */
+	private static void initWinFS(VirtualMachine vm, InstanceJavaClass jc) {
+		var vmi = vm.getInterface();
+		vmi.setInvoker(jc, "initIDs", "()V", ctx -> Result.ABORT);
 	}
 
 	/**

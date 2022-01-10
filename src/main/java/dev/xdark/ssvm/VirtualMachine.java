@@ -6,6 +6,8 @@ import dev.xdark.ssvm.classloading.*;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.VMException;
+import dev.xdark.ssvm.fs.FileDescriptorManager;
+import dev.xdark.ssvm.fs.SimpleFileDescriptorManager;
 import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.memory.SimpleMemoryManager;
 import dev.xdark.ssvm.mirror.ClassLayout;
@@ -37,6 +39,7 @@ public class VirtualMachine {
 	private final VMHelper helper;
 	private final ClassDefiner classDefiner;
 	private final ThreadManager threadManager;
+	private final FileDescriptorManager fileDescriptorManager;
 	private final Properties properties;
 
 	public VirtualMachine() {
@@ -59,6 +62,7 @@ public class VirtualMachine {
 		symbols = new VMSymbols(this);
 		primitives = new VMPrimitives(this);
 		classDefiner = createClassDefiner();
+		fileDescriptorManager = createFileDescriptorManager();
 		NativeJava.vmInit(this);
 
 		object.initialize();
@@ -104,7 +108,10 @@ public class VirtualMachine {
 			}
 			findBootstrapClass("java/lang/StringUTF16", true);
 			helper.invokeStatic(sysClass, "initPhase1", "()V", new Value[0], new Value[0]);
-			helper.invokeStatic(sysClass, "initPhase2", "()V", new Value[0], new Value[0]);
+			var result = helper.invokeStatic(sysClass, "initPhase2", "(ZZ)I", new Value[0], new Value[]{new IntValue(1), new IntValue(1)}).getResult().asInt();
+			if (result != 0) {
+				throw new IllegalStateException("VM initialization failed, initPhase2 returned " + result);
+			}
 			helper.invokeStatic(sysClass, "initPhase3", "()V", new Value[0], new Value[0]);
 		}
 		var classLoaderClass = symbols.java_lang_ClassLoader;
@@ -183,6 +190,15 @@ public class VirtualMachine {
 	 */
 	public ThreadManager getThreadManager() {
 		return threadManager;
+	}
+
+	/**
+	 * Returns file descriptor manager.
+	 *
+	 * @return file descriptor manager.
+	 */
+	public FileDescriptorManager getFileDescriptorManager() {
+		return fileDescriptorManager;
 	}
 
 	/**
@@ -361,6 +377,16 @@ public class VirtualMachine {
 	 */
 	protected ThreadManager createThreadManager() {
 		return new SimpleThreadManager(this);
+	}
+
+	/**
+	 * Creates file descriptor manager.
+	 * One may override this method.
+	 *
+	 * @return file descriptor manager.
+	 */
+	protected FileDescriptorManager createFileDescriptorManager() {
+		return new SimpleFileDescriptorManager();
 	}
 
 	private InstanceJavaClass internalLink(String name) {

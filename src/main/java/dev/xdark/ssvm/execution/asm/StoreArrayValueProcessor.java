@@ -4,6 +4,7 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.value.ArrayValue;
+import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 /**
@@ -20,7 +21,7 @@ public final class StoreArrayValueProcessor implements InstructionProcessor<Abst
 		var index = stack.pop().asInt();
 		var array = stack.<ArrayValue>pop();
 		ctx.getHelper().rangeCheck(array, index);
-		array.setValue(index, value);
+		array.setValue(index, (ObjectValue) value);
 		return Result.CONTINUE;
 	}
 }

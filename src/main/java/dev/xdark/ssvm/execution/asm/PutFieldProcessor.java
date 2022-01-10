@@ -52,7 +52,7 @@ public final class PutFieldProcessor implements InstructionProcessor<FieldInsnNo
 				manager.writeBoolean(instance, offset, value.asBoolean());
 				break;
 			default:
-				manager.writeValue(instance, offset, value);
+				manager.writeValue(instance, offset, (ObjectValue) value);
 				break;
 		}
 		return Result.CONTINUE;

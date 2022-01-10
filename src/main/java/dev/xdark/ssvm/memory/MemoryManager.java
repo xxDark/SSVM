@@ -293,7 +293,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	Value readValue(ObjectValue object, long offset);
+	ObjectValue readValue(ObjectValue object, long offset);
 
 	/**
 	 * Reads object class form an object.
@@ -455,7 +455,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	void writeValue(ObjectValue object, long offset, Value value);
+	void writeValue(ObjectValue object, long offset, ObjectValue value);
 
 	/**
 	 * Reads long from an array.
@@ -605,7 +605,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	Value readValue(ArrayValue array, long offset);
+	ObjectValue readValue(ArrayValue array, long offset);
 
 	/**
 	 * Reads array length.
@@ -764,7 +764,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	void writeValue(ArrayValue array, long offset, Value value);
+	void writeValue(ArrayValue array, long offset, ObjectValue value);
 
 	/**
 	 * Creates and sets new class oop.

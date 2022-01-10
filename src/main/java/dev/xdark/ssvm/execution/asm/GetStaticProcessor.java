@@ -17,11 +17,18 @@ public final class GetStaticProcessor implements InstructionProcessor<FieldInsnN
 	public Result execute(FieldInsnNode insn, ExecutionContext ctx) {
 		var vm = ctx.getVM();
 		var owner = (InstanceJavaClass) vm.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
-		var value = owner.getStaticValue(insn.name, insn.desc);
-		if (value == null) {
-			throw new IllegalStateException("No such field: " + owner.getInternalName() + '.' + insn.name + insn.desc);
+		if (owner == null) {
+			vm.getHelper().throwException(vm.getSymbols().java_lang_ClassNotFoundException, insn.owner);
 		}
-		ctx.getStack().pushGeneric(value);
-		return Result.CONTINUE;
+		while (owner != null) {
+			var value = owner.getStaticValue(insn.name, insn.desc);
+			if (value != null) {
+				ctx.getStack().pushGeneric(value);
+				return Result.CONTINUE;
+			}
+			owner = owner.getSuperClass();
+		}
+		vm.getHelper().throwException(vm.getSymbols().java_lang_NoSuchFieldError, insn.owner + '.' + insn.name + insn.desc);
+		return Result.ABORT;
 	}
 }

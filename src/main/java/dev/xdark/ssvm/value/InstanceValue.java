@@ -1,9 +1,7 @@
 package dev.xdark.ssvm.value;
 
 import dev.xdark.ssvm.memory.Memory;
-import dev.xdark.ssvm.mirror.FieldInfo;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaClass;
 
 /**
  * Represents instance value.
@@ -247,7 +245,7 @@ public class InstanceValue extends ObjectValue {
 	 * @param value
 	 * 		Value to set.
 	 */
-	public void setValue(String field, String desc, Value value) {
+	public void setValue(String field, String desc, ObjectValue value) {
 		getMemoryManager().writeValue(this, getFieldOffset(field, desc), value);
 	}
 

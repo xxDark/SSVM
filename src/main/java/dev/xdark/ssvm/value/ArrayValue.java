@@ -224,7 +224,7 @@ public final class ArrayValue extends ObjectValue {
 	 * @param value
 	 * 		Value to set.
 	 */
-	public void setValue(int index, Value value) {
+	public void setValue(int index, ObjectValue value) {
 		getMemoryManager().writeValue(this, dataOffset(validate(index) * sizeof(Value.class)), value);
 	}
 

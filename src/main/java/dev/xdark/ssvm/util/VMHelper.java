@@ -97,6 +97,9 @@ public final class VMHelper {
 	public ExecutionContext invokeVirtual(String name, String desc, Value[] stack, Value[] locals) {
 		InstanceJavaClass javaClass;
 		var instance = locals[0];
+		if (instance.isNull()) {
+			throwException(vm.getSymbols().java_lang_NullPointerException);
+		}
 		if (instance instanceof ArrayValue) {
 			javaClass = vm.getSymbols().java_lang_Object;
 		} else {
@@ -156,6 +159,9 @@ public final class VMHelper {
 	 * @return invocation result.
 	 */
 	public ExecutionContext invokeExact(InstanceJavaClass javaClass, MethodNode method, Value[] stack, Value[] locals) {
+		if (locals[0].isNull()) {
+			throwException(vm.getSymbols().java_lang_NullPointerException);
+		}
 		if ((method.access & Opcodes.ACC_STATIC) != 0) {
 			throw new IllegalStateException("Method is static");
 		}
@@ -698,7 +704,7 @@ public final class VMHelper {
 	 *
 	 * @return VM array.
 	 */
-	public ArrayValue toVMValues(Value[] array, int startIndex, int endIndex) {
+	public ArrayValue toVMValues(ObjectValue[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
 		var vm = this.vm;
 		var memoryManager = vm.getMemoryManager();
@@ -717,7 +723,7 @@ public final class VMHelper {
 	 *
 	 * @return VM array.
 	 */
-	public ArrayValue toVMValues(Value[] array) {
+	public ArrayValue toVMValues(ObjectValue[] array) {
 		return toVMValues(array, 0, array.length);
 	}
 
@@ -854,7 +860,7 @@ public final class VMHelper {
 					memoryManager.writeByte(oop, resultingOffset, ((Integer) cst).byteValue());
 					break;
 				default:
-					memoryManager.writeValue(oop, resultingOffset, cst == null ? NullValue.INSTANCE : valueFromLdc(cst));
+					memoryManager.writeValue(oop, resultingOffset, cst == null ? NullValue.INSTANCE : (ObjectValue) valueFromLdc(cst));
 			}
 		}
 	}
@@ -986,7 +992,7 @@ public final class VMHelper {
 	 *
 	 * @return new exception instance.
 	 */
-	public InstanceValue newException(InstanceJavaClass javaClass, String message, Value cause) {
+	public InstanceValue newException(InstanceJavaClass javaClass, String message, ObjectValue cause) {
 		var vm = this.vm;
 		javaClass.initialize();
 		var instance = vm.getMemoryManager().newInstance(javaClass);
@@ -1024,7 +1030,7 @@ public final class VMHelper {
 	 *
 	 * @return new exception instance.
 	 */
-	public InstanceValue newException(InstanceJavaClass javaClass, Value cause) {
+	public InstanceValue newException(InstanceJavaClass javaClass, ObjectValue cause) {
 		return newException(javaClass, null, cause);
 	}
 
@@ -1050,7 +1056,7 @@ public final class VMHelper {
 	 * @param cause
 	 * 		Exception cause.
 	 */
-	public void throwException(InstanceJavaClass javaClass, String message, Value cause) {
+	public void throwException(InstanceJavaClass javaClass, String message, ObjectValue cause) {
 		throw new VMException(newException(javaClass, message, cause));
 	}
 
@@ -1074,7 +1080,7 @@ public final class VMHelper {
 	 * @param cause
 	 * 		Exception cause.
 	 */
-	public void throwException(InstanceJavaClass javaClass, Value cause) {
+	public void throwException(InstanceJavaClass javaClass, ObjectValue cause) {
 		throwException(javaClass, null, cause);
 	}
 
@@ -1148,7 +1154,7 @@ public final class VMHelper {
 	 * @param protectionDomain
 	 * 		Protection domain of the class.
 	 */
-	public void setClassFields(InstanceValue oop, Value classLoader, Value protectionDomain) {
+	public void setClassFields(InstanceValue oop, ObjectValue classLoader, ObjectValue protectionDomain) {
 		oop.setValue("classLoader", "Ljava/lang/ClassLoader;", classLoader);
 		oop.setValue("protectionDomain", "Ljava/security/ProtectionDomain;", protectionDomain);
 	}
@@ -1173,7 +1179,7 @@ public final class VMHelper {
 	 *
 	 * @return defined class.
 	 */
-	public JavaClass defineClass(Value classLoader, String name, byte[] b, int off, int len, Value protectionDomain, String source) {
+	public JavaClass defineClass(ObjectValue classLoader, String name, byte[] b, int off, int len, ObjectValue protectionDomain, String source) {
 		var vm = this.vm;
 		if ((off | len | (off + len) | (b.length - (off + len))) < 0) {
 			throwException(vm.getSymbols().java_lang_ArrayIndexOutOfBoundsException);

@@ -2,7 +2,6 @@ package dev.xdark.ssvm.value;
 
 import dev.xdark.ssvm.memory.Memory;
 import dev.xdark.ssvm.memory.MemoryManager;
-import dev.xdark.ssvm.mirror.FieldInfo;
 import dev.xdark.ssvm.mirror.JavaClass;
 
 import java.util.concurrent.locks.Condition;
@@ -89,14 +88,12 @@ public class ObjectValue implements Value {
 	 *
 	 * @param timeoutMillis
 	 * 		The maximum time to wait, in milliseconds.
-	 * @param nanos
-	 * 		Additional time, in nanoseconds, in the range 0-999999 inclusive.
 	 *
 	 * @throws InterruptedException
 	 * 		If Java thread was interrupted.
 	 */
-	public void vmWait(long timeoutMillis, int nanos) throws InterruptedException {
-		signal.wait(timeoutMillis, nanos);
+	public void vmWait(long timeoutMillis) throws InterruptedException {
+		signal.wait(timeoutMillis);
 	}
 
 	/**
@@ -104,7 +101,7 @@ public class ObjectValue implements Value {
 	 * on this object's monitor.
 	 */
 	public void vmNotify() {
-		signal.notify();
+		signal.signal();
 	}
 
 	/**
@@ -112,7 +109,7 @@ public class ObjectValue implements Value {
 	 * on this object's monitor.
 	 */
 	public void vmNotifyAll() {
-		signal.notifyAll();
+		signal.signalAll();
 	}
 
 	protected MemoryManager getMemoryManager() {

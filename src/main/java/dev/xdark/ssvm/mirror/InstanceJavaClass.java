@@ -473,7 +473,7 @@ public final class InstanceJavaClass implements JavaClass {
 				memoryManager.writeByte(oop, resultingOffset, value.asByte());
 				return true;
 			default:
-				memoryManager.writeValue(oop, resultingOffset, value);
+				memoryManager.writeValue(oop, resultingOffset, (ObjectValue) value);
 				return true;
 		}
 	}

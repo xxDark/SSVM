@@ -367,11 +367,8 @@ public final class NativeJava {
 		});
 		vmi.setInvoker(unsafe, "setMemory0", "(Ljava/lang/Object;JJB)V", ctx -> {
 			var locals = ctx.getLocals();
-			var value = locals.load(1);
-			if (!(value instanceof ObjectValue)) {
-				throw new PanicException("Segfault");
-			}
-			var memory = ((ObjectValue) value).getMemory().getData();
+			var value = locals.<ObjectValue>load(1);
+			var memory = value.getMemory().getData();
 			var offset = locals.load(2).asLong();
 			var bytes = locals.load(4).asLong();
 			var b = locals.load(6).asByte();
@@ -382,15 +379,8 @@ public final class NativeJava {
 		});
 		vmi.setInvoker(unsafe, "arrayBaseOffset0", "(Ljava/lang/Class;)I", ctx -> {
 			var locals = ctx.getLocals();
-			var value = locals.load(1);
-			if (!(value instanceof JavaValue)) {
-				throw new PanicException("Segfault");
-			}
-			var wrapper = ((JavaValue<?>) value).getValue();
-			if (!(wrapper instanceof JavaClass)) {
-				throw new PanicException("Segfault");
-			}
-			var klass = (JavaClass) wrapper;
+			var value = locals.<JavaValue<JavaClass>>load(1);
+			var klass = value.getValue();
 			var component = klass.getComponentType();
 			if (component == null) {
 				vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
@@ -401,15 +391,8 @@ public final class NativeJava {
 		});
 		vmi.setInvoker(unsafe, "arrayIndexScale0", "(Ljava/lang/Class;)I", ctx -> {
 			var locals = ctx.getLocals();
-			var value = locals.load(1);
-			if (!(value instanceof JavaValue)) {
-				throw new PanicException("Segfault");
-			}
-			var wrapper = ((JavaValue<?>) value).getValue();
-			if (!(wrapper instanceof JavaClass)) {
-				throw new PanicException("Segfault");
-			}
-			var klass = (JavaClass) wrapper;
+			var value = locals.<JavaValue<JavaClass>>load(1);
+			var klass = value.getValue();
 			var component = klass.getComponentType();
 			if (component == null) {
 				vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
@@ -432,14 +415,8 @@ public final class NativeJava {
 		});
 		vmi.setInvoker(unsafe, "objectFieldOffset1", "(Ljava/lang/Class;Ljava/lang/String;)J", ctx -> {
 			var locals = ctx.getLocals();
-			var klass = locals.load(1);
-			if (!(klass instanceof JavaValue)) {
-				throw new PanicException("Segfault");
-			}
-			var wrapper = ((JavaValue<?>) klass).getValue();
-			if (!(wrapper instanceof JavaClass)) {
-				throw new PanicException("Segfault");
-			}
+			var klass = locals.<JavaValue<JavaClass>>load(1);
+			var wrapper = klass.getValue();
 			if (!(wrapper instanceof InstanceJavaClass)) {
 				ctx.setResult(new LongValue(-1L));
 			} else {

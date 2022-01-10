@@ -77,8 +77,8 @@ public class InstanceValue extends ObjectValue {
 	 *
 	 * @return float value.
 	 */
-	public int getFloat(String field) {
-		return getMemoryManager().readInt(this, getFieldOffset(field, "F"));
+	public float getFloat(String field) {
+		return getMemoryManager().readFloat(this, getFieldOffset(field, "F"));
 	}
 
 	/**

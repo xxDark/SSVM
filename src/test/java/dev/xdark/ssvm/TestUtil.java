@@ -20,6 +20,7 @@ final class TestUtil {
 		var klass = new InstanceJavaClass(vm, NullValue.INSTANCE, cr, result.getNode());
 		var oop = vm.getMemoryManager().setOopForClass(klass);
 		klass.setOop(oop);
+		vm.getBootClassLoaderData().forceLinkClass(klass);
 		klass.initialize();
 		return klass;
 	}

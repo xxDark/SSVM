@@ -746,7 +746,7 @@ public final class VMHelper {
 	 * @return Java string.
 	 */
 	public String readUtf8(Value value) {
-		if (value == null || value.isNull()) return null;
+		if (value.isNull()) return null;
 		return readUtf8((InstanceValue) value);
 	}
 
@@ -852,7 +852,7 @@ public final class VMHelper {
 					memoryManager.writeByte(oop, resultingOffset, ((Integer) cst).byteValue());
 					break;
 				default:
-					memoryManager.writeValue(oop, resultingOffset, NullValue.INSTANCE);
+					memoryManager.writeValue(oop, resultingOffset, cst == null ? NullValue.INSTANCE : valueFromLdc(cst));
 			}
 		}
 	}

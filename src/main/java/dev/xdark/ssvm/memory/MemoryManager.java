@@ -796,6 +796,17 @@ public interface MemoryManager {
 	int pageSize();
 
 	/**
+	 * Reports the offset of the data in
+	 * the storage allocation of a given object.
+	 *
+	 * @param value
+	 * 		Value to get offset from.
+	 *
+	 * @return offset of data.
+	 */
+	int valueBaseOffset(ObjectValue value);
+
+	/**
 	 * Reports the offset of the first element in
 	 * the storage allocation of a given array class.
 	 *

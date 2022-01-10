@@ -27,6 +27,7 @@ public final class GetFieldProcessor implements InstructionProcessor<FieldInsnNo
 		}
 		Value value;
 		var manager = vm.getMemoryManager();
+		offset += manager.valueBaseOffset(instance);
 		switch (insn.desc) {
 			case "J":
 				value = new LongValue(manager.readLong(instance, offset));
@@ -54,11 +55,6 @@ public final class GetFieldProcessor implements InstructionProcessor<FieldInsnNo
 				break;
 			default:
 				value = manager.readValue(instance, offset);
-		}
-		if (value == null) {
-			System.err.println("NULL VALUE AT " + insn.owner + '.' + insn.name + insn.desc);
-			System.err.println(offset);
-			System.exit(1);
 		}
 		stack.pushGeneric(value);
 		return Result.CONTINUE;

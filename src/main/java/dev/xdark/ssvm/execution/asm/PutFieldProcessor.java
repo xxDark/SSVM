@@ -24,6 +24,7 @@ public final class PutFieldProcessor implements InstructionProcessor<FieldInsnNo
 		if (offset == -1L) {
 			vm.getHelper().throwException(vm.getSymbols().java_lang_NoSuchFieldError, insn.owner + '.' + insn.name + insn.desc);
 		}
+		offset += vm.getMemoryManager().valueBaseOffset(instance);
 		var manager = vm.getMemoryManager();
 		switch (insn.desc) {
 			case "J":

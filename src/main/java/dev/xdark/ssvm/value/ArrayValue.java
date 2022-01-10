@@ -21,7 +21,7 @@ public final class ArrayValue extends ObjectValue {
 	 * @return long value.
 	 */
 	public long getLong(int index) {
-		return getMemoryManager().readLong(this, validate(index) * sizeof(long.class));
+		return getMemoryManager().readLong(this, dataOffset(validate(index) * sizeof(long.class)));
 	}
 
 	/**
@@ -33,7 +33,7 @@ public final class ArrayValue extends ObjectValue {
 	 * @return double value.
 	 */
 	public double getDouble(int index) {
-		return getMemoryManager().readDouble(this, validate(index) * sizeof(double.class));
+		return getMemoryManager().readDouble(this, dataOffset(validate(index) * sizeof(double.class)));
 	}
 
 	/**
@@ -45,7 +45,7 @@ public final class ArrayValue extends ObjectValue {
 	 * @return double value.
 	 */
 	public int getInt(int index) {
-		return getMemoryManager().readInt(this, validate(index) * sizeof(int.class));
+		return getMemoryManager().readInt(this, dataOffset(validate(index) * sizeof(int.class)));
 	}
 
 	/**
@@ -57,7 +57,7 @@ public final class ArrayValue extends ObjectValue {
 	 * @return float value.
 	 */
 	public float getFloat(int index) {
-		return getMemoryManager().readFloat(this, validate(index) * sizeof(float.class));
+		return getMemoryManager().readFloat(this, dataOffset(validate(index) * sizeof(float.class)));
 	}
 
 	/**
@@ -69,7 +69,7 @@ public final class ArrayValue extends ObjectValue {
 	 * @return char value.
 	 */
 	public char getChar(int index) {
-		return getMemoryManager().readChar(this, validate(index) * sizeof(char.class));
+		return getMemoryManager().readChar(this, dataOffset(validate(index) * sizeof(char.class)));
 	}
 
 	/**
@@ -81,7 +81,7 @@ public final class ArrayValue extends ObjectValue {
 	 * @return short value.
 	 */
 	public short getShort(int index) {
-		return getMemoryManager().readShort(this, validate(index) * sizeof(short.class));
+		return getMemoryManager().readShort(this, dataOffset(validate(index) * sizeof(short.class)));
 	}
 
 	/**
@@ -93,7 +93,7 @@ public final class ArrayValue extends ObjectValue {
 	 * @return byte value.
 	 */
 	public byte getByte(int index) {
-		return getMemoryManager().readByte(this, validate(index) * sizeof(byte.class));
+		return getMemoryManager().readByte(this, dataOffset(validate(index) * sizeof(byte.class)));
 	}
 
 	/**
@@ -105,7 +105,7 @@ public final class ArrayValue extends ObjectValue {
 	 * @return boolean value.
 	 */
 	public boolean getBoolean(int index) {
-		return getMemoryManager().readBoolean(this, validate(index) * sizeof(boolean.class));
+		return getMemoryManager().readBoolean(this, dataOffset(validate(index) * sizeof(boolean.class)));
 	}
 
 	/**
@@ -117,7 +117,7 @@ public final class ArrayValue extends ObjectValue {
 	 * @return VM value.
 	 */
 	public Value getValue(int index) {
-		return getMemoryManager().readValue(this, validate(index) * sizeof(Value.class));
+		return getMemoryManager().readValue(this, dataOffset(validate(index) * sizeof(Value.class)));
 	}
 
 	/**
@@ -129,7 +129,7 @@ public final class ArrayValue extends ObjectValue {
 	 * 		Value to set.
 	 */
 	public void setLong(int index, long value) {
-		getMemoryManager().writeLong(this, validate(index) * sizeof(long.class), value);
+		getMemoryManager().writeLong(this, dataOffset(validate(index) * sizeof(long.class)), value);
 	}
 
 	/**
@@ -141,7 +141,7 @@ public final class ArrayValue extends ObjectValue {
 	 * 		Value to set.
 	 */
 	public void setDouble(int index, double value) {
-		getMemoryManager().writeDouble(this, validate(index) * sizeof(double.class), value);
+		getMemoryManager().writeDouble(this, dataOffset(validate(index) * sizeof(double.class)), value);
 	}
 
 	/**
@@ -153,7 +153,7 @@ public final class ArrayValue extends ObjectValue {
 	 * 		Value to set.
 	 */
 	public void setInt(int index, int value) {
-		getMemoryManager().writeInt(this, validate(index) * sizeof(int.class), value);
+		getMemoryManager().writeInt(this, dataOffset(validate(index) * sizeof(int.class)), value);
 	}
 
 	/**
@@ -165,7 +165,7 @@ public final class ArrayValue extends ObjectValue {
 	 * 		Value to set.
 	 */
 	public void setFloat(int index, float value) {
-		getMemoryManager().writeFloat(this, validate(index) * sizeof(float.class), value);
+		getMemoryManager().writeFloat(this, dataOffset(validate(index) * sizeof(float.class)), value);
 	}
 
 	/**
@@ -177,7 +177,7 @@ public final class ArrayValue extends ObjectValue {
 	 * 		Value to set.
 	 */
 	public void setChar(int index, char value) {
-		getMemoryManager().writeChar(this, validate(index) * sizeof(char.class), value);
+		getMemoryManager().writeChar(this, dataOffset(validate(index) * sizeof(char.class)), value);
 	}
 
 	/**
@@ -189,7 +189,7 @@ public final class ArrayValue extends ObjectValue {
 	 * 		Value to set.
 	 */
 	public void setShort(int index, short value) {
-		getMemoryManager().writeShort(this, validate(index) * sizeof(short.class), value);
+		getMemoryManager().writeShort(this, dataOffset(validate(index) * sizeof(short.class)), value);
 	}
 
 	/**
@@ -201,7 +201,7 @@ public final class ArrayValue extends ObjectValue {
 	 * 		Value to set.
 	 */
 	public void setByte(int index, byte value) {
-		getMemoryManager().writeByte(this, validate(index) * sizeof(byte.class), value);
+		getMemoryManager().writeByte(this, dataOffset(validate(index) * sizeof(byte.class)), value);
 	}
 
 	/**
@@ -213,7 +213,7 @@ public final class ArrayValue extends ObjectValue {
 	 * 		Value to set.
 	 */
 	public void setBoolean(int index, boolean value) {
-		getMemoryManager().writeBoolean(this, validate(index) * sizeof(boolean.class), value);
+		getMemoryManager().writeBoolean(this, dataOffset(validate(index) * sizeof(boolean.class)), value);
 	}
 
 	/**
@@ -225,7 +225,7 @@ public final class ArrayValue extends ObjectValue {
 	 * 		Value to set.
 	 */
 	public void setValue(int index, Value value) {
-		getMemoryManager().writeValue(this, validate(index) * sizeof(Value.class), value);
+		getMemoryManager().writeValue(this, dataOffset(validate(index) * sizeof(Value.class)), value);
 	}
 
 	/**
@@ -239,6 +239,11 @@ public final class ArrayValue extends ObjectValue {
 
 	private long sizeof(Class<?> c) {
 		return getMemoryManager().arrayIndexScale(c);
+	}
+
+	private long dataOffset(long offset) {
+		if (offset == -1L) return offset;
+		return getMemoryManager().arrayBaseOffset(getJavaClass()) + offset;
 	}
 
 	private int validate(int index) {

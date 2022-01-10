@@ -135,37 +135,37 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public long readLong(ObjectValue object, long offset) {
-		return object.getMemory().getData().getLong((int) (OBJECT_HEADER_SIZE + validate(offset)));
+		return object.getMemory().getData().getLong((int) (validate(offset)));
 	}
 
 	@Override
 	public double readDouble(ObjectValue object, long offset) {
-		return object.getMemory().getData().getDouble((int) (OBJECT_HEADER_SIZE + validate(offset)));
+		return object.getMemory().getData().getDouble((int) (validate(offset)));
 	}
 
 	@Override
 	public int readInt(ObjectValue object, long offset) {
-		return object.getMemory().getData().getInt((int) (OBJECT_HEADER_SIZE + validate(offset)));
+		return object.getMemory().getData().getInt((int) (validate(offset)));
 	}
 
 	@Override
 	public float readFloat(ObjectValue object, long offset) {
-		return object.getMemory().getData().getFloat((int) (OBJECT_HEADER_SIZE + validate(offset)));
+		return object.getMemory().getData().getFloat((int) (validate(offset)));
 	}
 
 	@Override
 	public char readChar(ObjectValue object, long offset) {
-		return object.getMemory().getData().getChar((int) (OBJECT_HEADER_SIZE + validate(offset)));
+		return object.getMemory().getData().getChar((int) (validate(offset)));
 	}
 
 	@Override
 	public short readShort(ObjectValue object, long offset) {
-		return object.getMemory().getData().getShort((int) (OBJECT_HEADER_SIZE + validate(offset)));
+		return object.getMemory().getData().getShort((int) (validate(offset)));
 	}
 
 	@Override
 	public byte readByte(ObjectValue object, long offset) {
-		return object.getMemory().getData().get((int) (OBJECT_HEADER_SIZE + validate(offset)));
+		return object.getMemory().getData().get((int) (validate(offset)));
 	}
 
 	@Override
@@ -175,12 +175,12 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public Object readOop(ObjectValue object, long offset) {
-		return UnsafeUtil.byAddress(object.getMemory().getData().getLong((int) (OBJECT_HEADER_SIZE + validate(offset))));
+		return UnsafeUtil.byAddress(object.getMemory().getData().getLong((int) (validate(offset))));
 	}
 
 	@Override
 	public Value readValue(ObjectValue object, long offset) {
-		var address = object.getMemory().getData().getLong((int) (OBJECT_HEADER_SIZE + validate(offset)));
+		var address = object.getMemory().getData().getLong((int) (validate(offset)));
 		return objects.get(new Memory(null, null, address, false));
 	}
 
@@ -204,37 +204,37 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public void writeLong(ObjectValue object, long offset, long value) {
-		object.getMemory().getData().putLong((int) (OBJECT_HEADER_SIZE + validate(offset)), value);
+		object.getMemory().getData().putLong((int) (validate(offset)), value);
 	}
 
 	@Override
 	public void writeDouble(ObjectValue object, long offset, double value) {
-		object.getMemory().getData().putDouble((int) (OBJECT_HEADER_SIZE + validate(offset)), value);
+		object.getMemory().getData().putDouble((int) (validate(offset)), value);
 	}
 
 	@Override
 	public void writeInt(ObjectValue object, long offset, int value) {
-		object.getMemory().getData().putInt((int) (OBJECT_HEADER_SIZE + validate(offset)), value);
+		object.getMemory().getData().putInt((int) (validate(offset)), value);
 	}
 
 	@Override
 	public void writeFloat(ObjectValue object, long offset, float value) {
-		object.getMemory().getData().putFloat((int) (OBJECT_HEADER_SIZE + validate(offset)), value);
+		object.getMemory().getData().putFloat((int) (validate(offset)), value);
 	}
 
 	@Override
 	public void writeChar(ObjectValue object, long offset, char value) {
-		object.getMemory().getData().putChar((int) (OBJECT_HEADER_SIZE + validate(offset)), value);
+		object.getMemory().getData().putChar((int) (validate(offset)), value);
 	}
 
 	@Override
 	public void writeShort(ObjectValue object, long offset, short value) {
-		object.getMemory().getData().putShort((int) (OBJECT_HEADER_SIZE + validate(offset)), value);
+		object.getMemory().getData().putShort((int) (validate(offset)), value);
 	}
 
 	@Override
 	public void writeByte(ObjectValue object, long offset, byte value) {
-		object.getMemory().getData().put((int) (OBJECT_HEADER_SIZE + validate(offset)), value);
+		object.getMemory().getData().put((int) (validate(offset)), value);
 	}
 
 	@Override
@@ -244,12 +244,12 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public void writeOop(ObjectValue object, long offset, Object value) {
-		object.getMemory().getData().putLong((int) (OBJECT_HEADER_SIZE + validate(offset)), UnsafeUtil.addressOf(value));
+		object.getMemory().getData().putLong((int) (validate(offset)), UnsafeUtil.addressOf(value));
 	}
 
 	@Override
 	public void writeValue(ObjectValue object, long offset, Value value) {
-		object.getMemory().getData().putLong((int) (OBJECT_HEADER_SIZE + validate(offset)), ((ObjectValue) value).getMemory().getAddress());
+		object.getMemory().getData().putLong((int) (validate(offset)), ((ObjectValue) value).getMemory().getAddress());
 	}
 
 	@Override
@@ -378,6 +378,11 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
+	public int valueBaseOffset(ObjectValue value) {
+		return (int) OBJECT_HEADER_SIZE;
+	}
+
+	@Override
 	public int arrayBaseOffset(JavaClass javaClass) {
 		return (int) OBJECT_HEADER_SIZE;
 	}
@@ -430,13 +435,13 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	private Memory allocateObjectMemory(JavaClass javaClass) {
-		var objectSize = javaClass.getVirtualLayout().getSize();
-		return allocateHeap(OBJECT_HEADER_SIZE + objectSize);
+		var objectSize = OBJECT_HEADER_SIZE + javaClass.getVirtualLayout().getSize();
+		return allocateHeap(objectSize);
 	}
 
 	private Memory allocateClassMemory(JavaClass jlc, JavaClass javaClass) {
-		var size = jlc.getVirtualLayout().getSize() + javaClass.getStaticLayout().getSize();
-		return allocateHeap(OBJECT_HEADER_SIZE + size);
+		var size = OBJECT_HEADER_SIZE + jlc.getVirtualLayout().getSize() + javaClass.getStaticLayout().getSize();
+		return allocateHeap(size);
 	}
 
 	private Memory allocateArrayMemory(int length, long componentSize) {

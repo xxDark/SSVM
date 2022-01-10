@@ -70,7 +70,8 @@ public final class NativeJava {
 					result = primitives.voidPrimitive.getOop();
 					break;
 				default:
-					throw new IllegalStateException(name);
+					vm.getHelper().throwException(symbols.java_lang_IllegalArgumentException);
+					result = null;
 			}
 			ctx.setResult(result);
 			return Result.ABORT;
@@ -87,7 +88,7 @@ public final class NativeJava {
 			var loader = locals.load(2);
 			var klass = vm.findClass(loader, name, initialize);
 			if (klass == null) {
-				helper.throwException(vm.getSymbols().java_lang_ClassNotFoundException, name);
+				helper.throwException(symbols.java_lang_ClassNotFoundException, name);
 			} else {
 				ctx.setResult(klass.getOop());
 			}
@@ -149,12 +150,12 @@ public final class NativeJava {
 			var srcScale = memoryManager.arrayIndexScale(srcComponent);
 			var dstScale = memoryManager.arrayIndexScale(dstComponent);
 			if (srcScale != dstScale) {
-				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+				helper.throwException(symbols.java_lang_IllegalArgumentException);
 			}
 			var srcStart = memoryManager.arrayBaseOffset(srcComponent);
 			var dstStart = memoryManager.arrayBaseOffset(dstComponent);
 			if (srcStart != dstStart) {
-				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+				helper.throwException(symbols.java_lang_IllegalArgumentException);
 			}
 			for (int i = 0; i < length; i++) {
 				switch (srcScale) {
@@ -306,15 +307,15 @@ public final class NativeJava {
 			var helper = vm.getHelper();
 			helper.checkNotNull(local);
 			if (!(local instanceof JavaValue)) {
-				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+				helper.throwException(symbols.java_lang_IllegalArgumentException);
 			}
 			var wrapper = ((JavaValue<?>) local).getValue();
 			if (!(wrapper instanceof JavaClass)) {
-				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+				helper.throwException(symbols.java_lang_IllegalArgumentException);
 			}
 			var klass = (JavaClass) wrapper;
 			if (klass.isArray()) {
-				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+				helper.throwException(symbols.java_lang_IllegalArgumentException);
 			}
 			var length = locals.load(1).asInt();
 			var memoryManager = vm.getMemoryManager();
@@ -441,7 +442,9 @@ public final class NativeJava {
 				ctx.setResult(new LongValue(-1L));
 			} else {
 				var utf = vm.getHelper().readUtf8(locals.load(2));
-				ctx.setResult(new LongValue(((InstanceJavaClass) wrapper).getFieldOffsetRecursively(utf)));
+				var offset = ((InstanceJavaClass) wrapper).getFieldOffsetRecursively(utf);
+				if (offset != -1L) offset += vm.getMemoryManager().valueBaseOffset((ObjectValue) klass);
+				ctx.setResult(new LongValue(offset));
 			}
 			return Result.ABORT;
 		});

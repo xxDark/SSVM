@@ -630,7 +630,7 @@ public final class VMHelper {
 		int newLength = endIndex - startIndex;
 		var vm = this.vm;
 		var memoryManager = vm.getMemoryManager();
-		var wrapper =memoryManager.newArray(vm.getPrimitives().bytePrimitive.newArrayClass(), newLength, memoryManager.arrayIndexScale(byte.class));
+		var wrapper = memoryManager.newArray(vm.getPrimitives().bytePrimitive.newArrayClass(), newLength, memoryManager.arrayIndexScale(byte.class));
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setByte(i++, array[startIndex]);
 		}
@@ -810,10 +810,10 @@ public final class VMHelper {
 	 */
 	public void initializeStaticFields(InstanceJavaClass javaClass) {
 		var memoryManager = vm.getMemoryManager();
-		var baseOffset = memoryManager.getStaticOffset(javaClass);
+		var oop = javaClass.getOop();
+		var baseOffset = memoryManager.valueBaseOffset(oop) + memoryManager.getStaticOffset(javaClass);
 		var fields = javaClass.getStaticLayout().getOffsetMap();
 		var asmFields = javaClass.getNode().fields;
-		var oop = javaClass.getOop();
 		for (var entry : fields.entrySet()) {
 			var key = entry.getKey();
 			var name = key.getName();
@@ -866,9 +866,10 @@ public final class VMHelper {
 	public void initializeDefaultValues(InstanceValue value) {
 		var vm = this.vm;
 		var memoryManager = vm.getMemoryManager();
+		var baseOffset = memoryManager.valueBaseOffset(value);
 		for (var entry : value.getJavaClass().getVirtualLayout().getOffsetMap().entrySet()) {
 			var field = entry.getKey().getDesc();
-			var offset = entry.getValue();
+			var offset = baseOffset + entry.getValue();
 			switch (field) {
 				case "J":
 					memoryManager.writeLong(value, offset, 0L);
@@ -917,9 +918,10 @@ public final class VMHelper {
 				.stream()
 				.filter(x -> javaClass == x.getKey().getOwner())
 				.collect(Collectors.toList());
+		var baseOffset = memoryManager.valueBaseOffset(value);
 		for (var entry : fields) {
 			var field = entry.getKey().getDesc();
-			var offset = entry.getValue();
+			var offset = baseOffset + entry.getValue();
 			switch (field) {
 				case "J":
 					memoryManager.writeLong(value, offset, 0L);

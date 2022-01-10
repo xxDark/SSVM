@@ -665,6 +665,15 @@ public final class InstanceJavaClass implements JavaClass {
 		return node;
 	}
 
+	/**
+	 * Returns class source.
+	 *
+	 * @return class source.
+	 */
+	public ClassReader getClassReader() {
+		return classReader;
+	}
+
 	@Override
 	public String toString() {
 		return getName();

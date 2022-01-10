@@ -3,12 +3,14 @@ package dev.xdark.ssvm;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.classloading.ClassLoaderData;
+import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.asm.*;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.value.*;
+import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.FieldNode;
 
 import java.nio.ByteOrder;
@@ -323,6 +325,15 @@ public final class NativeJava {
 			ctx.setResult(result);
 			return Result.ABORT;
 		});
+
+		var cpClass = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/ConstantPool");
+		if (cpClass == null) {
+			cpClass = (InstanceJavaClass) vm.findBootstrapClass("sun/reflect/ConstantPool");
+		}
+		if (cpClass == null) {
+			throw new IllegalStateException("Unable to locate ConstantPool class");
+		}
+		initConstantPool(vm, cpClass);
 	}
 
 	/**
@@ -422,7 +433,7 @@ public final class NativeJava {
 			} else {
 				var utf = vm.getHelper().readUtf8(locals.load(2));
 				var offset = ((InstanceJavaClass) wrapper).getFieldOffsetRecursively(utf);
-				if (offset != -1L) offset += vm.getMemoryManager().valueBaseOffset((ObjectValue) klass);
+				if (offset != -1L) offset += vm.getMemoryManager().valueBaseOffset(klass);
 				ctx.setResult(new LongValue(offset));
 			}
 			return Result.ABORT;
@@ -521,6 +532,125 @@ public final class NativeJava {
 			memoryManager.writeValue((ObjectValue) o, offset, value);
 			return Result.ABORT;
 		});
+	}
+
+	/**
+	 * Sets up xx/reflect/ConstantPool
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 * @param jc
+	 * 		ConstantPool class.
+	 */
+	private static void initConstantPool(VirtualMachine vm, InstanceJavaClass jc) {
+		var vmi = vm.getInterface();
+		vmi.setInvoker(jc, "getSize0", "(Ljav/lang/Object;)I", ctx -> {
+			var wrapper = getCpOop(ctx);
+			if (wrapper instanceof InstanceJavaClass) {
+				var cr = ((InstanceJavaClass) wrapper).getClassReader();
+				ctx.setResult(new IntValue(cr.getItemCount()));
+			} else {
+				ctx.setResult(new IntValue(0));
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "getClassAt0", "(Ljava/lang/Object;I)Ljava/lang/Class;", ctx -> {
+			var wrapper = getInstanceCpOop(ctx);
+			var cr = wrapper.getClassReader();
+			var index = cpRangeCheck(ctx, cr);
+			var offset = cr.getItem(index);
+			var className = cr.readClass(offset, new char[cr.getMaxStringLength()]);
+			var result = vm.findClass(ctx.getOwner().getClassLoader(), className, true);
+			if (result == null) {
+				vm.getHelper().throwException(vm.getSymbols().java_lang_ClassNotFoundException, className);
+			}
+			ctx.setResult(result.getOop());
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "getClassAtIfLoaded0", "(Ljava/lang/Object;I)Ljava/lang/Class;", ctx -> {
+			var wrapper = getInstanceCpOop(ctx);
+			var cr = wrapper.getClassReader();
+			var index = cpRangeCheck(ctx, cr);
+			var offset = cr.getItem(index);
+			var className = cr.readClass(offset, new char[cr.getMaxStringLength()]);
+			var result = vm.findClass(ctx.getOwner().getClassLoader(), className, true);
+			if (result == null) {
+				ctx.setResult(NullValue.INSTANCE);
+			} else {
+				ctx.setResult(result.getOop());
+			}
+			return Result.ABORT;
+		});
+		// getClassRefIndexAt0?
+		// TODO all reflection stuff
+		vmi.setInvoker(jc, "getIntAt0", "(Ljava/lang/Object;I)I", ctx -> {
+			var wrapper = getInstanceCpOop(ctx);
+			var cr = wrapper.getClassReader();
+			var index = cpRangeCheck(ctx, cr);
+			var offset = cr.getItem(index);
+			ctx.setResult(new IntValue(cr.readInt(offset)));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "getLongAt0", "(Ljava/lang/Object;I)J", ctx -> {
+			var wrapper = getInstanceCpOop(ctx);
+			var cr = wrapper.getClassReader();
+			var index = cpRangeCheck(ctx, cr);
+			var offset = cr.getItem(index);
+			ctx.setResult(new LongValue(cr.readLong(offset)));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "getFloatAt0", "(Ljava/lang/Object;I)F", ctx -> {
+			var wrapper = getInstanceCpOop(ctx);
+			var cr = wrapper.getClassReader();
+			var index = cpRangeCheck(ctx, cr);
+			var offset = cr.getItem(index);
+			ctx.setResult(new FloatValue(Float.intBitsToFloat(cr.readInt(offset))));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "getDoubleAt0", "(Ljava/lang/Object;I)D", ctx -> {
+			var wrapper = getInstanceCpOop(ctx);
+			var cr = wrapper.getClassReader();
+			var index = cpRangeCheck(ctx, cr);
+			var offset = cr.getItem(index);
+			ctx.setResult(new DoubleValue(Double.longBitsToDouble(cr.readLong(offset))));
+			return Result.ABORT;
+		});
+	}
+
+	private static void wrongCpType(ExecutionContext ctx) {
+		var vm = ctx.getVM();
+		vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException, "Wrong cp entry type");
+	}
+
+	private static int cpRangeCheck(ExecutionContext ctx, ClassReader cr) {
+		var index = ctx.getLocals().load(1).asInt();
+		if (index < 0 || index >= cr.getItemCount()) {
+			var vm = ctx.getVM();
+			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+		}
+		return index;
+	}
+
+	private static InstanceJavaClass getInstanceCpOop(ExecutionContext ctx) {
+		var jc = getCpOop(ctx);
+		if (!(jc instanceof InstanceJavaClass)) {
+			var vm = ctx.getVM();
+			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+		}
+		return (InstanceJavaClass) jc;
+	}
+
+	private static JavaClass getCpOop(ExecutionContext ctx) {
+		var vm = ctx.getVM();
+		var value = ctx.getLocals().load(1);
+		if (!(value instanceof JavaValue)) {
+			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+		}
+		var wrapper = ((JavaValue<?>) value).getValue();
+		if (!(wrapper instanceof JavaClass)) {
+			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+		}
+		return (JavaClass) wrapper;
 	}
 
 	/**

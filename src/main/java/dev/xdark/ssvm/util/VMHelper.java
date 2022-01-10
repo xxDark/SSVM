@@ -98,7 +98,7 @@ public final class VMHelper {
 		if (instance instanceof ArrayValue) {
 			javaClass = vm.getSymbols().java_lang_Object;
 		} else {
-			javaClass = (InstanceJavaClass) ((InstanceValue) instance).getJavaClass();
+			javaClass = ((InstanceValue) instance).getJavaClass();
 		}
 		javaClass.initialize();
 		var keep = javaClass;
@@ -419,7 +419,8 @@ public final class VMHelper {
 	public ArrayValue toVMLongs(long[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
 		var vm = this.vm;
-		var wrapper = vm.getMemoryManager().newArray(vm.getPrimitives().longPrimitive.newArrayClass(), newLength, 8L);
+		var memoryManager = vm.getMemoryManager();
+		var wrapper = memoryManager.newArray(vm.getPrimitives().longPrimitive.newArrayClass(), newLength, memoryManager.arrayIndexScale(long.class));
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setLong(i++, array[startIndex]);
 		}
@@ -453,7 +454,8 @@ public final class VMHelper {
 	public ArrayValue toVMDoubles(double[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
 		var vm = this.vm;
-		var wrapper = vm.getMemoryManager().newArray(vm.getPrimitives().doublePrimitive.newArrayClass(), newLength, 8L);
+		var memoryManager = vm.getMemoryManager();
+		var wrapper = memoryManager.newArray(vm.getPrimitives().doublePrimitive.newArrayClass(), newLength, memoryManager.arrayIndexScale(double.class));
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setDouble(i++, array[startIndex]);
 		}
@@ -487,7 +489,8 @@ public final class VMHelper {
 	public ArrayValue toVMInts(int[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
 		var vm = this.vm;
-		var wrapper = vm.getMemoryManager().newArray(vm.getPrimitives().intPrimitive.newArrayClass(), newLength, 4L);
+		var memoryManager = vm.getMemoryManager();
+		var wrapper = memoryManager.newArray(vm.getPrimitives().intPrimitive.newArrayClass(), newLength, memoryManager.arrayIndexScale(int.class));
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setInt(i++, array[startIndex]);
 		}
@@ -521,7 +524,8 @@ public final class VMHelper {
 	public ArrayValue toVMFloats(float[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
 		var vm = this.vm;
-		var wrapper = vm.getMemoryManager().newArray(vm.getPrimitives().floatPrimitive.newArrayClass(), newLength, 4L);
+		var memoryManager = vm.getMemoryManager();
+		var wrapper = memoryManager.newArray(vm.getPrimitives().floatPrimitive.newArrayClass(), newLength, memoryManager.arrayIndexScale(float.class));
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setFloat(i++, array[startIndex]);
 		}
@@ -555,7 +559,8 @@ public final class VMHelper {
 	public ArrayValue toVMChars(char[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
 		var vm = this.vm;
-		var wrapper = vm.getMemoryManager().newArray(vm.getPrimitives().charPrimitive.newArrayClass(), newLength, 2L);
+		var memoryManager = vm.getMemoryManager();
+		var wrapper = memoryManager.newArray(vm.getPrimitives().charPrimitive.newArrayClass(), newLength, memoryManager.arrayIndexScale(char.class));
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setChar(i++, array[startIndex]);
 		}
@@ -589,7 +594,8 @@ public final class VMHelper {
 	public ArrayValue toVMShorts(short[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
 		var vm = this.vm;
-		var wrapper = vm.getMemoryManager().newArray(vm.getPrimitives().shortPrimitive.newArrayClass(), newLength, 2L);
+		var memoryManager = vm.getMemoryManager();
+		var wrapper = memoryManager.newArray(vm.getPrimitives().shortPrimitive.newArrayClass(), newLength, memoryManager.arrayIndexScale(short.class));
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setShort(i++, array[startIndex]);
 		}
@@ -623,7 +629,8 @@ public final class VMHelper {
 	public ArrayValue toVMBytes(byte[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
 		var vm = this.vm;
-		var wrapper = vm.getMemoryManager().newArray(vm.getPrimitives().bytePrimitive.newArrayClass(), newLength, 1L);
+		var memoryManager = vm.getMemoryManager();
+		var wrapper =memoryManager.newArray(vm.getPrimitives().bytePrimitive.newArrayClass(), newLength, memoryManager.arrayIndexScale(byte.class));
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setByte(i++, array[startIndex]);
 		}
@@ -657,7 +664,8 @@ public final class VMHelper {
 	public ArrayValue toVMBooleans(boolean[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
 		var vm = this.vm;
-		var wrapper = vm.getMemoryManager().newArray(vm.getPrimitives().booleanPrimitive.newArrayClass(), newLength, 1L);
+		var memoryManager = vm.getMemoryManager();
+		var wrapper = memoryManager.newArray(vm.getPrimitives().booleanPrimitive.newArrayClass(), newLength, memoryManager.arrayIndexScale(boolean.class));
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setBoolean(i++, array[startIndex]);
 		}
@@ -691,7 +699,8 @@ public final class VMHelper {
 	public ArrayValue toVMValues(Value[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
 		var vm = this.vm;
-		var wrapper = vm.getMemoryManager().newArray(vm.getSymbols().java_lang_Object.newArrayClass(), newLength, 8L);
+		var memoryManager = vm.getMemoryManager();
+		var wrapper = memoryManager.newArray(vm.getSymbols().java_lang_Object.newArrayClass(), newLength, memoryManager.arrayIndexScale(Value.class));
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setValue(i++, array[startIndex]);
 		}

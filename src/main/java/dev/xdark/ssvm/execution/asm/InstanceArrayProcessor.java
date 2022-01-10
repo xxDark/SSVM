@@ -3,6 +3,7 @@ package dev.xdark.ssvm.execution.asm;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.tree.TypeInsnNode;
 
 /**
@@ -20,7 +21,8 @@ public final class InstanceArrayProcessor implements InstructionProcessor<TypeIn
 		vm.getHelper().checkArrayLength(length);
 		var arrayClass = vm.findClass(ctx.getOwner().getClassLoader(), insn.desc, true)
 				.newArrayClass();
-		stack.push(vm.getMemoryManager().newArray(arrayClass, length, 8L));
+		var memoryManager = vm.getMemoryManager();
+		stack.push(memoryManager.newArray(arrayClass, length, memoryManager.arrayIndexScale(Value.class)));
 		return Result.CONTINUE;
 	}
 }

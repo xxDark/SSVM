@@ -479,8 +479,6 @@ public final class NativeJava {
 			var obj = (ObjectValue) value;
 			var offset = (int) locals.load(2).asLong();
 			var memoryManager = vm.getMemoryManager();
-			System.err.println(((ArrayValue)value).getLength());
-			System.err.println(offset);
 			ctx.setResult(memoryManager.readValue(obj, offset));
 			return Result.ABORT;
 		});

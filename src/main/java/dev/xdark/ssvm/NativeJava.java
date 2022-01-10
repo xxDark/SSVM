@@ -525,6 +525,23 @@ public final class NativeJava {
 			ctx.setResult(new IntValue(result ? 1 : 0));
 			return Result.ABORT;
 		});
+		vmi.setInvoker(unsafe, "putObjectVolatile", "(Ljava/lang/Object;JLjava/lang/Object;)V", ctx -> {
+			var helper = vm.getHelper();
+			var locals = ctx.getLocals();
+			var o = locals.load(1);
+			helper.checkNotNull(o);
+			if (!(o instanceof ObjectValue)) {
+				vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+			}
+			var offset = (int) locals.load(2).asLong();
+			var value = locals.load(4);
+			if (!(value instanceof ObjectValue)) {
+				vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+			}
+			var memoryManager = vm.getMemoryManager();
+			memoryManager.writeValue((ObjectValue) o, offset, value);
+			return Result.ABORT;
+		});
 	}
 
 	/**

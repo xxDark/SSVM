@@ -39,6 +39,7 @@ public final class VMSymbols {
 	public final InstanceJavaClass java_lang_Double;
 	public final InstanceJavaClass java_lang_Float;
 	public final InstanceJavaClass java_lang_reflect_Array;
+	public final InstanceJavaClass java_lang_BootstrapMethodError;
 
 	/**
 	 * @param vm
@@ -74,5 +75,6 @@ public final class VMSymbols {
 		java_lang_Double = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Double");
 		java_lang_Float = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Float");
 		java_lang_reflect_Array = (InstanceJavaClass) vm.findBootstrapClass("java/lang/reflect/Array");
+		java_lang_BootstrapMethodError = (InstanceJavaClass) vm.findBootstrapClass("java/lang/BootstrapMethodError");
 	}
 }

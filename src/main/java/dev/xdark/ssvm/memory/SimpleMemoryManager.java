@@ -425,10 +425,13 @@ public class SimpleMemoryManager implements MemoryManager {
 			vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError);
 			return null;
 		}
-		var block = new Memory(this, ByteBuffer.allocate((int) size), ThreadLocalRandom.current().nextLong() & 0xFFFFFFFFL, isDirect);
-		if (memoryBlocks.putIfAbsent(block.getAddress(), block) != null) {
-			throw new PanicException("Duplicate block allocation");
-		}
+		var rng =ThreadLocalRandom.current();
+		long address;
+		do {
+			address = rng.nextLong()  & 0xFFFFFFFFL;
+		} while (memoryBlocks.containsKey(address));
+		var block = new Memory(this, ByteBuffer.allocate((int) size), address, isDirect);
+		memoryBlocks.put(address, block);
 		return block;
 	}
 

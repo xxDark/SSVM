@@ -321,6 +321,7 @@ public class VirtualMachine {
 					if (result == Result.ABORT) break;
 				} catch (VMException ex) {
 					var oop = ex.getOop();
+					var exceptionType = oop.getJavaClass();
 					var tryCatchBlocks = mn.tryCatchBlocks;
 					var index = ctx.getInsnPosition() - 1;
 					for (int i = 0, j = tryCatchBlocks.size(); i < j; i++) {
@@ -328,11 +329,14 @@ public class VirtualMachine {
 						var type = block.type;
 						if (type == null) continue;
 						if (index < AsmUtil.getIndex(block.start) || index > AsmUtil.getIndex(block.end)) continue;
-						var stack = ctx.getStack();
-						stack.clear();
-						stack.push(oop);
-						ctx.setInsnPosition(AsmUtil.getIndex(block.handler));
-						continue exec;
+						var candidate = findClass(ctx.getOwner().getClassLoader(), type, true);
+						if (candidate.isAssignableFrom(exceptionType)) {
+							var stack = ctx.getStack();
+							stack.clear();
+							stack.push(oop);
+							ctx.setInsnPosition(AsmUtil.getIndex(block.handler));
+							continue exec;
+						}
 					}
 					throw ex;
 				}

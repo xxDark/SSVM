@@ -1242,7 +1242,7 @@ public final class VMHelper {
 		var msg = readUtf8(oop.getValue("detailMessage", "Ljava/lang/String;"));
 		var exception = new Exception(msg);
 		var backtrace = oop.getValue("backtrace", "Ljava/lang/Object;");
-		if (backtrace != null) {
+		if (!backtrace.isNull()) {
 			var unmarshalled = ((JavaValue<Backtrace>) backtrace).getValue();
 			var stackTrace = StreamSupport.stream(unmarshalled.spliterator(), false)
 					.map(ctx -> {

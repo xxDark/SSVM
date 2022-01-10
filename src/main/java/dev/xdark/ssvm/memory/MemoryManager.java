@@ -807,6 +807,17 @@ public interface MemoryManager {
 	int arrayBaseOffset(JavaClass javaClass);
 
 	/**
+	 * Reports the offset of the first element in
+	 * the storage allocation of a given array class.
+	 *
+	 * @param javaClass
+	 * 		Array component class.
+	 *
+	 * @return offset of the first element.
+	 */
+	int arrayBaseOffset(Class<?> javaClass);
+
+	/**
 	 * Reports the index scale for elements in
 	 * the storage allocation of a given array class.
 	 *
@@ -816,6 +827,17 @@ public interface MemoryManager {
 	 * @return index scale for elements in the array.
 	 */
 	int arrayIndexScale(JavaClass javaClass);
+
+	/**
+	 * Reports the index scale for elements in
+	 * the storage allocation of a given array class.
+	 *
+	 * @param javaClass
+	 * 		Array component class.
+	 *
+	 * @return index scale for elements in the array.
+	 */
+	int arrayIndexScale(Class<?> javaClass);
 
 	/**
 	 * Returns memory block at location {@code 0}.

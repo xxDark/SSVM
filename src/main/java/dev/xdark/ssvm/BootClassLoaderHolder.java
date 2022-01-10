@@ -17,7 +17,6 @@ final class BootClassLoaderHolder {
 	private final ClassLoaderData data = new ClassLoaderData();
 	private final VirtualMachine vm;
 	private final BootClassLoader bootClassLoader;
-	private InstanceJavaClass jc;
 
 	/**
 	 * Boot class loader to get classes from.
@@ -81,9 +80,6 @@ final class BootClassLoaderHolder {
 	 * 		Class to link.
 	 */
 	void forceLink(JavaClass jc) {
-		if ("java/lang/Class".equals(jc.getInternalName())) {
-			this.jc = (InstanceJavaClass) jc;
-		}
 		data.forceLinkClass(jc);
 	}
 

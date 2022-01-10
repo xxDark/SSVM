@@ -383,12 +383,26 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
+	public int arrayBaseOffset(Class<?> javaClass) {
+		return (int) OBJECT_HEADER_SIZE;
+	}
+
+	@Override
 	public int arrayIndexScale(JavaClass javaClass) {
 		var primitives = vm.getPrimitives();
 		if (javaClass == primitives.longPrimitive || javaClass == primitives.doublePrimitive) return 8;
 		if (javaClass == primitives.intPrimitive || javaClass == primitives.floatPrimitive) return 4;
 		if (javaClass == primitives.charPrimitive || javaClass == primitives.shortPrimitive) return 2;
 		if (javaClass == primitives.bytePrimitive || javaClass == primitives.booleanPrimitive) return 1;
+		return 8;
+	}
+
+	@Override
+	public int arrayIndexScale(Class<?> javaClass) {
+		if (javaClass == long.class || javaClass == double.class) return 8;
+		if (javaClass == int.class || javaClass == float.class) return 4;
+		if (javaClass == char.class || javaClass == short.class) return 2;
+		if (javaClass == byte.class || javaClass == boolean.class) return 1;
 		return 8;
 	}
 

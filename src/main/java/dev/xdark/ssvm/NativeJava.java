@@ -31,7 +31,7 @@ public final class NativeJava {
 	 * 		VM to set up.
 	 */
 	static void vmInit(VirtualMachine vm) {
-		var vmi = vm.getVmInterface();
+		var vmi = vm.getInterface();
 		injectVMFields(vm);
 		setInstructions(vmi);
 		var symbols = vm.getSymbols();
@@ -334,7 +334,7 @@ public final class NativeJava {
 	 * 		Unsafe class.
 	 */
 	private static void initNewUnsafe(VirtualMachine vm, InstanceJavaClass unsafe) {
-		var vmi = vm.getVmInterface();
+		var vmi = vm.getInterface();
 		vmi.setInvoker(unsafe, "allocateMemory0", "(J)J", ctx -> {
 			var memoryManager = vm.getMemoryManager();
 			var block = memoryManager.allocateDirect(ctx.getLocals().load(1).asLong());

@@ -136,7 +136,7 @@ public class VirtualMachine {
 	 *
 	 * @return VM interface.
 	 */
-	public VMInterface getVmInterface() {
+	public VMInterface getInterface() {
 		return vmInterface;
 	}
 

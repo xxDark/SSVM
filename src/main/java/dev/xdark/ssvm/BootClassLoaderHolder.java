@@ -55,7 +55,7 @@ final class BootClassLoaderHolder {
 				var oop = vm.getMemoryManager().setOopForClass(jc);
 				((InstanceJavaClass) jc).setOop(oop);
 				data.linkClass(jc);
-				vm.getHelper().initializeDefaultValues(oop, this.jc);
+				vm.getHelper().initializeDefaultValues(oop);
 			}
 			while (dimensions-- != 0) jc = jc.newArrayClass();
 			return jc;

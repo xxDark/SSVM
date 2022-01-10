@@ -23,7 +23,7 @@ public final class PutFieldProcessor implements InstructionProcessor<FieldInsnNo
 		var instance = stack.<InstanceValue>pop();
 		var offset = owner.getFieldOffsetRecursively(insn.name, insn.desc);
 		if (offset == -1L) {
-			throw new IllegalStateException("No such field: " + insn.owner + '.' + insn.name + insn.desc);
+			vm.getHelper().throwException(vm.getSymbols().java_lang_NoSuchFieldError, insn.owner + '.' + insn.name + insn.desc);
 		}
 		var manager = vm.getMemoryManager();
 		switch (insn.desc) {

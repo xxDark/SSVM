@@ -23,8 +23,8 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class SimpleMemoryManager implements MemoryManager {
 
-	private static final long OBJECT_HEADER_SIZE = Unsafe.ADDRESS_SIZE;
-	private static final long ARRAY_HEADER_SIZE = OBJECT_HEADER_SIZE + 4L;
+	private static final long OBJECT_HEADER_SIZE = Unsafe.ADDRESS_SIZE + 4L;
+	private static final long ARRAY_LENGTH = Unsafe.ADDRESS_SIZE;
 	private final Map<Long, Memory> memoryBlocks = new HashMap<>();
 	private final Map<Memory, Value> objects = new WeakHashMap<>();
 
@@ -115,7 +115,7 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public <V> JavaValue<V> newJavaLangClass(InstanceJavaClass javaClass, V value) {
-		var memory = allocateObjectMemory(javaClass);
+		var memory = allocateClassMemory(javaClass, javaClass);
 		var wrapper = new JavaValue<>(memory, value);
 		javaClass.setOop(wrapper);
 		setClass(memory, javaClass);
@@ -127,7 +127,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	public ArrayValue newArray(ArrayJavaClass javaClass, int length, long componentSize) {
 		var memory = allocateArrayMemory(length, componentSize);
 		setClass(memory, javaClass);
-		memory.getData().putInt((int) OBJECT_HEADER_SIZE, length);
+		memory.getData().putInt((int) ARRAY_LENGTH, length);
 		var value = new ArrayValue(memory);
 		objects.put(memory, value);
 		return value;
@@ -199,7 +199,7 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public int readArrayLength(ArrayValue array) {
-		return array.getMemory().getData().getInt((int) OBJECT_HEADER_SIZE);
+		return array.getMemory().getData().getInt((int) ARRAY_LENGTH);
 	}
 
 	@Override
@@ -254,108 +254,112 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public long readLong(ArrayValue array, long offset) {
-		return array.getMemory().getData().getLong((int) (ARRAY_HEADER_SIZE + validate(offset)));
+		return readLong((ObjectValue) array, offset);
 	}
 
 	@Override
 	public double readDouble(ArrayValue array, long offset) {
-		return array.getMemory().getData().getDouble((int) (ARRAY_HEADER_SIZE + validate(offset)));
+		return readDouble((ObjectValue) array, offset);
 	}
 
 	@Override
 	public int readInt(ArrayValue array, long offset) {
-		return array.getMemory().getData().getInt((int) (ARRAY_HEADER_SIZE + validate(offset)));
+		return readInt((ObjectValue) array, offset);
 	}
 
 	@Override
 	public float readFloat(ArrayValue array, long offset) {
-		return array.getMemory().getData().getFloat((int) (ARRAY_HEADER_SIZE + validate(offset)));
+		return readFloat((ObjectValue) array, offset);
 	}
 
 	@Override
 	public char readChar(ArrayValue array, long offset) {
-		return array.getMemory().getData().getChar((int) (ARRAY_HEADER_SIZE + validate(offset)));
+		return readChar((ObjectValue) array, offset);
 	}
 
 	@Override
 	public short readShort(ArrayValue array, long offset) {
-		return array.getMemory().getData().getShort((int) (ARRAY_HEADER_SIZE + validate(offset)));
+		return readShort((ObjectValue) array, offset);
 	}
 
 	@Override
 	public byte readByte(ArrayValue array, long offset) {
-		return array.getMemory().getData().get((int) (ARRAY_HEADER_SIZE + validate(offset)));
+		return readByte((ObjectValue) array, offset);
 	}
 
 	@Override
 	public boolean readBoolean(ArrayValue array, long offset) {
-		return readByte(array, offset) != 0;
+		return readBoolean((ObjectValue) array, offset);
 	}
 
 	@Override
 	public Object readOop(ArrayValue array, long offset) {
-		return UnsafeUtil.byAddress(array.getMemory().getData().getLong((int) (ARRAY_HEADER_SIZE + validate(offset))));
+		return readOop((ObjectValue) array, offset);
 	}
 
 	@Override
 	public Value readValue(ArrayValue array, long offset) {
-		var address = array.getMemory().getData().getLong((int) (ARRAY_HEADER_SIZE + validate(offset)));
-		return objects.get(new Memory(null, null, address, false));
+		return readValue((ObjectValue) array, offset);
 	}
 
 	@Override
 	public void writeLong(ArrayValue array, long offset, long value) {
-		array.getMemory().getData().putLong((int) (ARRAY_HEADER_SIZE + validate(offset)), value);
+		writeLong((ObjectValue) array, offset, value);
 	}
 
 	@Override
 	public void writeDouble(ArrayValue array, long offset, double value) {
-		array.getMemory().getData().putDouble((int) (ARRAY_HEADER_SIZE + validate(offset)), value);
+		writeDouble((ObjectValue) array, offset, value);
 	}
 
 	@Override
 	public void writeInt(ArrayValue array, long offset, int value) {
-		array.getMemory().getData().putInt((int) (ARRAY_HEADER_SIZE + validate(offset)), value);
+		writeInt((ObjectValue) array, offset, value);
 	}
 
 	@Override
 	public void writeFloat(ArrayValue array, long offset, float value) {
-		array.getMemory().getData().putFloat((int) (ARRAY_HEADER_SIZE + validate(offset)), value);
+		writeFloat((ObjectValue) array, offset, value);
 	}
 
 	@Override
 	public void writeChar(ArrayValue array, long offset, char value) {
-		array.getMemory().getData().putChar((int) (ARRAY_HEADER_SIZE + validate(offset)), value);
+		writeChar((ObjectValue) array, offset, value);
 	}
 
 	@Override
 	public void writeShort(ArrayValue array, long offset, short value) {
-		array.getMemory().getData().putShort((int) (ARRAY_HEADER_SIZE + validate(offset)), value);
+		writeShort((ObjectValue) array, offset, value);
 	}
 
 	@Override
 	public void writeByte(ArrayValue array, long offset, byte value) {
-		array.getMemory().getData().put((int) (ARRAY_HEADER_SIZE + validate(offset)), value);
+		writeByte((ObjectValue) array, offset, value);
 	}
 
 	@Override
 	public void writeBoolean(ArrayValue array, long offset, boolean value) {
-		writeByte(array, offset, (byte) (value ? 1 : 0));
+		writeBoolean((ObjectValue) array, offset, value);
 	}
 
 	@Override
 	public void writeOop(ArrayValue array, long offset, Object value) {
-		array.getMemory().getData().putLong((int) (ARRAY_HEADER_SIZE + validate(offset)), UnsafeUtil.addressOf(value));
+		writeOop((ObjectValue) array, offset, value);
 	}
 
 	@Override
 	public void writeValue(ArrayValue array, long offset, Value value) {
-		array.getMemory().getData().putLong((int) (ARRAY_HEADER_SIZE + validate(offset)), ((ObjectValue) value).getMemory().getAddress());
+		writeValue((ObjectValue) array, offset, value);
 	}
 
 	@Override
 	public InstanceValue setOopForClass(JavaClass javaClass) {
-		return newJavaInstance((InstanceJavaClass) vm.findBootstrapClass("java/lang/Class"), javaClass);
+		var jlc = vm.findBootstrapClass("java/lang/Class");
+		var memory = allocateClassMemory(jlc, javaClass);
+		setClass(memory, jlc);
+		var wrapper = new JavaValue<>(memory, javaClass);
+		objects.put(memory, wrapper);
+		return wrapper;
 	}
 
 	@Override
@@ -375,7 +379,7 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public int arrayBaseOffset(JavaClass javaClass) {
-		return (int) ARRAY_HEADER_SIZE;
+		return (int) OBJECT_HEADER_SIZE;
 	}
 
 	@Override
@@ -391,6 +395,12 @@ public class SimpleMemoryManager implements MemoryManager {
 	@Override
 	public Memory zero() {
 		return NullValue.INSTANCE.getMemory();
+	}
+
+	@Override
+	public long getStaticOffset(JavaClass jc) {
+		var jlc = vm.findBootstrapClass("java/lang/Class");
+		return jlc.getVirtualLayout().getSize();
 	}
 
 	private Memory newMemoryBlock(long size, boolean isDirect) {
@@ -410,8 +420,13 @@ public class SimpleMemoryManager implements MemoryManager {
 		return allocateHeap(OBJECT_HEADER_SIZE + objectSize);
 	}
 
+	private Memory allocateClassMemory(JavaClass jlc, JavaClass javaClass) {
+		var size = jlc.getVirtualLayout().getSize() + javaClass.getStaticLayout().getSize();
+		return allocateHeap(OBJECT_HEADER_SIZE + size);
+	}
+
 	private Memory allocateArrayMemory(int length, long componentSize) {
-		return allocateHeap(ARRAY_HEADER_SIZE + (long) length * componentSize);
+		return allocateHeap(OBJECT_HEADER_SIZE + (long) length * componentSize);
 	}
 
 	private void setClass(Memory memory, JavaClass jc) {

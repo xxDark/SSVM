@@ -19,12 +19,13 @@ public final class GetFieldProcessor implements InstructionProcessor<FieldInsnNo
 		var vm = ctx.getVM();
 		var stack = ctx.getStack();
 		var $instance = stack.pop();
-		vm.getHelper().checkNotNull($instance);
+		var helper = vm.getHelper();
+		helper.checkNotNull($instance);
 		var instance = (InstanceValue) $instance;
 		var jc = (InstanceJavaClass) vm.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
 		var offset = jc.getFieldOffsetRecursively(insn.name, insn.desc);
 		if (offset == -1L) {
-			throw new IllegalStateException("No such field: " + insn.owner + '.' + insn.name + insn.desc);
+			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, insn.owner + '.' + insn.name + insn.desc);
 		}
 		Value value;
 		var manager = vm.getMemoryManager();

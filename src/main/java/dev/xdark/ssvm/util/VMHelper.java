@@ -13,6 +13,8 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodNode;
 
+import java.util.stream.Collectors;
+
 /**
  * Provides additional functionality for
  * the VM and simplifies some things.
@@ -95,7 +97,6 @@ public final class VMHelper {
 		var instance = locals[0];
 		if (instance instanceof ArrayValue) {
 			javaClass = vm.getSymbols().java_lang_Object;
-			;
 		} else {
 			javaClass = (InstanceJavaClass) ((InstanceValue) instance).getJavaClass();
 		}
@@ -799,11 +800,11 @@ public final class VMHelper {
 	 * 		Class to set fields for.
 	 */
 	public void initializeStaticFields(InstanceJavaClass javaClass) {
-		var vm = this.vm;
+		var memoryManager = vm.getMemoryManager();
+		var baseOffset = memoryManager.getStaticOffset(javaClass);
 		var fields = javaClass.getStaticLayout().getOffsetMap();
-		var data = javaClass.getStaticData();
-		var buffer = data.getData();
 		var asmFields = javaClass.getNode().fields;
+		var oop = javaClass.getOop();
 		for (var entry : fields.entrySet()) {
 			var key = entry.getKey();
 			var name = key.getName();
@@ -817,31 +818,75 @@ public final class VMHelper {
 			var cst = fn.get().value;
 			if (cst == null) cst = AsmUtil.getDefaultValue(desc);
 			var offset = entry.getValue().intValue();
+			var resultingOffset = baseOffset + offset;
 			switch (desc) {
 				case "J":
-					buffer.putLong(offset, (Long) cst);
+					memoryManager.writeLong(oop, resultingOffset, (Long) cst);
 					break;
 				case "D":
-					buffer.putDouble(offset, (Double) cst);
+					memoryManager.writeDouble(oop, resultingOffset, (Double) cst);
 					break;
 				case "I":
-					buffer.putInt(offset, (Integer) cst);
+					memoryManager.writeInt(oop, resultingOffset, (Integer) cst);
 					break;
 				case "F":
-					buffer.putFloat(offset, (Float) cst);
+					memoryManager.writeFloat(oop, resultingOffset, (Float) cst);
 					break;
 				case "C":
-					buffer.putChar(offset, (Character) cst);
+					memoryManager.writeChar(oop, resultingOffset, (Character) cst);
 					break;
 				case "S":
-					buffer.putShort(offset, ((Integer) cst).shortValue());
+					memoryManager.writeShort(oop, resultingOffset, ((Integer) cst).shortValue());
 					break;
 				case "B":
 				case "Z":
-					buffer.put(offset, ((Integer) cst).byteValue());
+					memoryManager.writeByte(oop, resultingOffset, ((Integer) cst).byteValue());
 					break;
 				default:
-					buffer.putLong(offset, NullValue.INSTANCE.getMemory().getAddress());
+					memoryManager.writeValue(oop, resultingOffset, NullValue.INSTANCE);
+			}
+		}
+	}
+
+	/**
+	 * Initializes default values of the class.
+	 *
+	 * @param value
+	 * 		Value to set fields for.
+	 */
+	public void initializeDefaultValues(InstanceValue value) {
+		var vm = this.vm;
+		var memoryManager = vm.getMemoryManager();
+		for (var entry : value.getJavaClass().getVirtualLayout().getOffsetMap().entrySet()) {
+			var field = entry.getKey().getDesc();
+			var offset = entry.getValue();
+			switch (field) {
+				case "J":
+					memoryManager.writeLong(value, offset, 0L);
+					break;
+				case "D":
+					memoryManager.writeDouble(value, offset, 0.0D);
+					break;
+				case "I":
+					memoryManager.writeInt(value, offset, 0);
+					break;
+				case "F":
+					memoryManager.writeFloat(value, offset, 0.0F);
+					break;
+				case "C":
+					memoryManager.writeChar(value, offset, '\0');
+					break;
+				case "S":
+					memoryManager.writeShort(value, offset, (short) 0);
+					break;
+				case "B":
+					memoryManager.writeByte(value, offset, (byte) 0);
+					break;
+				case "Z":
+					memoryManager.writeBoolean(value, offset, false);
+					break;
+				default:
+					memoryManager.writeValue(value, offset, NullValue.INSTANCE);
 			}
 		}
 	}
@@ -857,8 +902,13 @@ public final class VMHelper {
 	public void initializeDefaultValues(InstanceValue value, InstanceJavaClass javaClass) {
 		var vm = this.vm;
 		var memoryManager = vm.getMemoryManager();
-		var fields = javaClass.getVirtualFields();
-		for (var entry : fields.entrySet()) {
+		var fields = value.getJavaClass().getVirtualLayout()
+				.getOffsetMap()
+				.entrySet()
+				.stream()
+				.filter(x -> javaClass == x.getKey().getOwner())
+				.collect(Collectors.toList());
+		for (var entry : fields) {
 			var field = entry.getKey().getDesc();
 			var offset = entry.getValue();
 			switch (field) {
@@ -1144,7 +1194,7 @@ public final class VMHelper {
 			classLoaderData.linkClass(javaClass);
 			var oop = (InstanceValue) vm.getMemoryManager().setOopForClass(javaClass);
 			javaClass.setOop(oop);
-			vm.getHelper().initializeDefaultValues(oop, vm.getSymbols().java_lang_Class);
+			vm.getHelper().initializeDefaultValues(oop);
 			setClassFields(oop, classLoader, protectionDomain);
 			if (!classLoader.isNull()) {
 				var classes = ((InstanceValue) classLoader).getValue("classes", "Ljava/util/Vector;");

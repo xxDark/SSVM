@@ -4,8 +4,6 @@ import dev.xdark.ssvm.memory.Memory;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.Value;
 
-import java.nio.ByteBuffer;
-
 /**
  * VM representation of Java class.
  *
@@ -54,13 +52,6 @@ public interface JavaClass {
 	 * @return oop.
 	 */
 	InstanceValue getOop();
-
-	/**
-	 * Returns memory block that stores static fields.
-	 *
-	 * @return memory block storing static fields.
-	 */
-	Memory getStaticData();
 
 	/**
 	 * Returns virtual class layout.

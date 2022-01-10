@@ -2,7 +2,6 @@ package dev.xdark.ssvm.mirror;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.PanicException;
-import dev.xdark.ssvm.memory.Memory;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.Opcodes;
@@ -64,11 +63,6 @@ public final class ArrayJavaClass implements JavaClass {
 	@Override
 	public InstanceValue getOop() {
 		return oop;
-	}
-
-	@Override
-	public Memory getStaticData() {
-		return vm.getMemoryManager().zero();
 	}
 
 	@Override

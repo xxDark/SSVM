@@ -823,4 +823,14 @@ public interface MemoryManager {
 	 * @return memory block at location {@code 0}.
 	 */
 	Memory zero();
+
+	/**
+	 * Returns static data offset for the class.
+	 *
+	 * @param jc
+	 * 		Class to get static data offset for.
+	 *
+	 * @return static data offset.
+	 */
+	long getStaticOffset(JavaClass jc);
 }

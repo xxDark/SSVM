@@ -1,7 +1,6 @@
 package dev.xdark.ssvm.mirror;
 
 import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.memory.Memory;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.Value;
@@ -65,11 +64,6 @@ public final class PrimitiveClass implements JavaClass {
 	@Override
 	public InstanceValue getOop() {
 		return oop;
-	}
-
-	@Override
-	public Memory getStaticData() {
-		return vm.getMemoryManager().zero();
 	}
 
 	@Override

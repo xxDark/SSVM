@@ -2,7 +2,6 @@ package dev.xdark.ssvm.mirror;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.VMException;
-import dev.xdark.ssvm.memory.Memory;
 import dev.xdark.ssvm.util.UnsafeUtil;
 import dev.xdark.ssvm.value.*;
 import org.objectweb.asm.ClassReader;
@@ -26,7 +25,6 @@ public final class InstanceJavaClass implements JavaClass {
 	private final ClassReader classReader;
 	private final ClassNode node;
 	private InstanceValue oop;
-	private Memory staticData;
 	private ClassLayout virtualLayout;
 	private ClassLayout staticLayout;
 	private InstanceJavaClass superClass;
@@ -117,11 +115,6 @@ public final class InstanceJavaClass implements JavaClass {
 	@Override
 	public InstanceValue getOop() {
 		return oop;
-	}
-
-	@Override
-	public Memory getStaticData() {
-		return staticData;
 	}
 
 	@Override
@@ -316,8 +309,7 @@ public final class InstanceJavaClass implements JavaClass {
 		// Build class layout
 		// VM might've set it already, do not override.
 		if (staticLayout == null) {
-			staticLayout = this.staticLayout = createStaticLayout();
-			staticData = vm.getMemoryManager().allocateDirect(staticLayout.getSize());
+			return this.staticLayout = createStaticLayout();
 		}
 		return staticLayout;
 	}
@@ -397,27 +389,30 @@ public final class InstanceJavaClass implements JavaClass {
 	 */
 	public Value getStaticValue(FieldInfo field) {
 		initialize();
+
 		var offset = (int) staticLayout.getFieldOffset(field);
 		if (offset == -1L) return null;
-		var buffer = staticData.getData();
+		var oop = this.oop;
+		var memoryManager = vm.getMemoryManager();
+		var resultingOffset = memoryManager.getStaticOffset(this) + offset;
 		switch (field.getDesc()) {
 			case "J":
-				return new LongValue(buffer.getLong(offset));
+				return new LongValue(memoryManager.readLong(oop, resultingOffset));
 			case "D":
-				return new DoubleValue(buffer.getDouble(offset));
+				return new DoubleValue(memoryManager.readDouble(oop, resultingOffset));
 			case "I":
-				return new IntValue(buffer.getInt(offset));
+				return new IntValue(memoryManager.readInt(oop, resultingOffset));
 			case "F":
-				return new FloatValue(buffer.getFloat(offset));
+				return new FloatValue(memoryManager.readFloat(oop, resultingOffset));
 			case "C":
-				return new IntValue(buffer.getChar(offset));
+				return new IntValue(memoryManager.readChar(oop, resultingOffset));
 			case "S":
-				return new IntValue(buffer.getShort(offset));
+				return new IntValue(memoryManager.readShort(oop, resultingOffset));
 			case "B":
 			case "Z":
-				return new IntValue(buffer.get(offset));
+				return new IntValue(memoryManager.readByte(oop, resultingOffset));
 			default:
-				return vm.getMemoryManager().getValue(buffer.getLong(offset));
+				return memoryManager.readValue(oop, resultingOffset);
 		}
 	}
 
@@ -452,32 +447,33 @@ public final class InstanceJavaClass implements JavaClass {
 		var offset = (int) staticLayout.getFieldOffset(field);
 		if (offset == -1L) return false;
 		var oop = this.oop;
-		var data = staticData.getData();
+		var memoryManager = vm.getMemoryManager();
+		var resultingOffset = memoryManager.getStaticOffset(this) + offset;
 		switch (field.getDesc()) {
 			case "J":
-				data.putLong(offset, value.asLong());
+				memoryManager.writeLong(oop, resultingOffset, value.asLong());
 				return true;
 			case "D":
-				data.putDouble(offset, value.asDouble());
+				memoryManager.writeDouble(oop, resultingOffset, value.asDouble());
 				return true;
 			case "I":
-				data.putInt(offset, value.asInt());
+				memoryManager.writeInt(oop, resultingOffset, value.asInt());
 				return true;
 			case "F":
-				data.putFloat(offset, value.asFloat());
+				memoryManager.writeFloat(oop, resultingOffset, value.asFloat());
 				return true;
 			case "C":
-				data.putChar(offset, value.asChar());
+				memoryManager.writeChar(oop, resultingOffset, value.asChar());
 				return true;
 			case "S":
-				data.putShort(offset, value.asShort());
+				memoryManager.writeShort(oop, resultingOffset, value.asShort());
 				return true;
 			case "B":
 			case "Z":
-				data.put(offset, value.asByte());
+				memoryManager.writeByte(oop, resultingOffset, value.asByte());
 				return true;
 			default:
-				data.putLong(offset, ((ObjectValue) value).getMemory().getAddress());
+				memoryManager.writeValue(oop, resultingOffset, value);
 				return true;
 		}
 	}
@@ -610,7 +606,6 @@ public final class InstanceJavaClass implements JavaClass {
 	 */
 	public void setStaticLayout(ClassLayout layout) {
 		this.staticLayout = layout;
-		staticData = vm.getMemoryManager().allocateDirect(layout.getSize());
 	}
 
 	/**

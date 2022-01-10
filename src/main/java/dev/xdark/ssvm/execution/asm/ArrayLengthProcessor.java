@@ -18,7 +18,7 @@ public final class ArrayLengthProcessor implements InstructionProcessor<Abstract
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		var stack = ctx.getStack();
 		var array = stack.<ArrayValue>pop();
-		stack.push(new IntValue(ctx.getVM().getMemoryManager().readArrayLength(array)));
+		stack.push(new IntValue(array.getLength()));
 		return Result.CONTINUE;
 	}
 }

@@ -1268,7 +1268,7 @@ public final class VMHelper {
 			exception.initCause(toJavaException((InstanceValue) cause));
 		}
 		var suppressedExceptions = oop.getValue("suppressedExceptions", "Ljava/util/List;");
-		if (suppressedExceptions != null) {
+		if (!suppressedExceptions.isNull()) {
 			var list = (InstanceJavaClass) vm.findBootstrapClass("java/util/List");
 			var size = invokeInterface(list, "size", "()I", new Value[0], new Value[]{suppressedExceptions}).getResult().asInt();
 			for (int i = 0; i < size; i++) {

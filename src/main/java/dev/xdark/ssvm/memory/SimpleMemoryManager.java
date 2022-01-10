@@ -91,6 +91,11 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
+	public Value getValue(long address) {
+		return objects.get(new Memory(null, null, address, true));
+	}
+
+	@Override
 	public InstanceValue newInstance(InstanceJavaClass javaClass) {
 		var memory = allocateObjectMemory(javaClass);
 		setClass(memory, javaClass);
@@ -109,6 +114,16 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
+	public <V> JavaValue<V> newJavaLangClass(InstanceJavaClass javaClass, V value) {
+		var memory = allocateObjectMemory(javaClass);
+		var wrapper = new JavaValue<>(memory, value);
+		javaClass.setOop(wrapper);
+		setClass(memory, javaClass);
+		objects.put(memory, wrapper);
+		return wrapper;
+	}
+
+	@Override
 	public ArrayValue newArray(ArrayJavaClass javaClass, int length, long componentSize) {
 		var memory = allocateArrayMemory(length, componentSize);
 		setClass(memory, javaClass);
@@ -119,59 +134,67 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public long readLong(InstanceValue object, long offset) {
+	public long readLong(ObjectValue object, long offset) {
 		return object.getMemory().getData().getLong((int) (OBJECT_HEADER_SIZE + validate(offset)));
 	}
 
 	@Override
-	public double readDouble(InstanceValue object, long offset) {
+	public double readDouble(ObjectValue object, long offset) {
 		return object.getMemory().getData().getDouble((int) (OBJECT_HEADER_SIZE + validate(offset)));
 	}
 
 	@Override
-	public int readInt(InstanceValue object, long offset) {
+	public int readInt(ObjectValue object, long offset) {
 		return object.getMemory().getData().getInt((int) (OBJECT_HEADER_SIZE + validate(offset)));
 	}
 
 	@Override
-	public float readFloat(InstanceValue object, long offset) {
+	public float readFloat(ObjectValue object, long offset) {
 		return object.getMemory().getData().getFloat((int) (OBJECT_HEADER_SIZE + validate(offset)));
 	}
 
 	@Override
-	public char readChar(InstanceValue object, long offset) {
+	public char readChar(ObjectValue object, long offset) {
 		return object.getMemory().getData().getChar((int) (OBJECT_HEADER_SIZE + validate(offset)));
 	}
 
 	@Override
-	public short readShort(InstanceValue object, long offset) {
+	public short readShort(ObjectValue object, long offset) {
 		return object.getMemory().getData().getShort((int) (OBJECT_HEADER_SIZE + validate(offset)));
 	}
 
 	@Override
-	public byte readByte(InstanceValue object, long offset) {
+	public byte readByte(ObjectValue object, long offset) {
 		return object.getMemory().getData().get((int) (OBJECT_HEADER_SIZE + validate(offset)));
 	}
 
 	@Override
-	public boolean readBoolean(InstanceValue object, long offset) {
+	public boolean readBoolean(ObjectValue object, long offset) {
 		return readByte(object, offset) != 0;
 	}
 
 	@Override
-	public Object readOop(InstanceValue object, long offset) {
+	public Object readOop(ObjectValue object, long offset) {
 		return UnsafeUtil.byAddress(object.getMemory().getData().getLong((int) (OBJECT_HEADER_SIZE + validate(offset))));
 	}
 
 	@Override
-	public Value readValue(InstanceValue object, long offset) {
+	public Value readValue(ObjectValue object, long offset) {
 		var address = object.getMemory().getData().getLong((int) (OBJECT_HEADER_SIZE + validate(offset)));
 		return objects.get(new Memory(null, null, address, false));
 	}
 
 	@Override
 	public JavaClass readClass(ObjectValue object) {
-		return (JavaClass) UnsafeUtil.byAddress(object.getMemory().getData().getLong(0));
+		var value = objects.get(new Memory(null, null, object.getMemory().getData().getLong(0), false));
+		if (!(value instanceof JavaValue)) {
+			throw new PanicException("Segfault");
+		}
+		var wrapper = ((JavaValue<?>) value).getValue();
+		if (!(wrapper instanceof JavaClass)) {
+			throw new PanicException("Segfault");
+		}
+		return (JavaClass) wrapper;
 	}
 
 	@Override
@@ -180,52 +203,52 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public void writeLong(InstanceValue object, long offset, long value) {
+	public void writeLong(ObjectValue object, long offset, long value) {
 		object.getMemory().getData().putLong((int) (OBJECT_HEADER_SIZE + validate(offset)), value);
 	}
 
 	@Override
-	public void writeDouble(InstanceValue object, long offset, double value) {
+	public void writeDouble(ObjectValue object, long offset, double value) {
 		object.getMemory().getData().putDouble((int) (OBJECT_HEADER_SIZE + validate(offset)), value);
 	}
 
 	@Override
-	public void writeInt(InstanceValue object, long offset, int value) {
+	public void writeInt(ObjectValue object, long offset, int value) {
 		object.getMemory().getData().putInt((int) (OBJECT_HEADER_SIZE + validate(offset)), value);
 	}
 
 	@Override
-	public void writeFloat(InstanceValue object, long offset, float value) {
+	public void writeFloat(ObjectValue object, long offset, float value) {
 		object.getMemory().getData().putFloat((int) (OBJECT_HEADER_SIZE + validate(offset)), value);
 	}
 
 	@Override
-	public void writeChar(InstanceValue object, long offset, char value) {
+	public void writeChar(ObjectValue object, long offset, char value) {
 		object.getMemory().getData().putChar((int) (OBJECT_HEADER_SIZE + validate(offset)), value);
 	}
 
 	@Override
-	public void writeShort(InstanceValue object, long offset, short value) {
+	public void writeShort(ObjectValue object, long offset, short value) {
 		object.getMemory().getData().putShort((int) (OBJECT_HEADER_SIZE + validate(offset)), value);
 	}
 
 	@Override
-	public void writeByte(InstanceValue object, long offset, byte value) {
+	public void writeByte(ObjectValue object, long offset, byte value) {
 		object.getMemory().getData().put((int) (OBJECT_HEADER_SIZE + validate(offset)), value);
 	}
 
 	@Override
-	public void writeBoolean(InstanceValue object, long offset, boolean value) {
+	public void writeBoolean(ObjectValue object, long offset, boolean value) {
 		writeByte(object, offset, (byte) (value ? 1 : 0));
 	}
 
 	@Override
-	public void writeOop(InstanceValue object, long offset, Object value) {
+	public void writeOop(ObjectValue object, long offset, Object value) {
 		object.getMemory().getData().putLong((int) (OBJECT_HEADER_SIZE + validate(offset)), UnsafeUtil.addressOf(value));
 	}
 
 	@Override
-	public void writeValue(InstanceValue object, long offset, Value value) {
+	public void writeValue(ObjectValue object, long offset, Value value) {
 		object.getMemory().getData().putLong((int) (OBJECT_HEADER_SIZE + validate(offset)), ((ObjectValue) value).getMemory().getAddress());
 	}
 
@@ -331,14 +354,8 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public Value newOopForClass(JavaClass javaClass) {
-		var jc = vm.findBootstrapClass("java/lang/Class");
-		var memory = allocateObjectMemory(jc);
-		setClass(memory, jc);
-		var value = new JavaValue<>(memory, javaClass);
-		value.initialize();
-		objects.put(memory, value);
-		return value;
+	public InstanceValue setOopForClass(JavaClass javaClass) {
+		return newJavaInstance((InstanceJavaClass) vm.findBootstrapClass("java/lang/Class"), javaClass);
 	}
 
 	@Override
@@ -356,18 +373,40 @@ public class SimpleMemoryManager implements MemoryManager {
 		return UnsafeUtil.getPageSize();
 	}
 
+	@Override
+	public int arrayBaseOffset(JavaClass javaClass) {
+		return (int) ARRAY_HEADER_SIZE;
+	}
+
+	@Override
+	public int arrayIndexScale(JavaClass javaClass) {
+		var primitives = vm.getPrimitives();
+		if (javaClass == primitives.longPrimitive || javaClass == primitives.doublePrimitive) return 8;
+		if (javaClass == primitives.intPrimitive || javaClass == primitives.floatPrimitive) return 4;
+		if (javaClass == primitives.charPrimitive || javaClass == primitives.shortPrimitive) return 2;
+		if (javaClass == primitives.bytePrimitive || javaClass == primitives.booleanPrimitive) return 1;
+		return 8;
+	}
+
+	@Override
+	public Memory zero() {
+		return NullValue.INSTANCE.getMemory();
+	}
+
 	private Memory newMemoryBlock(long size, boolean isDirect) {
 		if (size > Integer.MAX_VALUE) {
 			vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError);
 			return null;
 		}
 		var block = new Memory(this, ByteBuffer.allocate((int) size), ThreadLocalRandom.current().nextLong() & 0xFFFFFFFFL, isDirect);
-		memoryBlocks.put(block.getAddress(), block);
+		if (memoryBlocks.putIfAbsent(block.getAddress(), block) != null) {
+			throw new PanicException("Duplicate block allocation");
+		}
 		return block;
 	}
 
 	private Memory allocateObjectMemory(JavaClass javaClass) {
-		var objectSize = javaClass.getLayout().getSize();
+		var objectSize = javaClass.getVirtualLayout().getSize();
 		return allocateHeap(OBJECT_HEADER_SIZE + objectSize);
 	}
 
@@ -376,7 +415,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	private void setClass(Memory memory, JavaClass jc) {
-		var address = UnsafeUtil.addressOf(jc);
+		var address = jc.getOop().getMemory().getAddress();
 		memory.getData().putLong(0, address);
 	}
 

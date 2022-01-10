@@ -31,7 +31,7 @@ public final class LongIntProcessor implements InstructionProcessor<AbstractInsn
 		var stack = ctx.getStack();
 		var v2 = stack.pop().asInt();
 		var v1 = stack.popWide().asLong();
-		stack.push(new LongValue(op.apply(v1, v2)));
+		stack.pushWide(new LongValue(op.apply(v1, v2)));
 		return Result.CONTINUE;
 	}
 }

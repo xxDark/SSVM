@@ -1,6 +1,8 @@
 package dev.xdark.ssvm.mirror;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.memory.Memory;
+import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.Opcodes;
@@ -15,8 +17,9 @@ public final class PrimitiveClass implements JavaClass {
 	private final VirtualMachine vm;
 	private final String name;
 	private final String descriptor;
-	private final Value oop;
+	private final InstanceValue oop;
 	private final JavaClass objectClass;
+	private ArrayJavaClass arrayClass;
 
 	/**
 	 * @param vm
@@ -30,7 +33,7 @@ public final class PrimitiveClass implements JavaClass {
 		this.vm = vm;
 		this.name = name;
 		this.descriptor = descriptor;
-		oop = vm.getMemoryManager().newOopForClass(this);
+		oop = vm.getMemoryManager().setOopForClass(this);
 		objectClass = vm.getSymbols().java_lang_Object;
 	}
 
@@ -60,13 +63,23 @@ public final class PrimitiveClass implements JavaClass {
 	}
 
 	@Override
-	public Value getOop() {
+	public InstanceValue getOop() {
 		return oop;
 	}
 
 	@Override
-	public ClassLayout getLayout() {
-		return objectClass.getLayout();
+	public Memory getStaticData() {
+		return vm.getMemoryManager().zero();
+	}
+
+	@Override
+	public ClassLayout getVirtualLayout() {
+		return objectClass.getVirtualLayout();
+	}
+
+	@Override
+	public ClassLayout getStaticLayout() {
+		return ClassLayout.EMPTY;
 	}
 
 	@Override
@@ -81,7 +94,13 @@ public final class PrimitiveClass implements JavaClass {
 
 	@Override
 	public ArrayJavaClass newArrayClass() {
-		return new ArrayJavaClass(vm, '[' + descriptor, 1, this);
+		var arrayClass = this.arrayClass;
+		if (arrayClass == null) {
+			var vm = this.vm;
+			arrayClass = this.arrayClass = new ArrayJavaClass(vm, '[' + descriptor, 1, this);
+			vm.getHelper().setComponentType(arrayClass, this);
+		}
+		return arrayClass;
 	}
 
 	@Override
@@ -106,5 +125,10 @@ public final class PrimitiveClass implements JavaClass {
 	@Override
 	public boolean isInterface() {
 		return false;
+	}
+
+	@Override
+	public JavaClass getComponentType() {
+		return null;
 	}
 }

@@ -18,7 +18,11 @@ public final class InstanceofProcessor implements InstructionProcessor<TypeInsnN
 		var javaClass = vm.findClass(ctx.getOwner().getClassLoader(), insn.desc, true);
 		var stack = ctx.getStack();
 		var value = stack.<ObjectValue>pop();
-		stack.push(new IntValue(javaClass.isAssignableFrom(value.getJavaClass()) ? 1 : 0));
+		if (value.isNull()) {
+			stack.push(new IntValue(0));
+		} else {
+			stack.push(new IntValue(javaClass.isAssignableFrom(value.getJavaClass()) ? 1 : 0));
+		}
 		return Result.CONTINUE;
 	}
 }

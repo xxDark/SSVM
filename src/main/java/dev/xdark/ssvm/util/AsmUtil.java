@@ -15,6 +15,7 @@ import java.lang.reflect.Field;
 public final class AsmUtil {
 
 	private static final Field INSN_INDEX;
+	private static final String[] INSN_NAMES;
 
 	private AsmUtil() {
 	}
@@ -28,7 +29,7 @@ public final class AsmUtil {
 	 * @return maximum amount of local variable slots.
 	 */
 	public static int getMaxLocals(MethodNode mn) {
-		if ((mn.access & Opcodes.ACC_NATIVE) != 0) {
+		if ((mn.access & Opcodes.ACC_NATIVE) != 0 || (mn.access & Opcodes.ACC_ABSTRACT) != 0) {
 			var max = 0;
 			if ((mn.access & Opcodes.ACC_STATIC) == 0) {
 				max++;
@@ -60,11 +61,63 @@ public final class AsmUtil {
 		}
 	}
 
+	/**
+	 * Returns opcode name.
+	 *
+	 * @param opcode
+	 * 		Opcode to get name from.
+	 *
+	 * @return opcode name.
+	 */
+	public static String getName(int opcode) {
+		return INSN_NAMES[opcode];
+	}
+
+	/**
+	 * Returns default descriptor value.
+	 *
+	 * @param desc
+	 * 		Type descriptor.
+	 */
+	public static Object getDefaultValue(String desc) {
+		switch (desc) {
+			case "J":
+				return 0L;
+			case "D":
+				return 0.0D;
+			case "I":
+			case "S":
+			case "B":
+			case "Z":
+				return 0;
+			case "F":
+				return 0.0F;
+			case "C":
+				return '\0';
+			default:
+				return null;
+		}
+	}
+
 	static {
 		try {
 			(INSN_INDEX = AbstractInsnNode.class.getDeclaredField("index")).setAccessible(true);
 		} catch (NoSuchFieldException ex) {
 			throw new ExceptionInInitializerError(ex);
 		}
+		var insnNames = new String[Opcodes.IFNONNULL + 1];
+		try {
+			for (var f : Opcodes.class.getDeclaredFields()) {
+				if (f.getType() != int.class) {
+					continue;
+				}
+				var value = f.getInt(null);
+				if (value >= Opcodes.NOP && value <= Opcodes.IFNONNULL)
+					insnNames[value] = f.getName();
+			}
+		} catch (IllegalAccessException ex) {
+			throw new ExceptionInInitializerError(ex);
+		}
+		INSN_NAMES = insnNames;
 	}
 }

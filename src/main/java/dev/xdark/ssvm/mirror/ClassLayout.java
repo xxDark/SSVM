@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.mirror;
 
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -9,6 +10,7 @@ import java.util.Map;
  */
 public final class ClassLayout {
 
+	public static final ClassLayout EMPTY = new ClassLayout(Collections.emptyMap(), 0L);
 	private final Map<FieldInfo, Long> offsetMap;
 	private final long size;
 
@@ -34,6 +36,26 @@ public final class ClassLayout {
 	public long getFieldOffset(FieldInfo info) {
 		var offset = offsetMap.get(info);
 		return offset == null ? -1L : offset.longValue();
+	}
+
+	/**
+	 * Returns field offset.
+	 *
+	 * @param javaClass
+	 * 		Class defining the field
+	 * @param name
+	 * 		Field name.
+	 *
+	 * @return field offset or {@code -1L} if not found.
+	 */
+	public long getFieldOffset(JavaClass javaClass, String name) {
+		for (var entry : offsetMap.entrySet()) {
+			var key = entry.getKey();
+			if (javaClass == key.getOwner() && name.equals(key.getName())) {
+				return entry.getValue();
+			}
+		}
+		return -1L;
 	}
 
 	/**

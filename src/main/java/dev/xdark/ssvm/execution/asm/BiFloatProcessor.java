@@ -29,7 +29,7 @@ public final class BiFloatProcessor implements InstructionProcessor<AbstractInsn
 		var stack = ctx.getStack();
 		var v2 = stack.pop().asFloat();
 		var v1 = stack.pop().asFloat();
-		stack.pushWide(new FloatValue(op.apply(v1, v2)));
+		stack.push(new FloatValue(op.apply(v1, v2)));
 		return Result.CONTINUE;
 	}
 }

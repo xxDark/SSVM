@@ -18,9 +18,16 @@ public final class CastProcessor implements InstructionProcessor<TypeInsnNode> {
 		var vm = ctx.getVM();
 		var desc = insn.desc;
 		var type = vm.findClass(ctx.getOwner().getClassLoader(), desc, true);
-		var against = ctx.getStack().<ObjectValue>peek().getJavaClass();
-		if (!type.isAssignableFrom(against)) {
-			vm.getHelper().throwException(vm.getSymbols().java_lang_ClassCastException, against.getName() + " cannot be cast to " + type.getName());
+		if (type == null) {
+			vm.getHelper().throwException(vm.getSymbols().java_lang_ClassNotFoundException, desc);
+			return Result.ABORT;
+		}
+		var value = ctx.getStack().<ObjectValue>peek();
+		if (!value.isNull()) {
+			var against = value.getJavaClass();
+			if (!type.isAssignableFrom(against)) {
+				vm.getHelper().throwException(vm.getSymbols().java_lang_ClassCastException, against.getName() + " cannot be cast to " + type.getName());
+			}
 		}
 		return Result.CONTINUE;
 	}

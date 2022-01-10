@@ -81,6 +81,17 @@ public interface MemoryManager {
 	boolean isValidAddress(long address);
 
 	/**
+	 * Returns object at the specific address.
+	 *
+	 * @param address
+	 * 		Address of the object.
+	 *
+	 * @return object or {@code null},
+	 * if not found.
+	 */
+	Value getValue(long address);
+
+	/**
 	 * Allocates new object.
 	 *
 	 * @param javaClass
@@ -98,11 +109,25 @@ public interface MemoryManager {
 	 * @param value
 	 * 		Java value.
 	 * @param <V>
-	 * 		Type of Jav value.
+	 * 		Type of Java value.
 	 *
 	 * @return allocated Java wrapper.
 	 */
 	<V> JavaValue<V> newJavaInstance(InstanceJavaClass javaClass, V value);
+
+	/**
+	 * Allocates new Java wrapper for java/lang/Class.
+	 *
+	 * @param javaClass
+	 * 		java/lang/Class mirror.
+	 * @param value
+	 * 		Java value.
+	 * @param <V>
+	 * 		Type of Java value.
+	 *
+	 * @return allocated Java wrapper.
+	 */
+	<V> JavaValue<V> newJavaLangClass(InstanceJavaClass javaClass, V value);
 
 	/**
 	 * Allocates new array.
@@ -131,7 +156,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	long readLong(InstanceValue object, long offset);
+	long readLong(ObjectValue object, long offset);
 
 	/**
 	 * Reads double from an object.
@@ -146,7 +171,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	double readDouble(InstanceValue object, long offset);
+	double readDouble(ObjectValue object, long offset);
 
 	/**
 	 * Reads int from an object.
@@ -161,7 +186,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	int readInt(InstanceValue object, long offset);
+	int readInt(ObjectValue object, long offset);
 
 	/**
 	 * Reads float from an object.
@@ -176,7 +201,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	float readFloat(InstanceValue object, long offset);
+	float readFloat(ObjectValue object, long offset);
 
 	/**
 	 * Reads char from an object.
@@ -191,7 +216,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	char readChar(InstanceValue object, long offset);
+	char readChar(ObjectValue object, long offset);
 
 	/**
 	 * Reads short from an object.
@@ -206,7 +231,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	short readShort(InstanceValue object, long offset);
+	short readShort(ObjectValue object, long offset);
 
 	/**
 	 * Reads byte from an object.
@@ -221,7 +246,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	byte readByte(InstanceValue object, long offset);
+	byte readByte(ObjectValue object, long offset);
 
 	/**
 	 * Reads boolean from an object.
@@ -236,7 +261,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	boolean readBoolean(InstanceValue object, long offset);
+	boolean readBoolean(ObjectValue object, long offset);
 
 	/**
 	 * Reads an object from an object.
@@ -251,7 +276,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	Object readOop(InstanceValue object, long offset);
+	Object readOop(ObjectValue object, long offset);
 
 	/**
 	 * Reads VM value from an object.
@@ -266,7 +291,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	Value readValue(InstanceValue object, long offset);
+	Value readValue(ObjectValue object, long offset);
 
 	/**
 	 * Reads object class form an object.
@@ -294,7 +319,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	void writeLong(InstanceValue object, long offset, long value);
+	void writeLong(ObjectValue object, long offset, long value);
 
 	/**
 	 * Writes double to the object.
@@ -309,7 +334,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	void writeDouble(InstanceValue object, long offset, double value);
+	void writeDouble(ObjectValue object, long offset, double value);
 
 
 	/**
@@ -325,7 +350,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	void writeInt(InstanceValue object, long offset, int value);
+	void writeInt(ObjectValue object, long offset, int value);
 
 	/**
 	 * Writes float to the object.
@@ -340,7 +365,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	void writeFloat(InstanceValue object, long offset, float value);
+	void writeFloat(ObjectValue object, long offset, float value);
 
 	/**
 	 * Writes char to the object.
@@ -355,7 +380,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	void writeChar(InstanceValue object, long offset, char value);
+	void writeChar(ObjectValue object, long offset, char value);
 
 	/**
 	 * Writes short to the object.
@@ -370,7 +395,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	void writeShort(InstanceValue object, long offset, short value);
+	void writeShort(ObjectValue object, long offset, short value);
 
 	/**
 	 * Writes byte to the object.
@@ -385,7 +410,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	void writeByte(InstanceValue object, long offset, byte value);
+	void writeByte(ObjectValue object, long offset, byte value);
 
 	/**
 	 * Writes boolean to the object.
@@ -400,7 +425,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	void writeBoolean(InstanceValue object, long offset, boolean value);
+	void writeBoolean(ObjectValue object, long offset, boolean value);
 
 	/**
 	 * Writes oop into the object.
@@ -413,7 +438,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	void writeOop(InstanceValue object, long offset, Object value);
+	void writeOop(ObjectValue object, long offset, Object value);
 
 	/**
 	 * Writes VM value to the object.
@@ -428,8 +453,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	void writeValue(InstanceValue object, long offset, Value value);
-
+	void writeValue(ObjectValue object, long offset, Value value);
 
 	/**
 	 * Reads long from an array.
@@ -741,14 +765,14 @@ public interface MemoryManager {
 	void writeValue(ArrayValue array, long offset, Value value);
 
 	/**
-	 * Creates new class oop.
+	 * Creates and sets new class oop.
 	 *
 	 * @param javaClass
 	 * 		Class to create oop for.
 	 *
 	 * @return oop.
 	 */
-	Value newOopForClass(JavaClass javaClass);
+	InstanceValue setOopForClass(JavaClass javaClass);
 
 	/**
 	 * Returns byte order of memory.
@@ -770,4 +794,33 @@ public interface MemoryManager {
 	 * @return page size.
 	 */
 	int pageSize();
+
+	/**
+	 * Reports the offset of the first element in
+	 * the storage allocation of a given array class.
+	 *
+	 * @param javaClass
+	 * 		Array component class.
+	 *
+	 * @return offset of the first element.
+	 */
+	int arrayBaseOffset(JavaClass javaClass);
+
+	/**
+	 * Reports the index scale for elements in
+	 * the storage allocation of a given array class.
+	 *
+	 * @param javaClass
+	 * 		Array component class.
+	 *
+	 * @return index scale for elements in the array.
+	 */
+	int arrayIndexScale(JavaClass javaClass);
+
+	/**
+	 * Returns memory block at location {@code 0}.
+	 *
+	 * @return memory block at location {@code 0}.
+	 */
+	Memory zero();
 }

@@ -17,6 +17,9 @@ public final class NewProcessor implements InstructionProcessor<TypeInsnNode> {
 	public Result execute(TypeInsnNode insn, ExecutionContext ctx) {
 		var vm = ctx.getVM();
 		var type = vm.findClass(ctx.getOwner().getClassLoader(), insn.desc, true);
+		if (type == null) {
+			vm.getHelper().throwException(vm.getSymbols().java_lang_NoClassDefFoundError, insn.desc);
+		}
 		ctx.getStack().push(vm.getMemoryManager().newInstance((InstanceJavaClass) type));
 		return Result.CONTINUE;
 	}

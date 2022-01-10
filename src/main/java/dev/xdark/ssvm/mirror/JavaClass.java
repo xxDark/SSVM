@@ -1,6 +1,10 @@
 package dev.xdark.ssvm.mirror;
 
+import dev.xdark.ssvm.memory.Memory;
+import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.Value;
+
+import java.nio.ByteBuffer;
 
 /**
  * VM representation of Java class.
@@ -49,14 +53,28 @@ public interface JavaClass {
 	 *
 	 * @return oop.
 	 */
-	Value getOop();
+	InstanceValue getOop();
 
 	/**
-	 * Returns class layout.
+	 * Returns memory block that stores static fields.
 	 *
-	 * @return class layout.
+	 * @return memory block storing static fields.
 	 */
-	ClassLayout getLayout();
+	Memory getStaticData();
+
+	/**
+	 * Returns virtual class layout.
+	 *
+	 * @return virtual class layout.
+	 */
+	ClassLayout getVirtualLayout();
+
+	/**
+	 * Returns static class layout.
+	 *
+	 * @return static class layout.
+	 */
+	ClassLayout getStaticLayout();
 
 	/**
 	 * Returns parent class of this class.
@@ -122,4 +140,11 @@ public interface JavaClass {
 	 */
 	boolean isInterface();
 
+	/**
+	 * Returns component type of array.
+	 *
+	 * @return component type of array or {@code null},
+	 * if class is not an array.
+	 */
+	JavaClass getComponentType();
 }

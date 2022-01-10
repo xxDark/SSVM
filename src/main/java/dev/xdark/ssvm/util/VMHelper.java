@@ -3,10 +3,8 @@ package dev.xdark.ssvm.util;
 import dev.xdark.ssvm.NativeJava;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.classloading.ClassLoaderData;
-import dev.xdark.ssvm.execution.ExecutionContext;
-import dev.xdark.ssvm.execution.Locals;
-import dev.xdark.ssvm.execution.Stack;
-import dev.xdark.ssvm.execution.VMException;
+import dev.xdark.ssvm.execution.*;
+import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.thread.VMThread;
@@ -48,9 +46,6 @@ public final class VMHelper {
 	 * @return invocation result.
 	 */
 	public ExecutionContext invokeStatic(InstanceJavaClass javaClass, MethodNode method, Value[] stack, Value[] locals) {
-		if (vm != javaClass.getVM()) {
-			throw new IllegalStateException("Wrong helper!");
-		}
 		javaClass.initialize();
 		if ((method.access & Opcodes.ACC_STATIC) == 0) {
 			throw new IllegalStateException("Method is not static");
@@ -84,6 +79,47 @@ public final class VMHelper {
 	/**
 	 * Invokes virtual method.
 	 *
+	 * @param name
+	 * 		Method name.
+	 * @param desc
+	 * 		Method descriptor.
+	 * @param stack
+	 * 		Execution stack.
+	 * @param locals
+	 * 		Local variable table.
+	 *
+	 * @return invocation result.
+	 */
+	public ExecutionContext invokeVirtual(String name, String desc, Value[] stack, Value[] locals) {
+		InstanceJavaClass javaClass;
+		var instance = locals[0];
+		if (instance instanceof ArrayValue) {
+			javaClass = vm.getSymbols().java_lang_Object;
+			;
+		} else {
+			javaClass = (InstanceJavaClass) ((InstanceValue) instance).getJavaClass();
+		}
+		javaClass.initialize();
+		var keep = javaClass;
+		MethodNode method;
+		do {
+			method = javaClass.getMethod(name, desc);
+		} while (method == null && (javaClass = javaClass.getSuperClass()) != null);
+		if (method == null) {
+			throwException(vm.getSymbols().java_lang_NoSuchMethodError, keep.getName() + '.' + name + desc);
+		}
+		if ((method.access & Opcodes.ACC_STATIC) != 0) {
+			throw new IllegalStateException("Method is static");
+		}
+		var ctx = createContext(javaClass, method);
+		contextPrepare(ctx, stack, locals, 0);
+		javaClass.getVM().execute(ctx, true);
+		return ctx;
+	}
+
+	/**
+	 * Invokes interface method.
+	 *
 	 * @param javaClass
 	 * 		Class to search method in.
 	 * @param name
@@ -97,25 +133,9 @@ public final class VMHelper {
 	 *
 	 * @return invocation result.
 	 */
-	public ExecutionContext invokeVirtual(InstanceJavaClass javaClass, String name, String desc, Value[] stack, Value[] locals) {
-		if (vm != javaClass.getVM()) {
-			throw new IllegalStateException("Wrong helper!");
-		}
-		javaClass.initialize();
-		MethodNode method;
-		do {
-			method = javaClass.getMethod(name, desc);
-		} while (method == null && (javaClass = javaClass.getSuperClass()) != null);
-		if (method == null) {
-			throw new IllegalStateException("No such method: " + name + desc);
-		}
-		if ((method.access & Opcodes.ACC_STATIC) != 0) {
-			throw new IllegalStateException("Method is static");
-		}
-		var ctx = createContext(javaClass, method);
-		contextPrepare(ctx, stack, locals, 0);
-		javaClass.getVM().execute(ctx, true);
-		return ctx;
+	public ExecutionContext invokeInterface(InstanceJavaClass javaClass, String name, String desc, Value[] stack, Value[] locals) {
+		// TODO actually implement this properly
+		return invokeVirtual(name, desc, stack, locals);
 	}
 
 	/**
@@ -133,9 +153,6 @@ public final class VMHelper {
 	 * @return invocation result.
 	 */
 	public ExecutionContext invokeExact(InstanceJavaClass javaClass, MethodNode method, Value[] stack, Value[] locals) {
-		if (vm != javaClass.getVM()) {
-			throw new IllegalStateException("Wrong helper!");
-		}
 		if ((method.access & Opcodes.ACC_STATIC) != 0) {
 			throw new IllegalStateException("Method is static");
 		}
@@ -195,7 +212,18 @@ public final class VMHelper {
 					var dimensions = 0;
 					var name = type.getInternalName();
 					while (name.charAt(dimensions) == '[') dimensions++;
-					var base = findType(loader, name.substring(dimensions));
+					var searchFor = name;
+					if (dimensions != 0) {
+						searchFor = name.substring(dimensions);
+						if (searchFor.charAt(searchFor.length() - 1) == ';') {
+							searchFor = searchFor.substring(1, searchFor.length() - 1);
+						}
+					}
+					var base = findType(loader, searchFor);
+					if (base == null) {
+						throwException(vm.getSymbols().java_lang_ClassNotFoundException, name);
+						return null;
+					}
 					while (dimensions-- != 0) {
 						base = base.newArrayClass();
 					}
@@ -692,9 +720,6 @@ public final class VMHelper {
 	public String readUtf8(InstanceValue value) {
 		var jc = (InstanceJavaClass) value.getJavaClass();
 		var vm = jc.getVM();
-		if (this.vm != vm) {
-			throw new IllegalStateException("Wrong helper!");
-		}
 		if (jc != vm.getSymbols().java_lang_String) {
 			throw new IllegalStateException("Not a string: " + value);
 		}
@@ -711,7 +736,7 @@ public final class VMHelper {
 	 * @return Java string.
 	 */
 	public String readUtf8(Value value) {
-		if (value == null) return null;
+		if (value == null || value.isNull()) return null;
 		return readUtf8((InstanceValue) value);
 	}
 
@@ -742,6 +767,86 @@ public final class VMHelper {
 	}
 
 	/**
+	 * Returns default descriptor value.
+	 *
+	 * @param desc
+	 * 		Type descriptor.
+	 */
+	public Value getDefaultValue(String desc) {
+		switch (desc) {
+			case "J":
+				return new LongValue(0L);
+			case "D":
+				return new DoubleValue(0.0D);
+			case "I":
+			case "S":
+			case "B":
+			case "Z":
+				return new IntValue(0);
+			case "F":
+				return new FloatValue(0.0F);
+			case "C":
+				return new IntValue('\0');
+			default:
+				return NullValue.INSTANCE;
+		}
+	}
+
+	/**
+	 * Initializes default static values of the class.
+	 *
+	 * @param javaClass
+	 * 		Class to set fields for.
+	 */
+	public void initializeStaticFields(InstanceJavaClass javaClass) {
+		var vm = this.vm;
+		var fields = javaClass.getStaticLayout().getOffsetMap();
+		var data = javaClass.getStaticData();
+		var buffer = data.getData();
+		var asmFields = javaClass.getNode().fields;
+		for (var entry : fields.entrySet()) {
+			var key = entry.getKey();
+			var name = key.getName();
+			var desc = key.getDesc();
+			var fn = asmFields.stream()
+					.filter(x -> name.equals(x.name) && desc.equals(x.desc))
+					.findFirst();
+			if (fn.isEmpty()) {
+				throw new PanicException("Static layout is broken");
+			}
+			var cst = fn.get().value;
+			if (cst == null) cst = AsmUtil.getDefaultValue(desc);
+			var offset = entry.getValue().intValue();
+			switch (desc) {
+				case "J":
+					buffer.putLong(offset, (Long) cst);
+					break;
+				case "D":
+					buffer.putDouble(offset, (Double) cst);
+					break;
+				case "I":
+					buffer.putInt(offset, (Integer) cst);
+					break;
+				case "F":
+					buffer.putFloat(offset, (Float) cst);
+					break;
+				case "C":
+					buffer.putChar(offset, (Character) cst);
+					break;
+				case "S":
+					buffer.putShort(offset, ((Integer) cst).shortValue());
+					break;
+				case "B":
+				case "Z":
+					buffer.put(offset, ((Integer) cst).byteValue());
+					break;
+				default:
+					buffer.putLong(offset, NullValue.INSTANCE.getMemory().getAddress());
+			}
+		}
+	}
+
+	/**
 	 * Initializes default values of the class.
 	 *
 	 * @param value
@@ -751,9 +856,6 @@ public final class VMHelper {
 	 */
 	public void initializeDefaultValues(InstanceValue value, InstanceJavaClass javaClass) {
 		var vm = this.vm;
-		if (vm != javaClass.getVM()) {
-			throw new IllegalStateException("Wrong helper!");
-		}
 		var memoryManager = vm.getMemoryManager();
 		var fields = javaClass.getVirtualFields();
 		for (var entry : fields.entrySet()) {
@@ -810,6 +912,72 @@ public final class VMHelper {
 	}
 
 	/**
+	 * Creates new exception.
+	 *
+	 * @param javaClass
+	 * 		Exception class.
+	 * @param message
+	 * 		Exception message.
+	 * @param cause
+	 * 		Exception cause.
+	 *
+	 * @return new exception instance.
+	 */
+	public InstanceValue newException(InstanceJavaClass javaClass, String message, Value cause) {
+		var vm = this.vm;
+		javaClass.initialize();
+		var instance = vm.getMemoryManager().newInstance(javaClass);
+		invokeExact(javaClass, "<init>", "()V", new Value[0], new Value[]{instance});
+		if (message != null) {
+			instance.setValue("detailMessage", "Ljava/lang/String;", newUtf8(message));
+		}
+		if (cause != null) {
+			instance.setValue("cause", "Ljava/lang/Throwable;", cause);
+		}
+		return instance;
+	}
+
+	/**
+	 * Creates new exception.
+	 *
+	 * @param javaClass
+	 * 		Exception class.
+	 * @param message
+	 * 		Exception message.
+	 *
+	 * @return new exception instance.
+	 */
+	public InstanceValue newException(InstanceJavaClass javaClass, String message) {
+		return newException(javaClass, message, null);
+	}
+
+	/**
+	 * Creates new exception.
+	 *
+	 * @param javaClass
+	 * 		Exception class.
+	 * @param cause
+	 * 		Exception cause.
+	 *
+	 * @return new exception instance.
+	 */
+	public InstanceValue newException(InstanceJavaClass javaClass, Value cause) {
+		return newException(javaClass, null, cause);
+	}
+
+	/**
+	 * Creates new exception.
+	 *
+	 * @param javaClass
+	 * 		Exception class.
+	 *
+	 * @return new exception instance.
+	 */
+	public InstanceValue newException(InstanceJavaClass javaClass) {
+		return newException(javaClass, null, null);
+	}
+
+	/**
 	 * Throws exception.
 	 *
 	 * @param javaClass
@@ -820,20 +988,7 @@ public final class VMHelper {
 	 * 		Exception cause.
 	 */
 	public void throwException(InstanceJavaClass javaClass, String message, Value cause) {
-		var vm = this.vm;
-		if (vm != javaClass.getVM()) {
-			throw new IllegalStateException("Wrong helper!");
-		}
-		javaClass.initialize();
-		var instance = vm.getMemoryManager().newInstance(javaClass);
-		invokeExact(javaClass, "<init>", "()V", new Value[0], new Value[]{instance});
-		if (message != null) {
-			instance.setValue("detailMessage", "Ljava/lang/String;", newUtf8(message));
-		}
-		if (cause != null) {
-			instance.setValue("cause", "Ljava/lang/Throwable;", cause);
-		}
-		throw new VMException(instance);
+		throw new VMException(newException(javaClass, message, cause));
 	}
 
 	/**
@@ -842,10 +997,22 @@ public final class VMHelper {
 	 * @param javaClass
 	 * 		Exception class.
 	 * @param message
-	 * 		Message.
+	 * 		Exception Message.
 	 */
 	public void throwException(InstanceJavaClass javaClass, String message) {
 		throwException(javaClass, message, null);
+	}
+
+	/**
+	 * Throws exception.
+	 *
+	 * @param javaClass
+	 * 		Exception class.
+	 * @param cause
+	 * 		Exception cause.
+	 */
+	public void throwException(InstanceJavaClass javaClass, Value cause) {
+		throwException(javaClass, null, cause);
 	}
 
 	/**
@@ -885,6 +1052,30 @@ public final class VMHelper {
 	}
 
 	/**
+	 * Performs null check.
+	 *
+	 * @param value
+	 * 		Value to check.
+	 */
+	public void checkNotNull(Value value) {
+		if (value.isNull()) {
+			throwException(vm.getSymbols().java_lang_NullPointerException);
+		}
+	}
+
+	/**
+	 * Performs array check.
+	 *
+	 * @param value
+	 * 		Value to check.
+	 */
+	public void checkArray(Value value) {
+		if (!(value instanceof ArrayValue)) {
+			throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+		}
+	}
+
+	/**
 	 * Sets class fields, just like normal JVM.
 	 *
 	 * @param oop
@@ -899,6 +1090,26 @@ public final class VMHelper {
 		oop.setValue("protectionDomain", "Ljava/security/ProtectionDomain;", protectionDomain);
 	}
 
+	/**
+	 * Definec class.
+	 *
+	 * @param classLoader
+	 * 		Class loader to define class in.
+	 * @param name
+	 * 		Class name.
+	 * @param b
+	 * 		Class bytes.
+	 * @param off
+	 * 		Class bytes offset.
+	 * @param len
+	 * 		Class bytes length.
+	 * @param protectionDomain
+	 * 		Protection domain.
+	 * @param source
+	 * 		Class source, e.g. it's location
+	 *
+	 * @return defined class.
+	 */
 	public JavaClass defineClass(Value classLoader, String name, byte[] b, int off, int len, Value protectionDomain, String source) {
 		var vm = this.vm;
 		if ((off | len | (off + len) | (b.length - (off + len))) < 0) {
@@ -931,16 +1142,29 @@ public final class VMHelper {
 			// Create class
 			var javaClass = new InstanceJavaClass(vm, classLoader, parsed.getClassReader(), parsed.getNode());
 			classLoaderData.linkClass(javaClass);
-			var oop = (InstanceValue) vm.getMemoryManager().newOopForClass(javaClass);
+			var oop = (InstanceValue) vm.getMemoryManager().setOopForClass(javaClass);
 			javaClass.setOop(oop);
 			vm.getHelper().initializeDefaultValues(oop, vm.getSymbols().java_lang_Class);
 			setClassFields(oop, classLoader, protectionDomain);
 			if (!classLoader.isNull()) {
 				var classes = ((InstanceValue) classLoader).getValue("classes", "Ljava/util/Vector;");
-				invokeVirtual(vm.getSymbols().java_util_Vector, "add", "(Ljava/lang/Object;)Z", new Value[0], new Value[]{classes, javaClass.getOop()});
+				invokeVirtual("add", "(Ljava/lang/Object;)Z", new Value[0], new Value[]{classes, javaClass.getOop()});
 			}
 			return javaClass;
 		}
+	}
+
+	/**
+	 * Sets array class component type.
+	 *
+	 * @param javaClass
+	 * 		Class to set component for.
+	 * @param componentType
+	 * 		Type of the component.
+	 */
+	public void setComponentType(ArrayJavaClass javaClass, JavaClass componentType) {
+		var oop = (InstanceValue) javaClass.getOop();
+		oop.setValue("componentType", "Ljava/lang/Class;", componentType.getOop());
 	}
 
 	private static void contextPrepare(ExecutionContext ctx, Value[] stack, Value[] locals, int localIndex) {

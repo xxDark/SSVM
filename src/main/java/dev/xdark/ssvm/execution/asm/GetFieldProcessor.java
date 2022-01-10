@@ -18,7 +18,9 @@ public final class GetFieldProcessor implements InstructionProcessor<FieldInsnNo
 	public Result execute(FieldInsnNode insn, ExecutionContext ctx) {
 		var vm = ctx.getVM();
 		var stack = ctx.getStack();
-		var instance = stack.<InstanceValue>pop();
+		var $instance = stack.pop();
+		vm.getHelper().checkNotNull($instance);
+		var instance = (InstanceValue) $instance;
 		var jc = (InstanceJavaClass) vm.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
 		var offset = jc.getFieldOffsetRecursively(insn.name, insn.desc);
 		if (offset == -1L) {

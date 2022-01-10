@@ -2,9 +2,9 @@ package dev.xdark.ssvm.mirror;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.VMException;
+import dev.xdark.ssvm.memory.Memory;
 import dev.xdark.ssvm.util.UnsafeUtil;
-import dev.xdark.ssvm.value.NullValue;
-import dev.xdark.ssvm.value.Value;
+import dev.xdark.ssvm.value.*;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 
 public final class InstanceJavaClass implements JavaClass {
 
-	private final Map<FieldInfo, Value> staticFields = new HashMap<>();
 	private final Map<FieldInfo, Long> virtualFields = new HashMap<>();
 	private final VirtualMachine vm;
 	private final Value classLoader;
@@ -26,10 +25,13 @@ public final class InstanceJavaClass implements JavaClass {
 	private final Condition signal;
 	private final ClassReader classReader;
 	private final ClassNode node;
-	private Value oop;
-	private ClassLayout layout;
+	private InstanceValue oop;
+	private Memory staticData;
+	private ClassLayout virtualLayout;
+	private ClassLayout staticLayout;
 	private InstanceJavaClass superClass;
 	private InstanceJavaClass[] interfaces;
+	private ArrayJavaClass arrayClass;
 
 	// Initialization
 	private volatile State state = State.PENDING;
@@ -51,7 +53,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @param oop
 	 * 		Clas oop.
 	 */
-	public InstanceJavaClass(VirtualMachine vm, Value classLoader, ClassReader classReader, ClassNode node, Value oop) {
+	public InstanceJavaClass(VirtualMachine vm, Value classLoader, ClassReader classReader, ClassNode node, InstanceValue oop) {
 		this.vm = vm;
 		this.classLoader = classLoader;
 		this.classReader = classReader;
@@ -113,8 +115,13 @@ public final class InstanceJavaClass implements JavaClass {
 	}
 
 	@Override
-	public Value getOop() {
+	public InstanceValue getOop() {
 		return oop;
+	}
+
+	@Override
+	public Memory getStaticData() {
+		return staticData;
 	}
 
 	@Override
@@ -155,16 +162,7 @@ public final class InstanceJavaClass implements JavaClass {
 		var vm = this.vm;
 		var helper = vm.getHelper();
 		var node = this.node;
-		var fields = node.fields;
-		var staticFields = this.staticFields;
-		for (int i = 0, j = fields.size(); i < j; i++) {
-			var field = fields.get(i);
-			if ((field.access & Opcodes.ACC_STATIC) != 0) {
-				var cst = field.value;
-				var value = cst == null ? NullValue.INSTANCE : helper.valueFromLdc(cst);
-				staticFields.put(new FieldInfo(this, field.name, field.desc), value);
-			}
-		}
+		helper.initializeStaticFields(this);
 		var superName = node.superName;
 		var classLoader = this.classLoader;
 		if (superName != null) {
@@ -178,8 +176,9 @@ public final class InstanceJavaClass implements JavaClass {
 		}
 		this.interfaces = interfaces;
 		// Build class layout
-		if (layout == null) {
-			layout = createLayout(); // VM might've set it already, do not override.
+		// VM might've set it already, do not override.
+		if (virtualLayout == null) {
+			virtualLayout = createVirtualLayout();
 		}
 		if (virtualFields.isEmpty()) {
 			buildVirtualFields();
@@ -192,6 +191,12 @@ public final class InstanceJavaClass implements JavaClass {
 			state = State.COMPLETE;
 		} catch (VMException ex) {
 			state = State.FAILED;
+			var oop = ex.getOop();
+			var symbols = vm.getSymbols();
+			if (!symbols.java_lang_Error.isAssignableFrom(oop.getJavaClass())) {
+				oop = vm.getHelper().newException(symbols.java_lang_ExceptionInInitializerError, oop);
+				throw new VMException(oop);
+			}
 			throw ex;
 		} finally {
 			signal.signalAll();
@@ -207,6 +212,9 @@ public final class InstanceJavaClass implements JavaClass {
 			vm.getHelper().throwException(vm.getSymbols().java_lang_NullPointerException);
 			// keep javac happy.
 			return false;
+		}
+		if (other == this) {
+			return true;
 		}
 		if (other.isPrimitive()) {
 			return false;
@@ -282,24 +290,36 @@ public final class InstanceJavaClass implements JavaClass {
 		return (node.access & Opcodes.ACC_INTERFACE) != 0;
 	}
 
+	@Override
+	public JavaClass getComponentType() {
+		return null;
+	}
+
 	/**
 	 * Computes virtual fields.
 	 */
 	public void buildVirtualFields() {
-		virtualFields.putAll(layout.getOffsetMap()
+		virtualFields.putAll(virtualLayout.getOffsetMap()
 				.entrySet()
 				.stream().filter(x -> this == x.getKey().getOwner())
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 	}
 
-	/**
-	 * Returns class layout.
-	 *
-	 * @return class layout.
-	 */
 	@Override
-	public ClassLayout getLayout() {
-		return layout;
+	public ClassLayout getVirtualLayout() {
+		return virtualLayout;
+	}
+
+	@Override
+	public ClassLayout getStaticLayout() {
+		var staticLayout = this.staticLayout;
+		// Build class layout
+		// VM might've set it already, do not override.
+		if (staticLayout == null) {
+			staticLayout = this.staticLayout = createStaticLayout();
+			staticData = vm.getMemoryManager().allocateDirect(staticLayout.getSize());
+		}
+		return staticLayout;
 	}
 
 	@Override
@@ -316,7 +336,13 @@ public final class InstanceJavaClass implements JavaClass {
 
 	@Override
 	public ArrayJavaClass newArrayClass() {
-		return new ArrayJavaClass(vm, '[' + descriptor, 1, this);
+		var arrayClass = this.arrayClass;
+		if (arrayClass == null) {
+			var vm = this.vm;
+			arrayClass = this.arrayClass = new ArrayJavaClass(vm, '[' + getDescriptor(), 1, this);
+			vm.getHelper().setComponentType(arrayClass, this);
+		}
+		return arrayClass;
 	}
 
 	/**
@@ -335,7 +361,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @param oop
 	 * 		Class oop.
 	 */
-	public void setOop(Value oop) {
+	public void setOop(InstanceValue oop) {
 		this.oop = oop;
 	}
 
@@ -371,7 +397,28 @@ public final class InstanceJavaClass implements JavaClass {
 	 */
 	public Value getStaticValue(FieldInfo field) {
 		initialize();
-		return staticFields.get(field);
+		var offset = (int) staticLayout.getFieldOffset(field);
+		if (offset == -1L) return null;
+		var buffer = staticData.getData();
+		switch (field.getDesc()) {
+			case "J":
+				return new LongValue(buffer.getLong(offset));
+			case "D":
+				return new DoubleValue(buffer.getDouble(offset));
+			case "I":
+				return new IntValue(buffer.getInt(offset));
+			case "F":
+				return new FloatValue(buffer.getFloat(offset));
+			case "C":
+				return new IntValue(buffer.getChar(offset));
+			case "S":
+				return new IntValue(buffer.getShort(offset));
+			case "B":
+			case "Z":
+				return new IntValue(buffer.get(offset));
+			default:
+				return vm.getMemoryManager().getValue(buffer.getLong(offset));
+		}
 	}
 
 	/**
@@ -401,7 +448,38 @@ public final class InstanceJavaClass implements JavaClass {
 	 * This method will return {@code false} if there is no such field.
 	 */
 	public boolean setFieldValue(FieldInfo field, Value value) {
-		return staticFields.replace(field, value) != null;
+		initialize();
+		var offset = (int) staticLayout.getFieldOffset(field);
+		if (offset == -1L) return false;
+		var oop = this.oop;
+		var data = staticData.getData();
+		switch (field.getDesc()) {
+			case "J":
+				data.putLong(offset, value.asLong());
+				return true;
+			case "D":
+				data.putDouble(offset, value.asDouble());
+				return true;
+			case "I":
+				data.putInt(offset, value.asInt());
+				return true;
+			case "F":
+				data.putFloat(offset, value.asFloat());
+				return true;
+			case "C":
+				data.putChar(offset, value.asChar());
+				return true;
+			case "S":
+				data.putShort(offset, value.asShort());
+				return true;
+			case "B":
+			case "Z":
+				data.put(offset, value.asByte());
+				return true;
+			default:
+				data.putLong(offset, ((ObjectValue) value).getMemory().getAddress());
+				return true;
+		}
 	}
 
 	/**
@@ -433,7 +511,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 */
 	public long getFieldOffset(String name, String desc) {
 		initialize();
-		return layout.getFieldOffset(new FieldInfo(this, name, desc));
+		return virtualLayout.getFieldOffset(new FieldInfo(this, name, desc));
 	}
 
 	/**
@@ -448,10 +526,29 @@ public final class InstanceJavaClass implements JavaClass {
 	 */
 	public long getFieldOffsetRecursively(String name, String desc) {
 		initialize();
-		var layout = this.layout;
+		var layout = this.virtualLayout;
 		var jc = this;
 		do {
 			var offset = layout.getFieldOffset(new FieldInfo(jc, name, desc));
+			if (offset != -1L) return offset;
+		} while ((jc = jc.getSuperClass()) != null);
+		return -1L;
+	}
+
+	/**
+	 * Searches for field offset recursively.
+	 *
+	 * @param name
+	 * 		Field name.
+	 *
+	 * @return field offset or {@code -1L} if not found.
+	 */
+	public long getFieldOffsetRecursively(String name) {
+		initialize();
+		var layout = this.virtualLayout;
+		var jc = this;
+		do {
+			var offset = layout.getFieldOffset(jc, name);
 			if (offset != -1L) return offset;
 		} while ((jc = jc.getSuperClass()) != null);
 		return -1L;
@@ -483,7 +580,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * otherwise.
 	 */
 	public boolean hasVirtualField(String name, String desc) {
-return hasVirtualField(new FieldInfo(this, name, desc));
+		return hasVirtualField(new FieldInfo(this, name, desc));
 	}
 
 	/**
@@ -496,21 +593,52 @@ return hasVirtualField(new FieldInfo(this, name, desc));
 	}
 
 	/**
-	 * Sets class layout.
+	 * Sets virtual class layout.
 	 *
 	 * @param layout
 	 * 		Layout to use.
 	 */
-	public void setLayout(ClassLayout layout) {
-		this.layout = layout;
+	public void setVirtualLayout(ClassLayout layout) {
+		this.virtualLayout = layout;
 	}
 
 	/**
-	 * Builds class layout.
+	 * Sets static class layout.
 	 *
-	 * @return class layout.
+	 * @param layout
+	 * 		Layout to use.
 	 */
-	public ClassLayout createLayout() {
+	public void setStaticLayout(ClassLayout layout) {
+		this.staticLayout = layout;
+		staticData = vm.getMemoryManager().allocateDirect(layout.getSize());
+	}
+
+	/**
+	 * Builds static class layout.
+	 *
+	 * @return static class layout.
+	 */
+	public ClassLayout createStaticLayout() {
+		var offsetMap = new HashMap<FieldInfo, Long>();
+		var offset = 0L;
+		var fields = node.fields;
+		for (int i = 0, j = fields.size(); i < j; i++) {
+			var field = fields.get(i);
+			if ((field.access & Opcodes.ACC_STATIC) != 0) {
+				var desc = field.desc;
+				offsetMap.put(new FieldInfo(this, field.name, desc), offset);
+				offset += UnsafeUtil.getSizeFor(desc);
+			}
+		}
+		return new ClassLayout(Collections.unmodifiableMap(offsetMap), offset);
+	}
+
+	/**
+	 * Builds virtual class layout.
+	 *
+	 * @return virtual class layout.
+	 */
+	public ClassLayout createVirtualLayout() {
 		var offsetMap = new HashMap<FieldInfo, Long>();
 		var offset = 0L;
 		InstanceJavaClass javaClass = this;

@@ -18,11 +18,14 @@ import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.util.VMPrimitives;
 import dev.xdark.ssvm.util.VMSymbols;
-import dev.xdark.ssvm.value.*;
+import dev.xdark.ssvm.value.IntValue;
+import dev.xdark.ssvm.value.NullValue;
+import dev.xdark.ssvm.value.ObjectValue;
+import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.Opcodes;
 
 import java.nio.ByteOrder;
-import java.util.Collections;
+import java.util.Properties;
 
 public class VirtualMachine {
 
@@ -34,6 +37,7 @@ public class VirtualMachine {
 	private final VMHelper helper;
 	private final ClassDefiner classDefiner;
 	private final ThreadManager threadManager;
+	private final Properties properties;
 
 	public VirtualMachine() {
 		bootClassLoader = new BootClassLoaderHolder(this, createBootClassLoader());
@@ -45,18 +49,21 @@ public class VirtualMachine {
 		vmInterface = new VMInterface();
 		helper = new VMHelper(this);
 		threadManager = createThreadManager();
-		object.setLayout(new ClassLayout(Collections.emptyMap(), 0L));
-		klass.setLayout(klass.createLayout());
+		object.setVirtualLayout(ClassLayout.EMPTY);
+		object.setStaticLayout(ClassLayout.EMPTY);
+		klass.setVirtualLayout(klass.createVirtualLayout());
+		klass.setStaticLayout(klass.createStaticLayout());
 		klass.buildVirtualFields();
+		setClassOop(klass, klass);
+		setClassOop(object, klass);
 		symbols = new VMSymbols(this);
 		primitives = new VMPrimitives(this);
 		classDefiner = createClassDefiner();
 		NativeJava.vmInit(this);
-		setClassOop(object);
-		setClassOop(klass);
 
 		object.initialize();
 		klass.initialize();
+		(properties = new Properties()).putAll(System.getProperties());
 	}
 
 	/**
@@ -86,9 +93,6 @@ public class VirtualMachine {
 		if (initializeSystemClass != null) {
 			// pre JDK 9 boot
 			helper.invokeStatic(sysClass, initializeSystemClass, new Value[0], new Value[0]);
-			var classLoaderClass = symbols.java_lang_ClassLoader;
-			classLoaderClass.initialize();
-			helper.invokeStatic(classLoaderClass, "getSystemClassLoader", "()Ljava/lang/ClassLoader;", new Value[0], new Value[0]);
 		} else {
 			var unsafeConstants = (InstanceJavaClass) findBootstrapClass("jdk/internal/misc/UnsafeConstants", true);
 			if (unsafeConstants != null) {
@@ -98,8 +102,24 @@ public class VirtualMachine {
 				unsafeConstants.setFieldValue("PAGE_SIZE", "I", new IntValue(memoryManager.pageSize()));
 				unsafeConstants.setFieldValue("BIG_ENDIAN", "Z", new IntValue(memoryManager.getByteOrder() == ByteOrder.BIG_ENDIAN ? 1 : 0));
 			}
+			findBootstrapClass("java/lang/StringUTF16", true);
+			helper.invokeStatic(sysClass, "initPhase1", "()V", new Value[0], new Value[0]);
+			helper.invokeStatic(sysClass, "initPhase2", "()V", new Value[0], new Value[0]);
+			helper.invokeStatic(sysClass, "initPhase3", "()V", new Value[0], new Value[0]);
 		}
-		findBootstrapClass("java/lang/StringUTF16", true);
+		var classLoaderClass = symbols.java_lang_ClassLoader;
+		classLoaderClass.initialize();
+		helper.invokeStatic(classLoaderClass, "getSystemClassLoader", "()Ljava/lang/ClassLoader;", new Value[0], new Value[0]);
+	}
+
+	/**
+	 * Returns properties that will be used
+	 * for initialization.
+	 *
+	 * @return system properties.
+	 */
+	public Properties getProperties() {
+		return properties;
 	}
 
 	/**
@@ -229,7 +249,7 @@ public class VirtualMachine {
 			jc = findBootstrapClass(name, initialize);
 		} else {
 			var helper = this.helper;
-			jc = memoryManager.readClass((ObjectValue) helper.invokeVirtual(symbols.java_lang_ClassLoader, "loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;", new Value[0], new Value[]{loader, helper.newUtf8(name), new IntValue(initialize ? 1 : 0)}).getResult());
+			jc = memoryManager.readClass((ObjectValue) helper.invokeVirtual("loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;", new Value[0], new Value[]{loader, helper.newUtf8(name), new IntValue(initialize ? 1 : 0)}).getResult());
 		}
 		return jc;
 	}
@@ -243,7 +263,7 @@ public class VirtualMachine {
 	 * 		Should VM search for VMI hooks.
 	 */
 	public void execute(ExecutionContext ctx, boolean useInvokers) {
-		var backtrace = threadManager.getVmThread(Thread.currentThread()).getBacktrace();
+		var backtrace = currentThread().getBacktrace();
 		backtrace.push(ctx);
 		var mn = ctx.getMethod();
 		try {
@@ -355,8 +375,9 @@ public class VirtualMachine {
 		return jc;
 	}
 
-	private void setClassOop(InstanceJavaClass javaClass) {
-		var oop = memoryManager.newOopForClass(javaClass);
-		helper.initializeDefaultValues((InstanceValue) oop, symbols.java_lang_Class);
+	private void setClassOop(InstanceJavaClass javaClass, InstanceJavaClass jlc) {
+		var oop = jlc == javaClass ? memoryManager.newJavaLangClass(javaClass, javaClass) : memoryManager.newJavaInstance(jlc, javaClass);
+		javaClass.setOop(oop);
+		helper.initializeDefaultValues(oop, jlc);
 	}
 }

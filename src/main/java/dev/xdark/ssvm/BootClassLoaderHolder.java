@@ -5,7 +5,6 @@ import dev.xdark.ssvm.classloading.ClassLoaderData;
 import dev.xdark.ssvm.classloading.ClassParseResult;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
-import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.NullValue;
 
 /**
@@ -45,20 +44,20 @@ final class BootClassLoaderHolder {
 		var dimensions = 0;
 		while (name.charAt(dimensions) == '[') dimensions++;
 		var data = this.data;
-		var trueName = dimensions == 0 ? name : name.substring(dimensions);
+		var trueName = dimensions == 0 ? name : name.substring(dimensions + 1, name.length() - 1);
 		synchronized (data) {
 			var jc = data.getClass(trueName);
 			if (jc == null) {
 				var result = bootClassLoader.findBootClass(trueName);
 				if (result == null) return null;
 				var vm = this.vm;
-				jc = new InstanceJavaClass(vm, NullValue.INSTANCE, result.getClassReader(), result.getNode(), null);
-				var oop = (InstanceValue) vm.getMemoryManager().newOopForClass(jc);
+				jc = new InstanceJavaClass(vm, NullValue.INSTANCE, result.getClassReader(), result.getNode());
+				var oop = vm.getMemoryManager().setOopForClass(jc);
 				((InstanceJavaClass) jc).setOop(oop);
 				data.linkClass(jc);
 				vm.getHelper().initializeDefaultValues(oop, this.jc);
-				while (dimensions-- != 0) jc = jc.newArrayClass();
 			}
+			while (dimensions-- != 0) jc = jc.newArrayClass();
 			return jc;
 		}
 	}

@@ -9,16 +9,16 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodInsnNode;
 
 /**
- * Invokes virtual method.
+ * Invokes interface method.
  *
  * @author xDark
  */
-public final class VirtualCallProcessor implements InstructionProcessor<MethodInsnNode> {
+public final class InterfaceCallProcessor implements InstructionProcessor<MethodInsnNode> {
 
 	@Override
 	public Result execute(MethodInsnNode insn, ExecutionContext ctx) {
 		var vm = ctx.getVM();
-		//var owner = vm.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
+		var owner = vm.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
 		var stack = ctx.getStack();
 		var args = Type.getArgumentTypes(insn.desc);
 		var localsLength = args.length + 1;
@@ -26,7 +26,7 @@ public final class VirtualCallProcessor implements InstructionProcessor<MethodIn
 		while (localsLength-- != 0) {
 			locals[localsLength] = stack.popGeneric();
 		}
-		var result = vm.getHelper().invokeVirtual(insn.name, insn.desc, new Value[0], locals);
+		var result = vm.getHelper().invokeInterface((InstanceJavaClass) owner, insn.name, insn.desc, new Value[0], locals);
 		if (Type.getReturnType(insn.desc) != Type.VOID_TYPE) {
 			stack.pushGeneric(result.getResult());
 		}

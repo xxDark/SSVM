@@ -17,7 +17,7 @@ public final class FloatToDoubleProcessor implements InstructionProcessor<Abstra
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		var stack = ctx.getStack();
-		stack.pushWide(new DoubleValue(stack.pop().asLong()));
+		stack.pushWide(new DoubleValue(stack.pop().asDouble()));
 		return Result.CONTINUE;
 	}
 }

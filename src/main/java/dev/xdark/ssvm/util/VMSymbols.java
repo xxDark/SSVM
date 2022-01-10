@@ -34,6 +34,11 @@ public final class VMSymbols {
 	public final InstanceJavaClass java_util_Vector;
 	public final InstanceJavaClass java_lang_OutOfMemoryError;
 	public final InstanceJavaClass java_lang_NegativeArraySizeException;
+	public final InstanceJavaClass java_lang_IllegalArgumentException;
+	public final InstanceJavaClass java_lang_AbstractMethodError;
+	public final InstanceJavaClass java_lang_Double;
+	public final InstanceJavaClass java_lang_Float;
+	public final InstanceJavaClass java_lang_reflect_Array;
 
 	/**
 	 * @param vm
@@ -63,6 +68,11 @@ public final class VMSymbols {
 		java_lang_ClassNotFoundException = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ClassNotFoundException");
 		java_util_Vector = (InstanceJavaClass) vm.findBootstrapClass("java/util/Vector");
 		java_lang_OutOfMemoryError = (InstanceJavaClass) vm.findBootstrapClass("java/lang/OutOfMemoryError");
-		java_lang_NegativeArraySizeException = (InstanceJavaClass) vm.findBootstrapClass("NegativeArraySizeException");
+		java_lang_NegativeArraySizeException = (InstanceJavaClass) vm.findBootstrapClass("java/lang/NegativeArraySizeException");
+		java_lang_IllegalArgumentException = (InstanceJavaClass) vm.findBootstrapClass("java/lang/IllegalArgumentException");
+		java_lang_AbstractMethodError = (InstanceJavaClass) vm.findBootstrapClass("java/lang/AbstractMethodError");
+		java_lang_Double = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Double");
+		java_lang_Float = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Float");
+		java_lang_reflect_Array = (InstanceJavaClass) vm.findBootstrapClass("java/lang/reflect/Array");
 	}
 }

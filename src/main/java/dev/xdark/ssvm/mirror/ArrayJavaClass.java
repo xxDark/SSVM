@@ -1,6 +1,9 @@
 package dev.xdark.ssvm.mirror;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.execution.PanicException;
+import dev.xdark.ssvm.memory.Memory;
+import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.Opcodes;
 
@@ -10,8 +13,9 @@ public final class ArrayJavaClass implements JavaClass {
 	private final String name;
 	private final int dimensions;
 	private final JavaClass componentType;
-	private final Value oop;
+	private final InstanceValue oop;
 	private final JavaClass objectClass;
+	private ArrayJavaClass arrayClass;
 
 	/**
 	 * @param vm
@@ -28,7 +32,7 @@ public final class ArrayJavaClass implements JavaClass {
 		this.name = name;
 		this.dimensions = dimensions;
 		this.componentType = componentType;
-		oop = vm.getMemoryManager().newOopForClass(this);
+		oop = vm.getMemoryManager().setOopForClass(this);
 		objectClass = vm.getSymbols().java_lang_Object;
 	}
 
@@ -58,13 +62,23 @@ public final class ArrayJavaClass implements JavaClass {
 	}
 
 	@Override
-	public Value getOop() {
+	public InstanceValue getOop() {
 		return oop;
 	}
 
 	@Override
-	public ClassLayout getLayout() {
-		return objectClass.getLayout();
+	public Memory getStaticData() {
+		return vm.getMemoryManager().zero();
+	}
+
+	@Override
+	public ClassLayout getVirtualLayout() {
+		return objectClass.getVirtualLayout();
+	}
+
+	@Override
+	public ClassLayout getStaticLayout() {
+		return ClassLayout.EMPTY;
 	}
 
 	@Override
@@ -81,9 +95,15 @@ public final class ArrayJavaClass implements JavaClass {
 	public ArrayJavaClass newArrayClass() {
 		int dimensions = this.dimensions;
 		if (dimensions == 256) {
-			throw new IllegalStateException();
+			throw new PanicException("Too much dimensions");
 		}
-		return new ArrayJavaClass(vm, '[' + name, dimensions + 1, this);
+		var arrayClass = this.arrayClass;
+		if (arrayClass == null) {
+			var vm = this.vm;
+			arrayClass = this.arrayClass = new ArrayJavaClass(vm, '[' + name, dimensions + 1, this);
+			vm.getHelper().setComponentType(arrayClass, this);
+		}
+		return arrayClass;
 	}
 
 	@Override
@@ -92,7 +112,7 @@ public final class ArrayJavaClass implements JavaClass {
 
 	@Override
 	public boolean isAssignableFrom(JavaClass other) {
-		return componentType.isAssignableFrom(other);
+		return componentType.isAssignableFrom(other.getComponentType());
 	}
 
 	@Override
@@ -108,5 +128,15 @@ public final class ArrayJavaClass implements JavaClass {
 	@Override
 	public boolean isInterface() {
 		return false;
+	}
+
+	@Override
+	public JavaClass getComponentType() {
+		return componentType;
+	}
+
+	@Override
+	public String toString() {
+		return name;
 	}
 }

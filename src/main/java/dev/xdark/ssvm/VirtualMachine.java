@@ -25,6 +25,7 @@ import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.LineNumberNode;
 
 import java.nio.ByteOrder;
 import java.util.Properties;
@@ -309,6 +310,7 @@ public class VirtualMachine {
 					ctx.setInsnPosition(pos + 1);
 					var insn = instructions.get(pos);
 					// TODO handle misc. instructions
+					if (insn instanceof LineNumberNode) ctx.setLineNumber(((LineNumberNode) insn).line);
 					if (insn.getOpcode() == -1) continue;
 					var processor = vmi.getProcessor(insn);
 					if (processor == null) {

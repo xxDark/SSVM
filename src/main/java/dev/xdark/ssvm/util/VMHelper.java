@@ -77,7 +77,11 @@ public final class VMHelper {
 	 * @return invocation result.
 	 */
 	public ExecutionContext invokeStatic(InstanceJavaClass javaClass, String name, String desc, Value[] stack, Value[] locals) {
-		return invokeStatic(javaClass, javaClass.getMethod(name, desc), stack, locals);
+		var mn = javaClass.getMethod(name, desc);
+		if (mn == null) {
+			throwException(vm.getSymbols().java_lang_NoSuchMethodError, javaClass.getName() + '.' + name + desc);
+		}
+		return invokeStatic(javaClass, mn, stack, locals);
 	}
 
 	/**
@@ -215,28 +219,23 @@ public final class VMHelper {
 			var loader = ctx == null ? NullValue.INSTANCE : ctx.getOwner().getClassLoader();
 			var sort = type.getSort();
 			switch (sort) {
-				case Type.OBJECT:
-					return vm.findClass(loader, type.getInternalName(), false).getOop();
-				case Type.ARRAY:
-					var dimensions = 0;
+				case Type.OBJECT: {
 					var name = type.getInternalName();
-					while (name.charAt(dimensions) == '[') dimensions++;
-					var searchFor = name;
-					if (dimensions != 0) {
-						searchFor = name.substring(dimensions);
-						if (searchFor.charAt(searchFor.length() - 1) == ';') {
-							searchFor = searchFor.substring(1, searchFor.length() - 1);
-						}
-					}
-					var base = findType(loader, searchFor);
-					if (base == null) {
+					var klass = vm.findClass(loader, name, false); // fast path
+					if (klass == null) {
 						throwException(vm.getSymbols().java_lang_ClassNotFoundException, name);
 						return null;
 					}
-					while (dimensions-- != 0) {
-						base = base.newArrayClass();
+					return klass.getOop();
+				}
+				case Type.ARRAY:
+					var name = type.getInternalName();
+					var klass = findClass(loader, type.getInternalName(), false);
+					if (klass == null) {
+						throwException(vm.getSymbols().java_lang_ClassNotFoundException, name);
+						return null;
 					}
-					return base.getOop();
+					return klass.getOop();
 				default:
 					throw new IllegalStateException("Not implemented yet: " + sort);
 			}

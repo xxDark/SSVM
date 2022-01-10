@@ -154,9 +154,7 @@ public final class InstanceJavaClass implements JavaClass {
 		initializer = Thread.currentThread();
 		var vm = this.vm;
 		var helper = vm.getHelper();
-		var node = this.node;
 		helper.initializeStaticFields(this);
-		var classLoader = this.classLoader;
 		loadSuperClass(true);
 		loadInterfaces(true);
 		// Build class layout
@@ -712,16 +710,16 @@ public final class InstanceJavaClass implements JavaClass {
 		var $interfaces = this.interfaces;
 		if ($interfaces == null) {
 			var _interfaces = node.interfaces;
-			var interfaces = new InstanceJavaClass[_interfaces.size()];
+			$interfaces = new InstanceJavaClass[_interfaces.size()];
 			var vm = this.vm;
 			var classLoader = this.classLoader;
 			for (int i = 0, j = _interfaces.size(); i < j; i++) {
-				var iface = interfaces[i] = (InstanceJavaClass) vm.findClass(classLoader, _interfaces.get(i), initialize);
+				var iface = $interfaces[i] = (InstanceJavaClass) vm.findClass(classLoader, _interfaces.get(i), initialize);
 				if (iface == null) {
 					vm.getHelper().throwException(vm.getSymbols().java_lang_NoClassDefFoundError, _interfaces.get(i));
 				}
 			}
-			this.interfaces = $interfaces = interfaces;
+			this.interfaces = $interfaces;
 		}
 		if (initialize) {
 			for (var ifc : $interfaces) ifc.initialize();

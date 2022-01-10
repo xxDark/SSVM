@@ -19,10 +19,13 @@ public final class PutFieldProcessor implements InstructionProcessor<FieldInsnNo
 		var vm = ctx.getVM();
 		var stack = ctx.getStack();
 		var value = stack.popGeneric();
-		var instance = stack.<InstanceValue>pop();
+		var $instance = stack.pop();
+		var helper = vm.getHelper();
+		helper.checkNotNull($instance);
+		var instance = (InstanceValue) $instance;
 		var offset = instance.getJavaClass().getFieldOffsetRecursively(insn.name, insn.desc);
 		if (offset == -1L) {
-			vm.getHelper().throwException(vm.getSymbols().java_lang_NoSuchFieldError, insn.owner + '.' + insn.name + insn.desc);
+			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, insn.owner + '.' + insn.name + insn.desc);
 		}
 		offset += vm.getMemoryManager().valueBaseOffset(instance);
 		var manager = vm.getMemoryManager();

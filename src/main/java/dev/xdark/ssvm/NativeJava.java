@@ -10,7 +10,6 @@ import dev.xdark.ssvm.execution.asm.*;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.thread.Backtrace;
-import dev.xdark.ssvm.thread.VMThread;
 import dev.xdark.ssvm.value.*;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.FieldNode;
@@ -300,7 +299,7 @@ public final class NativeJava {
 		var clInitHook = (MethodInvoker) ctx -> {
 			var oop = vm.getMemoryManager().newJavaInstance(object, new ClassLoaderData());
 			ctx.getLocals().<InstanceValue>load(0)
-					.setValue(CLASS_LOADER_OOP, "Ljava/lang/Object", oop);
+					.setValue(CLASS_LOADER_OOP, "Ljava/lang/Object;", oop);
 			return Result.CONTINUE;
 		};
 		if (!vmi.setInvoker(classLoader, "<init>", "(Ljava/lang/Void;Ljava/lang/String;Ljava/lang/ClassLoader;)V", clInitHook)) {
@@ -478,7 +477,7 @@ public final class NativeJava {
 		}
 		vmi.setInvoker(reflection, "getCallerClass", "()Ljava/lang/Class;", ctx -> {
 			var backtrace = vm.currentThread().getBacktrace();
-			ctx.setResult(backtrace.get(backtrace.count() - 2).getOwner().getOop());
+			ctx.setResult(backtrace.get(backtrace.count() - 3).getOwner().getOop());
 			return Result.ABORT;
 		});
 		var accController = (InstanceJavaClass) vm.findBootstrapClass("java/security/AccessController");
@@ -488,6 +487,22 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		initMethodHandles(vm);
+		var bootLoader = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/loader/BootLoader");
+		if (bootLoader != null) {
+			vmi.setInvoker(bootLoader, "setBootLoaderUnnamedModule0", "(Ljava/lang/Module;)V", ctx -> Result.ABORT);
+			vmi.setInvoker(bootLoader, "getSystemPackageLocation", "(Ljava/lang/String;)Ljava/lang/String;", ctx -> {
+				ctx.setResult(NullValue.INSTANCE);
+				return Result.ABORT;
+			});
+		}
+		var module = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Module");
+		if (module != null) {
+			vmi.setInvoker(module, "defineModule0", "(Ljava/lang/Module;ZLjava/lang/String;Ljava/lang/String;[Ljava/lang/String;)V", ctx -> Result.ABORT);
+			vmi.setInvoker(module, "addReads0", "(Ljava/lang/Module;Ljava/lang/Module;)V", ctx -> Result.ABORT);
+			vmi.setInvoker(module, "addExports0", "(Ljava/lang/Module;Ljava/lang/String;Ljava/lang/Module;)V", ctx -> Result.ABORT);
+			vmi.setInvoker(module, "addExportsToAll0", "(Ljava/lang/Module;Ljava/lang/String;)V", ctx -> Result.ABORT);
+			vmi.setInvoker(module, "addExportsToAllUnnamed0", "(Ljava/lang/Module;Ljava/lang/String;)V", ctx -> Result.ABORT);
+		}
 	}
 
 	/**
@@ -694,7 +709,7 @@ public final class NativeJava {
 		vmi.setInvoker(unsafe, "ensureClassInitialized0", "(Ljava/lang/Class;)V", ctx -> {
 			var value = ctx.getLocals().load(1);
 			vm.getHelper().checkNotNull(value);
-			((JavaValue<JavaClass>) value).getJavaClass().initialize();
+			((JavaValue<JavaClass>) value).getValue().initialize();
 			return Result.ABORT;
 		});
 	}
@@ -852,6 +867,7 @@ public final class NativeJava {
 	 */
 	private static void injectVMFields(VirtualMachine vm) {
 		var classLoader = vm.getSymbols().java_lang_ClassLoader;
+
 		classLoader.getNode().fields.add(new FieldNode(
 				ACC_PRIVATE | ACC_FINAL,
 				CLASS_LOADER_OOP,

@@ -77,9 +77,13 @@ public final class VMHelper {
 	 * @return invocation result.
 	 */
 	public ExecutionContext invokeStatic(InstanceJavaClass javaClass, String name, String desc, Value[] stack, Value[] locals) {
-		var mn = javaClass.getMethod(name, desc);
+		var keep = javaClass;
+		MethodNode mn;
+		do {
+			mn = javaClass.getMethod(name, desc);
+		} while (mn == null && (javaClass = javaClass.getSuperClass()) != null);
 		if (mn == null) {
-			throwException(vm.getSymbols().java_lang_NoSuchMethodError, javaClass.getName() + '.' + name + desc);
+			throwException(vm.getSymbols().java_lang_NoSuchMethodError, keep.getInternalName() + '.' + name + desc);
 		}
 		return invokeStatic(javaClass, mn, stack, locals);
 	}
@@ -116,7 +120,7 @@ public final class VMHelper {
 			method = javaClass.getMethod(name, desc);
 		} while (method == null && (javaClass = javaClass.getSuperClass()) != null);
 		if (method == null) {
-			throwException(vm.getSymbols().java_lang_NoSuchMethodError, keep.getName() + '.' + name + desc);
+			throwException(vm.getSymbols().java_lang_NoSuchMethodError, keep.getInternalName() + '.' + name + desc);
 		}
 		if ((method.access & Opcodes.ACC_STATIC) != 0) {
 			throw new IllegalStateException("Method is static");
@@ -1144,6 +1148,36 @@ public final class VMHelper {
 	}
 
 	/**
+	 * Performs bounds check.
+	 *
+	 * @param value
+	 * 		Value to check.
+	 * @param from
+	 * 		Minimmm value.
+	 * @param to
+	 * 		Maximum value.
+	 */
+	public void rangeCheck(int value, int from, int to) {
+		if (value < from || value >= to) {
+			throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+		}
+	}
+
+	/**
+	 * Performs equality check.
+	 *
+	 * @param a
+	 * 		Left value.
+	 * @param b
+	 * 		Right value.
+	 */
+	public void checkEquals(int a, int b) {
+		if (a != b) {
+			throwException(vm.getSymbols().java_lang_IllegalStateException);
+		}
+	}
+
+	/**
 	 * Sets class fields, just like normal JVM.
 	 *
 	 * @param oop
@@ -1466,6 +1500,28 @@ public final class VMHelper {
 	}
 
 	/**
+	 * Attempts to unbox generic object value.
+	 *
+	 * @param value
+	 * 		Wrapper to unwrap.
+	 *
+	 * @return unwrapped value or itself.
+	 */
+	public Value unboxGeneric(ObjectValue value) {
+		var primitive = vm.getPrimitives();
+		var klass = value.getJavaClass();
+		if (klass == primitive.longPrimitive) return unboxLong(value);
+		if (klass == primitive.doublePrimitive) return unboxDouble(value);
+		if (klass == primitive.intPrimitive) return unboxInt(value);
+		if (klass == primitive.floatPrimitive) return unboxFloat(value);
+		if (klass == primitive.charPrimitive) return unboxChar(value);
+		if (klass == primitive.shortPrimitive) return unboxShort(value);
+		if (klass == primitive.bytePrimitive) return unboxByte(value);
+		if (klass == primitive.booleanPrimitive) return unboxBoolean(value);
+		return value;
+	}
+
+	/**
 	 * Converts array of classes to VM array.
 	 *
 	 * @param classes
@@ -1570,6 +1626,20 @@ public final class VMHelper {
 				|| symbols.java_lang_Short == jc
 				|| symbols.java_lang_Byte == jc
 				|| symbols.java_lang_Boolean == jc;
+	}
+
+	/**
+	 * Returns file descriptor handle.
+	 *
+	 * @param fos
+	 * 		File output stream to get handle from.
+	 *
+	 * @return file descriptor handle.
+	 */
+	public long getFileOutputStreamHandle(InstanceValue fos) {
+		var fd = invokeVirtual("getFD", "()Ljava/io/FileDescriptor;", new Value[0], new Value[]{fos}).getResult();
+		checkNotNull(fd);
+		return ((InstanceValue) fd).getLong("handle");
 	}
 
 	private static void contextPrepare(ExecutionContext ctx, Value[] stack, Value[] locals, int localIndex) {

@@ -15,6 +15,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.FieldNode;
 
+import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.stream.Collectors;
 
@@ -83,6 +84,7 @@ public final class NativeJava {
 		initAccessController(vm);
 		initMethodHandles(vm);
 		initModuleSystem(vm);
+		initSignal(vm);
 
 		var win32ErrorMode = (InstanceJavaClass) vm.findBootstrapClass("sun/io/Win32ErrorMode");
 		if (win32ErrorMode != null) {
@@ -91,6 +93,32 @@ public final class NativeJava {
 				return Result.ABORT;
 			});
 		}
+	}
+
+	/**
+	 * Initializes misc/Signal.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initSignal(VirtualMachine vm) {
+		var signal = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/Signal");
+		if (signal == null) {
+			signal = (InstanceJavaClass) vm.findBootstrapClass("sun/misc/Signal");
+			if (signal == null) {
+				throw new IllegalStateException("Unable to locate Signal class");
+			}
+		}
+		// TODO: implement this?
+		var vmi = vm.getInterface();
+		vmi.setInvoker(signal, "findSignal0", "(Ljava/lang/String;)I", ctx -> {
+			ctx.setResult(new IntValue(0));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(signal, "handle0", "(IJ)J", ctx -> {
+			ctx.setResult(new LongValue(0L));
+			return Result.ABORT;
+		});
 	}
 
 	/**
@@ -209,6 +237,23 @@ public final class NativeJava {
 		});
 		var fos = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileOutputStream");
 		vmi.setInvoker(fos, "initIDs", "()V", ctx -> Result.ABORT);
+		vmi.setInvoker(fos, "writeBytes", "([BIIZ)V", ctx -> {
+			var locals = ctx.getLocals();
+			var _this =locals.<InstanceValue>load(0);
+			var helper = vm.getHelper();
+			var handle = helper.getFileOutputStreamHandle(_this);
+			var out = vm.getFileDescriptorManager().getFdOut(handle);
+			if (out == null) return Result.ABORT;
+			var bytes = helper.toJavaBytes(locals.load(1));
+			var off = locals.load(2).asInt();
+			var len = locals.load(3).asInt();
+			try {
+				out.write(bytes, off, len);
+			} catch (IOException ex) {
+				helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+			}
+			return Result.ABORT;
+		});
 	}
 
 	/**
@@ -747,8 +792,35 @@ public final class NativeJava {
 				throw new IllegalStateException("Unable to locate NativeConstructorAccessorImpl class");
 			}
 		}
-		vmi.setInvoker(accessor, "newInstance0", "Ljava/lang/reflect/Constructor;[Ljava/lang/Object;)Ljava/lang/Object;", ctx -> {
-			vm.getHelper().throwException(vm.getSymbols().java_lang_UnsatisfiedLinkError, "TODO");
+		vmi.setInvoker(accessor, "newInstance0", "(Ljava/lang/reflect/Constructor;[Ljava/lang/Object;)Ljava/lang/Object;", ctx -> {
+			var locals = ctx.getLocals();
+			var c = locals.<InstanceValue>load(0);
+			var slot = c.getInt("slot");
+			var declaringClass = (InstanceJavaClass) ((JavaValue<JavaClass>) c.getValue("clazz", "Ljava/lang/Class;")).getValue();
+			var helper = vm.getHelper();
+			var methods = declaringClass.getNode().methods;
+			helper.rangeCheck(slot, 0, methods.size());
+			var mn = methods.get(slot);
+			if (!"<init>".equals(mn.name)) {
+				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+			}
+			var values = locals.load(1);
+			Value[] converted;
+			var types = Type.getArgumentTypes(mn.desc);
+			if (!values.isNull()) {
+				var passedArgs = (ArrayValue) values;
+				helper.checkEquals(passedArgs.getLength(), types.length);
+				converted = convertReflectionArgs(vm, declaringClass.getClassLoader(), types, passedArgs);
+			} else {
+				helper.checkEquals(types.length, 0);
+				converted = new Value[0];
+			}
+			var instance = vm.getMemoryManager().newInstance(declaringClass);
+			var args = new Value[converted.length + 1];
+			System.arraycopy(converted, 0, args, 1, converted.length);
+			args[0] = instance;
+			helper.invokeExact(declaringClass, "<init>", mn.desc, new Value[0], args);
+			ctx.setResult(instance);
 			return Result.ABORT;
 		});
 	}
@@ -1129,6 +1201,37 @@ public final class NativeJava {
 				null,
 				null
 		));
+	}
+
+	/**
+	 * Converts array off values back to their original
+	 * values.
+	 * Used for reflection calls.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 * @param loader
+	 * 		Class laoder to use.
+	 * @param argTypes
+	 * 		Original types.
+	 * @param array
+	 * 		Array to convert.
+	 *
+	 * @return original values array.
+	 */
+	private static Value[] convertReflectionArgs(VirtualMachine vm, Value loader, Type[] argTypes, ArrayValue array) {
+		var helper = vm.getHelper();
+		var result = new Value[argTypes.length];
+		for (int i = 0; i < argTypes.length; i++) {
+			var originalClass = helper.findClass(loader, argTypes[i].getInternalName(), true);
+			var value = (ObjectValue) array.getValue(i);
+			if (value.isNull() || !originalClass.isPrimitive()) {
+				result[i] = value;
+			} else {
+				result[i] = helper.unboxGeneric(value);
+			}
+		}
+		return result;
 	}
 
 	/**

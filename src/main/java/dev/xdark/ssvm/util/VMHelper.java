@@ -14,6 +14,7 @@ import dev.xdark.ssvm.value.*;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
+import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -50,7 +51,7 @@ public final class VMHelper {
 	 * @return invocation result.
 	 */
 	public ExecutionContext invokeStatic(InstanceJavaClass javaClass, JavaMethod method, Value[] stack, Value[] locals) {
-		if ((method.getNode().access & Opcodes.ACC_STATIC) == 0) {
+		if ((method.getAccess() & Opcodes.ACC_STATIC) == 0) {
 			throw new IllegalStateException("Method is not static");
 		}
 		javaClass.initialize();
@@ -160,7 +161,7 @@ public final class VMHelper {
 		if (locals[0].isNull()) {
 			throwException(vm.getSymbols().java_lang_NullPointerException);
 		}
-		if ((method.getNode().access & Opcodes.ACC_STATIC) != 0) {
+		if ((method.getAccess() & Opcodes.ACC_STATIC) != 0) {
 			throw new IllegalStateException("Method is static");
 		}
 		javaClass.initialize();
@@ -1285,7 +1286,7 @@ public final class VMHelper {
 			var unmarshalled = ((JavaValue<Backtrace>) backtrace).getValue();
 			var stackTrace = StreamSupport.stream(unmarshalled.spliterator(), false)
 					.map(ctx -> {
-						var methodName = ctx.getMethod().getNode().name;
+						var methodName = ctx.getMethod().getName();
 						var owner = ctx.getOwner();
 						var className = owner.getName();
 						var sourceFile = owner.getNode().sourceFile;
@@ -1329,7 +1330,7 @@ public final class VMHelper {
 	 * @return VM StackTraceElement.
 	 */
 	public InstanceValue newStackTraceElement(ExecutionContext ctx, boolean injectDeclaringClass) {
-		var methodName = ctx.getMethod().getNode().name;
+		var methodName = ctx.getMethod().getName();
 		var owner = ctx.getOwner();
 		var className = owner.getName();
 		var sourceFile = owner.getNode().sourceFile;
@@ -1382,6 +1383,11 @@ public final class VMHelper {
 				case 'Z':
 					klass = primitives.booleanPrimitive;
 					break;
+				case 'V':
+					klass = primitives.voidPrimitive;
+					break;
+				default:
+					throw new IllegalStateException(name);
 			}
 		} else {
 			if (dimensions != 0) {
@@ -1389,9 +1395,7 @@ public final class VMHelper {
 			}
 			klass = vm.findClass(loader, name, initialize);
 		}
-		if (klass != null) {
-			while (dimensions-- != 0) klass = klass.newArrayClass();
-		}
+		while (dimensions-- != 0) klass = klass.newArrayClass();
 		return klass;
 	}
 
@@ -1722,7 +1726,7 @@ public final class VMHelper {
 				jc,
 				jm,
 				new Stack(mn.maxStack),
-				new Locals(AsmUtil.getMaxLocals(mn))
+				new Locals(AsmUtil.getMaxLocals(jm))
 		);
 	}
 }

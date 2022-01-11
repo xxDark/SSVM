@@ -2,6 +2,8 @@ package dev.xdark.ssvm.execution;
 
 import dev.xdark.ssvm.value.Value;
 
+import java.util.Objects;
+
 /**
  * Storage for local variables.
  *
@@ -28,7 +30,7 @@ public final class Locals {
 	 * 		Value to set.
 	 */
 	public void set(int index, Value value) {
-		table[index] = value;
+		table[index] = Objects.requireNonNull(value, "value");
 	}
 
 	/**

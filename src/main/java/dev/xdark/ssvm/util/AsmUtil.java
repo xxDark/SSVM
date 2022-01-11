@@ -1,9 +1,8 @@
 package dev.xdark.ssvm.util;
 
+import dev.xdark.ssvm.mirror.JavaMethod;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.MethodNode;
 
 import java.lang.reflect.Field;
 
@@ -30,18 +29,19 @@ public final class AsmUtil {
 	 *
 	 * @return maximum amount of local variable slots.
 	 */
-	public static int getMaxLocals(MethodNode mn) {
-		if ((mn.access & Opcodes.ACC_NATIVE) != 0 || (mn.access & Opcodes.ACC_ABSTRACT) != 0) {
+	public static int getMaxLocals(JavaMethod mn) {
+		var access = mn.getAccess();
+		if ((access & Opcodes.ACC_NATIVE) != 0 || (access & Opcodes.ACC_ABSTRACT) != 0) {
 			var max = 0;
-			if ((mn.access & Opcodes.ACC_STATIC) == 0) {
+			if ((access & Opcodes.ACC_STATIC) == 0) {
 				max++;
 			}
-			for (var type : Type.getArgumentTypes(mn.desc)) {
+			for (var type : mn.getType().getArgumentTypes()) {
 				max += type.getSize();
 			}
 			return max;
 		}
-		return mn.maxLocals;
+		return mn.getNode().maxLocals;
 	}
 
 	/**

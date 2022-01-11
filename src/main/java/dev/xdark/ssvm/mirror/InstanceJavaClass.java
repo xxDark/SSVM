@@ -8,13 +8,14 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 
-import java.util.ArrayDeque;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
 public final class InstanceJavaClass implements JavaClass {
 
@@ -40,6 +41,13 @@ public final class InstanceJavaClass implements JavaClass {
 	// Stuff to cache
 	private String normalName;
 	private String descriptor;
+	// Reflection cache.
+	private List<JavaMethod> declaredConstructors;
+	private List<JavaMethod> publicConstructors;
+	private List<JavaMethod> declaredMethods;
+	private List<JavaMethod> publicMethods;
+	private List<JavaField> declaredFields;
+	private List<JavaField> publicFields;
 
 	/**
 	 * @param vm
@@ -730,9 +738,77 @@ public final class InstanceJavaClass implements JavaClass {
 		}
 	}
 
+	/**
+	 * Returns list of all methods.
+	 *
+	 * @param publicOnly
+	 * 		Should only public methods be included.
+	 *
+	 * @return all methods.
+	 */
+	public List<JavaMethod> getDeclaredMethods(boolean publicOnly) {
+		if (publicOnly) {
+			var publicMethods = this.publicMethods;
+			if (publicMethods == null) {
+				return this.publicMethods = getDeclaredMethods0(true, false);
+			}
+			return publicMethods;
+		}
+		var declaredMethods = this.declaredMethods;
+		if (declaredMethods == null) {
+			return this.declaredMethods = getDeclaredMethods0(false, false);
+		}
+		return declaredMethods;
+	}
+
+	/**
+	 * Returns list of all constructors.
+	 *
+	 * @param publicOnly
+	 * 		Should only public constructors be included.
+	 *
+	 * @return all constructors.
+	 */
+	public List<JavaMethod> getDeclaredConstructors(boolean publicOnly) {
+		if (publicOnly) {
+			var publicConstructors = this.publicConstructors;
+			if (publicConstructors == null) {
+				return this.publicConstructors = getDeclaredMethods0(true, true);
+			}
+			return publicConstructors;
+		}
+		var declaredConstructors = this.declaredConstructors;
+		if (declaredConstructors == null) {
+			return this.declaredConstructors = getDeclaredMethods0(false, true);
+		}
+		return declaredConstructors;
+	}
+
 	@Override
 	public String toString() {
 		return getName();
+	}
+
+	private List<JavaMethod> getDeclaredMethods0(boolean publicOnly, boolean constructors) {
+		var staticMethods = constructors ? Stream.<JavaMethod>empty() : getStaticMethods0(publicOnly);
+		return Stream.concat(staticMethods, getVirtualMethodLayout()
+				.getMethods()
+				.values()
+				.stream()
+				.filter(x -> this == x.getOwner())
+				.filter(x -> constructors == "<init>".equals(x.getName()))
+				.filter(x -> !publicOnly || (x.getAccess() & ACC_PUBLIC) != 0))
+				.collect(Collectors.toList());
+	}
+
+	private Stream<JavaMethod> getStaticMethods0(boolean publicOnly) {
+		return getStaticMethodLayout()
+				.getMethods()
+				.values()
+				.stream()
+				.filter(x -> this == x.getOwner())
+				.filter(x -> !"<clinit>".equals(x.getName()))
+				.filter(x -> !publicOnly || (x.getAccess() & ACC_PUBLIC) != 0);
 	}
 
 	private void loadSuperClass(boolean initialize) {
@@ -783,7 +859,12 @@ public final class InstanceJavaClass implements JavaClass {
 		return count;
 	}
 
-	private MethodLayout getVirtualMethodLayout() {
+	/**
+	 * Returns virtual method layout.
+	 *
+	 * @return virtual method layout.
+	 */
+	public MethodLayout getVirtualMethodLayout() {
 		var vrtMethodLayout = this.vrtMethodLayout;
 		if (vrtMethodLayout == null) {
 			var map = new HashMap<MemberKey, JavaMethod>();
@@ -809,7 +890,12 @@ public final class InstanceJavaClass implements JavaClass {
 		return vrtMethodLayout;
 	}
 
-	private MethodLayout getStaticMethodLayout() {
+	/**
+	 * Returns static method layout.
+	 *
+	 * @return static method layout.
+	 */
+	public MethodLayout getStaticMethodLayout() {
 		var staticMethodLayout = this.staticMethodLayout;
 		if (staticMethodLayout == null) {
 			var map = new HashMap<MemberKey, JavaMethod>();

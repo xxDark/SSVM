@@ -11,16 +11,17 @@ import dev.xdark.ssvm.execution.asm.*;
 import dev.xdark.ssvm.fs.FileDescriptorManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.thread.Backtrace;
 import dev.xdark.ssvm.value.*;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.FieldNode;
 
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.stream.Collectors;
 
 import static org.objectweb.asm.Opcodes.*;
 
@@ -81,10 +82,12 @@ public final class NativeJava {
 		initStackTraceElement(vm);
 		initReflection(vm);
 		initNativeConstructorAccessor(vm);
+		initNativeMethodAccessor(vm);
 		initAccessController(vm);
 		initMethodHandles(vm);
 		initModuleSystem(vm);
 		initSignal(vm);
+		initString(vm);
 
 		var win32ErrorMode = (InstanceJavaClass) vm.findBootstrapClass("sun/io/Win32ErrorMode");
 		if (win32ErrorMode != null) {
@@ -141,6 +144,22 @@ public final class NativeJava {
 		});
 		vmi.setInvoker(signal, "handle0", "(IJ)J", ctx -> {
 			ctx.setResult(new LongValue(0L));
+			return Result.ABORT;
+		});
+	}
+
+	/**
+	 * Initializes java/lang/String.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initString(VirtualMachine vm) {
+		var vmi = vm.getInterface();
+		var symbols = vm.getSymbols();
+		var string = symbols.java_lang_String;
+		vmi.setInvoker(string, "intern", "()Ljava/lang/String;", ctx -> {
+			ctx.setResult(ctx.getLocals().load(0));
 			return Result.ABORT;
 		});
 	}
@@ -614,30 +633,26 @@ public final class NativeJava {
 			} else {
 				klass.initialize();
 				var publicOnly = locals.load(1).asBoolean();
-				var methods = ((InstanceJavaClass) klass).getNode().methods;
-				var constructors = methods.stream()
-						.filter(mn -> "<init>".equals(mn.name))
-						.filter(mn -> !publicOnly || (mn.access & ACC_PUBLIC) == 0)
-						.collect(Collectors.toList());
+				var methods = ((InstanceJavaClass) klass).getDeclaredConstructors(publicOnly);
 				var loader = klass.getClassLoader();
 				var refFactory = symbols.reflect_ReflectionFactory;
 				var reflectionFactory = (InstanceValue) helper.invokeStatic(refFactory, "getReflectionFactory", "()" + refFactory.getDescriptor(), new Value[0], new Value[0]).getResult();
-				var result = helper.newArray(symbols.java_lang_reflect_Constructor, constructors.size());
+				var result = helper.newArray(symbols.java_lang_reflect_Constructor, methods.size());
 				var classArray = helper.emptyArray(symbols.java_lang_Class);
 				var callerOop = klass.getOop();
 				var emptyByteArray = helper.emptyArray(vm.getPrimitives().bytePrimitive);
-				for (int j = 0; j < constructors.size(); j++) {
-					var mn = constructors.get(j);
-					var types = Type.getArgumentTypes(mn.desc);
+				for (int j = 0; j < methods.size(); j++) {
+					var mn = methods.get(j);
+					var types = mn.getType().getArgumentTypes();
 					var parameters = helper.convertClasses(helper.convertTypes(loader, types, true));
 					var c = helper.invokeVirtual("newConstructor", "(Ljava/lang/Class;[Ljava/lang/Class;[Ljava/lang/Class;IILjava/lang/String;[B[B)Ljava/lang/reflect/Constructor;", new Value[0], new Value[]{
 							reflectionFactory,
 							callerOop,
 							parameters,
 							classArray,
-							new IntValue(mn.access),
-							new IntValue(methods.indexOf(mn)),
-							helper.newUtf8(mn.signature),
+							new IntValue(mn.getAccess()),
+							new IntValue(mn.getSlot()),
+							helper.newUtf8(mn.getSignature()),
 							emptyByteArray,
 							emptyByteArray
 					}).getResult();
@@ -645,6 +660,60 @@ public final class NativeJava {
 				}
 				ctx.setResult(result);
 			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jlc, "getDeclaredMethods0", "(Z)[Ljava/lang/reflect/Method;", ctx -> {
+			var locals = ctx.getLocals();
+			var klass = locals.<JavaValue<JavaClass>>load(0).getValue();
+			var helper = vm.getHelper();
+			if (klass.isPrimitive()) {
+				var empty = helper.emptyArray(symbols.java_lang_reflect_Method);
+				ctx.setResult(empty);
+				return Result.ABORT;
+			}
+			if (klass.isArray()) {
+				klass = symbols.java_lang_Object;
+			}
+			klass.initialize();
+			var publicOnly = locals.load(1).asBoolean();
+			var methods = ((InstanceJavaClass) klass).getDeclaredMethods(publicOnly);
+			var loader = klass.getClassLoader();
+			var refFactory = symbols.reflect_ReflectionFactory;
+			var reflectionFactory = (InstanceValue) helper.invokeStatic(refFactory, "getReflectionFactory", "()" + refFactory.getDescriptor(), new Value[0], new Value[0]).getResult();
+			var result = helper.newArray(symbols.java_lang_reflect_Method, methods.size());
+			var classArray = helper.emptyArray(symbols.java_lang_Class);
+			var callerOop = klass.getOop();
+			var emptyByteArray = helper.emptyArray(vm.getPrimitives().bytePrimitive);
+			for (int j = 0; j < methods.size(); j++) {
+				var mn = methods.get(j);
+				var type = mn.getType();
+				var types = type.getArgumentTypes();
+				var rt = helper.findClass(loader, type.getReturnType().getInternalName(), true);
+				var parameters = helper.convertClasses(helper.convertTypes(loader, types, true));
+				var c = helper.invokeVirtual("newMethod", "(Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Class;Ljava/lang/Class;[Ljava/lang/Class;IILjava/lang/String;[B[B[B)Ljava/lang/reflect/Method;", new Value[0], new Value[]{
+						reflectionFactory,
+						callerOop,
+						helper.newUtf8(mn.getName()),
+						parameters,
+						rt.getOop(),
+						classArray,
+						new IntValue(mn.getAccess()),
+						new IntValue(mn.getSlot()),
+						helper.newUtf8(mn.getSignature()),
+						emptyByteArray,
+						emptyByteArray,
+						emptyByteArray
+				}).getResult();
+				result.setValue(j, (ObjectValue) c);
+			}
+			ctx.setResult(result);
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jlc, "getInterfaces0", "()[Ljava/lang/Class;", ctx -> {
+			var _this = ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue();
+			var interfaces = _this.getInterfaces();
+			var types = vm.getHelper().convertClasses(interfaces);
+			ctx.setResult(types);
 			return Result.ABORT;
 		});
 	}
@@ -920,6 +989,11 @@ public final class NativeJava {
 			ctx.setResult(new IntValue(klass.getModifiers()));
 			return Result.ABORT;
 		});
+		// TODO FIXME
+		vmi.setInvoker(reflection, "isCallerSensitive", "(Ljava/lang/reflect/Method;)Z", ctx -> {
+			ctx.setResult(new IntValue(0));
+			return Result.ABORT;
+		});
 	}
 
 	/**
@@ -943,15 +1017,20 @@ public final class NativeJava {
 			var slot = c.getInt("slot");
 			var declaringClass = (InstanceJavaClass) ((JavaValue<JavaClass>) c.getValue("clazz", "Ljava/lang/Class;")).getValue();
 			var helper = vm.getHelper();
-			var methods = declaringClass.getNode().methods;
-			helper.rangeCheck(slot, 0, methods.size());
-			var mn = methods.get(slot);
-			if (!"<init>".equals(mn.name)) {
+			var methods = declaringClass.getDeclaredConstructors(false);
+			JavaMethod mn = null;
+			for (var m : methods) {
+				if (slot == m.getSlot()) {
+					mn = m;
+					break;
+				}
+			}
+			if (mn == null || !"<init>".equals(mn.getName())) {
 				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException);
 			}
 			var values = locals.load(1);
 			Value[] converted;
-			var types = Type.getArgumentTypes(mn.desc);
+			var types = mn.getType().getArgumentTypes();
 			if (!values.isNull()) {
 				var passedArgs = (ArrayValue) values;
 				helper.checkEquals(passedArgs.getLength(), types.length);
@@ -964,8 +1043,70 @@ public final class NativeJava {
 			var args = new Value[converted.length + 1];
 			System.arraycopy(converted, 0, args, 1, converted.length);
 			args[0] = instance;
-			helper.invokeExact(declaringClass, "<init>", mn.desc, new Value[0], args);
+			helper.invokeExact(declaringClass, "<init>", mn.getDesc(), new Value[0], args);
 			ctx.setResult(instance);
+			return Result.ABORT;
+		});
+	}
+
+	/**
+	 * Initializes reflect/NativeMethodAccessorImpl.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initNativeMethodAccessor(VirtualMachine vm) {
+		var vmi = vm.getInterface();
+		var accessor = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/NativeMethodAccessorImpl");
+		if (accessor == null) {
+			accessor = (InstanceJavaClass) vm.findBootstrapClass("sun/reflect/NativeMethodAccessorImpl");
+			if (accessor == null) {
+				throw new IllegalStateException("Unable to locate NativeMethodAccessorImpl class");
+			}
+		}
+		vmi.setInvoker(accessor, "invoke0", "(Ljava/lang/reflect/Method;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;", ctx -> {
+			var locals = ctx.getLocals();
+			var m = locals.<InstanceValue>load(0);
+			var slot = m.getInt("slot");
+			var declaringClass = (InstanceJavaClass) ((JavaValue<JavaClass>) m.getValue("clazz", "Ljava/lang/Class;")).getValue();
+			var helper = vm.getHelper();
+			var methods = declaringClass.getDeclaredMethods(false);
+			JavaMethod mn = null;
+			for (var candidate : methods) {
+				if (slot == candidate.getSlot()) {
+					mn = candidate;
+					break;
+				}
+			}
+			if (mn == null) {
+				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+			}
+			var instance = locals.load(1);
+			var isStatic = (mn.getAccess() & ACC_STATIC) != 0;
+			if (isStatic && instance.isNull()) {
+				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+			}
+			var values = locals.load(2);
+			var types = mn.getType().getArgumentTypes();
+			var passedArgs = (ArrayValue) values;
+			helper.checkEquals(passedArgs.getLength(), types.length);
+			var args = convertReflectionArgs(vm, declaringClass.getClassLoader(), types, passedArgs);
+			if (!isStatic) {
+				var prev = args;
+				args = new Value[args.length + 1];
+				System.arraycopy(prev, 0, args, 1, prev.length);
+				args[0] = instance;
+			}
+			var name = mn.getName();
+			var desc = mn.getDesc();
+			Value result;
+			if (isStatic) {
+				result = helper.invokeStatic(declaringClass, name, desc, new Value[0], args).getResult();
+			} else {
+				result = helper.invokeVirtual(name, desc, new Value[0], args).getResult();
+			}
+			if (result == null) result = NullValue.INSTANCE; // void
+			ctx.setResult(result);
 			return Result.ABORT;
 		});
 	}

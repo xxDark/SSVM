@@ -98,7 +98,7 @@ public final class VMInterface {
 	 * @param invoker
 	 * 		Method invoker.
 	 *
-	 * @return {@code true} if method was registeed,
+	 * @return {@code true} if method was registered,
 	 * {@code false} otherwise.
 	 */
 	public boolean setInvoker(InstanceJavaClass jc, String name, String desc, MethodInvoker invoker) {
@@ -141,6 +141,30 @@ public final class VMInterface {
 	}
 
 	/**
+	 * Registers specific method enter hook.
+	 *
+	 * @param jc
+	 * 		Instance class.
+	 * @param name
+	 * 		Name of the method.
+	 * @param desc
+	 * 		Descriptor of the method.
+	 * @param invocation
+	 * 		Hook to register.
+	 *
+	 * @return {@code true} if method was registered,
+	 * {@code false} otherwise.
+	 */
+	public boolean registerMethodEnter(InstanceJavaClass jc, String name, String desc, MethodInvocation invocation) {
+		var method = jc.getMethod(name, desc);
+		if (method == null) {
+			return false;
+		}
+		methodEnter.put(method, invocation);
+		return true;
+	}
+
+	/**
 	 * Registers specific method exit hook.
 	 *
 	 * @param invocation
@@ -148,6 +172,30 @@ public final class VMInterface {
 	 */
 	public void removeMethodEnter(JavaMethod call, MethodInvocation invocation) {
 		methodExit.put(call, invocation);
+	}
+
+	/**
+	 * Registers specific method exit hook.
+	 *
+	 * @param jc
+	 * 		Instance class.
+	 * @param name
+	 * 		Name of the method.
+	 * @param desc
+	 * 		Descriptor of the method.
+	 * @param invocation
+	 * 		Hook to register.
+	 *
+	 * @return {@code true} if method was registered,
+	 * {@code false} otherwise.
+	 */
+	public boolean registerMethodExit(InstanceJavaClass jc, String name, String desc, MethodInvocation invocation) {
+		var method = jc.getMethod(name, desc);
+		if (method == null) {
+			return false;
+		}
+		methodExit.put(method, invocation);
+		return true;
 	}
 
 	/**

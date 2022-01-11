@@ -3,6 +3,8 @@ package dev.xdark.ssvm.execution;
 import dev.xdark.ssvm.value.TopValue;
 import dev.xdark.ssvm.value.Value;
 
+import java.util.Objects;
+
 /**
  * Method execution stack.
  *
@@ -28,7 +30,7 @@ public final class Stack {
 	 * 		Value to push.
 	 */
 	public void push(Value value) {
-		stack[cursor++] = value;
+		stack[cursor++] = Objects.requireNonNull(value, "value");
 	}
 
 	/**
@@ -41,7 +43,7 @@ public final class Stack {
 	public void pushWide(Value value) {
 		var stack = this.stack;
 		int cursor = this.cursor;
-		stack[cursor++] = value;
+		stack[cursor++] = Objects.requireNonNull(value, "value");
 		stack[cursor++] = TopValue.INSTANCE;
 		this.cursor = cursor;
 	}

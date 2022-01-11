@@ -8,6 +8,8 @@ import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodInsnNode;
 
+import java.util.Arrays;
+
 /**
  * Invokes interface method.
  *

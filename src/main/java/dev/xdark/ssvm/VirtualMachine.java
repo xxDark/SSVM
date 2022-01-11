@@ -268,10 +268,13 @@ public class VirtualMachine {
 	 */
 	public JavaClass findClass(Value loader, String name, boolean initialize) {
 		JavaClass jc;
+		var helper = this.helper;
 		if (loader.isNull()) {
 			jc = findBootstrapClass(name, initialize);
+			if (jc == null) {
+				helper.throwException(symbols.java_lang_ClassNotFoundException, name);
+			}
 		} else {
-			var helper = this.helper;
 			jc = memoryManager.readClass((ObjectValue) helper.invokeVirtual("loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;", new Value[0], new Value[]{loader, helper.newUtf8(name), new IntValue(initialize ? 1 : 0)}).getResult());
 		}
 		return jc;
@@ -287,8 +290,7 @@ public class VirtualMachine {
 	 */
 	public void execute(ExecutionContext ctx, boolean useInvokers) {
 		var jm = ctx.getMethod();
-		var mn = jm.getNode();
-		var isNative = (mn.access & Opcodes.ACC_NATIVE) != 0;
+		var isNative = (jm.getAccess() & Opcodes.ACC_NATIVE) != 0;
 		if (isNative) {
 			ctx.setLineNumber(-2);
 		}
@@ -308,8 +310,9 @@ public class VirtualMachine {
 				}
 			}
 			if (isNative) {
-				helper.throwException(symbols.java_lang_UnsatisfiedLinkError, ctx.getOwner().getInternalName() + '.' + mn.name + mn.desc);
+				helper.throwException(symbols.java_lang_UnsatisfiedLinkError, ctx.getOwner().getInternalName() + '.' + jm.getName() + jm.getDesc());
 			}
+			var mn = jm.getNode();
 			var instructions = mn.instructions;
 			exec:
 			while (true) {
@@ -352,7 +355,7 @@ public class VirtualMachine {
 		} catch (VMException ex) {
 			throw ex;
 		} catch (Exception ex) {
-			throw new IllegalStateException("Uncaught VM error at: " + ctx.getOwner().getInternalName() + '.' + mn.name + mn.desc, ex);
+			throw new IllegalStateException("Uncaught VM error at: " + ctx.getOwner().getInternalName() + '.' + jm.getName() + jm.getDesc(), ex);
 		} finally {
 			vmi.getInvocationHooks(jm, false)
 					.forEach(invocation -> invocation.handle(ctx));

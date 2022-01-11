@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.mirror;
 
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodNode;
 
 /**
@@ -12,6 +13,7 @@ public final class JavaMethod {
 	private final InstanceJavaClass owner;
 	private final MethodNode node;
 	private final int slot;
+	private Type type;
 
 	/**
 	 * @param owner
@@ -52,6 +54,55 @@ public final class JavaMethod {
 	 */
 	public int getSlot() {
 		return slot;
+	}
+
+	/**
+	 * Returns method name.
+	 *
+	 * @return method name.
+	 */
+	public String getName() {
+		return node.name;
+	}
+
+	/**
+	 * Returns method descriptor.
+	 *
+	 * @return method descriptor.
+	 */
+	public String getDesc() {
+		return node.desc;
+	}
+
+	/**
+	 * Returns method access.
+	 *
+	 * @return method access.
+	 */
+	public int getAccess() {
+		return node.access;
+	}
+
+	/**
+	 * Returns method signature.
+	 *
+	 * @return method signature.
+	 */
+	public String getSignature() {
+		return node.signature;
+	}
+
+	/**
+	 * Returns method type.
+	 *
+	 * @return method type.
+	 */
+	public Type getType() {
+		var type = this.type;
+		if (type == null) {
+			return this.type = Type.getMethodType(node.desc);
+		}
+		return type;
 	}
 
 	@Override

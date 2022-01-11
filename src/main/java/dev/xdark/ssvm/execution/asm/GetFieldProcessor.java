@@ -3,6 +3,7 @@ package dev.xdark.ssvm.execution.asm;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.*;
 import org.objectweb.asm.tree.FieldInsnNode;
 
@@ -16,12 +17,16 @@ public final class GetFieldProcessor implements InstructionProcessor<FieldInsnNo
 	@Override
 	public Result execute(FieldInsnNode insn, ExecutionContext ctx) {
 		var vm = ctx.getVM();
+		var helper = vm.getHelper();
+		var owner = helper.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
+		if (owner == null) {
+			helper.throwException(vm.getSymbols().java_lang_NoClassDefFoundError, insn.owner);
+		}
 		var stack = ctx.getStack();
 		var $instance = stack.pop();
-		var helper = vm.getHelper();
 		helper.checkNotNull($instance);
 		var instance = (InstanceValue) $instance;
-		var offset = instance.getJavaClass().getFieldOffsetRecursively(insn.name, insn.desc);
+		var offset = helper.getFieldOffset((InstanceJavaClass) owner, instance.getJavaClass(), insn.name, insn.desc);
 		if (offset == -1L) {
 			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, insn.owner + '.' + insn.name + insn.desc);
 		}

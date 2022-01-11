@@ -1,6 +1,5 @@
 package dev.xdark.ssvm.mirror;
 
-import dev.xdark.ssvm.memory.Memory;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.Value;
 

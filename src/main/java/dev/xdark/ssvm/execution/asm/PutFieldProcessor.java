@@ -17,13 +17,17 @@ public final class PutFieldProcessor implements InstructionProcessor<FieldInsnNo
 	@Override
 	public Result execute(FieldInsnNode insn, ExecutionContext ctx) {
 		var vm = ctx.getVM();
+		var helper = vm.getHelper();
+		var owner = helper.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
+		if (owner == null) {
+			helper.throwException(vm.getSymbols().java_lang_NoClassDefFoundError, insn.owner);
+		}
 		var stack = ctx.getStack();
 		var value = stack.popGeneric();
 		var $instance = stack.pop();
-		var helper = vm.getHelper();
 		helper.checkNotNull($instance);
 		var instance = (InstanceValue) $instance;
-		var offset = instance.getJavaClass().getFieldOffsetRecursively(insn.name, insn.desc);
+		var offset = helper.getFieldOffset((InstanceJavaClass) owner, instance.getJavaClass(), insn.name, insn.desc);
 		if (offset == -1L) {
 			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, insn.owner + '.' + insn.name + insn.desc);
 		}

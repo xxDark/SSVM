@@ -28,6 +28,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.LineNumberNode;
 
 import java.nio.ByteOrder;
+import java.util.Collections;
 import java.util.Properties;
 
 public class VirtualMachine {
@@ -288,17 +289,20 @@ public class VirtualMachine {
 	 * 		Should VM search for VMI hooks.
 	 */
 	public void execute(ExecutionContext ctx, boolean useInvokers) {
+		var mn = ctx.getMethod();
+		var isNative = (mn.access & Opcodes.ACC_NATIVE) != 0;
+		if (isNative) {
+			ctx.setLineNumber(-2);
+		}
 		var backtrace = currentThread().getBacktrace();
 		backtrace.push(ctx);
-		var mn = ctx.getMethod();
+		var vmi = vmInterface;
+		var call = new VMCall(ctx.getOwner(), ctx.getMethod());
+		vmi.getInvocationHooks(call, true)
+				.forEach(invocation -> invocation.handle(ctx));
 		try {
-			var isNative = (mn.access & Opcodes.ACC_NATIVE) != 0;
-			if (isNative) {
-				ctx.setLineNumber(-2);
-			}
-			var vmi = vmInterface;
 			if (useInvokers) {
-				var invoker = vmi.getInvoker(new VMCall(ctx.getOwner(), ctx.getMethod()));
+				var invoker = vmi.getInvoker(call);
 				if (invoker != null) {
 					var result = invoker.intercept(ctx);
 					if (result == Result.ABORT) {
@@ -353,6 +357,8 @@ public class VirtualMachine {
 		} catch (Exception ex) {
 			throw new IllegalStateException("Uncaught VM error at: " + ctx.getOwner().getInternalName() + '.' + mn.name + mn.desc, ex);
 		} finally {
+			vmi.getInvocationHooks(call, false)
+					.forEach(invocation -> invocation.handle(ctx));
 			backtrace.pop();
 		}
 	}

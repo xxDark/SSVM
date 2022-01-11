@@ -17,9 +17,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.FieldNode;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.stream.Collectors;
@@ -256,8 +254,7 @@ public final class NativeJava {
 				ctx.setResult(new LongValue(vm.getFileDescriptorManager().newFD(ctx.getLocals().load(0).asInt())));
 			} catch (VMException ex) {
 				vm.getHelper().throwException(vm.getSymbols().java_io_IOException, ex.getOop());
-			}
-			catch (IllegalStateException ex) {
+			} catch (IllegalStateException ex) {
 				vm.getHelper().throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
 			}
 			return Result.ABORT;

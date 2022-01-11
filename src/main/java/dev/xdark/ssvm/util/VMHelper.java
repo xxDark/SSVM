@@ -832,7 +832,7 @@ public final class VMHelper {
 		var memoryManager = vm.getMemoryManager();
 		var oop = javaClass.getOop();
 		var baseOffset = memoryManager.getStaticOffset(javaClass);
-		var fields = javaClass.getStaticLayout().getOffsetMap();
+		var fields = javaClass.getStaticLayout().getFieldMap();
 		var asmFields = javaClass.getNode().fields;
 		for (var entry : fields.entrySet()) {
 			var key = entry.getKey();
@@ -846,7 +846,7 @@ public final class VMHelper {
 			}
 			var cst = fn.get().value;
 			if (cst == null) cst = AsmUtil.getDefaultValue(desc);
-			var offset = entry.getValue().intValue();
+			var offset = entry.getValue().getOffset();
 			var resultingOffset = baseOffset + offset;
 			switch (desc) {
 				case "J":
@@ -887,9 +887,9 @@ public final class VMHelper {
 		var vm = this.vm;
 		var memoryManager = vm.getMemoryManager();
 		var baseOffset = memoryManager.valueBaseOffset(value);
-		for (var entry : value.getJavaClass().getVirtualLayout().getOffsetMap().entrySet()) {
-			var field = entry.getKey().getDesc();
-			var offset = baseOffset + entry.getValue();
+		for (var entry : value.getJavaClass().getVirtualLayout().getFieldMap().values()) {
+			var field = entry.getNode().desc;
+			var offset = baseOffset + entry.getOffset();
 			switch (field) {
 				case "J":
 					memoryManager.writeLong(value, offset, 0L);
@@ -933,15 +933,15 @@ public final class VMHelper {
 		var vm = this.vm;
 		var memoryManager = vm.getMemoryManager();
 		var fields = value.getJavaClass().getVirtualLayout()
-				.getOffsetMap()
-				.entrySet()
+				.getFieldMap()
+				.values()
 				.stream()
-				.filter(x -> javaClass == x.getKey().getOwner())
+				.filter(x -> javaClass == x.getOwner())
 				.collect(Collectors.toList());
 		var baseOffset = memoryManager.valueBaseOffset(value);
 		for (var entry : fields) {
-			var field = entry.getKey().getDesc();
-			var offset = baseOffset + entry.getValue();
+			var field = entry.getNode().desc;
+			var offset = baseOffset + entry.getOffset();
 			switch (field) {
 				case "J":
 					memoryManager.writeLong(value, offset, 0L);
@@ -1684,6 +1684,30 @@ public final class VMHelper {
 			array.setValue(i, parameters[i].getOop());
 		}
 		return methodType(rt, array);
+	}
+
+	/**
+	 * Searches for field offset.
+	 *
+	 * @param target
+	 * 		Class to search in first.
+	 * @param javaClass
+	 * 		Class to search in recursively.
+	 * @param name
+	 * 		Feild name.
+	 * @param desc
+	 * 		Field desc.
+	 *
+	 * @return field offset or {@code -1L} if not found.
+	 */
+	public long getFieldOffset(InstanceJavaClass target, InstanceJavaClass javaClass, String name, String desc) {
+		var offset = target.getFieldOffset(name, desc);
+		if (offset == -1L) {
+			do {
+				offset = javaClass.getFieldOffset(name, desc);
+			} while (offset == -1L && (javaClass = javaClass.getSuperClass()) != null);
+		}
+		return offset;
 	}
 
 	private static void contextPrepare(ExecutionContext ctx, Value[] stack, Value[] locals, int localIndex) {

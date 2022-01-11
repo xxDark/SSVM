@@ -5,8 +5,11 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * Interface to configure/adjust VM.
@@ -19,6 +22,10 @@ public final class VMInterface {
 	private static final int JVM_INSNS = Opcodes.IFNONNULL;
 	private final InstructionProcessor[] processors = new InstructionProcessor[MAX_INSNS];
 	private final Map<VMCall, MethodInvoker> invokerMap = new HashMap<>();
+	private final List<MethodInvocation> globalEnter = new ArrayList<>();
+	private final List<MethodInvocation> globalExit = new ArrayList<>();
+	private final Map<VMCall, MethodInvocation> methodEnter = new HashMap<>();
+	private final Map<VMCall, MethodInvocation> methodExit = new HashMap<>();
 
 	/**
 	 * Gets an instruction processor.
@@ -100,5 +107,71 @@ public final class VMInterface {
 		}
 		setInvoker(new VMCall(jc, method), invoker);
 		return true;
+	}
+
+	/**
+	 * Registers global method enter hook.
+	 *
+	 * @param invocation
+	 * 		Hook to register.
+	 */
+	public void registerMethodEnter(MethodInvocation invocation) {
+		globalEnter.add(invocation);
+	}
+
+	/**
+	 * Registers global method exit hook.
+	 *
+	 * @param invocation
+	 * 		Hook to unregister.
+	 */
+	public void removeMethodEnter(MethodInvocation invocation) {
+		globalEnter.remove(invocation);
+	}
+
+	/**
+	 * Registers specific method enter hook.
+	 *
+	 * @param invocation
+	 * 		Hook to register.
+	 */
+	public void registerMethodEnter(VMCall call, MethodInvocation invocation) {
+		methodEnter.put(call, invocation);
+	}
+
+	/**
+	 * Registers specific method exit hook.
+	 *
+	 * @param invocation
+	 * 		Hook to unregister.
+	 */
+	public void removeMethodEnter(VMCall call, MethodInvocation invocation) {
+		methodExit.put(call, invocation);
+	}
+
+	/**
+	 * Returns stream of invocation hooks.
+	 *
+	 * @param call
+	 * 		Call info.
+	 * @param enter
+	 * 		True if called upon method entering, method exit otherwise.
+	 *
+	 * @return stream of invocation hooks.
+	 */
+	public Stream<MethodInvocation> getInvocationHooks(VMCall call, boolean enter) {
+		Map<VMCall, MethodInvocation> map;
+		List<MethodInvocation> list;
+		if (enter) {
+			map = methodEnter;
+			list = globalEnter;
+		} else {
+			map = methodExit;
+			list = globalExit;
+		}
+		var invocation = map.get(call);
+		var stream = list.stream();
+		if (invocation == null) return stream;
+		return Stream.concat(Stream.of(invocation), stream);
 	}
 }

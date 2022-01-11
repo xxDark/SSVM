@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 public final class InstanceJavaClass implements JavaClass {
 
-	private final Map<FieldInfo, Long> virtualFields = new HashMap<>();
+	private final Map<MemberKey, JavaField> virtualFields = new HashMap<>();
 	private final VirtualMachine vm;
 	private final Value classLoader;
 	private final Lock initializationLock;
@@ -277,7 +277,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * Computes virtual fields.
 	 */
 	public void buildVirtualFields() {
-		virtualFields.putAll(virtualLayout.getOffsetMap()
+		virtualFields.putAll(virtualLayout.getFieldMap()
 				.entrySet()
 				.stream().filter(x -> this == x.getKey().getOwner())
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
@@ -372,7 +372,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @return static value of a field or {@code null},
 	 * if field was not found.
 	 */
-	public Value getStaticValue(FieldInfo field) {
+	public Value getStaticValue(MemberKey field) {
 		initialize();
 
 		var offset = (int) staticLayout.getFieldOffset(field);
@@ -413,7 +413,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * if field was not found.
 	 */
 	public Value getStaticValue(String name, String desc) {
-		return getStaticValue(new FieldInfo(this, name, desc));
+		return getStaticValue(new MemberKey(this, name, desc));
 	}
 
 	/**
@@ -427,7 +427,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @return whether the value was changed or not.
 	 * This method will return {@code false} if there is no such field.
 	 */
-	public boolean setFieldValue(FieldInfo field, Value value) {
+	public boolean setFieldValue(MemberKey field, Value value) {
 		initialize();
 		var offset = (int) staticLayout.getFieldOffset(field);
 		if (offset == -1L) return false;
@@ -477,7 +477,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * This method will return {@code false} if there is no such field.
 	 */
 	public boolean setFieldValue(String name, String desc, Value value) {
-		return setFieldValue(new FieldInfo(this, name, desc), value);
+		return setFieldValue(new MemberKey(this, name, desc), value);
 	}
 
 	/**
@@ -492,7 +492,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 */
 	public long getFieldOffset(String name, String desc) {
 		initialize();
-		return virtualLayout.getFieldOffset(new FieldInfo(this, name, desc));
+		return virtualLayout.getFieldOffset(new MemberKey(this, name, desc));
 	}
 
 	/**
@@ -510,7 +510,7 @@ public final class InstanceJavaClass implements JavaClass {
 		var layout = this.virtualLayout;
 		var jc = this;
 		do {
-			var offset = layout.getFieldOffset(new FieldInfo(jc, name, desc));
+			var offset = layout.getFieldOffset(new MemberKey(jc, name, desc));
 			if (offset != -1L) return offset;
 		} while ((jc = jc.getSuperClass()) != null);
 		return -1L;
@@ -544,7 +544,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @return {@code true} if field exists, {@code  false}
 	 * otherwise.
 	 */
-	public boolean hasVirtualField(FieldInfo info) {
+	public boolean hasVirtualField(MemberKey info) {
 		initialize();
 		return virtualFields.containsKey(info);
 	}
@@ -561,16 +561,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * otherwise.
 	 */
 	public boolean hasVirtualField(String name, String desc) {
-		return hasVirtualField(new FieldInfo(this, name, desc));
-	}
-
-	/**
-	 * Returns all virtual fields this class defines.
-	 *
-	 * @return virtual fields this class defines.
-	 */
-	public Map<FieldInfo, Long> getVirtualFields() {
-		return virtualFields;
+		return hasVirtualField(new MemberKey(this, name, desc));
 	}
 
 	/**
@@ -599,18 +590,19 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @return static class layout.
 	 */
 	public ClassLayout createStaticLayout() {
-		var offsetMap = new HashMap<FieldInfo, Long>();
+		var map = new HashMap<MemberKey, JavaField>();
 		var offset = 0L;
+		int slot = getVirtualFieldCount();
 		var fields = node.fields;
 		for (int i = 0, j = fields.size(); i < j; i++) {
 			var field = fields.get(i);
 			if ((field.access & Opcodes.ACC_STATIC) != 0) {
 				var desc = field.desc;
-				offsetMap.put(new FieldInfo(this, field.name, desc), offset);
+				map.put(new MemberKey(this, field.name, desc), new JavaField(this, field, slot, offset++));
 				offset += UnsafeUtil.getSizeFor(desc);
 			}
 		}
-		return new ClassLayout(Collections.unmodifiableMap(offsetMap), offset);
+		return new ClassLayout(Collections.unmodifiableMap(map), offset);
 	}
 
 	/**
@@ -619,7 +611,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @return virtual class layout.
 	 */
 	public ClassLayout createVirtualLayout() {
-		var offsetMap = new HashMap<FieldInfo, Long>();
+		var map = new HashMap<MemberKey, JavaField>();
 		var deque = new ArrayDeque<InstanceJavaClass>();
 		var offset = 0L;
 		var javaClass = this;
@@ -627,18 +619,19 @@ public final class InstanceJavaClass implements JavaClass {
 			deque.addFirst(javaClass);
 			javaClass = javaClass.superClass;
 		}
+		int slot = 0;
 		while ((javaClass = deque.pollFirst()) != null) {
 			var fields = javaClass.node.fields;
 			for (int i = 0, j = fields.size(); i < j; i++) {
 				var field = fields.get(i);
 				if ((field.access & Opcodes.ACC_STATIC) == 0) {
 					var desc = field.desc;
-					offsetMap.put(new FieldInfo(javaClass, field.name, desc), offset);
+					map.put(new MemberKey(javaClass, field.name, desc), new JavaField(javaClass, field, slot, offset++));
 					offset += UnsafeUtil.getSizeFor(desc);
 				}
 			}
 		}
-		return new ClassLayout(Collections.unmodifiableMap(offsetMap), offset);
+		return new ClassLayout(Collections.unmodifiableMap(map), offset);
 	}
 
 	/**
@@ -724,6 +717,28 @@ public final class InstanceJavaClass implements JavaClass {
 		if (initialize) {
 			for (var ifc : $interfaces) ifc.initialize();
 		}
+	}
+
+	private int getVirtualFieldCount() {
+		int count = 0;
+		var jc = this;
+		do {
+			for (var field : jc.node.fields) {
+				if ((field.access & Opcodes.ACC_STATIC) == 0) count++;
+			}
+		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
+		return count;
+	}
+
+	private InstanceJavaClass getSuperclassWithoutResolving() {
+		var superName = node.superName;
+		if (superName == null) return null;
+		var vm = this.vm;
+		var jc = (InstanceJavaClass) vm.findClass(classLoader, superName, false);
+		if (jc == null) {
+			vm.getHelper().throwException(vm.getSymbols().java_lang_NoClassDefFoundError, superName);
+		}
+		return jc;
 	}
 
 	private enum State {

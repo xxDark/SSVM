@@ -11,17 +11,17 @@ import java.util.Map;
 public final class ClassLayout {
 
 	public static final ClassLayout EMPTY = new ClassLayout(Collections.emptyMap(), 0L);
-	private final Map<FieldInfo, Long> offsetMap;
+	private final Map<MemberKey, JavaField> fields;
 	private final long size;
 
 	/**
-	 * @param offsetMap
-	 * 		Map containing field offsets.
+	 * @param fields
+	 * 		Map containing field info.
 	 * @param size
 	 * 		Total size of class layout.
 	 */
-	public ClassLayout(Map<FieldInfo, Long> offsetMap, long size) {
-		this.offsetMap = offsetMap;
+	public ClassLayout(Map<MemberKey, JavaField> fields, long size) {
+		this.fields = fields;
 		this.size = size;
 	}
 
@@ -33,9 +33,9 @@ public final class ClassLayout {
 	 *
 	 * @return field offset or {@code -1L} if not found.
 	 */
-	public long getFieldOffset(FieldInfo info) {
-		var offset = offsetMap.get(info);
-		return offset == null ? -1L : offset.longValue();
+	public long getFieldOffset(MemberKey info) {
+		var field = fields.get(info);
+		return field == null ? -1L : field.getOffset();
 	}
 
 	/**
@@ -49,22 +49,22 @@ public final class ClassLayout {
 	 * @return field offset or {@code -1L} if not found.
 	 */
 	public long getFieldOffset(JavaClass javaClass, String name) {
-		for (var entry : offsetMap.entrySet()) {
+		for (var entry : fields.entrySet()) {
 			var key = entry.getKey();
 			if (javaClass == key.getOwner() && name.equals(key.getName())) {
-				return entry.getValue();
+				return entry.getValue().getOffset();
 			}
 		}
 		return -1L;
 	}
 
 	/**
-	 * Returns a map containing field offsets.
+	 * Returns a map containing fields info.
 	 *
-	 * @return map containing field offsets.
+	 * @return map containing fields info.
 	 */
-	public Map<FieldInfo, Long> getOffsetMap() {
-		return offsetMap;
+	public Map<MemberKey, JavaField> getFieldMap() {
+		return fields;
 	}
 
 	/**

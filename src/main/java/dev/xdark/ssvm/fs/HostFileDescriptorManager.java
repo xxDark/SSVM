@@ -15,10 +15,10 @@ import java.util.concurrent.ThreadLocalRandom;
  *
  * @author xDark
  */
-public final class HostFileDescriptorManager implements FileDescriptorManager {
+public class HostFileDescriptorManager implements FileDescriptorManager {
 
-	private final Map<Long, InputStream> inputs = new HashMap<>();
-	private final Map<Long, OutputStream> outputs = new HashMap<>();
+	protected final Map<Long, InputStream> inputs = new HashMap<>();
+	protected final Map<Long, OutputStream> outputs = new HashMap<>();
 
 	private final InputStream stdin;
 	private final OutputStream stdout;

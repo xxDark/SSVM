@@ -1083,7 +1083,7 @@ public final class NativeJava {
 			}
 			var instance = locals.load(1);
 			var isStatic = (mn.getAccess() & ACC_STATIC) != 0;
-			if (isStatic && instance.isNull()) {
+			if (!isStatic && instance.isNull()) {
 				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException);
 			}
 			var values = locals.load(2);

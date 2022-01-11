@@ -256,6 +256,15 @@ public final class NativeJava {
 			ctx.setResult(new IntValue(vm.getFileDescriptorManager().isAppend(ctx.getLocals().load(0).asInt()) ? 1 : 0));
 			return Result.ABORT;
 		});
+		vmi.setInvoker(fd, "close0", "()V", ctx -> {
+			var handle= ctx.getLocals().<InstanceValue>load(0).getLong("handle");
+			try {
+				vm.getFileDescriptorManager().close(handle);
+			} catch (IOException ex) {
+				vm.getHelper().throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+			}
+			return Result.ABORT;
+		});
 		var fos = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileOutputStream");
 		vmi.setInvoker(fos, "initIDs", "()V", ctx -> Result.ABORT);
 		vmi.setInvoker(fos, "writeBytes", "([BIIZ)V", ctx -> {

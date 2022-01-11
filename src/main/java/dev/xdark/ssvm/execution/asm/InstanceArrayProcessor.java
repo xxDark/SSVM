@@ -3,8 +3,6 @@ package dev.xdark.ssvm.execution.asm;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.mirror.JavaClass;
-import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.tree.TypeInsnNode;
 
 /**
@@ -25,9 +23,7 @@ public final class InstanceArrayProcessor implements InstructionProcessor<TypeIn
 			helper.throwException(vm.getSymbols().java_lang_NoClassDefFoundError, insn.desc);
 		}
 		helper.checkArrayLength(length);
-		var arrayClass = klass.newArrayClass();
-		var memoryManager = vm.getMemoryManager();
-		stack.push(memoryManager.newArray(arrayClass, length, memoryManager.arrayIndexScale(Value.class)));
+		stack.push(helper.newArray(klass, length));
 		return Result.CONTINUE;
 	}
 }

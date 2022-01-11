@@ -181,8 +181,7 @@ public final class NativeJava {
 				helper.throwException(symbols.java_lang_IllegalArgumentException);
 			}
 			var length = locals.load(1).asInt();
-			var memoryManager = vm.getMemoryManager();
-			var result = memoryManager.newArray(klass.newArrayClass(), length, memoryManager.arrayIndexScale(klass));
+			var result = helper.newArray(klass, length);
 			ctx.setResult(result);
 			return Result.ABORT;
 		});
@@ -418,9 +417,9 @@ public final class NativeJava {
 		vmi.setInvoker(jlc, "getDeclaredConstructors0", "(Z)[Ljava/lang/reflect/Constructor;", ctx -> {
 			var locals = ctx.getLocals();
 			var klass = locals.<JavaValue<JavaClass>>load(0).getValue();
-			var memoryManager = vm.getMemoryManager();
+			var helper = vm.getHelper();
 			if (!(klass instanceof InstanceJavaClass)) {
-				var empty = memoryManager.newArray(symbols.java_lang_reflect_Constructor.newArrayClass(), 0, memoryManager.arrayIndexScale(Value.class));
+				var empty = helper.emptyArray(symbols.java_lang_reflect_Constructor);
 				ctx.setResult(empty);
 			} else {
 				klass.initialize();
@@ -431,7 +430,6 @@ public final class NativeJava {
 						.filter(mn -> !publicOnly || (mn.access & ACC_PUBLIC) == 0)
 						.collect(Collectors.toList());
 				var loader = klass.getClassLoader();
-				var helper = vm.getHelper();
 				var refFactory = symbols.reflect_ReflectionFactory;
 				var reflectionFactory = (InstanceValue) helper.invokeStatic(refFactory, "getReflectionFactory", "()" + refFactory.getDescriptor(), new Value[0], new Value[0]).getResult();
 				var result = helper.newArray(symbols.java_lang_reflect_Constructor, constructors.size());

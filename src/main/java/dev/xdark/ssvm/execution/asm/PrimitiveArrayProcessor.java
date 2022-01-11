@@ -23,32 +23,32 @@ public final class PrimitiveArrayProcessor implements InstructionProcessor<IntIn
 		vm.getHelper().checkArrayLength(length);
 		var operand = insn.operand;
 		var primitives = vm.getPrimitives();
-		var memoryManager = vm.getMemoryManager();
+		var helper = vm.getHelper();
 		ArrayValue array;
 		switch (operand) {
 			case T_LONG:
-				array = memoryManager.newArray(primitives.longPrimitive.newArrayClass(), length, memoryManager.arrayIndexScale(long.class));
+				array = helper.newArray(primitives.longPrimitive, length);
 				break;
 			case T_DOUBLE:
-				array = memoryManager.newArray(primitives.doublePrimitive.newArrayClass(), length, memoryManager.arrayIndexScale(double.class));
+				array = helper.newArray(primitives.doublePrimitive, length);
 				break;
 			case T_INT:
-				array = memoryManager.newArray(primitives.intPrimitive.newArrayClass(), length, memoryManager.arrayIndexScale(int.class));
+				array = helper.newArray(primitives.intPrimitive, length);
 				break;
 			case T_FLOAT:
-				array = memoryManager.newArray(primitives.floatPrimitive.newArrayClass(), length, memoryManager.arrayIndexScale(float.class));
+				array = helper.newArray(primitives.floatPrimitive, length);
 				break;
 			case T_CHAR:
-				array = memoryManager.newArray(primitives.charPrimitive.newArrayClass(), length, memoryManager.arrayIndexScale(char.class));
+				array = helper.newArray(primitives.charPrimitive, length);
 				break;
 			case T_SHORT:
-				array = memoryManager.newArray(primitives.shortPrimitive.newArrayClass(), length, memoryManager.arrayIndexScale(short.class));
+				array = helper.newArray(primitives.shortPrimitive, length);
 				break;
 			case T_BYTE:
-				array = memoryManager.newArray(primitives.bytePrimitive.newArrayClass(), length, memoryManager.arrayIndexScale(byte.class));
+				array = helper.newArray(primitives.bytePrimitive, length);
 				break;
 			case T_BOOLEAN:
-				array = memoryManager.newArray(primitives.booleanPrimitive.newArrayClass(), length, memoryManager.arrayIndexScale(boolean.class));
+				array = helper.newArray(primitives.booleanPrimitive, length);
 				break;
 			default:
 				throw new IllegalStateException("Illegal array type: " + operand);

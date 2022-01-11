@@ -56,6 +56,7 @@ public final class VMSymbols {
 	public final InstanceJavaClass java_lang_Byte;
 	public final InstanceJavaClass java_lang_Boolean;
 	public final InstanceJavaClass java_io_IOException;
+	public final InstanceJavaClass java_lang_invoke_MethodType;
 
 	/**
 	 * @param vm
@@ -112,5 +113,6 @@ public final class VMSymbols {
 		java_lang_Byte = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Byte");
 		java_lang_Boolean = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Boolean");
 		java_io_IOException = (InstanceJavaClass) vm.findBootstrapClass("java/io/IOException");
+		java_lang_invoke_MethodType = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/MethodType");
 	}
 }

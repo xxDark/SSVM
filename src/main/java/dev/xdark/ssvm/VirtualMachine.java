@@ -292,6 +292,10 @@ public class VirtualMachine {
 		backtrace.push(ctx);
 		var mn = ctx.getMethod();
 		try {
+			var isNative = (mn.access & Opcodes.ACC_NATIVE) != 0;
+			if (isNative) {
+				ctx.setLineNumber(-2);
+			}
 			var vmi = vmInterface;
 			if (useInvokers) {
 				var invoker = vmi.getInvoker(new VMCall(ctx.getOwner(), ctx.getMethod()));
@@ -302,7 +306,7 @@ public class VirtualMachine {
 					}
 				}
 			}
-			if ((mn.access & Opcodes.ACC_NATIVE) != 0) {
+			if (isNative) {
 				helper.throwException(symbols.java_lang_UnsatisfiedLinkError, ctx.getOwner().getInternalName() + '.' + mn.name + mn.desc);
 			}
 			var instructions = mn.instructions;

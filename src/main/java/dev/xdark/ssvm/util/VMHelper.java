@@ -232,14 +232,23 @@ public final class VMHelper {
 					}
 					return klass.getOop();
 				}
-				case Type.ARRAY:
+				case Type.ARRAY: {
 					var name = type.getInternalName();
 					var klass = findClass(loader, type.getInternalName(), false);
 					if (klass == null) {
 						throwException(vm.getSymbols().java_lang_ClassNotFoundException, name);
-						return null;
 					}
 					return klass.getOop();
+				}
+				case Type.METHOD: {
+					var name = type.getReturnType().getInternalName();
+					var rt = findClass(loader, name, false);
+					if (rt == null) {
+						throwException(vm.getSymbols().java_lang_ClassNotFoundException, name);
+					}
+					var classes = convertTypes(loader, type.getArgumentTypes(), false);
+					return methodType(rt, classes);
+				}
 				default:
 					throw new IllegalStateException("Not implemented yet: " + sort);
 			}
@@ -739,7 +748,7 @@ public final class VMHelper {
 		var jc = (InstanceJavaClass) value.getJavaClass();
 		var vm = jc.getVM();
 		if (jc != vm.getSymbols().java_lang_String) {
-			throw new IllegalStateException("Not a string: " + value);
+			throw new IllegalStateException("Not a string: " + value + " (" + jc + ')');
 		}
 		var array = invokeExact(jc, "toCharArray", "()[C", new Value[0], new Value[]{value}).getResult();
 		return new String(toJavaChars((ArrayValue) array));
@@ -1640,6 +1649,41 @@ public final class VMHelper {
 		var fd = invokeVirtual("getFD", "()Ljava/io/FileDescriptor;", new Value[0], new Value[]{fos}).getResult();
 		checkNotNull(fd);
 		return ((InstanceValue) fd).getLong("handle");
+	}
+
+	/**
+	 * Invokes {@link java.lang.invoke.MethodType#methodType(Class, Class[])}
+	 *
+	 * @param rt
+	 * 		Return type.
+	 * @param parameters
+	 * 		Parameter types.
+	 *
+	 * @return method type.
+	 */
+	public InstanceValue methodType(JavaClass rt, ArrayValue parameters) {
+		return (InstanceValue) invokeStatic(vm.getSymbols().java_lang_invoke_MethodType, "methodType", "(Ljava/lang/Class;[Ljava/lang/Class;)Ljava/lang/invoke/MethodType;", new Value[0], new Value[]{
+				rt.getOop(),
+				parameters
+		}).getResult();
+	}
+
+	/**
+	 * Invokes {@link java.lang.invoke.MethodType#methodType(Class, Class[])}
+	 *
+	 * @param rt
+	 * 		Return type.
+	 * @param parameters
+	 * 		Parameter types.
+	 *
+	 * @return method type.
+	 */
+	public InstanceValue methodType(JavaClass rt, JavaClass[] parameters) {
+		var array = newArray(vm.getSymbols().java_lang_Class, parameters.length);
+		for (int i = 0; i < parameters.length; i++) {
+			array.setValue(i, parameters[i].getOop());
+		}
+		return methodType(rt, array);
 	}
 
 	private static void contextPrepare(ExecutionContext ctx, Value[] stack, Value[] locals, int localIndex) {

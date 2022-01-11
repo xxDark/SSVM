@@ -55,11 +55,8 @@ public final class NativeJava {
 				return Result.ABORT;
 			});
 		}
-		var jdkVM = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/VM");
-		if (jdkVM != null) {
-			vmi.setInvoker(jdkVM, "initialize", "()V", ctx -> Result.ABORT);
-			vmi.setInvoker(jdkVM, "initializeFromArchive", "(Ljava/lang/Class;)V", ctx -> Result.ABORT);
-		}
+
+		initVM(vm);
 
 		var unsafe = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/Unsafe");
 		var newUnsafe = unsafe != null;
@@ -93,6 +90,30 @@ public final class NativeJava {
 				return Result.ABORT;
 			});
 		}
+	}
+
+	/**
+	 * Initializes misc/VM.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initVM(VirtualMachine vm) {
+		var vmi = vm.getInterface();
+		var klass = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/VM");
+		if (klass != null) {
+			vmi.setInvoker(klass, "initializeFromArchive", "(Ljava/lang/Class;)V", ctx -> Result.ABORT);
+		} else {
+			klass = (InstanceJavaClass) vm.findBootstrapClass("sun/misc/VM");
+			if (klass == null) {
+				throw new IllegalStateException("Unable to locate VM class");
+			}
+			vmi.setInvoker(klass, "latestUserDefinedLoader0", "()Ljava/lang/ClassLoader;", ctx -> {
+				vm.getHelper().throwException(vm.getSymbols().java_lang_UnsatisfiedLinkError, "TODO implement me");
+				return Result.ABORT;
+			});
+		}
+		vmi.setInvoker(klass, "initialize", "()V", ctx -> Result.ABORT);
 	}
 
 	/**
@@ -239,7 +260,7 @@ public final class NativeJava {
 		vmi.setInvoker(fos, "initIDs", "()V", ctx -> Result.ABORT);
 		vmi.setInvoker(fos, "writeBytes", "([BIIZ)V", ctx -> {
 			var locals = ctx.getLocals();
-			var _this =locals.<InstanceValue>load(0);
+			var _this = locals.<InstanceValue>load(0);
 			var helper = vm.getHelper();
 			var handle = helper.getFileOutputStreamHandle(_this);
 			var out = vm.getFileDescriptorManager().getFdOut(handle);
@@ -275,10 +296,11 @@ public final class NativeJava {
 			var backtrace = ((JavaValue<Backtrace>) ((InstanceValue) ex).getValue("backtrace", "Ljava/lang/Object;")).getValue();
 			var storeTo = (ArrayValue) arr;
 
-			for (int i = 0, j = backtrace.count(); i < j; i++) {
-				var frame = backtrace.get(i);
+			var x = 0;
+			for (int i = backtrace.count(); i != 0; ) {
+				var frame = backtrace.get(--i);
 				var element = helper.newStackTraceElement(frame, true);
-				storeTo.setValue(i, element);
+				storeTo.setValue(x++, element);
 			}
 			return Result.ABORT;
 		});
@@ -1170,6 +1192,18 @@ public final class NativeJava {
 		if (winNTfs != null) {
 			var vmi = vm.getInterface();
 			vmi.setInvoker(winNTfs, "initIDs", "()V", ctx -> Result.ABORT);
+			/*
+			vmi.setInvoker(winNTfs, "canonicalize0", "(Ljava/lang/String;)Ljava/lang/String;", ctx -> {
+				var helper = vm.getHelper();
+				var path = helper.readUtf8(ctx.getLocals().load(1));
+				try {
+					ctx.setResult(helper.newUtf8(new File(path).getCanonicalPath()));
+				} catch (IOException ex) {
+					helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+				}
+				return Result.ABORT;
+			});
+			 */
 		}
 	}
 

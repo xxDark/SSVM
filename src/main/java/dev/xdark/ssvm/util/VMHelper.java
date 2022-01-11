@@ -1229,15 +1229,15 @@ public final class VMHelper {
 			throwException(vm.getSymbols().java_lang_NoClassDefFoundError, name);
 			return null;
 		}
-		var actualName = parsed.getClassReader().getClassName();
+		var finalName = parsed.getClassReader().getClassName();
 		if (name == null) {
-			name = actualName;
-		} else if (!actualName.equals(name.replace('.', '/'))) {
-			throwException(vm.getSymbols().java_lang_ClassNotFoundException, "Expected class name: " + actualName.replace('/', '.') + " but received: " + name);
+			name = finalName;
+		} else if (!finalName.equals(name.replace('.', '/'))) {
+			throwException(vm.getSymbols().java_lang_ClassNotFoundException, "Expected class name: " + finalName.replace('/', '.') + " but received: " + name);
 			return null;
 		}
-		if (actualName.contains("/")) {
-			throwException(vm.getSymbols().java_lang_NoClassDefFoundError, "Bad class name: " + actualName);
+		if (finalName.contains("[")) {
+			throwException(vm.getSymbols().java_lang_NoClassDefFoundError, "Bad class name: " + finalName);
 		}
 		synchronized (classLoaderData) {
 			if (classLoaderData.getClass(name) != null) {

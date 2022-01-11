@@ -95,7 +95,7 @@ public class VirtualMachine {
 		findBootstrapClass("java/lang/reflect/Field", true);
 		findBootstrapClass("java/lang/reflect/Constructor", true);
 
-		var initializeSystemClass = sysClass.getVirtualMethod("initializeSystemClass", "()V");
+		var initializeSystemClass = sysClass.getStaticMethod("initializeSystemClass", "()V");
 		if (initializeSystemClass != null) {
 			// pre JDK 9 boot
 			helper.invokeStatic(sysClass, initializeSystemClass, new Value[0], new Value[0]);

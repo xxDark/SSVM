@@ -33,7 +33,7 @@ public final class InvokeDynamicLinkerProcessor implements InstructionProcessor<
 			}
 			var name = bootstrap.getName();
 			var desc = bootstrap.getDesc();
-			var bootstrapMethod = ((InstanceJavaClass) jc).getVirtualMethod(name, desc);
+			var bootstrapMethod = ((InstanceJavaClass) jc).getStaticMethod(name, desc);
 			if (bootstrapMethod == null) {
 				helper.throwException(symbols.java_lang_NoSuchMethodException, owner + '.' + name + desc);
 			}

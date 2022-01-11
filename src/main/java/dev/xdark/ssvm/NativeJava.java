@@ -763,7 +763,7 @@ public final class NativeJava {
 		vmi.setInvoker(sys, "initProperties", "(Ljava/util/Properties;)Ljava/util/Properties;", ctx -> {
 			var value = ctx.getLocals().<InstanceValue>load(0);
 			var jc = (InstanceJavaClass) value.getJavaClass();
-			var mn = jc.getMethod("put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+			var mn = jc.getVirtualMethod("put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
 			var properties = vm.getProperties();
 			var helper = vm.getHelper();
 

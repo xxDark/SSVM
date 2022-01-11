@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.api;
 
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.JavaMethod;
 import org.objectweb.asm.tree.MethodNode;
 
 /**
@@ -11,9 +12,9 @@ import org.objectweb.asm.tree.MethodNode;
 public final class VMCall {
 
 	private final InstanceJavaClass owner;
-	private final MethodNode method;
+	private final JavaMethod method;
 
-	public VMCall(InstanceJavaClass owner, MethodNode method) {
+	public VMCall(InstanceJavaClass owner, JavaMethod method) {
 		this.owner = owner;
 		this.method = method;
 	}

@@ -53,4 +53,22 @@ public final class JavaMethod {
 	public int getSlot() {
 		return slot;
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		JavaMethod that = (JavaMethod) o;
+
+		if (!owner.equals(that.owner)) return false;
+		return node.equals(that.node);
+	}
+
+	@Override
+	public int hashCode() {
+		int result = owner.hashCode();
+		result = 31 * result + node.hashCode();
+		return result;
+	}
 }

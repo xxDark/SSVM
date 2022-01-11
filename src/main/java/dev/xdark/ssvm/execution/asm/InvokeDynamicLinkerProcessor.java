@@ -5,7 +5,6 @@ import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaClass;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 
@@ -34,7 +33,7 @@ public final class InvokeDynamicLinkerProcessor implements InstructionProcessor<
 			}
 			var name = bootstrap.getName();
 			var desc = bootstrap.getDesc();
-			var bootstrapMethod = ((InstanceJavaClass) jc).getMethod(name, desc);
+			var bootstrapMethod = ((InstanceJavaClass) jc).getVirtualMethod(name, desc);
 			if (bootstrapMethod == null) {
 				helper.throwException(symbols.java_lang_NoSuchMethodException, owner + '.' + name + desc);
 			}

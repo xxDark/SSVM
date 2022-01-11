@@ -417,7 +417,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	@Override
 	public long getStaticOffset(JavaClass jc) {
 		var jlc = vm.findBootstrapClass("java/lang/Class");
-		return OBJECT_HEADER_SIZE + jlc.getVirtualLayout().getSize();
+		return OBJECT_HEADER_SIZE + jlc.getVirtualFieldLayout().getSize();
 	}
 
 	private Memory newMemoryBlock(long size, boolean isDirect) {
@@ -436,12 +436,12 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	private Memory allocateObjectMemory(JavaClass javaClass) {
-		var objectSize = OBJECT_HEADER_SIZE + javaClass.getVirtualLayout().getSize();
+		var objectSize = OBJECT_HEADER_SIZE + javaClass.getVirtualFieldLayout().getSize();
 		return allocateHeap(objectSize);
 	}
 
 	private Memory allocateClassMemory(JavaClass jlc, JavaClass javaClass) {
-		var size = OBJECT_HEADER_SIZE + jlc.getVirtualLayout().getSize() + javaClass.getStaticLayout().getSize();
+		var size = OBJECT_HEADER_SIZE + jlc.getVirtualFieldLayout().getSize() + javaClass.getStaticFieldLayout().getSize();
 		return allocateHeap(size);
 	}
 

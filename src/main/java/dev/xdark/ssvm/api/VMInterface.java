@@ -2,6 +2,7 @@ package dev.xdark.ssvm.api;
 
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.JavaMethod;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
@@ -21,11 +22,11 @@ public final class VMInterface {
 	private static final int MAX_INSNS = 1024;
 	private static final int JVM_INSNS = Opcodes.IFNONNULL;
 	private final InstructionProcessor[] processors = new InstructionProcessor[MAX_INSNS];
-	private final Map<VMCall, MethodInvoker> invokerMap = new HashMap<>();
+	private final Map<JavaMethod, MethodInvoker> invokerMap = new HashMap<>();
 	private final List<MethodInvocation> globalEnter = new ArrayList<>();
 	private final List<MethodInvocation> globalExit = new ArrayList<>();
-	private final Map<VMCall, MethodInvocation> methodEnter = new HashMap<>();
-	private final Map<VMCall, MethodInvocation> methodExit = new HashMap<>();
+	private final Map<JavaMethod, MethodInvocation> methodEnter = new HashMap<>();
+	private final Map<JavaMethod, MethodInvocation> methodExit = new HashMap<>();
 
 	/**
 	 * Gets an instruction processor.
@@ -69,7 +70,7 @@ public final class VMInterface {
 	 *
 	 * @return method invoker.
 	 */
-	public MethodInvoker getInvoker(VMCall call) {
+	public MethodInvoker getInvoker(JavaMethod call) {
 		return invokerMap.get(call);
 	}
 
@@ -81,7 +82,7 @@ public final class VMInterface {
 	 * @param invoker
 	 * 		Method invoker.
 	 */
-	public void setInvoker(VMCall call, MethodInvoker invoker) {
+	public void setInvoker(JavaMethod call, MethodInvoker invoker) {
 		invokerMap.put(call, invoker);
 	}
 
@@ -105,7 +106,7 @@ public final class VMInterface {
 		if (method == null) {
 			return false;
 		}
-		setInvoker(new VMCall(jc, method), invoker);
+		setInvoker(method, invoker);
 		return true;
 	}
 
@@ -135,7 +136,7 @@ public final class VMInterface {
 	 * @param invocation
 	 * 		Hook to register.
 	 */
-	public void registerMethodEnter(VMCall call, MethodInvocation invocation) {
+	public void registerMethodEnter(JavaMethod call, MethodInvocation invocation) {
 		methodEnter.put(call, invocation);
 	}
 
@@ -145,7 +146,7 @@ public final class VMInterface {
 	 * @param invocation
 	 * 		Hook to unregister.
 	 */
-	public void removeMethodEnter(VMCall call, MethodInvocation invocation) {
+	public void removeMethodEnter(JavaMethod call, MethodInvocation invocation) {
 		methodExit.put(call, invocation);
 	}
 
@@ -159,8 +160,8 @@ public final class VMInterface {
 	 *
 	 * @return stream of invocation hooks.
 	 */
-	public Stream<MethodInvocation> getInvocationHooks(VMCall call, boolean enter) {
-		Map<VMCall, MethodInvocation> map;
+	public Stream<MethodInvocation> getInvocationHooks(JavaMethod call, boolean enter) {
+		Map<JavaMethod, MethodInvocation> map;
 		List<MethodInvocation> list;
 		if (enter) {
 			map = methodEnter;

@@ -2,6 +2,7 @@ package dev.xdark.ssvm.execution;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.tree.MethodNode;
@@ -10,7 +11,7 @@ public final class ExecutionContext {
 
 	private final VirtualMachine virtualMachine;
 	private final InstanceJavaClass owner;
-	private final MethodNode method;
+	private final JavaMethod method;
 	private final Stack stack;
 	private final Locals locals;
 	private int insnPosition;
@@ -29,7 +30,7 @@ public final class ExecutionContext {
 	 * @param locals
 	 * 		Local variable table.
 	 */
-	public ExecutionContext(VirtualMachine virtualMachine, InstanceJavaClass owner, MethodNode method, Stack stack, Locals locals) {
+	public ExecutionContext(VirtualMachine virtualMachine, InstanceJavaClass owner, JavaMethod method, Stack stack, Locals locals) {
 		this.virtualMachine = virtualMachine;
 		this.owner = owner;
 		this.method = method;
@@ -69,7 +70,7 @@ public final class ExecutionContext {
 	 *
 	 * @return method being executed.
 	 */
-	public MethodNode getMethod() {
+	public JavaMethod getMethod() {
 		return method;
 	}
 

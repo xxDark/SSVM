@@ -7,17 +7,17 @@ import dev.xdark.ssvm.value.*;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.MethodNode;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 
 public final class InstanceJavaClass implements JavaClass {
 
-	private final Map<MemberKey, JavaField> virtualFields = new HashMap<>();
 	private final VirtualMachine vm;
 	private final Value classLoader;
 	private final Lock initializationLock;
@@ -25,8 +25,10 @@ public final class InstanceJavaClass implements JavaClass {
 	private final ClassReader classReader;
 	private final ClassNode node;
 	private InstanceValue oop;
-	private ClassLayout virtualLayout;
-	private ClassLayout staticLayout;
+	private FieldLayout vrtFieldLayout;
+	private FieldLayout staticFieldLayout;
+	private MethodLayout vrtMethodLayout;
+	private MethodLayout staticMethodLayout;
 	private InstanceJavaClass superClass;
 	private InstanceJavaClass[] interfaces;
 	private ArrayJavaClass arrayClass;
@@ -154,18 +156,15 @@ public final class InstanceJavaClass implements JavaClass {
 		initializer = Thread.currentThread();
 		var vm = this.vm;
 		var helper = vm.getHelper();
-		helper.initializeStaticFields(this);
 		loadSuperClass(true);
 		loadInterfaces(true);
 		// Build class layout
 		// VM might've set it already, do not override.
-		if (virtualLayout == null) {
-			virtualLayout = createVirtualLayout();
+		if (vrtFieldLayout == null) {
+			vrtFieldLayout = createVirtualFieldLayout();
 		}
-		if (virtualFields.isEmpty()) {
-			buildVirtualFields();
-		}
-		var clinit = getMethod("<clinit>", "()V");
+		helper.initializeStaticFields(this);
+		var clinit = getStaticMethod("<clinit>", "()V");
 		try {
 			if (clinit != null) {
 				helper.invokeStatic(this, clinit, new Value[0], new Value[0]);
@@ -273,28 +272,18 @@ public final class InstanceJavaClass implements JavaClass {
 		return null;
 	}
 
-	/**
-	 * Computes virtual fields.
-	 */
-	public void buildVirtualFields() {
-		virtualFields.putAll(virtualLayout.getFieldMap()
-				.entrySet()
-				.stream().filter(x -> this == x.getKey().getOwner())
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+	@Override
+	public FieldLayout getVirtualFieldLayout() {
+		return vrtFieldLayout;
 	}
 
 	@Override
-	public ClassLayout getVirtualLayout() {
-		return virtualLayout;
-	}
-
-	@Override
-	public ClassLayout getStaticLayout() {
-		var staticLayout = this.staticLayout;
+	public FieldLayout getStaticFieldLayout() {
+		var staticLayout = this.staticFieldLayout;
 		// Build class layout
 		// VM might've set it already, do not override.
 		if (staticLayout == null) {
-			return this.staticLayout = createStaticLayout();
+			return this.staticFieldLayout = createStaticFieldLayout();
 		}
 		return staticLayout;
 	}
@@ -343,6 +332,74 @@ public final class InstanceJavaClass implements JavaClass {
 	}
 
 	/**
+	 * Searches for a virtual method by it's name and descriptor recursively.
+	 *
+	 * @param name
+	 * 		Name of the method.
+	 * @param desc
+	 * 		Descriptor of the method.
+	 *
+	 * @return class method or {@code null}, if not found.
+	 */
+	public JavaMethod getVirtualMethodRecursively(String name, String desc) {
+		var layout = getVirtualMethodLayout();
+		var methods = layout.getMethods();
+		var jc = this;
+		JavaMethod method;
+		do {
+			method = methods.get(new MemberKey(jc, name, desc));
+		} while (method == null && (jc = jc.getSuperclassWithoutResolving()) != null);
+		return method;
+	}
+
+	/**
+	 * Searches for a virtual method by it's name and descriptor.
+	 *
+	 * @param name
+	 * 		Name of the method.
+	 * @param desc
+	 * 		Descriptor of the method.
+	 *
+	 * @return class method or {@code null}, if not found.
+	 */
+	public JavaMethod getVirtualMethod(String name, String desc) {
+		return getVirtualMethodLayout().getMethods().get(new MemberKey(this, name, desc));
+	}
+
+	/**
+	 * Searches for a static method by it's name and descriptor recursively.
+	 *
+	 * @param name
+	 * 		Name of the method.
+	 * @param desc
+	 * 		Descriptor of the method.
+	 *
+	 * @return class method or {@code null}, if not found.
+	 */
+	public JavaMethod getStaticMethodRecursively(String name, String desc) {
+		var jc = this;
+		JavaMethod method;
+		do {
+			method = jc.getStaticMethodLayout().getMethods().get(new MemberKey(jc, name, desc));
+		} while (method == null && (jc = jc.getSuperclassWithoutResolving()) != null);
+		return method;
+	}
+
+	/**
+	 * Searches for a static method by it's name and descriptor.
+	 *
+	 * @param name
+	 * 		Name of the method.
+	 * @param desc
+	 * 		Descriptor of the method.
+	 *
+	 * @return class method or {@code null}, if not found.
+	 */
+	public JavaMethod getStaticMethod(String name, String desc) {
+		return getStaticMethodLayout().getMethods().get(new MemberKey(this, name, desc));
+	}
+
+	/**
 	 * Searches for a method by it's name and descriptor.
 	 *
 	 * @param name
@@ -352,15 +409,13 @@ public final class InstanceJavaClass implements JavaClass {
 	 *
 	 * @return class method or {@code null}, if not found.
 	 */
-	public MethodNode getMethod(String name, String desc) {
-		var methods = node.methods;
-		for (int i = 0, j = methods.size(); i < j; i++) {
-			var mn = methods.get(i);
-			if (name.equals(mn.name) && desc.equals(mn.desc)) {
-				return mn;
-			}
+	public JavaMethod getMethod(String name, String desc) {
+		var key = new MemberKey(this, name, desc);
+		var jm = getVirtualMethodLayout().getMethods().get(key);
+		if (jm == null) {
+			jm = getStaticMethodLayout().getMethods().get(key);
 		}
-		return null;
+		return jm;
 	}
 
 	/**
@@ -375,7 +430,7 @@ public final class InstanceJavaClass implements JavaClass {
 	public Value getStaticValue(MemberKey field) {
 		initialize();
 
-		var offset = (int) staticLayout.getFieldOffset(field);
+		var offset = (int) staticFieldLayout.getFieldOffset(field);
 		if (offset == -1L) return null;
 		var oop = this.oop;
 		var memoryManager = vm.getMemoryManager();
@@ -429,7 +484,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 */
 	public boolean setFieldValue(MemberKey field, Value value) {
 		initialize();
-		var offset = (int) staticLayout.getFieldOffset(field);
+		var offset = (int) staticFieldLayout.getFieldOffset(field);
 		if (offset == -1L) return false;
 		var oop = this.oop;
 		var memoryManager = vm.getMemoryManager();
@@ -492,7 +547,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 */
 	public long getFieldOffset(String name, String desc) {
 		initialize();
-		return virtualLayout.getFieldOffset(new MemberKey(this, name, desc));
+		return vrtFieldLayout.getFieldOffset(new MemberKey(this, name, desc));
 	}
 
 	/**
@@ -507,12 +562,12 @@ public final class InstanceJavaClass implements JavaClass {
 	 */
 	public long getFieldOffsetRecursively(String name, String desc) {
 		initialize();
-		var layout = this.virtualLayout;
+		var layout = this.vrtFieldLayout;
 		var jc = this;
 		do {
 			var offset = layout.getFieldOffset(new MemberKey(jc, name, desc));
 			if (offset != -1L) return offset;
-		} while ((jc = jc.getSuperClass()) != null);
+		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
 		return -1L;
 	}
 
@@ -526,12 +581,12 @@ public final class InstanceJavaClass implements JavaClass {
 	 */
 	public long getFieldOffsetRecursively(String name) {
 		initialize();
-		var layout = this.virtualLayout;
+		var layout = this.vrtFieldLayout;
 		var jc = this;
 		do {
 			var offset = layout.getFieldOffset(jc, name);
 			if (offset != -1L) return offset;
-		} while ((jc = jc.getSuperClass()) != null);
+		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
 		return -1L;
 	}
 
@@ -546,7 +601,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 */
 	public boolean hasVirtualField(MemberKey info) {
 		initialize();
-		return virtualFields.containsKey(info);
+		return vrtFieldLayout.getFieldMap().containsKey(info);
 	}
 
 	/**
@@ -570,8 +625,8 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @param layout
 	 * 		Layout to use.
 	 */
-	public void setVirtualLayout(ClassLayout layout) {
-		this.virtualLayout = layout;
+	public void setVirtualFieldLayout(FieldLayout layout) {
+		this.vrtFieldLayout = layout;
 	}
 
 	/**
@@ -580,8 +635,8 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @param layout
 	 * 		Layout to use.
 	 */
-	public void setStaticLayout(ClassLayout layout) {
-		this.staticLayout = layout;
+	public void setStaticFieldLayout(FieldLayout layout) {
+		this.staticFieldLayout = layout;
 	}
 
 	/**
@@ -589,20 +644,19 @@ public final class InstanceJavaClass implements JavaClass {
 	 *
 	 * @return static class layout.
 	 */
-	public ClassLayout createStaticLayout() {
+	public FieldLayout createStaticFieldLayout() {
 		var map = new HashMap<MemberKey, JavaField>();
 		var offset = 0L;
 		int slot = getVirtualFieldCount();
 		var fields = node.fields;
-		for (int i = 0, j = fields.size(); i < j; i++) {
-			var field = fields.get(i);
+		for (var field : fields) {
 			if ((field.access & Opcodes.ACC_STATIC) != 0) {
 				var desc = field.desc;
-				map.put(new MemberKey(this, field.name, desc), new JavaField(this, field, slot, offset++));
+				map.put(new MemberKey(this, field.name, desc), new JavaField(this, field, slot++, offset));
 				offset += UnsafeUtil.getSizeFor(desc);
 			}
 		}
-		return new ClassLayout(Collections.unmodifiableMap(map), offset);
+		return new FieldLayout(Collections.unmodifiableMap(map), offset);
 	}
 
 	/**
@@ -610,28 +664,27 @@ public final class InstanceJavaClass implements JavaClass {
 	 *
 	 * @return virtual class layout.
 	 */
-	public ClassLayout createVirtualLayout() {
+	public FieldLayout createVirtualFieldLayout() {
 		var map = new HashMap<MemberKey, JavaField>();
 		var deque = new ArrayDeque<InstanceJavaClass>();
 		var offset = 0L;
 		var javaClass = this;
 		while (javaClass != null) {
 			deque.addFirst(javaClass);
-			javaClass = javaClass.superClass;
+			javaClass = javaClass.getSuperclassWithoutResolving();
 		}
 		int slot = 0;
 		while ((javaClass = deque.pollFirst()) != null) {
 			var fields = javaClass.node.fields;
-			for (int i = 0, j = fields.size(); i < j; i++) {
-				var field = fields.get(i);
+			for (var field : fields) {
 				if ((field.access & Opcodes.ACC_STATIC) == 0) {
 					var desc = field.desc;
-					map.put(new MemberKey(javaClass, field.name, desc), new JavaField(javaClass, field, slot, offset++));
+					map.put(new MemberKey(javaClass, field.name, desc), new JavaField(javaClass, field, slot++, offset));
 					offset += UnsafeUtil.getSizeFor(desc);
 				}
 			}
 		}
-		return new ClassLayout(Collections.unmodifiableMap(map), offset);
+		return new FieldLayout(Collections.unmodifiableMap(map), offset);
 	}
 
 	/**
@@ -724,6 +777,61 @@ public final class InstanceJavaClass implements JavaClass {
 		var jc = this;
 		do {
 			for (var field : jc.node.fields) {
+				if ((field.access & Opcodes.ACC_STATIC) == 0) count++;
+			}
+		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
+		return count;
+	}
+
+	private MethodLayout getVirtualMethodLayout() {
+		var vrtMethodLayout = this.vrtMethodLayout;
+		if (vrtMethodLayout == null) {
+			var map = new HashMap<MemberKey, JavaMethod>();
+			var deque = new ArrayDeque<InstanceJavaClass>();
+			var javaClass = this;
+			while (javaClass != null) {
+				deque.addFirst(javaClass);
+				javaClass = javaClass.getSuperclassWithoutResolving();
+			}
+			int slot = 0;
+			while ((javaClass = deque.pollFirst()) != null) {
+				var methods = javaClass.node.methods;
+				for (var method : methods) {
+					if ((method.access & Opcodes.ACC_STATIC) == 0) {
+						var desc = method.desc;
+						map.put(new MemberKey(javaClass, method.name, desc), new JavaMethod(javaClass, method, slot++));
+					}
+				}
+			}
+			vrtMethodLayout = new MethodLayout(Collections.unmodifiableMap(map));
+			this.vrtMethodLayout = vrtMethodLayout;
+		}
+		return vrtMethodLayout;
+	}
+
+	private MethodLayout getStaticMethodLayout() {
+		var staticMethodLayout = this.staticMethodLayout;
+		if (staticMethodLayout == null) {
+			var map = new HashMap<MemberKey, JavaMethod>();
+			int slot = getVirtualMethodCount();
+			var methods = node.methods;
+			for (var method : methods) {
+				if ((method.access & Opcodes.ACC_STATIC) != 0) {
+					var desc = method.desc;
+					map.put(new MemberKey(this, method.name, desc), new JavaMethod(this, method, slot++));
+				}
+			}
+			staticMethodLayout = new MethodLayout(Collections.unmodifiableMap(map));
+			this.staticMethodLayout = staticMethodLayout;
+		}
+		return staticMethodLayout;
+	}
+
+	private int getVirtualMethodCount() {
+		int count = 0;
+		var jc = this;
+		do {
+			for (var field : jc.node.methods) {
 				if ((field.access & Opcodes.ACC_STATIC) == 0) count++;
 			}
 		} while ((jc = jc.getSuperclassWithoutResolving()) != null);

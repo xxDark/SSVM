@@ -4,13 +4,13 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * Represents class layout.
+ * Represents field class layout.
  *
  * @author xDark
  */
-public final class ClassLayout {
+public final class FieldLayout {
 
-	public static final ClassLayout EMPTY = new ClassLayout(Collections.emptyMap(), 0L);
+	public static final FieldLayout EMPTY = new FieldLayout(Collections.emptyMap(), 0L);
 	private final Map<MemberKey, JavaField> fields;
 	private final long size;
 
@@ -20,7 +20,7 @@ public final class ClassLayout {
 	 * @param size
 	 * 		Total size of class layout.
 	 */
-	public ClassLayout(Map<MemberKey, JavaField> fields, long size) {
+	public FieldLayout(Map<MemberKey, JavaField> fields, long size) {
 		this.fields = fields;
 		this.size = size;
 	}

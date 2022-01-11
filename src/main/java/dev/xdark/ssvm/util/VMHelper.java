@@ -7,12 +7,12 @@ import dev.xdark.ssvm.execution.*;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.thread.Backtrace;
 import dev.xdark.ssvm.thread.VMThread;
 import dev.xdark.ssvm.value.*;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.MethodNode;
 
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -49,11 +49,11 @@ public final class VMHelper {
 	 *
 	 * @return invocation result.
 	 */
-	public ExecutionContext invokeStatic(InstanceJavaClass javaClass, MethodNode method, Value[] stack, Value[] locals) {
-		javaClass.initialize();
-		if ((method.access & Opcodes.ACC_STATIC) == 0) {
+	public ExecutionContext invokeStatic(InstanceJavaClass javaClass, JavaMethod method, Value[] stack, Value[] locals) {
+		if ((method.getNode().access & Opcodes.ACC_STATIC) == 0) {
 			throw new IllegalStateException("Method is not static");
 		}
+		javaClass.initialize();
 		var ctx = createContext(javaClass, method);
 		contextPrepare(ctx, stack, locals, 0);
 		javaClass.getVM().execute(ctx, true);
@@ -77,13 +77,9 @@ public final class VMHelper {
 	 * @return invocation result.
 	 */
 	public ExecutionContext invokeStatic(InstanceJavaClass javaClass, String name, String desc, Value[] stack, Value[] locals) {
-		var keep = javaClass;
-		MethodNode mn;
-		do {
-			mn = javaClass.getMethod(name, desc);
-		} while (mn == null && (javaClass = javaClass.getSuperClass()) != null);
+		var mn = javaClass.getStaticMethodRecursively(name, desc);
 		if (mn == null) {
-			throwException(vm.getSymbols().java_lang_NoSuchMethodError, keep.getInternalName() + '.' + name + desc);
+			throwException(vm.getSymbols().java_lang_NoSuchMethodError, javaClass.getInternalName() + '.' + name + desc);
 		}
 		return invokeStatic(javaClass, mn, stack, locals);
 	}
@@ -115,15 +111,9 @@ public final class VMHelper {
 		}
 		javaClass.initialize();
 		var keep = javaClass;
-		MethodNode method;
-		do {
-			method = javaClass.getMethod(name, desc);
-		} while (method == null && (javaClass = javaClass.getSuperClass()) != null);
+		var method = javaClass.getVirtualMethodRecursively(name, desc);
 		if (method == null) {
 			throwException(vm.getSymbols().java_lang_NoSuchMethodError, keep.getInternalName() + '.' + name + desc);
-		}
-		if ((method.access & Opcodes.ACC_STATIC) != 0) {
-			throw new IllegalStateException("Method is static");
 		}
 		var ctx = createContext(javaClass, method);
 		contextPrepare(ctx, stack, locals, 0);
@@ -166,13 +156,14 @@ public final class VMHelper {
 	 *
 	 * @return invocation result.
 	 */
-	public ExecutionContext invokeExact(InstanceJavaClass javaClass, MethodNode method, Value[] stack, Value[] locals) {
+	public ExecutionContext invokeExact(InstanceJavaClass javaClass, JavaMethod method, Value[] stack, Value[] locals) {
 		if (locals[0].isNull()) {
 			throwException(vm.getSymbols().java_lang_NullPointerException);
 		}
-		if ((method.access & Opcodes.ACC_STATIC) != 0) {
+		if ((method.getNode().access & Opcodes.ACC_STATIC) != 0) {
 			throw new IllegalStateException("Method is static");
 		}
+		javaClass.initialize();
 		var ctx = createContext(javaClass, method);
 		contextPrepare(ctx, stack, locals, 0);
 		javaClass.getVM().execute(ctx, true);
@@ -196,7 +187,7 @@ public final class VMHelper {
 	 * @return invocation result.
 	 */
 	public ExecutionContext invokeExact(InstanceJavaClass javaClass, String name, String desc, Value[] stack, Value[] locals) {
-		return invokeExact(javaClass, javaClass.getMethod(name, desc), stack, locals);
+		return invokeExact(javaClass, javaClass.getVirtualMethod(name, desc), stack, locals);
 	}
 
 	/**
@@ -832,7 +823,7 @@ public final class VMHelper {
 		var memoryManager = vm.getMemoryManager();
 		var oop = javaClass.getOop();
 		var baseOffset = memoryManager.getStaticOffset(javaClass);
-		var fields = javaClass.getStaticLayout().getFieldMap();
+		var fields = javaClass.getStaticFieldLayout().getFieldMap();
 		var asmFields = javaClass.getNode().fields;
 		for (var entry : fields.entrySet()) {
 			var key = entry.getKey();
@@ -887,7 +878,7 @@ public final class VMHelper {
 		var vm = this.vm;
 		var memoryManager = vm.getMemoryManager();
 		var baseOffset = memoryManager.valueBaseOffset(value);
-		for (var entry : value.getJavaClass().getVirtualLayout().getFieldMap().values()) {
+		for (var entry : value.getJavaClass().getVirtualFieldLayout().getFieldMap().values()) {
 			var field = entry.getNode().desc;
 			var offset = baseOffset + entry.getOffset();
 			switch (field) {
@@ -932,7 +923,7 @@ public final class VMHelper {
 	public void initializeDefaultValues(InstanceValue value, InstanceJavaClass javaClass) {
 		var vm = this.vm;
 		var memoryManager = vm.getMemoryManager();
-		var fields = value.getJavaClass().getVirtualLayout()
+		var fields = value.getJavaClass().getVirtualFieldLayout()
 				.getFieldMap()
 				.values()
 				.stream()
@@ -1294,7 +1285,7 @@ public final class VMHelper {
 			var unmarshalled = ((JavaValue<Backtrace>) backtrace).getValue();
 			var stackTrace = StreamSupport.stream(unmarshalled.spliterator(), false)
 					.map(ctx -> {
-						var methodName = ctx.getMethod().name;
+						var methodName = ctx.getMethod().getNode().name;
 						var owner = ctx.getOwner();
 						var className = owner.getName();
 						var sourceFile = owner.getNode().sourceFile;
@@ -1338,7 +1329,7 @@ public final class VMHelper {
 	 * @return VM StackTraceElement.
 	 */
 	public InstanceValue newStackTraceElement(ExecutionContext ctx, boolean injectDeclaringClass) {
-		var methodName = ctx.getMethod().name;
+		var methodName = ctx.getMethod().getNode().name;
 		var owner = ctx.getOwner();
 		var className = owner.getName();
 		var sourceFile = owner.getNode().sourceFile;
@@ -1724,11 +1715,12 @@ public final class VMHelper {
 		}
 	}
 
-	private static ExecutionContext createContext(InstanceJavaClass jc, MethodNode mn) {
+	private static ExecutionContext createContext(InstanceJavaClass jc, JavaMethod jm) {
+		var mn = jm.getNode();
 		return new ExecutionContext(
 				jc.getVM(),
 				jc,
-				mn,
+				jm,
 				new Stack(mn.maxStack),
 				new Locals(AsmUtil.getMaxLocals(mn))
 		);

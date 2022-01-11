@@ -1,6 +1,5 @@
 package dev.xdark.ssvm;
 
-import dev.xdark.ssvm.api.VMCall;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.classloading.*;
 import dev.xdark.ssvm.execution.ExecutionContext;
@@ -10,7 +9,7 @@ import dev.xdark.ssvm.fs.FileDescriptorManager;
 import dev.xdark.ssvm.fs.SimpleFileDescriptorManager;
 import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.memory.SimpleMemoryManager;
-import dev.xdark.ssvm.mirror.ClassLayout;
+import dev.xdark.ssvm.mirror.FieldLayout;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.thread.NopThreadManager;
@@ -28,7 +27,6 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.LineNumberNode;
 
 import java.nio.ByteOrder;
-import java.util.Collections;
 import java.util.Properties;
 
 public class VirtualMachine {
@@ -54,11 +52,10 @@ public class VirtualMachine {
 		vmInterface = new VMInterface();
 		helper = new VMHelper(this);
 		threadManager = createThreadManager();
-		object.setVirtualLayout(ClassLayout.EMPTY);
-		object.setStaticLayout(ClassLayout.EMPTY);
-		klass.setVirtualLayout(klass.createVirtualLayout());
-		klass.setStaticLayout(klass.createStaticLayout());
-		klass.buildVirtualFields();
+		object.setVirtualFieldLayout(FieldLayout.EMPTY);
+		object.setStaticFieldLayout(FieldLayout.EMPTY);
+		klass.setVirtualFieldLayout(klass.createVirtualFieldLayout());
+		klass.setStaticFieldLayout(klass.createStaticFieldLayout());
 		setClassOop(klass, klass);
 		setClassOop(object, klass);
 		symbols = new VMSymbols(this);
@@ -98,7 +95,7 @@ public class VirtualMachine {
 		findBootstrapClass("java/lang/reflect/Field", true);
 		findBootstrapClass("java/lang/reflect/Constructor", true);
 
-		var initializeSystemClass = sysClass.getMethod("initializeSystemClass", "()V");
+		var initializeSystemClass = sysClass.getVirtualMethod("initializeSystemClass", "()V");
 		if (initializeSystemClass != null) {
 			// pre JDK 9 boot
 			helper.invokeStatic(sysClass, initializeSystemClass, new Value[0], new Value[0]);
@@ -289,7 +286,8 @@ public class VirtualMachine {
 	 * 		Should VM search for VMI hooks.
 	 */
 	public void execute(ExecutionContext ctx, boolean useInvokers) {
-		var mn = ctx.getMethod();
+		var jm = ctx.getMethod();
+		var mn = jm.getNode();
 		var isNative = (mn.access & Opcodes.ACC_NATIVE) != 0;
 		if (isNative) {
 			ctx.setLineNumber(-2);
@@ -297,12 +295,11 @@ public class VirtualMachine {
 		var backtrace = currentThread().getBacktrace();
 		backtrace.push(ctx);
 		var vmi = vmInterface;
-		var call = new VMCall(ctx.getOwner(), ctx.getMethod());
-		vmi.getInvocationHooks(call, true)
+		vmi.getInvocationHooks(jm, true)
 				.forEach(invocation -> invocation.handle(ctx));
 		try {
 			if (useInvokers) {
-				var invoker = vmi.getInvoker(call);
+				var invoker = vmi.getInvoker(jm);
 				if (invoker != null) {
 					var result = invoker.intercept(ctx);
 					if (result == Result.ABORT) {
@@ -357,7 +354,7 @@ public class VirtualMachine {
 		} catch (Exception ex) {
 			throw new IllegalStateException("Uncaught VM error at: " + ctx.getOwner().getInternalName() + '.' + mn.name + mn.desc, ex);
 		} finally {
-			vmi.getInvocationHooks(call, false)
+			vmi.getInvocationHooks(jm, false)
 					.forEach(invocation -> invocation.handle(ctx));
 			backtrace.pop();
 		}

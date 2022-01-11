@@ -23,7 +23,7 @@ public final class PutStaticProcessor implements InstructionProcessor<FieldInsnN
 		}
 		var value = ctx.getStack().popGeneric();
 		if (!owner.setFieldValue(insn.name, insn.desc, value)) {
-			throw new IllegalStateException("No such field: " + owner.getInternalName() + '.' + insn.name + insn.desc);
+			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, insn.owner + '.' + insn.name + insn.desc);
 		}
 		return Result.CONTINUE;
 	}

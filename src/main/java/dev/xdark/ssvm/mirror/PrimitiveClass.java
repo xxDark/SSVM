@@ -67,13 +67,13 @@ public final class PrimitiveClass implements JavaClass {
 	}
 
 	@Override
-	public ClassLayout getVirtualLayout() {
-		return objectClass.getVirtualLayout();
+	public FieldLayout getVirtualFieldLayout() {
+		return objectClass.getVirtualFieldLayout();
 	}
 
 	@Override
-	public ClassLayout getStaticLayout() {
-		return ClassLayout.EMPTY;
+	public FieldLayout getStaticFieldLayout() {
+		return FieldLayout.EMPTY;
 	}
 
 	@Override

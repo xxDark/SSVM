@@ -23,16 +23,6 @@ public final class AsmUtil {
 	}
 
 	/**
-	 * Updates ASM method info.
-	 *
-	 * @param node
-	 * 		Method to update.
-	 */
-	public void fixMethodNode(MethodNode node) {
-		node.maxLocals = getMaxLocals(node);
-	}
-
-	/**
 	 * Returns maximum amount of local variable slots.
 	 *
 	 * @param mn

@@ -57,14 +57,14 @@ public interface JavaClass {
 	 *
 	 * @return virtual class layout.
 	 */
-	ClassLayout getVirtualLayout();
+	FieldLayout getVirtualFieldLayout();
 
 	/**
 	 * Returns static class layout.
 	 *
 	 * @return static class layout.
 	 */
-	ClassLayout getStaticLayout();
+	FieldLayout getStaticFieldLayout();
 
 	/**
 	 * Returns parent class of this class.

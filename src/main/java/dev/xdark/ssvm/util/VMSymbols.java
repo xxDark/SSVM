@@ -36,14 +36,25 @@ public final class VMSymbols {
 	public final InstanceJavaClass java_lang_NegativeArraySizeException;
 	public final InstanceJavaClass java_lang_IllegalArgumentException;
 	public final InstanceJavaClass java_lang_AbstractMethodError;
-	public final InstanceJavaClass java_lang_Double;
-	public final InstanceJavaClass java_lang_Float;
 	public final InstanceJavaClass java_lang_reflect_Array;
 	public final InstanceJavaClass java_lang_BootstrapMethodError;
 	public final InstanceJavaClass java_lang_IllegalStateException;
 	public final InstanceJavaClass java_lang_NoSuchMethodException;
 	public final InstanceJavaClass java_lang_InterruptedException;
 	public final InstanceJavaClass java_lang_StackTraceElement;
+	public final InstanceJavaClass java_security_PrivilegedAction;
+	public final InstanceJavaClass reflect_ReflectionFactory;
+	public final InstanceJavaClass java_lang_reflect_Constructor;
+	public final InstanceJavaClass java_lang_reflect_Method;
+	public final InstanceJavaClass java_lang_reflect_Field;
+	public final InstanceJavaClass java_lang_Long;
+	public final InstanceJavaClass java_lang_Double;
+	public final InstanceJavaClass java_lang_Integer;
+	public final InstanceJavaClass java_lang_Float;
+	public final InstanceJavaClass java_lang_Character;
+	public final InstanceJavaClass java_lang_Short;
+	public final InstanceJavaClass java_lang_Byte;
+	public final InstanceJavaClass java_lang_Boolean;
 
 	/**
 	 * @param vm
@@ -76,13 +87,28 @@ public final class VMSymbols {
 		java_lang_NegativeArraySizeException = (InstanceJavaClass) vm.findBootstrapClass("java/lang/NegativeArraySizeException");
 		java_lang_IllegalArgumentException = (InstanceJavaClass) vm.findBootstrapClass("java/lang/IllegalArgumentException");
 		java_lang_AbstractMethodError = (InstanceJavaClass) vm.findBootstrapClass("java/lang/AbstractMethodError");
-		java_lang_Double = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Double");
-		java_lang_Float = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Float");
 		java_lang_reflect_Array = (InstanceJavaClass) vm.findBootstrapClass("java/lang/reflect/Array");
 		java_lang_BootstrapMethodError = (InstanceJavaClass) vm.findBootstrapClass("java/lang/BootstrapMethodError");
 		java_lang_IllegalStateException = (InstanceJavaClass) vm.findBootstrapClass("java/lang/IllegalStateException");
 		java_lang_NoSuchMethodException = (InstanceJavaClass) vm.findBootstrapClass("java/lang/NoSuchMethodException");
 		java_lang_InterruptedException = (InstanceJavaClass) vm.findBootstrapClass("java/lang/InterruptedException");
 		java_lang_StackTraceElement = (InstanceJavaClass) vm.findBootstrapClass("java/lang/StackTraceElement");
+		java_security_PrivilegedAction = (InstanceJavaClass) vm.findBootstrapClass("java/security/PrivilegedAction");
+		var reflectionFactory = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/ReflectionFactory");
+		if (reflectionFactory == null) {
+			reflectionFactory = (InstanceJavaClass) vm.findBootstrapClass("sun/reflect/ReflectionFactory");
+		}
+		reflect_ReflectionFactory = reflectionFactory;
+		java_lang_reflect_Constructor = (InstanceJavaClass) vm.findBootstrapClass("java/lang/reflect/Constructor");
+		java_lang_reflect_Method = (InstanceJavaClass) vm.findBootstrapClass("java/lang/reflect/Method");
+		java_lang_reflect_Field = (InstanceJavaClass) vm.findBootstrapClass("java/lang/reflect/Field");
+		java_lang_Long = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Long");
+		java_lang_Double = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Double");
+		java_lang_Integer = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Integer");
+		java_lang_Float = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Float");
+		java_lang_Character = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Character");
+		java_lang_Short = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Short");
+		java_lang_Byte = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Byte");
+		java_lang_Boolean = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Boolean");
 	}
 }

@@ -12,9 +12,11 @@ import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.thread.Backtrace;
 import dev.xdark.ssvm.value.*;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.FieldNode;
 
 import java.nio.ByteOrder;
+import java.util.stream.Collectors;
 
 import static org.objectweb.asm.Opcodes.*;
 
@@ -37,6 +39,273 @@ public final class NativeJava {
 		var vmi = vm.getInterface();
 		injectVMFields(vm);
 		setInstructions(vmi);
+		initClass(vm);
+		initObject(vm);
+		initSystem(vm);
+		initThread(vm);
+		initClassLoader(vm);
+		initThrowable(vm);
+
+		// JDK9+
+		var utf16 = (InstanceJavaClass) vm.findBootstrapClass("java/lang/StringUTF16");
+		if (utf16 != null) {
+			vmi.setInvoker(utf16, "isBigEndian", "()Z", ctx -> {
+				ctx.setResult(new IntValue(vm.getMemoryManager().getByteOrder() == ByteOrder.BIG_ENDIAN ? 1 : 0));
+				return Result.ABORT;
+			});
+		}
+		var jdkVM = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/VM");
+		if (jdkVM != null) {
+			vmi.setInvoker(jdkVM, "initialize", "()V", ctx -> Result.ABORT);
+			vmi.setInvoker(jdkVM, "initializeFromArchive", "(Ljava/lang/Class;)V", ctx -> Result.ABORT);
+		}
+
+		var unsafe = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/Unsafe");
+		var newUnsafe = unsafe != null;
+		if (unsafe == null) {
+			unsafe = (InstanceJavaClass) vm.findBootstrapClass("sun/misc/Unsafe");
+		}
+		vmi.setInvoker(unsafe, "registerNatives", "()V", ctx -> Result.ABORT);
+		if (newUnsafe) {
+			initNewUnsafe(vm, unsafe);
+		}
+
+		initRuntime(vm);
+		initDouble(vm);
+		initFloat(vm);
+		initArray(vm);
+		initConstantPool(vm);
+		initFS(vm);
+		initWinFS(vm);
+		initStackTraceElement(vm);
+		initReflection(vm);
+		initNativeConstructorAccessor(vm);
+		initAccessController(vm);
+		initMethodHandles(vm);
+		initModuleSystem(vm);
+
+		var win32ErrorMode = (InstanceJavaClass) vm.findBootstrapClass("sun/io/Win32ErrorMode");
+		if (win32ErrorMode != null) {
+			vmi.setInvoker(win32ErrorMode, "setErrorMode", "(J)J", ctx -> {
+				ctx.setResult(new LongValue(0L));
+				return Result.ABORT;
+			});
+		}
+	}
+
+	/**
+	 * Initializes java/lang/Runtime.
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initRuntime(VirtualMachine vm) {
+		var vmi = vm.getInterface();
+		var runtime = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Runtime");
+		vmi.setInvoker(runtime, "availableProcessors", "()I", ctx -> {
+			ctx.setResult(new IntValue(Runtime.getRuntime().availableProcessors()));
+			return Result.ABORT;
+		});
+	}
+
+	/**
+	 * Initializes java/lang/Double.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initDouble(VirtualMachine vm) {
+		var vmi = vm.getInterface();
+		var symbols = vm.getSymbols();
+		var doubleClass = symbols.java_lang_Double;
+		vmi.setInvoker(doubleClass, "doubleToRawLongBits", "(D)J", ctx -> {
+			ctx.setResult(new LongValue(Double.doubleToRawLongBits(ctx.getLocals().load(0).asDouble())));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(doubleClass, "longBitsToDouble", "(J)D", ctx -> {
+			ctx.setResult(new DoubleValue(Double.longBitsToDouble(ctx.getLocals().load(0).asLong())));
+			return Result.ABORT;
+		});
+	}
+
+	/**
+	 * Initializes java/lang/Float.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initFloat(VirtualMachine vm) {
+		var vmi = vm.getInterface();
+		var symbols = vm.getSymbols();
+		var floatClass = symbols.java_lang_Float;
+		vmi.setInvoker(floatClass, "floatToRawIntBits", "(F)I", ctx -> {
+			ctx.setResult(new IntValue(Float.floatToRawIntBits(ctx.getLocals().load(0).asFloat())));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(floatClass, "intBitsToFloat", "(I)F", ctx -> {
+			ctx.setResult(new FloatValue(Float.intBitsToFloat(ctx.getLocals().load(0).asInt())));
+			return Result.ABORT;
+		});
+	}
+
+	/**
+	 * Initializes java/lang/reflect/Array.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initArray(VirtualMachine vm) {
+		var vmi = vm.getInterface();
+		var symbols = vm.getSymbols();
+		var array = symbols.java_lang_reflect_Array;
+		vmi.setInvoker(array, "getLength", "(Ljava/lang/Object;)I", ctx -> {
+			var value = ctx.getLocals().load(0);
+			vm.getHelper().checkArray(value);
+			ctx.setResult(new IntValue(((ArrayValue) value).getLength()));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(array, "newArray", "(Ljava/lang/Class;I)Ljava/lang/Object;", ctx -> {
+			var locals = ctx.getLocals();
+			var local = locals.load(0);
+			var helper = vm.getHelper();
+			helper.checkNotNull(local);
+			if (!(local instanceof JavaValue)) {
+				helper.throwException(symbols.java_lang_IllegalArgumentException);
+			}
+			var wrapper = ((JavaValue<?>) local).getValue();
+			if (!(wrapper instanceof JavaClass)) {
+				helper.throwException(symbols.java_lang_IllegalArgumentException);
+			}
+			var klass = (JavaClass) wrapper;
+			if (klass.isArray()) {
+				helper.throwException(symbols.java_lang_IllegalArgumentException);
+			}
+			var length = locals.load(1).asInt();
+			var memoryManager = vm.getMemoryManager();
+			var result = memoryManager.newArray(klass.newArrayClass(), length, memoryManager.arrayIndexScale(klass));
+			ctx.setResult(result);
+			return Result.ABORT;
+		});
+	}
+
+	/**
+	 * Initializes file system.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initFS(VirtualMachine vm) {
+		var vmi = vm.getInterface();
+		var fis = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileInputStream");
+		vmi.setInvoker(fis, "initIDs", "()V", ctx -> Result.ABORT);
+		var fd = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileDescriptor");
+		vmi.setInvoker(fd, "initIDs", "()V", ctx -> Result.ABORT);
+		vmi.setInvoker(fd, "getHandle", "(I)J", ctx -> {
+			ctx.setResult(new LongValue(vm.getFileDescriptorManager().newFD(ctx.getLocals().load(0).asInt())));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(fd, "getAppend", "(I)Z", ctx -> {
+			ctx.setResult(new IntValue(vm.getFileDescriptorManager().isAppend(ctx.getLocals().load(0).asInt()) ? 1 : 0));
+			return Result.ABORT;
+		});
+		var fos = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileOutputStream");
+		vmi.setInvoker(fos, "initIDs", "()V", ctx -> Result.ABORT);
+	}
+
+	/**
+	 * Initializes java/lang/StackTraceElement.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initStackTraceElement(VirtualMachine vm) {
+		var vmi = vm.getInterface();
+		var stackTraceElement = (InstanceJavaClass) vm.findBootstrapClass("java/lang/StackTraceElement");
+		vmi.setInvoker(stackTraceElement, "initStackTraceElements", "([Ljava/lang/StackTraceElement;Ljava/lang/Throwable;)V", ctx -> {
+			var helper = vm.getHelper();
+			var locals = ctx.getLocals();
+			var arr = locals.load(0);
+			helper.checkNotNull(arr);
+			var ex = locals.load(1);
+			helper.checkNotNull(ex);
+			var backtrace = ((JavaValue<Backtrace>) ((InstanceValue) ex).getValue("backtrace", "Ljava/lang/Object;")).getValue();
+			var storeTo = (ArrayValue) arr;
+
+			for (int i = 0, j = backtrace.count(); i < j; i++) {
+				var frame = backtrace.get(i);
+				var element = helper.newStackTraceElement(frame, true);
+				storeTo.setValue(i, element);
+			}
+			return Result.ABORT;
+		});
+	}
+
+	/**
+	 * Initializes module system.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initModuleSystem(VirtualMachine vm) {
+		var vmi = vm.getInterface();
+		var bootLoader = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/loader/BootLoader");
+		if (bootLoader != null) {
+			vmi.setInvoker(bootLoader, "setBootLoaderUnnamedModule0", "(Ljava/lang/Module;)V", ctx -> Result.ABORT);
+			vmi.setInvoker(bootLoader, "getSystemPackageLocation", "(Ljava/lang/String;)Ljava/lang/String;", ctx -> {
+				ctx.setResult(NullValue.INSTANCE);
+				return Result.ABORT;
+			});
+		}
+		var module = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Module");
+		if (module != null) {
+			vmi.setInvoker(module, "defineModule0", "(Ljava/lang/Module;ZLjava/lang/String;Ljava/lang/String;[Ljava/lang/String;)V", ctx -> Result.ABORT);
+			vmi.setInvoker(module, "addReads0", "(Ljava/lang/Module;Ljava/lang/Module;)V", ctx -> Result.ABORT);
+			vmi.setInvoker(module, "addExports0", "(Ljava/lang/Module;Ljava/lang/String;Ljava/lang/Module;)V", ctx -> Result.ABORT);
+			vmi.setInvoker(module, "addExportsToAll0", "(Ljava/lang/Module;Ljava/lang/String;)V", ctx -> Result.ABORT);
+			vmi.setInvoker(module, "addExportsToAllUnnamed0", "(Ljava/lang/Module;Ljava/lang/String;)V", ctx -> Result.ABORT);
+		}
+		var moduleLayer = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ModuleLayer");
+		if (moduleLayer != null) {
+			vmi.setInvoker(moduleLayer, "defineModules", "(Ljava/lang/module/Configuration;Ljava/util/function/Function;)Ljava/lang/ModuleLayer;", ctx -> {
+				ctx.setResult(ctx.getLocals().load(0));
+				return Result.ABORT;
+			});
+		}
+	}
+
+	/**
+	 * Initializes java/security/AccessController.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initAccessController(VirtualMachine vm) {
+		var vmi = vm.getInterface();
+		var accController = (InstanceJavaClass) vm.findBootstrapClass("java/security/AccessController");
+		vmi.setInvoker(accController, "getStackAccessControlContext", "()Ljava/security/AccessControlContext;", ctx -> {
+			// TODO implement?
+			ctx.setResult(NullValue.INSTANCE);
+			return Result.ABORT;
+		});
+		vmi.setInvoker(accController, "doPrivileged", "(Ljava/security/PrivilegedAction;)Ljava/lang/Object;", ctx -> {
+			var action = ctx.getLocals().load(0);
+			var helper = vm.getHelper();
+			helper.checkNotNull(action);
+			var result = helper.invokeInterface(vm.getSymbols().java_security_PrivilegedAction, "run", "()Ljava/lang/Object;", new Value[0], new Value[]{
+					action
+			}).getResult();
+			ctx.setResult(result);
+			return Result.ABORT;
+		});
+	}
+
+	/**
+	 * Initializes java/lang/Class.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initClass(VirtualMachine vm) {
+		var vmi = vm.getInterface();
 		var symbols = vm.getSymbols();
 		var jlc = symbols.java_lang_Class;
 		vmi.setInvoker(jlc, "registerNatives", "()V", ctx -> Result.ABORT);
@@ -135,10 +404,81 @@ public final class NativeJava {
 		vmi.setInvoker(jlc, "getSuperclass", "()Ljava/lang/Class;", ctx -> {
 			var locals = ctx.getLocals();
 			var _this = locals.<JavaValue<JavaClass>>load(0).getValue();
-			ctx.setResult(_this.getSuperClass().getOop());
+			var superClass = _this.getSuperClass();
+			ctx.setResult(superClass == null ? NullValue.INSTANCE : superClass.getOop());
 			return Result.ABORT;
 		});
+		vmi.setInvoker(jlc, "getModifiers", "()I", ctx -> {
+			var locals = ctx.getLocals();
+			var _this = locals.<JavaValue<JavaClass>>load(0).getValue();
+			ctx.setResult(new IntValue(_this.getModifiers()));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jlc, "getDeclaredConstructors0", "(Z)[Ljava/lang/reflect/Constructor;", ctx -> {
+			var locals = ctx.getLocals();
+			var klass = locals.<JavaValue<JavaClass>>load(0).getValue();
+			var memoryManager = vm.getMemoryManager();
+			if (!(klass instanceof InstanceJavaClass)) {
+				var empty = memoryManager.newArray(symbols.java_lang_reflect_Constructor.newArrayClass(), 0, memoryManager.arrayIndexScale(Value.class));
+				ctx.setResult(empty);
+			} else {
+				klass.initialize();
+				var publicOnly = locals.load(1).asBoolean();
+				var methods = ((InstanceJavaClass) klass).getNode().methods;
+				var constructors = methods.stream()
+						.filter(mn -> "<init>".equals(mn.name))
+						.filter(mn -> !publicOnly || (mn.access & ACC_PUBLIC) == 0)
+						.collect(Collectors.toList());
+				var loader = klass.getClassLoader();
+				var helper = vm.getHelper();
+				var refFactory = symbols.reflect_ReflectionFactory;
+				var reflectionFactory = (InstanceValue) helper.invokeStatic(refFactory, "getReflectionFactory", "()" + refFactory.getDescriptor(), new Value[0], new Value[0]).getResult();
+				var scale = memoryManager.arrayIndexScale(Value.class);
+				var result = memoryManager.newArray(symbols.java_lang_reflect_Constructor.newArrayClass(), constructors.size(), scale);
+				var classArray = symbols.java_lang_Class.newArrayClass();
+				var callerOop = klass.getOop();
+				var emptyByteArray = memoryManager.newArray(vm.getPrimitives().bytePrimitive.newArrayClass(), 0, memoryManager.arrayIndexScale(byte.class));
+				for (int j = 0; j < constructors.size(); j++) {
+					var mn = constructors.get(j);
+					var types = Type.getArgumentTypes(mn.desc);
+					var parameters = memoryManager.newArray(classArray, types.length, scale);
+					for (int i = 0; i < types.length; i++) {
+						var type = types[i];
+						var name = type.getInternalName();
+						var arg = helper.findClass(loader, name, true);
+						if (arg == null) {
+							helper.throwException(symbols.java_lang_ClassNotFoundException, name);
+						}
+						parameters.setValue(i, arg.getOop());
+					}
+					var c = helper.invokeVirtual("newConstructor", "(Ljava/lang/Class;[Ljava/lang/Class;[Ljava/lang/Class;IILjava/lang/String;[B[B)Ljava/lang/reflect/Constructor;", new Value[0], new Value[]{
+							reflectionFactory,
+							callerOop,
+							parameters,
+							memoryManager.newArray(classArray, 0, scale),
+							new IntValue(mn.access),
+							new IntValue(methods.indexOf(mn)),
+							helper.newUtf8(mn.signature),
+							emptyByteArray,
+							emptyByteArray
+					}).getResult();
+					result.setValue(j, (ObjectValue) c);
+				}
+				ctx.setResult(result);
+			}
+			return Result.ABORT;
+		});
+	}
 
+	/**
+	 * Initializes java/lang/Object.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initObject(VirtualMachine vm) {
+		var vmi = vm.getInterface();
+		var symbols = vm.getSymbols();
 		var object = symbols.java_lang_Object;
 		vmi.setInvoker(object, "registerNatives", "()V", ctx -> Result.ABORT);
 		vmi.setInvoker(object, "<init>", "()V", ctx -> {
@@ -170,7 +510,17 @@ public final class NativeJava {
 			ctx.setResult(new IntValue(ctx.getLocals().load(0).hashCode()));
 			return Result.ABORT;
 		});
+	}
 
+	/**
+	 * Initializes java/lang/System.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initSystem(VirtualMachine vm) {
+		var vmi = vm.getInterface();
+		var symbols = vm.getSymbols();
 		var sys = symbols.java_lang_System;
 		vmi.setInvoker(sys, "registerNatives", "()V", ctx -> Result.ABORT);
 		vmi.setInvoker(sys, "currentTimeMillis", "()J", ctx -> {
@@ -265,7 +615,17 @@ public final class NativeJava {
 			sys.setFieldValue("err", "Ljava/io/PrintStream;", stream);
 			return Result.ABORT;
 		});
+	}
 
+	/**
+	 * Initializes java/lang/Thread.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initThread(VirtualMachine vm) {
+		var vmi = vm.getInterface();
+		var symbols = vm.getSymbols();
 		var thread = symbols.java_lang_Thread;
 		vmi.setInvoker(thread, "registerNatives", "()V", ctx -> Result.ABORT);
 		vmi.setInvoker(thread, "currentThread", "()Ljava/lang/Thread;", ctx -> {
@@ -293,11 +653,21 @@ public final class NativeJava {
 			ctx.setResult(new IntValue(th.isAlive() ? 1 : 0));
 			return Result.ABORT;
 		});
+	}
 
+	/**
+	 * Initializes java/lang/ClassLoader.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initClassLoader(VirtualMachine vm) {
+		var vmi = vm.getInterface();
+		var symbols = vm.getSymbols();
 		var classLoader = symbols.java_lang_ClassLoader;
 		vmi.setInvoker(classLoader, "registerNatives", "()V", ctx -> Result.ABORT);
 		var clInitHook = (MethodInvoker) ctx -> {
-			var oop = vm.getMemoryManager().newJavaInstance(object, new ClassLoaderData());
+			var oop = vm.getMemoryManager().newJavaInstance(symbols.java_lang_Object, new ClassLoaderData());
 			ctx.getLocals().<InstanceValue>load(0)
 					.setValue(CLASS_LOADER_OOP, "Ljava/lang/Object;", oop);
 			return Result.CONTINUE;
@@ -323,151 +693,37 @@ public final class NativeJava {
 			ctx.setResult(defined.getOop());
 			return Result.ABORT;
 		});
+	}
 
+	/**
+	 * Initializes java/lang/Throwable.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initThrowable(VirtualMachine vm) {
+		var vmi = vm.getInterface();
+		var symbols = vm.getSymbols();
 		var throwable = symbols.java_lang_Throwable;
 		vmi.setInvoker(throwable, "fillInStackTrace", "(I)Ljava/lang/Throwable;", ctx -> {
 			var exception = ctx.getLocals().<InstanceValue>load(0);
 			var copy = vm.currentThread().getBacktrace().copy();
-			var backtrace = vm.getMemoryManager().newJavaInstance(object, copy);
+			var backtrace = vm.getMemoryManager().newJavaInstance(symbols.java_lang_Object, copy);
 			exception.setValue("backtrace", "Ljava/lang/Object;", backtrace);
 			exception.setInt("depth", copy.count());
 			ctx.setResult(exception);
 			return Result.ABORT;
 		});
+	}
 
-		// JDK9+
-		var utf16 = (InstanceJavaClass) vm.findBootstrapClass("java/lang/StringUTF16");
-		if (utf16 != null) {
-			vmi.setInvoker(utf16, "isBigEndian", "()Z", ctx -> {
-				ctx.setResult(new IntValue(vm.getMemoryManager().getByteOrder() == ByteOrder.BIG_ENDIAN ? 1 : 0));
-				return Result.ABORT;
-			});
-		}
-		var jdkVM = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/VM");
-		if (jdkVM != null) {
-			vmi.setInvoker(jdkVM, "initialize", "()V", ctx -> Result.ABORT);
-			vmi.setInvoker(jdkVM, "initializeFromArchive", "(Ljava/lang/Class;)V", ctx -> Result.ABORT);
-		}
-
-		var unsafe = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/Unsafe");
-		var newUnsafe = unsafe != null;
-		if (unsafe == null) {
-			unsafe = (InstanceJavaClass) vm.findBootstrapClass("sun/misc/Unsafe");
-		}
-		vmi.setInvoker(unsafe, "registerNatives", "()V", ctx -> Result.ABORT);
-		if (newUnsafe) {
-			initNewUnsafe(vm, unsafe);
-		}
-		var runtime = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Runtime");
-		vmi.setInvoker(runtime, "availableProcessors", "()I", ctx -> {
-			ctx.setResult(new IntValue(Runtime.getRuntime().availableProcessors()));
-			return Result.ABORT;
-		});
-
-		var doubleClass = symbols.java_lang_Double;
-		vmi.setInvoker(doubleClass, "doubleToRawLongBits", "(D)J", ctx -> {
-			ctx.setResult(new LongValue(Double.doubleToRawLongBits(ctx.getLocals().load(0).asDouble())));
-			return Result.ABORT;
-		});
-		vmi.setInvoker(doubleClass, "longBitsToDouble", "(J)D", ctx -> {
-			ctx.setResult(new DoubleValue(Double.longBitsToDouble(ctx.getLocals().load(0).asLong())));
-			return Result.ABORT;
-		});
-
-		var floatClass = symbols.java_lang_Float;
-		vmi.setInvoker(floatClass, "floatToRawIntBits", "(F)I", ctx -> {
-			ctx.setResult(new IntValue(Float.floatToRawIntBits(ctx.getLocals().load(0).asFloat())));
-			return Result.ABORT;
-		});
-		vmi.setInvoker(floatClass, "intBitsToFloat", "(I)F", ctx -> {
-			ctx.setResult(new FloatValue(Float.intBitsToFloat(ctx.getLocals().load(0).asInt())));
-			return Result.ABORT;
-		});
-
-		var array = symbols.java_lang_reflect_Array;
-		vmi.setInvoker(array, "getLength", "(Ljava/lang/Object;)I", ctx -> {
-			var value = ctx.getLocals().load(0);
-			vm.getHelper().checkArray(value);
-			ctx.setResult(new IntValue(((ArrayValue) value).getLength()));
-			return Result.ABORT;
-		});
-		vmi.setInvoker(array, "newArray", "(Ljava/lang/Class;I)Ljava/lang/Object;", ctx -> {
-			var locals = ctx.getLocals();
-			var local = locals.load(0);
-			var helper = vm.getHelper();
-			helper.checkNotNull(local);
-			if (!(local instanceof JavaValue)) {
-				helper.throwException(symbols.java_lang_IllegalArgumentException);
-			}
-			var wrapper = ((JavaValue<?>) local).getValue();
-			if (!(wrapper instanceof JavaClass)) {
-				helper.throwException(symbols.java_lang_IllegalArgumentException);
-			}
-			var klass = (JavaClass) wrapper;
-			if (klass.isArray()) {
-				helper.throwException(symbols.java_lang_IllegalArgumentException);
-			}
-			var length = locals.load(1).asInt();
-			var memoryManager = vm.getMemoryManager();
-			var result = memoryManager.newArray(klass.newArrayClass(), length, memoryManager.arrayIndexScale(klass));
-			ctx.setResult(result);
-			return Result.ABORT;
-		});
-
-		var cpClass = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/ConstantPool");
-		if (cpClass == null) {
-			cpClass = (InstanceJavaClass) vm.findBootstrapClass("sun/reflect/ConstantPool");
-			if (cpClass == null) {
-				throw new IllegalStateException("Unable to locate ConstantPool class");
-			}
-		}
-		initConstantPool(vm, cpClass);
-
-		var fis = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileInputStream");
-		vmi.setInvoker(fis, "initIDs", "()V", ctx -> Result.ABORT);
-		var fd = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileDescriptor");
-		vmi.setInvoker(fd, "initIDs", "()V", ctx -> Result.ABORT);
-		vmi.setInvoker(fd, "getHandle", "(I)J", ctx -> {
-			ctx.setResult(new LongValue(vm.getFileDescriptorManager().newFD(ctx.getLocals().load(0).asInt())));
-			return Result.ABORT;
-		});
-		vmi.setInvoker(fd, "getAppend", "(I)Z", ctx -> {
-			ctx.setResult(new IntValue(vm.getFileDescriptorManager().isAppend(ctx.getLocals().load(0).asInt()) ? 1 : 0));
-			return Result.ABORT;
-		});
-		var fos = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileOutputStream");
-		vmi.setInvoker(fos, "initIDs", "()V", ctx -> Result.ABORT);
-
-		var win32ErrorMode = (InstanceJavaClass) vm.findBootstrapClass("sun/io/Win32ErrorMode");
-		if (win32ErrorMode != null) {
-			vmi.setInvoker(win32ErrorMode, "setErrorMode", "(J)J", ctx -> {
-				ctx.setResult(new LongValue(0L));
-				return Result.ABORT;
-			});
-		}
-		var winNTfs = (InstanceJavaClass) vm.findBootstrapClass("java/io/WinNTFileSystem");
-		if (winNTfs != null) {
-			initWinFS(vm, winNTfs);
-		}
-		var stackTraceElement = (InstanceJavaClass) vm.findBootstrapClass("java/lang/StackTraceElement");
-		vmi.setInvoker(stackTraceElement, "initStackTraceElements", "([Ljava/lang/StackTraceElement;Ljava/lang/Throwable;)V", ctx -> {
-			var helper = vm.getHelper();
-			var locals = ctx.getLocals();
-			var arr = locals.load(0);
-			helper.checkNotNull(arr);
-			var ex = locals.load(1);
-			helper.checkNotNull(ex);
-			var backtrace = ((JavaValue<Backtrace>) ((InstanceValue) ex).getValue("backtrace", "Ljava/lang/Object;")).getValue();
-			var storeTo = (ArrayValue) arr;
-
-			for (int i = 0, j = backtrace.count(); i < j; i++) {
-				var frame = backtrace.get(i);
-				var element = helper.newStackTraceElement(frame, true);
-				storeTo.setValue(i, element);
-			}
-			return Result.ABORT;
-		});
-
+	/**
+	 * Initializes reflect/Reflection class.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initReflection(VirtualMachine vm) {
+		var vmi = vm.getInterface();
 		var reflection = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/Reflection");
 		if (reflection == null) {
 			reflection = (InstanceJavaClass) vm.findBootstrapClass("sun/reflect/Reflection");
@@ -480,36 +736,32 @@ public final class NativeJava {
 			ctx.setResult(backtrace.get(backtrace.count() - 3).getOwner().getOop());
 			return Result.ABORT;
 		});
-		var accController = (InstanceJavaClass) vm.findBootstrapClass("java/security/AccessController");
-		vmi.setInvoker(accController, "getStackAccessControlContext", "()Ljava/security/AccessControlContext;", ctx -> {
-			// TODO implement?
-			ctx.setResult(NullValue.INSTANCE);
+		vmi.setInvoker(reflection, "getClassAccessFlags", "(Ljava/lang/Class;)I", ctx -> {
+			var klass = ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue();
+			ctx.setResult(new IntValue(klass.getModifiers()));
 			return Result.ABORT;
 		});
-		initMethodHandles(vm);
-		var bootLoader = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/loader/BootLoader");
-		if (bootLoader != null) {
-			vmi.setInvoker(bootLoader, "setBootLoaderUnnamedModule0", "(Ljava/lang/Module;)V", ctx -> Result.ABORT);
-			vmi.setInvoker(bootLoader, "getSystemPackageLocation", "(Ljava/lang/String;)Ljava/lang/String;", ctx -> {
-				ctx.setResult(NullValue.INSTANCE);
-				return Result.ABORT;
-			});
+	}
+
+	/**
+	 * Initializes reflect/NativeConstructorAccessorImpl.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initNativeConstructorAccessor(VirtualMachine vm) {
+		var vmi = vm.getInterface();
+		var accessor = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/NativeConstructorAccessorImpl");
+		if (accessor == null) {
+			accessor = (InstanceJavaClass) vm.findBootstrapClass("sun/reflect/NativeConstructorAccessorImpl");
+			if (accessor == null) {
+				throw new IllegalStateException("Unable to locate NativeConstructorAccessorImpl class");
+			}
 		}
-		var module = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Module");
-		if (module != null) {
-			vmi.setInvoker(module, "defineModule0", "(Ljava/lang/Module;ZLjava/lang/String;Ljava/lang/String;[Ljava/lang/String;)V", ctx -> Result.ABORT);
-			vmi.setInvoker(module, "addReads0", "(Ljava/lang/Module;Ljava/lang/Module;)V", ctx -> Result.ABORT);
-			vmi.setInvoker(module, "addExports0", "(Ljava/lang/Module;Ljava/lang/String;Ljava/lang/Module;)V", ctx -> Result.ABORT);
-			vmi.setInvoker(module, "addExportsToAll0", "(Ljava/lang/Module;Ljava/lang/String;)V", ctx -> Result.ABORT);
-			vmi.setInvoker(module, "addExportsToAllUnnamed0", "(Ljava/lang/Module;Ljava/lang/String;)V", ctx -> Result.ABORT);
-		}
-		var moduleLayer = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ModuleLayer");
-		if (moduleLayer != null) {
-			vmi.setInvoker(moduleLayer, "defineModules", "(Ljava/lang/module/Configuration;Ljava/util/function/Function;)Ljava/lang/ModuleLayer;", ctx -> {
-				ctx.setResult(ctx.getLocals().load(0));
-				return Result.ABORT;
-			});
-		}
+		vmi.setInvoker(accessor, "newInstance0", "Ljava/lang/reflect/Constructor;[Ljava/lang/Object;)Ljava/lang/Object;", ctx -> {
+			vm.getHelper().throwException(vm.getSymbols().java_lang_UnsatisfiedLinkError, "TODO");
+			return Result.ABORT;
+		});
 	}
 
 	/**
@@ -726,12 +978,17 @@ public final class NativeJava {
 	 *
 	 * @param vm
 	 * 		VM instance.
-	 * @param jc
-	 * 		ConstantPool class.
 	 */
-	private static void initConstantPool(VirtualMachine vm, InstanceJavaClass jc) {
+	private static void initConstantPool(VirtualMachine vm) {
+		var cpClass = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/ConstantPool");
+		if (cpClass == null) {
+			cpClass = (InstanceJavaClass) vm.findBootstrapClass("sun/reflect/ConstantPool");
+			if (cpClass == null) {
+				throw new IllegalStateException("Unable to locate ConstantPool class");
+			}
+		}
 		var vmi = vm.getInterface();
-		vmi.setInvoker(jc, "getSize0", "(Ljav/lang/Object;)I", ctx -> {
+		vmi.setInvoker(cpClass, "getSize0", "(Ljav/lang/Object;)I", ctx -> {
 			var wrapper = getCpOop(ctx);
 			if (wrapper instanceof InstanceJavaClass) {
 				var cr = ((InstanceJavaClass) wrapper).getClassReader();
@@ -741,7 +998,7 @@ public final class NativeJava {
 			}
 			return Result.ABORT;
 		});
-		vmi.setInvoker(jc, "getClassAt0", "(Ljava/lang/Object;I)Ljava/lang/Class;", ctx -> {
+		vmi.setInvoker(cpClass, "getClassAt0", "(Ljava/lang/Object;I)Ljava/lang/Class;", ctx -> {
 			var wrapper = getInstanceCpOop(ctx);
 			var cr = wrapper.getClassReader();
 			var index = cpRangeCheck(ctx, cr);
@@ -755,7 +1012,7 @@ public final class NativeJava {
 			ctx.setResult(result.getOop());
 			return Result.ABORT;
 		});
-		vmi.setInvoker(jc, "getClassAtIfLoaded0", "(Ljava/lang/Object;I)Ljava/lang/Class;", ctx -> {
+		vmi.setInvoker(cpClass, "getClassAtIfLoaded0", "(Ljava/lang/Object;I)Ljava/lang/Class;", ctx -> {
 			var wrapper = getInstanceCpOop(ctx);
 			var cr = wrapper.getClassReader();
 			var index = cpRangeCheck(ctx, cr);
@@ -771,7 +1028,7 @@ public final class NativeJava {
 		});
 		// getClassRefIndexAt0?
 		// TODO all reflection stuff
-		vmi.setInvoker(jc, "getIntAt0", "(Ljava/lang/Object;I)I", ctx -> {
+		vmi.setInvoker(cpClass, "getIntAt0", "(Ljava/lang/Object;I)I", ctx -> {
 			var wrapper = getInstanceCpOop(ctx);
 			var cr = wrapper.getClassReader();
 			var index = cpRangeCheck(ctx, cr);
@@ -779,7 +1036,7 @@ public final class NativeJava {
 			ctx.setResult(new IntValue(cr.readInt(offset)));
 			return Result.ABORT;
 		});
-		vmi.setInvoker(jc, "getLongAt0", "(Ljava/lang/Object;I)J", ctx -> {
+		vmi.setInvoker(cpClass, "getLongAt0", "(Ljava/lang/Object;I)J", ctx -> {
 			var wrapper = getInstanceCpOop(ctx);
 			var cr = wrapper.getClassReader();
 			var index = cpRangeCheck(ctx, cr);
@@ -787,7 +1044,7 @@ public final class NativeJava {
 			ctx.setResult(new LongValue(cr.readLong(offset)));
 			return Result.ABORT;
 		});
-		vmi.setInvoker(jc, "getFloatAt0", "(Ljava/lang/Object;I)F", ctx -> {
+		vmi.setInvoker(cpClass, "getFloatAt0", "(Ljava/lang/Object;I)F", ctx -> {
 			var wrapper = getInstanceCpOop(ctx);
 			var cr = wrapper.getClassReader();
 			var index = cpRangeCheck(ctx, cr);
@@ -795,7 +1052,7 @@ public final class NativeJava {
 			ctx.setResult(new FloatValue(Float.intBitsToFloat(cr.readInt(offset))));
 			return Result.ABORT;
 		});
-		vmi.setInvoker(jc, "getDoubleAt0", "(Ljava/lang/Object;I)D", ctx -> {
+		vmi.setInvoker(cpClass, "getDoubleAt0", "(Ljava/lang/Object;I)D", ctx -> {
 			var wrapper = getInstanceCpOop(ctx);
 			var cr = wrapper.getClassReader();
 			var index = cpRangeCheck(ctx, cr);
@@ -846,12 +1103,13 @@ public final class NativeJava {
 	 *
 	 * @param vm
 	 * 		VM instance.
-	 * @param jc
-	 * 		File system class.
 	 */
-	private static void initWinFS(VirtualMachine vm, InstanceJavaClass jc) {
-		var vmi = vm.getInterface();
-		vmi.setInvoker(jc, "initIDs", "()V", ctx -> Result.ABORT);
+	private static void initWinFS(VirtualMachine vm) {
+		var winNTfs = (InstanceJavaClass) vm.findBootstrapClass("java/io/WinNTFileSystem");
+		if (winNTfs != null) {
+			var vmi = vm.getInterface();
+			vmi.setInvoker(winNTfs, "initIDs", "()V", ctx -> Result.ABORT);
+		}
 	}
 
 	/**

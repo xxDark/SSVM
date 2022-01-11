@@ -765,7 +765,10 @@ public final class VMHelper {
 	 *
 	 * @return VM string.
 	 */
-	public InstanceValue newUtf8(String str) {
+	public ObjectValue newUtf8(String str) {
+		if (str == null) {
+			return NullValue.INSTANCE;
+		}
 		var vm = this.vm;
 		var jc = vm.getSymbols().java_lang_String;
 		jc.initialize();
@@ -1359,6 +1362,110 @@ public final class VMHelper {
 			while (dimensions-- != 0) klass = klass.newArrayClass();
 		}
 		return klass;
+	}
+
+	/**
+	 * Unwraps long value.
+	 *
+	 * @param value
+	 * 		Wrapper to unwrap.
+	 *
+	 * @return primitive value.
+	 */
+	public LongValue unboxLong(ObjectValue value) {
+		checkNotNull(value);
+		return (LongValue) invokeVirtual("longValue", "()J", new Value[0], new Value[]{value}).getResult();
+	}
+
+	/**
+	 * Unwraps double value.
+	 *
+	 * @param value
+	 * 		Wrapper to unwrap.
+	 *
+	 * @return primitive value.
+	 */
+	public DoubleValue unboxDouble(ObjectValue value) {
+		checkNotNull(value);
+		return (DoubleValue) invokeVirtual("doubleValue", "()D", new Value[0], new Value[]{value}).getResult();
+	}
+
+	/**
+	 * Unwraps int value.
+	 *
+	 * @param value
+	 * 		Wrapper to unwrap.
+	 *
+	 * @return primitive value.
+	 */
+	public IntValue unboxInt(ObjectValue value) {
+		checkNotNull(value);
+		return (IntValue) invokeVirtual("intValue", "()I", new Value[0], new Value[]{value}).getResult();
+	}
+
+	/**
+	 * Unwraps float value.
+	 *
+	 * @param value
+	 * 		Wrapper to unwrap.
+	 *
+	 * @return primitive value.
+	 */
+	public FloatValue unboxFloat(ObjectValue value) {
+		checkNotNull(value);
+		return (FloatValue) invokeVirtual("floatValue", "()F", new Value[0], new Value[]{value}).getResult();
+	}
+
+	/**
+	 * Unwraps char value.
+	 *
+	 * @param value
+	 * 		Wrapper to unwrap.
+	 *
+	 * @return primitive value.
+	 */
+	public IntValue unboxChar(ObjectValue value) {
+		checkNotNull(value);
+		return (IntValue) invokeVirtual("charValue", "()C", new Value[0], new Value[]{value}).getResult();
+	}
+
+	/**
+	 * Unwraps short value.
+	 *
+	 * @param value
+	 * 		Wrapper to unwrap.
+	 *
+	 * @return primitive value.
+	 */
+	public IntValue unboxShort(ObjectValue value) {
+		checkNotNull(value);
+		return (IntValue) invokeVirtual("shortValue", "()S", new Value[0], new Value[]{value}).getResult();
+	}
+
+	/**
+	 * Unwraps byte value.
+	 *
+	 * @param value
+	 * 		Wrapper to unwrap.
+	 *
+	 * @return primitive value.
+	 */
+	public IntValue unboxByte(ObjectValue value) {
+		checkNotNull(value);
+		return (IntValue) invokeVirtual("byteValue", "()B", new Value[0], new Value[]{value}).getResult();
+	}
+
+	/**
+	 * Unwraps boolean value.
+	 *
+	 * @param value
+	 * 		Wrapper to unwrap.
+	 *
+	 * @return primitive value.
+	 */
+	public IntValue unboxBoolean(ObjectValue value) {
+		checkNotNull(value);
+		return (IntValue) invokeVirtual("booleanValue", "()Z", new Value[0], new Value[]{value}).getResult();
 	}
 
 	private static void contextPrepare(ExecutionContext ctx, Value[] stack, Value[] locals, int localIndex) {

@@ -92,8 +92,11 @@ public class VirtualMachine {
 		var oop = mainThread.getOop();
 		oop.setValue("group", "Ljava/lang/ThreadGroup;", sysGroup);
 		helper.invokeExact(groupClass, "add", "(Ljava/lang/Thread;)V", new Value[0], new Value[]{sysGroup, oop});
-
 		sysClass.initialize();
+		findBootstrapClass("java/lang/reflect/Method", true);
+		findBootstrapClass("java/lang/reflect/Field", true);
+		findBootstrapClass("java/lang/reflect/Constructor", true);
+
 		var initializeSystemClass = sysClass.getMethod("initializeSystemClass", "()V");
 		if (initializeSystemClass != null) {
 			// pre JDK 9 boot

@@ -6,6 +6,7 @@ import dev.xdark.ssvm.classloading.ClassLoaderData;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.execution.asm.*;
 import dev.xdark.ssvm.fs.FileDescriptorManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
@@ -16,9 +17,11 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.FieldNode;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.stream.Collectors;
 
 import static org.objectweb.asm.Opcodes.*;
@@ -249,7 +252,14 @@ public final class NativeJava {
 		var fd = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileDescriptor");
 		vmi.setInvoker(fd, "initIDs", "()V", ctx -> Result.ABORT);
 		vmi.setInvoker(fd, "getHandle", "(I)J", ctx -> {
-			ctx.setResult(new LongValue(vm.getFileDescriptorManager().newFD(ctx.getLocals().load(0).asInt())));
+			try {
+				ctx.setResult(new LongValue(vm.getFileDescriptorManager().newFD(ctx.getLocals().load(0).asInt())));
+			} catch (VMException ex) {
+				vm.getHelper().throwException(vm.getSymbols().java_io_IOException, ex.getOop());
+			}
+			catch (IllegalStateException ex) {
+				vm.getHelper().throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+			}
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fd, "getAppend", "(I)Z", ctx -> {
@@ -257,7 +267,7 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fd, "close0", "()V", ctx -> {
-			var handle= ctx.getLocals().<InstanceValue>load(0).getLong("handle");
+			var handle = ctx.getLocals().<InstanceValue>load(0).getLong("handle");
 			try {
 				vm.getFileDescriptorManager().close(handle);
 			} catch (IOException ex) {
@@ -1308,18 +1318,39 @@ public final class NativeJava {
 		if (winNTfs != null) {
 			var vmi = vm.getInterface();
 			vmi.setInvoker(winNTfs, "initIDs", "()V", ctx -> Result.ABORT);
-			/*
 			vmi.setInvoker(winNTfs, "canonicalize0", "(Ljava/lang/String;)Ljava/lang/String;", ctx -> {
 				var helper = vm.getHelper();
 				var path = helper.readUtf8(ctx.getLocals().load(1));
 				try {
-					ctx.setResult(helper.newUtf8(new File(path).getCanonicalPath()));
+					ctx.setResult(helper.newUtf8(vm.getFileDescriptorManager().canonicalize(path)));
 				} catch (IOException ex) {
 					helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
 				}
 				return Result.ABORT;
 			});
-			 */
+			vmi.setInvoker(winNTfs, "getBooleanAttributes", "(Ljava/io/File;)I", ctx -> {
+				var helper = vm.getHelper();
+				var value = ctx.getLocals().load(1);
+				helper.checkNotNull(value);
+				try {
+					var path = helper.readUtf8(helper.invokeVirtual("getAbsolutePath", "()Ljava/lang/String;", new Value[0], new Value[]{value}).getResult());
+					var attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
+					if (attributes == null) {
+						ctx.setResult(new IntValue(0));
+					} else {
+						var res = 1;
+						if (attributes.isDirectory()) {
+							res |= 4;
+						} else {
+							res |= 2;
+						}
+						ctx.setResult(new IntValue(res));
+					}
+				} catch (IOException ex) {
+					helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+				}
+				return Result.ABORT;
+			});
 		}
 	}
 

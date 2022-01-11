@@ -1,14 +1,17 @@
 package dev.xdark.ssvm.fs;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.LinkOption;
+import java.nio.file.attribute.BasicFileAttributes;
 
 /**
  * Simple implementation of file descriptor manager.
  *
  * @author xDark
  */
-public final class SimpleFileDescriptorManager implements FileDescriptorManager {
+public class SimpleFileDescriptorManager implements FileDescriptorManager {
 
 	private final InputStream in = new NullInputStream();
 	private final OutputStream out = new NullOutputStream();
@@ -50,5 +53,10 @@ public final class SimpleFileDescriptorManager implements FileDescriptorManager 
 	@Override
 	public long open(String path, int mode) {
 		return 0L;
+	}
+
+	@Override
+	public <A extends BasicFileAttributes> A getAttributes(String path, Class<A> attrType, LinkOption... options) throws IOException {
+		throw new IOException("Unsupported");
 	}
 }

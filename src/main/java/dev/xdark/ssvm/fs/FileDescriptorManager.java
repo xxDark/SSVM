@@ -3,6 +3,8 @@ package dev.xdark.ssvm.fs;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.LinkOption;
+import java.nio.file.attribute.BasicFileAttributes;
 
 /**
  * Maps VM file descriptors to native descriptors.
@@ -81,8 +83,11 @@ public interface FileDescriptorManager {
 	 * 		Path to canonicalize.
 	 *
 	 * @return canonicalized path.
+	 *
+	 * @throws IOException
+	 * 		If any I/O error occurs.
 	 */
-	String canonicalize(String path);
+	String canonicalize(String path) throws IOException;
 
 	/**
 	 * Opens file with the specific mode.
@@ -101,4 +106,22 @@ public interface FileDescriptorManager {
 	 * @see FileDescriptorManager#APPEND
 	 */
 	long open(String path, int mode) throws IOException;
+
+	/**
+	 * Returns attributes of a file.
+	 *
+	 * @param path
+	 * 		Path to file.
+	 * @param attrType
+	 * 		Attributes class type.
+	 * @param options
+	 * 		Options indicating how symbolic links are handled.
+	 *
+	 * @return file attributes or {@code null},
+	 * if path does not exist.
+	 *
+	 * @throws IOException
+	 * 		If any I/O error occurs.
+	 */
+	<A extends BasicFileAttributes> A getAttributes(String path, Class<A> attrType, LinkOption... options) throws IOException;
 }

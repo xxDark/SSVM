@@ -58,6 +58,7 @@ public final class VMSymbols {
 	public final InstanceJavaClass java_io_IOException;
 	public final InstanceJavaClass java_lang_invoke_MethodType;
 	public final InstanceJavaClass java_lang_reflect_AccessibleObject;
+	public final InstanceJavaClass java_security_PrivilegedExceptionAction;
 
 	/**
 	 * @param vm
@@ -116,5 +117,6 @@ public final class VMSymbols {
 		java_io_IOException = (InstanceJavaClass) vm.findBootstrapClass("java/io/IOException");
 		java_lang_invoke_MethodType = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/MethodType");
 		java_lang_reflect_AccessibleObject = (InstanceJavaClass) vm.findBootstrapClass("java/lang/reflect/AccessibleObject");
+		java_security_PrivilegedExceptionAction = (InstanceJavaClass) vm.findBootstrapClass("java/security/PrivilegedExceptionAction");
 	}
 }

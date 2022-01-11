@@ -12,6 +12,8 @@ import dev.xdark.ssvm.memory.SimpleMemoryManager;
 import dev.xdark.ssvm.mirror.FieldLayout;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.nt.NativeLibraryManager;
+import dev.xdark.ssvm.nt.SimpleNativeLibraryManager;
 import dev.xdark.ssvm.thread.NopThreadManager;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.VMThread;
@@ -40,6 +42,7 @@ public class VirtualMachine {
 	private final ClassDefiner classDefiner;
 	private final ThreadManager threadManager;
 	private final FileDescriptorManager fileDescriptorManager;
+	private final NativeLibraryManager nativeLibraryManager;
 	private final Properties properties;
 
 	public VirtualMachine() {
@@ -62,6 +65,7 @@ public class VirtualMachine {
 		primitives = new VMPrimitives(this);
 		classDefiner = createClassDefiner();
 		fileDescriptorManager = createFileDescriptorManager();
+		nativeLibraryManager = createNativeLibraryManager();
 		NativeJava.vmInit(this);
 
 		object.initialize();
@@ -206,6 +210,15 @@ public class VirtualMachine {
 	 */
 	public FileDescriptorManager getFileDescriptorManager() {
 		return fileDescriptorManager;
+	}
+
+	/**
+	 * Returns native library manager.
+	 *
+	 * @return native library manager.
+	 */
+	public NativeLibraryManager getNativeLibraryManager() {
+		return nativeLibraryManager;
 	}
 
 	/**
@@ -411,6 +424,16 @@ public class VirtualMachine {
 	 */
 	protected FileDescriptorManager createFileDescriptorManager() {
 		return new SimpleFileDescriptorManager();
+	}
+
+	/**
+	 * Creates native library manager.
+	 * One may override this method.
+	 *
+	 * @return native library manager.
+	 */
+	protected NativeLibraryManager createNativeLibraryManager() {
+		return new SimpleNativeLibraryManager();
 	}
 
 	private InstanceJavaClass internalLink(String name) {

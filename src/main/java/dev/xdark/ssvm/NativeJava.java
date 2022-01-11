@@ -9,6 +9,7 @@ import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.execution.asm.*;
 import dev.xdark.ssvm.fs.FileDescriptorManager;
+import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
@@ -505,6 +506,16 @@ public final class NativeJava {
 			ctx.setResult(result);
 			return Result.ABORT;
 		});
+		vmi.setInvoker(accController, "doPrivileged", "(Ljava/security/PrivilegedExceptionAction;Ljava/security/AccessControlContext;)Ljava/lang/Object;", ctx -> {
+			var action = ctx.getLocals().load(0);
+			var helper = vm.getHelper();
+			helper.checkNotNull(action);
+			var result = helper.invokeInterface(vm.getSymbols().java_security_PrivilegedExceptionAction, "run", "()Ljava/lang/Object;", new Value[0], new Value[]{
+					action
+			}).getResult();
+			ctx.setResult(result);
+			return Result.ABORT;
+		});
 	}
 
 	/**
@@ -758,6 +769,28 @@ public final class NativeJava {
 			ctx.setResult(new IntValue(ctx.getLocals().load(0).hashCode()));
 			return Result.ABORT;
 		});
+		vmi.setInvoker(object, "clone", "()Ljava/lang/Object;", ctx -> {
+			var _this = ctx.getLocals().<ObjectValue>load(0);
+			var type = _this.getJavaClass();
+			var helper = vm.getHelper();
+			var memoryManager = vm.getMemoryManager();
+			ObjectValue clone;
+			if (type instanceof ArrayJavaClass) {
+				var arr = (ArrayValue) _this;
+				clone = memoryManager.newArray((ArrayJavaClass) type, arr.getLength(),
+						memoryManager.arrayIndexScale(type.getComponentType()));
+			} else {
+				clone = memoryManager.newInstance((InstanceJavaClass) type);
+			}
+			var originalOffset = memoryManager.valueBaseOffset(_this);
+			var offset = memoryManager.valueBaseOffset(clone);
+			helper.checkEquals(originalOffset, offset);
+			var copyTo = clone.getMemory().getData().slice().position(offset);
+			var copyFrom = _this.getMemory().getData().slice().position(offset);
+			copyTo.put(copyFrom);
+			ctx.setResult(clone);
+			return Result.ABORT;
+		});
 	}
 
 	/**
@@ -861,6 +894,13 @@ public final class NativeJava {
 		vmi.setInvoker(sys, "setErr0", "(Ljava/io/PrintStream;)V", ctx -> {
 			var stream = ctx.getLocals().load(0);
 			sys.setFieldValue("err", "Ljava/io/PrintStream;", stream);
+			return Result.ABORT;
+		});
+		vmi.setInvoker(sys, "mapLibraryName", "(Ljava/lang/String;)Ljava/lang/String;", ctx -> {
+			var name = ctx.getLocals().<ObjectValue>load(0);
+			var helper = vm.getHelper();
+			helper.checkNotNull(name);
+			ctx.setResult(helper.newUtf8(vm.getNativeLibraryManager().mapLibraryName(helper.readUtf8(name))));
 			return Result.ABORT;
 		});
 	}
@@ -1316,6 +1356,17 @@ public final class NativeJava {
 			var value = ctx.getLocals().load(1);
 			vm.getHelper().checkNotNull(value);
 			((JavaValue<JavaClass>) value).getValue().initialize();
+			return Result.ABORT;
+		});
+		vmi.setInvoker(unsafe, "getObject", "(Ljava/lang/Object;J)Ljava/lang/Object;", ctx -> {
+			var locals = ctx.getLocals();
+			var value = locals.load(1);
+			if (value.isNull()) {
+				throw new PanicException("Segfault");
+			}
+			var offset = locals.load(2).asInt();
+			var memoryManager = vm.getMemoryManager();
+			ctx.setResult(memoryManager.readValue((ObjectValue) value, offset));
 			return Result.ABORT;
 		});
 	}

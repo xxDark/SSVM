@@ -14,7 +14,6 @@ import dev.xdark.ssvm.value.*;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -1227,7 +1226,7 @@ public final class VMHelper {
 		}
 		var parsed = vm.getClassDefiner().parseClass(name, b, off, len, source);
 		if (parsed == null) {
-			throwException(vm.getSymbols().java_lang_NoClassDefFoundError);
+			throwException(vm.getSymbols().java_lang_NoClassDefFoundError, name);
 			return null;
 		}
 		var actualName = parsed.getClassReader().getClassName();
@@ -1236,6 +1235,9 @@ public final class VMHelper {
 		} else if (!actualName.equals(name.replace('.', '/'))) {
 			throwException(vm.getSymbols().java_lang_ClassNotFoundException, "Expected class name: " + actualName.replace('/', '.') + " but received: " + name);
 			return null;
+		}
+		if (actualName.contains("/")) {
+			throwException(vm.getSymbols().java_lang_NoClassDefFoundError, "Bad class name: " + actualName);
 		}
 		synchronized (classLoaderData) {
 			if (classLoaderData.getClass(name) != null) {

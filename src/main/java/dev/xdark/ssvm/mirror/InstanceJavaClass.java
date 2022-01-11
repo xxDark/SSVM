@@ -15,8 +15,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
-
 public final class InstanceJavaClass implements JavaClass {
 
 	private final VirtualMachine vm;
@@ -797,7 +795,7 @@ public final class InstanceJavaClass implements JavaClass {
 				.stream()
 				.filter(x -> this == x.getOwner())
 				.filter(x -> constructors == "<init>".equals(x.getName()))
-				.filter(x -> !publicOnly || (x.getAccess() & ACC_PUBLIC) != 0))
+				.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0))
 				.collect(Collectors.toList());
 	}
 
@@ -808,7 +806,7 @@ public final class InstanceJavaClass implements JavaClass {
 				.stream()
 				.filter(x -> this == x.getOwner())
 				.filter(x -> !"<clinit>".equals(x.getName()))
-				.filter(x -> !publicOnly || (x.getAccess() & ACC_PUBLIC) != 0);
+				.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0);
 	}
 
 	private void loadSuperClass(boolean initialize) {

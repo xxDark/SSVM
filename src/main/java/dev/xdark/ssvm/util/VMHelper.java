@@ -1468,6 +1468,115 @@ public final class VMHelper {
 		return (IntValue) invokeVirtual("booleanValue", "()Z", new Value[0], new Value[]{value}).getResult();
 	}
 
+	/**
+	 * Converts array of classes to VM array.
+	 *
+	 * @param classes
+	 * 		Array of classes to convert.
+	 *
+	 * @return VM array.
+	 */
+	public ArrayValue convertClasses(JavaClass[] classes) {
+		var vm = this.vm;
+		var classArray = vm.getSymbols().java_lang_Class.newArrayClass();
+		var memoryManager = vm.getMemoryManager();
+		var array = memoryManager.newArray(classArray, classes.length, memoryManager.arrayIndexScale(Value.class));
+		for (int i = 0; i < classes.length; i++) {
+			array.setValue(i, classes[i].getOop());
+		}
+		return array;
+	}
+
+	/**
+	 * Converts array to VM classes to their oops.
+	 *
+	 * @param classes
+	 * 		Array of classes to convert.
+	 *
+	 * @return array of oops.
+	 */
+	public InstanceValue[] getClassOops(JavaClass[] classes) {
+		var oops = new InstanceValue[classes.length];
+		for (int i = 0; i < classes.length; i++) {
+			oops[i] = classes[i].getOop();
+		}
+		return oops;
+	}
+
+	/**
+	 * Converts array of ASM types to VM classes.
+	 *
+	 * @param loader
+	 * 		Class loader to use.
+	 * @param types
+	 * 		ASM class types.
+	 * @param initialize
+	 * 		Should classes be initialized.
+	 *
+	 * @return Converted array.
+	 */
+	public JavaClass[] convertTypes(Value loader, Type[] types, boolean initialize) {
+		var classes = new JavaClass[types.length];
+		for (int i = 0; i < types.length; i++) {
+			var name = types[i].getInternalName();
+			var klass = findClass(loader, name, initialize);
+			if (klass == null) {
+				throwException(vm.getSymbols().java_lang_NoClassDefFoundError, name);
+			}
+			classes[i] = klass;
+		}
+		return classes;
+	}
+
+	/**
+	 * Creates new VM array.
+	 *
+	 * @param componentType
+	 * 		Component type of array.
+	 * @param length
+	 * 		Array length.
+	 *
+	 * @return new array.
+	 */
+	public ArrayValue newArray(JavaClass componentType, int length) {
+		var memoryManager = vm.getMemoryManager();
+		return memoryManager.newArray(componentType.newArrayClass(), length, memoryManager.arrayIndexScale(componentType));
+	}
+
+	/**
+	 * Returns empty VM array.
+	 *
+	 * @param componentType
+	 * 		Component type of array.
+	 *
+	 * @return empty array.
+	 */
+	public ArrayValue emptyArray(JavaClass componentType) {
+		return newArray(componentType, 0);
+	}
+
+	/**
+	 * Checks whether a class is a primitive wrapper.
+	 *
+	 * @param jc
+	 * 		Class to check.
+	 *
+	 * @return {@code true} if class is a primitive wrapper,
+	 * {@code false} otherwise.
+	 */
+	public boolean isPrimitiveWrapper(JavaClass jc) {
+		if (!(jc instanceof InstanceJavaClass)) return false;
+		var symbols = vm.getSymbols();
+		return symbols.java_lang_Long == jc
+				|| symbols.java_lang_Double == jc
+				|| symbols.java_lang_Integer == jc
+				|| symbols.java_lang_Float == jc
+				|| symbols.java_lang_Character == jc
+				|| symbols.java_lang_Short == jc
+				|| symbols.java_lang_Byte == jc
+				|| symbols.java_lang_Boolean == jc;
+	}
+
 	private static void contextPrepare(ExecutionContext ctx, Value[] stack, Value[] locals, int localIndex) {
 		var lvt = ctx.getLocals();
 		for (var local : locals) {

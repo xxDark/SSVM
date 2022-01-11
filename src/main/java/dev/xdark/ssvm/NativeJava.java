@@ -95,6 +95,7 @@ public final class NativeJava {
 
 	/**
 	 * Initializes java/lang/Runtime.
+	 *
 	 * @param vm
 	 * 		VM instance.
 	 */
@@ -433,29 +434,19 @@ public final class NativeJava {
 				var helper = vm.getHelper();
 				var refFactory = symbols.reflect_ReflectionFactory;
 				var reflectionFactory = (InstanceValue) helper.invokeStatic(refFactory, "getReflectionFactory", "()" + refFactory.getDescriptor(), new Value[0], new Value[0]).getResult();
-				var scale = memoryManager.arrayIndexScale(Value.class);
-				var result = memoryManager.newArray(symbols.java_lang_reflect_Constructor.newArrayClass(), constructors.size(), scale);
-				var classArray = symbols.java_lang_Class.newArrayClass();
+				var result = helper.newArray(symbols.java_lang_reflect_Constructor, constructors.size());
+				var classArray = helper.emptyArray(symbols.java_lang_Class);
 				var callerOop = klass.getOop();
-				var emptyByteArray = memoryManager.newArray(vm.getPrimitives().bytePrimitive.newArrayClass(), 0, memoryManager.arrayIndexScale(byte.class));
+				var emptyByteArray = helper.emptyArray(vm.getPrimitives().bytePrimitive);
 				for (int j = 0; j < constructors.size(); j++) {
 					var mn = constructors.get(j);
 					var types = Type.getArgumentTypes(mn.desc);
-					var parameters = memoryManager.newArray(classArray, types.length, scale);
-					for (int i = 0; i < types.length; i++) {
-						var type = types[i];
-						var name = type.getInternalName();
-						var arg = helper.findClass(loader, name, true);
-						if (arg == null) {
-							helper.throwException(symbols.java_lang_ClassNotFoundException, name);
-						}
-						parameters.setValue(i, arg.getOop());
-					}
+					var parameters = helper.convertClasses(helper.convertTypes(loader, types, true));
 					var c = helper.invokeVirtual("newConstructor", "(Ljava/lang/Class;[Ljava/lang/Class;[Ljava/lang/Class;IILjava/lang/String;[B[B)Ljava/lang/reflect/Constructor;", new Value[0], new Value[]{
 							reflectionFactory,
 							callerOop,
 							parameters,
-							memoryManager.newArray(classArray, 0, scale),
+							classArray,
 							new IntValue(mn.access),
 							new IntValue(methods.indexOf(mn)),
 							helper.newUtf8(mn.signature),

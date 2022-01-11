@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.fs;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -9,6 +10,10 @@ import java.io.OutputStream;
  * @author xDark
  */
 public interface FileDescriptorManager {
+
+	int READ = 0;
+	int WRITE = 1;
+	int APPEND = 2;
 
 	/**
 	 * Maps VM file descriptor to {@link InputStream}.
@@ -65,4 +70,32 @@ public interface FileDescriptorManager {
 	 * {@code false} otherwise.
 	 */
 	boolean isAppend(int stream);
+
+	/**
+	 * Canonicalizes file path.
+	 *
+	 * @param path
+	 * 		Path to canonicalize.
+	 *
+	 * @return canonicalized path.
+	 */
+	String canonicalize(String path);
+
+	/**
+	 * Opens file with the specific mode.
+	 *
+	 * @param path
+	 * 		Path to open
+	 * @param mode
+	 * 		Open mode.
+	 *
+	 * @return file handle.
+	 *
+	 * @throws IOException
+	 * 		If any I/O error occurs.
+	 * @see FileDescriptorManager#READ
+	 * @see FileDescriptorManager#WRITE
+	 * @see FileDescriptorManager#APPEND
+	 */
+	long open(String path, int mode) throws IOException;
 }

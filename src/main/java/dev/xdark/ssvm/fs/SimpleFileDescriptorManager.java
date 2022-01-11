@@ -41,4 +41,14 @@ public final class SimpleFileDescriptorManager implements FileDescriptorManager 
 	public boolean isAppend(int stream) {
 		return false;
 	}
+
+	@Override
+	public String canonicalize(String path) {
+		return path;
+	}
+
+	@Override
+	public long open(String path, int mode) {
+		return 0L;
+	}
 }

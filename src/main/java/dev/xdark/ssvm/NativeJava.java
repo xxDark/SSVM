@@ -30,6 +30,9 @@ import static org.objectweb.asm.Opcodes.*;
 public final class NativeJava {
 
 	public static final String CLASS_LOADER_OOP = "classLoaderOop";
+	public static final String VM_INDEX = "vmindex";
+	public static final String VM_TARGET = "vmtarget";
+	public static final String VM_HOLDER = "vmholder";
 
 	/**
 	 * Sets up VM instance.
@@ -757,6 +760,73 @@ public final class NativeJava {
 			var interfaces = _this.getInterfaces();
 			var types = vm.getHelper().convertClasses(interfaces);
 			ctx.setResult(types);
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jlc, "getEnclosingMethod0", "()[Ljava/lang/Object;", ctx -> {
+			var klasas = ((JavaValue<JavaClass>) ctx.getLocals().load(0)).getValue();
+			if (!(klasas instanceof InstanceJavaClass)) {
+				ctx.setResult(NullValue.INSTANCE);
+			} else {
+				var node = ((InstanceJavaClass) klasas).getNode();
+				var enclosingClass = node.outerClass;
+				var enclosingMethod = node.outerMethod;
+				var enclosingDesc = node.outerMethodDesc;
+				if (enclosingClass == null || enclosingMethod == null || enclosingDesc == null) {
+					ctx.setResult(NullValue.INSTANCE);
+				} else {
+					var helper = vm.getHelper();
+					var outerHost = helper.findClass(ctx.getOwner().getClassLoader(), enclosingClass, false);
+					ctx.setResult(helper.toVMValues(new ObjectValue[]{
+							outerHost.getOop(),
+							helper.newUtf8(enclosingMethod),
+							helper.newUtf8(enclosingDesc)
+					}));
+				}
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jlc, "getDeclaringClass0", "()Ljava/lang/Class;", ctx -> {
+			var klasas = ((JavaValue<JavaClass>) ctx.getLocals().load(0)).getValue();
+			if (!(klasas instanceof InstanceJavaClass)) {
+				ctx.setResult(NullValue.INSTANCE);
+			} else {
+				var node = ((InstanceJavaClass) klasas).getNode();
+				var nestHostClass = node.nestHostClass;
+				if (nestHostClass == null) {
+					ctx.setResult(NullValue.INSTANCE);
+				} else {
+					var helper = vm.getHelper();
+					var oop = helper.findClass(ctx.getOwner().getClassLoader(), nestHostClass, false);
+					ctx.setResult(oop.getOop());
+				}
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jlc, "getSimpleBinaryName0", "()Ljava/lang/String;", ctx -> {
+			var klasas = ((JavaValue<JavaClass>) ctx.getLocals().load(0)).getValue();
+			if (!(klasas instanceof InstanceJavaClass)) {
+				ctx.setResult(NullValue.INSTANCE);
+			} else {
+				var name = klasas.getInternalName();
+				var idx = name.lastIndexOf('$');
+				if (idx != -1) {
+					ctx.setResult(vm.getHelper().newUtf8(name.substring(idx + 1)));
+				} else {
+					ctx.setResult(NullValue.INSTANCE);
+				}
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jlc, "isInstance", "(Ljava/lang/Object;)Z", ctx -> {
+			var locals = ctx.getLocals();
+			var value = locals.load(1);
+			if (value.isNull()) {
+				ctx.setResult(new IntValue(0));
+			} else {
+				var klass = ((ObjectValue) value).getJavaClass();
+				var _this = locals.<JavaValue<JavaClass>>load(0).getValue();
+				ctx.setResult(new IntValue(_this.isAssignableFrom(klass) ? 1 : 0));
+			}
 			return Result.ABORT;
 		});
 	}
@@ -1629,6 +1699,13 @@ public final class NativeJava {
 		}
 	}
 
+
+	private static final int
+			MN_IS_METHOD           = 0x00010000, // method (not constructor)
+			MN_IS_CONSTRUCTOR      = 0x00020000, // constructor
+			MN_IS_FIELD            = 0x00040000, // field
+			MN_IS_TYPE             = 0x00080000; // nested type
+
 	/**
 	 * Initializes method handles related classes.
 	 *
@@ -1639,6 +1716,43 @@ public final class NativeJava {
 		var vmi = vm.getInterface();
 		var natives = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/MethodHandleNatives");
 		vmi.setInvoker(natives, "registerNatives", "()V", ctx -> Result.ABORT);
+		vmi.setInvoker(natives, "resolve", "(Ljava/lang/invoke/MemberName;Ljava/lang/Class;Z)Ljava/lang/invoke/MemberName;", ctx -> {
+			var $memberName = ctx.getLocals().load(0);
+			var helper = vm.getHelper();
+			helper.checkNotNull($memberName);
+			var symbols = vm.getSymbols();
+			var memberName = (InstanceValue) $memberName;
+			var classWrapper = (JavaValue<InstanceJavaClass>) memberName.getValue("clazz", "Ljava/lang/Class;");
+			var clazz = classWrapper.getValue();
+			var name = helper.readUtf8(memberName.getValue("name", "Ljava/lang/String;"));
+			var mt = memberName.getValue("type", "Ljava/lang/Object;");
+			var desc = helper.readUtf8(helper.invokeExact(symbols.java_lang_invoke_MethodType, "toMethodDescriptorString", "()Ljava/lang/String;", new Value[0], new Value[]{
+					mt
+			}).getResult());
+			var handle = clazz.getMethod(name, desc);
+			if (handle == null) {
+				helper.throwException(symbols.java_lang_NoSuchMethodError, clazz.getInternalName() + '.' + name + desc);
+			}
+			// Inject vmholder & vmtarget into resolved name
+			memberName.setInt(VM_INDEX, handle.getSlot());
+			var memoryManager = vm.getMemoryManager();
+			var resolvedName = memoryManager.newInstance(symbols.java_lang_invoke_ResolvedMethodName);
+			resolvedName.initialize();
+			var jlo = symbols.java_lang_Object;
+			resolvedName.setValue(VM_TARGET, "Ljava/lang/Object;", memoryManager.newJavaInstance(jlo, handle));
+			resolvedName.setValue(VM_HOLDER, "Ljava/lang/Object;", classWrapper);
+			memberName.setValue("method", symbols.java_lang_invoke_ResolvedMethodName.getDescriptor(), resolvedName);
+			// Inject flags
+			var flags = handle.getAccess();
+			if ("<init>".equals(handle.getName())) {
+				flags |= MN_IS_CONSTRUCTOR;
+			} else {
+				flags |= MN_IS_METHOD;
+			}
+			memberName.setInt("flags", flags);
+			ctx.setResult(memberName);
+			return Result.ABORT;
+		});
 	}
 
 	/**
@@ -1648,7 +1762,8 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	static void injectVMFields(VirtualMachine vm) {
-		var classLoader = vm.getSymbols().java_lang_ClassLoader;
+		var symbols = vm.getSymbols();
+		var classLoader = symbols.java_lang_ClassLoader;
 
 		classLoader.getNode().fields.add(new FieldNode(
 				ACC_PRIVATE | ACC_FINAL,
@@ -1657,6 +1772,34 @@ public final class NativeJava {
 				null,
 				null
 		));
+
+		var memberName = symbols.java_lang_invoke_MemberName;
+		memberName.getNode().fields.add(new FieldNode(
+				ACC_PRIVATE,
+				VM_INDEX,
+				"I",
+				null,
+				null
+		));
+
+		var resolvedMethodName = symbols.java_lang_invoke_ResolvedMethodName;
+		{
+			var fields = resolvedMethodName.getNode().fields;
+			fields.add(new FieldNode(
+					ACC_PRIVATE,
+					VM_TARGET,
+					"Ljava/lang/Object;",
+					null,
+					null
+			));
+			fields.add(new FieldNode(
+					ACC_PRIVATE,
+					VM_HOLDER,
+					"Ljava/lang/Object;",
+					null,
+					null
+			));
+		}
 	}
 
 	/**
@@ -1882,6 +2025,8 @@ public final class NativeJava {
 
 		vmi.setProcessor(MONITORENTER, new MonitorEnterProcessor());
 		vmi.setProcessor(MONITOREXIT, new MonitorExitProcessor());
+
+		vmi.setProcessor(MULTIANEWARRAY, new MultiNewArrayProcessor());
 
 		vmi.setProcessor(IFNONNULL, new ValueJumpProcessor(value -> !value.isNull()));
 		vmi.setProcessor(IFNULL, new ValueJumpProcessor(Value::isNull));

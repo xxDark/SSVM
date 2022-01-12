@@ -1658,9 +1658,8 @@ public final class VMHelper {
 	 * @return method type.
 	 */
 	public InstanceValue methodType(JavaClass rt, ArrayValue parameters) {
-		return (InstanceValue) invokeStatic(vm.getSymbols().java_lang_invoke_MethodType, "methodType", "(Ljava/lang/Class;[Ljava/lang/Class;)Ljava/lang/invoke/MethodType;", new Value[0], new Value[]{
-				rt.getOop(),
-				parameters
+		return (InstanceValue) invokeStatic(vm.getSymbols().java_lang_invoke_MethodHandleNatives, "findMethodHandleType", "(Ljava/lang/Class;[Ljava/lang/Class;)Ljava/lang/invoke/MethodType;", new Value[0], new Value[]{
+				rt.getOop(), parameters
 		}).getResult();
 	}
 
@@ -1680,6 +1679,22 @@ public final class VMHelper {
 			array.setValue(i, parameters[i].getOop());
 		}
 		return methodType(rt, array);
+	}
+
+	/**
+	 * Invokes {@link java.lang.invoke.MethodType#methodType(Class, Class[])}
+	 *
+	 * @param loader
+	 * 		Class loader to pull classes from.
+	 * @param methodType
+	 * 		Method type.
+	 *
+	 * @return method type.
+	 */
+	public InstanceValue methodType(Value loader, Type methodType) {
+		var rt = findClass(loader, methodType.getReturnType().getInternalName(), false);
+		var args = convertTypes(loader, methodType.getArgumentTypes(), false);
+		return methodType(rt, args);
 	}
 
 	/**
@@ -1704,6 +1719,37 @@ public final class VMHelper {
 			} while (offset == -1L && (javaClass = javaClass.getSuperClass()) != null);
 		}
 		return offset;
+	}
+
+	/**
+	 * Creates multi array.
+	 *
+	 * @param type
+	 * 		Array type.
+	 * @param lengths
+	 * 		Array containing length of each dimension.
+	 *
+	 * @return new array.
+	 */
+	public ArrayValue newMultiArray(ArrayJavaClass type, int[] lengths) {
+		return newMultiArrayInner(type, lengths, 0);
+	}
+
+	private ArrayValue newMultiArrayInner(ArrayJavaClass type, int[] lengths, int depth) {
+		var newType = type.getComponentType();
+		var memoryManager = vm.getMemoryManager();
+		if (!newType.isArray()) {
+			return memoryManager.newArray(type, lengths[depth], memoryManager.arrayIndexScale(newType));
+		}
+		var array = memoryManager.newArray(type, lengths[depth], memoryManager.arrayIndexScale(ArrayValue.class));
+		if (depth == lengths.length - 1)
+			return array;
+		var length = lengths[depth];
+		var next = depth + 1;
+		while (length-- != 0) {
+			array.setValue(length, newMultiArrayInner((ArrayJavaClass) newType, lengths, next));
+		}
+		return array;
 	}
 
 	private static void contextPrepare(ExecutionContext ctx, Value[] stack, Value[] locals, int localIndex) {

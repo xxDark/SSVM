@@ -809,6 +809,17 @@ public interface MemoryManager {
 	int valueBaseOffset(ObjectValue value);
 
 	/**
+	 * Reports the offset of the data in
+	 * the storage allocation of a given class.
+	 *
+	 * @param value
+	 * 		Class to get offset from.
+	 *
+	 * @return offset of data.
+	 */
+	int valueBaseOffset(JavaClass value);
+
+	/**
 	 * Reports the offset of the first element in
 	 * the storage allocation of a given array class.
 	 *

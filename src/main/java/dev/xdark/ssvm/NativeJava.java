@@ -1430,7 +1430,7 @@ public final class NativeJava {
 			var slot = field.getInt("slot");
 			for (var fn : declaringClass.getDeclaredFields(false)) {
 				if (slot == fn.getSlot()) {
-					var offset = vm.getMemoryManager().valueBaseOffset(declaringClass.getOop()) + fn.getOffset();
+					var offset = vm.getMemoryManager().valueBaseOffset(declaringClass) + fn.getOffset();
 					ctx.setResult(new LongValue(offset));
 					return Result.ABORT;
 				}

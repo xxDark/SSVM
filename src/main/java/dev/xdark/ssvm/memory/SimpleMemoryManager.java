@@ -381,6 +381,11 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
+	public int valueBaseOffset(JavaClass value) {
+		return (int) OBJECT_HEADER_SIZE;
+	}
+
+	@Override
 	public int arrayBaseOffset(JavaClass javaClass) {
 		return (int) OBJECT_HEADER_SIZE;
 	}

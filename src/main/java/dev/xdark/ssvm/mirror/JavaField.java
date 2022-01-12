@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.mirror;
 
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.FieldNode;
 
 /**
@@ -13,10 +14,11 @@ public final class JavaField {
 	private final FieldNode node;
 	private final int slot;
 	private final long offset;
+	private Type type;
 
 	/**
 	 * @param owner
-	 * 		Method owner.
+	 * 		Field owner.
 	 * @param node
 	 * 		ASM field info.
 	 * @param slot
@@ -32,9 +34,9 @@ public final class JavaField {
 	}
 
 	/**
-	 * Returns method owner.
+	 * Returns field owner.
 	 *
-	 * @return method owner.
+	 * @return field owner.
 	 */
 	public InstanceJavaClass getOwner() {
 		return owner;
@@ -65,5 +67,54 @@ public final class JavaField {
 	 */
 	public long getOffset() {
 		return offset;
+	}
+
+	/**
+	 * Returns field name.
+	 *
+	 * @return field name.
+	 */
+	public String getName() {
+		return node.name;
+	}
+
+	/**
+	 * Returns field descriptor.
+	 *
+	 * @return field descriptor.
+	 */
+	public String getDesc() {
+		return node.desc;
+	}
+
+	/**
+	 * Returns field access.
+	 *
+	 * @return field access.
+	 */
+	public int getAccess() {
+		return node.access;
+	}
+
+	/**
+	 * Returns field signature.
+	 *
+	 * @return field signature.
+	 */
+	public String getSignature() {
+		return node.signature;
+	}
+
+	/**
+	 * Returns field type.
+	 *
+	 * @return field type.
+	 */
+	public Type getType() {
+		var type = this.type;
+		if (type == null) {
+			return this.type = Type.getType(node.desc);
+		}
+		return type;
 	}
 }

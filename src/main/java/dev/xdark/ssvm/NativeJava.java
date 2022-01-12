@@ -9,14 +9,10 @@ import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.execution.asm.*;
 import dev.xdark.ssvm.fs.FileDescriptorManager;
-import dev.xdark.ssvm.mirror.ArrayJavaClass;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaClass;
-import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.mirror.*;
 import dev.xdark.ssvm.thread.Backtrace;
 import dev.xdark.ssvm.value.*;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.FieldNode;
 
@@ -720,6 +716,42 @@ public final class NativeJava {
 			ctx.setResult(result);
 			return Result.ABORT;
 		});
+		vmi.setInvoker(jlc, "getDeclaredFields0", "(Z)[Ljava/lang/reflect/Field;", ctx -> {
+			var locals = ctx.getLocals();
+			var klass = locals.<JavaValue<JavaClass>>load(0).getValue();
+			var helper = vm.getHelper();
+			if (!(klass instanceof InstanceJavaClass)) {
+				var empty = helper.emptyArray(symbols.java_lang_reflect_Field);
+				ctx.setResult(empty);
+			} else {
+				klass.initialize();
+				var publicOnly = locals.load(1).asBoolean();
+				var fields = ((InstanceJavaClass) klass).getDeclaredFields(publicOnly);
+				var loader = klass.getClassLoader();
+				var refFactory = symbols.reflect_ReflectionFactory;
+				var reflectionFactory = (InstanceValue) helper.invokeStatic(refFactory, "getReflectionFactory", "()" + refFactory.getDescriptor(), new Value[0], new Value[0]).getResult();
+				var result = helper.newArray(symbols.java_lang_reflect_Field, fields.size());
+				var callerOop = klass.getOop();
+				var emptyByteArray = helper.emptyArray(vm.getPrimitives().bytePrimitive);
+				for (int j = 0; j < fields.size(); j++) {
+					var fn = fields.get(j);
+					var type = helper.findClass(loader, fn.getType().getInternalName(), true);
+					var c = helper.invokeVirtual("newField", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Class;IILjava/lang/String;[B)Ljava/lang/reflect/Field;", new Value[0], new Value[]{
+							reflectionFactory,
+							callerOop,
+							helper.newUtf8(fn.getName()),
+							type.getOop(),
+							new IntValue(fn.getAccess()),
+							new IntValue(fn.getSlot()),
+							helper.newUtf8(fn.getSignature()),
+							emptyByteArray
+					}).getResult();
+					result.setValue(j, (ObjectValue) c);
+				}
+				ctx.setResult(result);
+			}
+			return Result.ABORT;
+		});
 		vmi.setInvoker(jlc, "getInterfaces0", "()[Ljava/lang/Class;", ctx -> {
 			var _this = ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue();
 			var interfaces = _this.getInterfaces();
@@ -979,6 +1011,26 @@ public final class NativeJava {
 			var defined = helper.defineClass(loader, helper.readUtf8(name), bytes, off, length, pd, helper.readUtf8(source));
 			//noinspection ConstantConditions
 			ctx.setResult(defined.getOop());
+			return Result.ABORT;
+		});
+		vmi.setInvoker(classLoader, "findLoadedClass0", "(Ljava/lang/String;)Ljava/lang/Class;", ctx -> {
+			var locals = ctx.getLocals();
+			var name = locals.load(1);
+			var helper = vm.getHelper();
+			helper.checkNotNull(name);
+			var loader = locals.<InstanceValue>load(0);
+			var oop = ((JavaValue<ClassLoaderData>) loader.getValue(CLASS_LOADER_OOP, "Ljava/lang/Object;")).getValue();
+			var loadedClass = oop.getClass(helper.readUtf8(name).replace('.', '/'));
+			ctx.setResult(loadedClass == null ? NullValue.INSTANCE : loadedClass.getOop());
+			return Result.ABORT;
+		});
+		vmi.setInvoker(classLoader, "findBootstrapClass", "(Ljava/lang/String;)Ljava/lang/Class;", ctx -> {
+			var locals = ctx.getLocals();
+			var name = locals.load(1);
+			var helper = vm.getHelper();
+			helper.checkNotNull(name);
+			var loadedClass = vm.getBootClassLoaderData().getClass(helper.readUtf8(name).replace('.', '/'));
+			ctx.setResult(loadedClass == null ? NullValue.INSTANCE : loadedClass.getOop());
 			return Result.ABORT;
 		});
 	}
@@ -1369,6 +1421,40 @@ public final class NativeJava {
 			ctx.setResult(memoryManager.readValue((ObjectValue) value, offset));
 			return Result.ABORT;
 		});
+		vmi.setInvoker(unsafe, "objectFieldOffset0", "(Ljava/lang/reflect/Field;)J", ctx -> {
+			var $field = ctx.getLocals().load(1);
+			var helper = vm.getHelper();
+			helper.checkNotNull($field);
+			var field = (InstanceValue) $field;
+			var declaringClass = ((JavaValue<InstanceJavaClass>) field.getValue("clazz", "Ljava/lang/Class;")).getValue();
+			var slot = field.getInt("slot");
+			for (var fn : declaringClass.getDeclaredFields(false)) {
+				if (slot == fn.getSlot()) {
+					var offset = vm.getMemoryManager().valueBaseOffset(declaringClass.getOop()) + fn.getOffset();
+					ctx.setResult(new LongValue(offset));
+					return Result.ABORT;
+				}
+			}
+			ctx.setResult(new LongValue(-1L));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(unsafe, "staticFieldOffset0", "(Ljava/lang/reflect/Field;)J", ctx -> {
+			var $field = ctx.getLocals().load(1);
+			var helper = vm.getHelper();
+			helper.checkNotNull($field);
+			var field = (InstanceValue) $field;
+			var declaringClass = ((JavaValue<InstanceJavaClass>) field.getValue("clazz", "Ljava/lang/Class;")).getValue();
+			var slot = field.getInt("slot");
+			for (var fn : declaringClass.getDeclaredFields(false)) {
+				if (slot == fn.getSlot()) {
+					var offset = vm.getMemoryManager().getStaticOffset(declaringClass) + fn.getOffset();
+					ctx.setResult(new LongValue(offset));
+					return Result.ABORT;
+				}
+			}
+			ctx.setResult(new LongValue(-1L));
+			return Result.ABORT;
+		});
 	}
 
 	/**
@@ -1561,7 +1647,7 @@ public final class NativeJava {
 	 * @param vm
 	 * 		VM instance.
 	 */
-	private static void injectVMFields(VirtualMachine vm) {
+	static void injectVMFields(VirtualMachine vm) {
 		var classLoader = vm.getSymbols().java_lang_ClassLoader;
 
 		classLoader.getNode().fields.add(new FieldNode(

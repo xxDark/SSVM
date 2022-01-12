@@ -823,7 +823,7 @@ public final class VMHelper {
 		var memoryManager = vm.getMemoryManager();
 		var oop = javaClass.getOop();
 		var baseOffset = memoryManager.getStaticOffset(javaClass);
-		var fields = javaClass.getStaticFieldLayout().getFieldMap();
+		var fields = javaClass.getStaticFieldLayout().getFields();
 		var asmFields = javaClass.getNode().fields;
 		for (var entry : fields.entrySet()) {
 			var key = entry.getKey();
@@ -878,7 +878,7 @@ public final class VMHelper {
 		var vm = this.vm;
 		var memoryManager = vm.getMemoryManager();
 		var baseOffset = memoryManager.valueBaseOffset(value);
-		for (var entry : value.getJavaClass().getVirtualFieldLayout().getFieldMap().values()) {
+		for (var entry : value.getJavaClass().getVirtualFieldLayout().getFields().values()) {
 			var field = entry.getNode().desc;
 			var offset = baseOffset + entry.getOffset();
 			switch (field) {
@@ -924,7 +924,7 @@ public final class VMHelper {
 		var vm = this.vm;
 		var memoryManager = vm.getMemoryManager();
 		var fields = value.getJavaClass().getVirtualFieldLayout()
-				.getFieldMap()
+				.getFields()
 				.values()
 				.stream()
 				.filter(x -> javaClass == x.getOwner())
@@ -1187,9 +1187,8 @@ public final class VMHelper {
 	 * @param protectionDomain
 	 * 		Protection domain of the class.
 	 */
-	public void setClassFields(InstanceValue oop, ObjectValue classLoader, ObjectValue protectionDomain) {
+	public void setClassFields(InstanceValue oop, ObjectValue classLoader, @SuppressWarnings("unused") ObjectValue protectionDomain) {
 		oop.setValue("classLoader", "Ljava/lang/ClassLoader;", classLoader);
-		oop.setValue("protectionDomain", "Ljava/security/ProtectionDomain;", protectionDomain);
 	}
 
 	/**

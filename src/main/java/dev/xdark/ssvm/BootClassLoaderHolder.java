@@ -36,6 +36,8 @@ final class BootClassLoaderHolder {
 	 *
 	 * @param name
 	 * 		Name of the class.
+	 * @param setOop
+	 * 		Should oop be set.
 	 *
 	 * @return Resolved class or {@code null}, if not found.
 	 */
@@ -54,7 +56,7 @@ final class BootClassLoaderHolder {
 				var oop = vm.getMemoryManager().setOopForClass(jc);
 				((InstanceJavaClass) jc).setOop(oop);
 				data.linkClass(jc);
-				vm.getHelper().initializeDefaultValues(oop);
+				vm.getHelper().initializeDefaultValues(jc.getOop());
 			}
 			while (dimensions-- != 0) jc = jc.newArrayClass();
 			return jc;

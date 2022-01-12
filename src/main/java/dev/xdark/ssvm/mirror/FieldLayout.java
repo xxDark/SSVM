@@ -63,7 +63,7 @@ public final class FieldLayout {
 	 *
 	 * @return map containing fields info.
 	 */
-	public Map<MemberKey, JavaField> getFieldMap() {
+	public Map<MemberKey, JavaField> getFields() {
 		return fields;
 	}
 

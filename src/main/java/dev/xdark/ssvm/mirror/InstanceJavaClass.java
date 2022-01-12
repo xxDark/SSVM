@@ -607,7 +607,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 */
 	public boolean hasVirtualField(MemberKey info) {
 		initialize();
-		return vrtFieldLayout.getFieldMap().containsKey(info);
+		return vrtFieldLayout.getFields().containsKey(info);
 	}
 
 	/**
@@ -782,6 +782,29 @@ public final class InstanceJavaClass implements JavaClass {
 		return declaredConstructors;
 	}
 
+	/**
+	 * Returns list of all fields.
+	 *
+	 * @param publicOnly
+	 * 		Should only public fields be included.
+	 *
+	 * @return all fields.
+	 */
+	public List<JavaField> getDeclaredFields(boolean publicOnly) {
+		if (publicOnly) {
+			var publicFields = this.publicFields;
+			if (publicFields == null) {
+				return this.publicFields = getDeclaredFields0(true);
+			}
+			return publicFields;
+		}
+		var declaredFields = this.declaredFields;
+		if (declaredFields == null) {
+			return this.declaredFields = getDeclaredFields0(false);
+		}
+		return declaredFields;
+	}
+
 	@Override
 	public String toString() {
 		return getName();
@@ -790,12 +813,12 @@ public final class InstanceJavaClass implements JavaClass {
 	private List<JavaMethod> getDeclaredMethods0(boolean publicOnly, boolean constructors) {
 		var staticMethods = constructors ? Stream.<JavaMethod>empty() : getStaticMethods0(publicOnly);
 		return Stream.concat(staticMethods, getVirtualMethodLayout()
-				.getMethods()
-				.values()
-				.stream()
-				.filter(x -> this == x.getOwner())
-				.filter(x -> constructors == "<init>".equals(x.getName()))
-				.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0))
+						.getMethods()
+						.values()
+						.stream()
+						.filter(x -> this == x.getOwner())
+						.filter(x -> constructors == "<init>".equals(x.getName()))
+						.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0))
 				.collect(Collectors.toList());
 	}
 
@@ -806,6 +829,26 @@ public final class InstanceJavaClass implements JavaClass {
 				.stream()
 				.filter(x -> this == x.getOwner())
 				.filter(x -> !"<clinit>".equals(x.getName()))
+				.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0);
+	}
+
+	private List<JavaField> getDeclaredFields0(boolean publicOnly) {
+		var staticFields = getDeclaredStaticFields0(publicOnly);
+		return Stream.concat(staticFields, getVirtualFieldLayout()
+						.getFields()
+						.values()
+						.stream()
+						.filter(x -> this == x.getOwner())
+						.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0))
+				.collect(Collectors.toList());
+	}
+
+	private Stream<JavaField> getDeclaredStaticFields0(boolean publicOnly) {
+		return getStaticFieldLayout()
+				.getFields()
+				.values()
+				.stream()
+				.filter(x -> this == x.getOwner())
 				.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0);
 	}
 

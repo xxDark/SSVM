@@ -1,10 +1,13 @@
 package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.value.InstanceValue;
+import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -65,5 +68,30 @@ public class ReflectionTest {
 				helper.emptyArray(symbols.java_lang_Object)
 		}).getResult();
 		assertEquals(str.toUpperCase(), helper.readUtf8(lower));
+	}
+
+	@Test
+	public void testField() {
+		var helper = vm.getHelper();
+		var symbols = vm.getSymbols();
+		var c = symbols.java_lang_Integer;
+		var primitive = ThreadLocalRandom.current().nextInt();
+		var instance = helper.invokeStatic(symbols.java_lang_Integer, "valueOf", "(I)Ljava/lang/Integer;", new Value[0], new Value[]{
+				new IntValue(primitive)
+		}).getResult();
+		var field = (InstanceValue) helper.invokeVirtual("getDeclaredField", "(Ljava/lang/String;)Ljava/lang/reflect/Field;", new Value[0], new Value[]{
+				c.getOop(),
+				helper.newUtf8("value"),
+		}).getResult();
+		// We have to inject 'override' flag because VM
+		// performs caller check here
+		// and backtrace is empty at this point
+		// since we call all methods 'outside' of VM
+		field.setBoolean("override", true);
+		var backing = helper.invokeVirtual("getInt", "(Ljava/lang/Object;)I", new Value[0], new Value[]{
+				field,
+				instance,
+		}).getResult();
+		assertEquals(primitive, backing.asInt());
 	}
 }

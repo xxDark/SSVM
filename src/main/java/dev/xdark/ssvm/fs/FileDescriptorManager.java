@@ -124,4 +124,15 @@ public interface FileDescriptorManager {
 	 * 		If any I/O error occurs.
 	 */
 	<A extends BasicFileAttributes> A getAttributes(String path, Class<A> attrType, LinkOption... options) throws IOException;
+
+	/**
+	 * List the elements of the directory denoted
+	 * by the given abstract pathname.
+	 *
+	 * @param path
+	 * 		Path to list.
+	 *
+	 * @return list of the elements of the directory.
+	 */
+	String[] list(String path);
 }

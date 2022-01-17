@@ -61,6 +61,8 @@ public final class VMSymbols {
 	public final InstanceJavaClass java_security_PrivilegedExceptionAction;
 	public final InstanceJavaClass java_lang_invoke_MemberName;
 	public final InstanceJavaClass java_lang_invoke_ResolvedMethodName;
+	public final InstanceJavaClass java_util_concurrent_atomic_AtomicLong;
+	public final InstanceJavaClass java_lang_ClassLoader$NativeLibrary;
 
 	/**
 	 * @param vm
@@ -100,7 +102,7 @@ public final class VMSymbols {
 		java_lang_InterruptedException = (InstanceJavaClass) vm.findBootstrapClass("java/lang/InterruptedException");
 		java_lang_StackTraceElement = (InstanceJavaClass) vm.findBootstrapClass("java/lang/StackTraceElement");
 		java_security_PrivilegedAction = (InstanceJavaClass) vm.findBootstrapClass("java/security/PrivilegedAction");
-		var reflectionFactory = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/ReflectionFactory");
+		InstanceJavaClass reflectionFactory = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/ReflectionFactory");
 		if (reflectionFactory == null) {
 			reflectionFactory = (InstanceJavaClass) vm.findBootstrapClass("sun/reflect/ReflectionFactory");
 		}
@@ -122,5 +124,7 @@ public final class VMSymbols {
 		java_security_PrivilegedExceptionAction = (InstanceJavaClass) vm.findBootstrapClass("java/security/PrivilegedExceptionAction");
 		java_lang_invoke_MemberName = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/MemberName");
 		java_lang_invoke_ResolvedMethodName = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/ResolvedMethodName");
+		java_util_concurrent_atomic_AtomicLong = (InstanceJavaClass) vm.findBootstrapClass("java/util/concurrent/atomic/AtomicLong");
+		java_lang_ClassLoader$NativeLibrary = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ClassLoader$NativeLibrary");
 	}
 }

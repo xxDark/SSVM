@@ -4,6 +4,7 @@ import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
+import lombok.val;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -22,13 +23,13 @@ public class ReflectionTest {
 
 	@Test
 	public void testConstructor() {
-		var helper = vm.getHelper();
-		var symbols = vm.getSymbols();
-		var c = symbols.java_lang_String;
-		var str = "Hello, World";
-		var chars = helper.toVMChars(str.toCharArray());
-		var parameters = helper.toVMValues(new ObjectValue[]{vm.getPrimitives().charPrimitive.newArrayClass().getOop()});
-		var constructor = (InstanceValue) helper.invokeVirtual("getConstructor", "([Ljava/lang/Class;)Ljava/lang/reflect/Constructor;", new Value[0], new Value[]{
+		val helper = vm.getHelper();
+		val symbols = vm.getSymbols();
+		val c = symbols.java_lang_String;
+		val str = "Hello, World";
+		val chars = helper.toVMChars(str.toCharArray());
+		val parameters = helper.toVMValues(new ObjectValue[]{vm.getPrimitives().charPrimitive.newArrayClass().getOop()});
+		val constructor = (InstanceValue) helper.invokeVirtual("getConstructor", "([Ljava/lang/Class;)Ljava/lang/reflect/Constructor;", new Value[0], new Value[]{
 				c.getOop(),
 				parameters
 		}).getResult();
@@ -37,7 +38,7 @@ public class ReflectionTest {
 		// and backtrace is empty at this point
 		// since we call all methods 'outside' of VM
 		constructor.setBoolean("override", true);
-		var value = helper.invokeVirtual("newInstance", "([Ljava/lang/Object;)Ljava/lang/Object;", new Value[0], new Value[]{
+		val value = helper.invokeVirtual("newInstance", "([Ljava/lang/Object;)Ljava/lang/Object;", new Value[0], new Value[]{
 				constructor,
 				helper.toVMValues(new ObjectValue[]{chars})
 		}).getResult();
@@ -46,13 +47,13 @@ public class ReflectionTest {
 
 	@Test
 	public void testMethod() {
-		var helper = vm.getHelper();
-		var symbols = vm.getSymbols();
-		var c = symbols.java_lang_String;
-		var str = "Hello, World";
-		var instance = helper.newUtf8(str);
-		var parameters = helper.emptyArray(symbols.java_lang_Class);
-		var method = (InstanceValue) helper.invokeVirtual("getMethod", "(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;", new Value[0], new Value[]{
+		val helper = vm.getHelper();
+		val symbols = vm.getSymbols();
+		val c = symbols.java_lang_String;
+		val str = "Hello, World";
+		val instance = helper.newUtf8(str);
+		val parameters = helper.emptyArray(symbols.java_lang_Class);
+		val method = (InstanceValue) helper.invokeVirtual("getMethod", "(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;", new Value[0], new Value[]{
 				c.getOop(),
 				helper.newUtf8("toUpperCase"),
 				parameters
@@ -62,7 +63,7 @@ public class ReflectionTest {
 		// and backtrace is empty at this point
 		// since we call all methods 'outside' of VM
 		method.setBoolean("override", true);
-		var lower = helper.invokeVirtual("invoke", "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;", new Value[0], new Value[]{
+		val lower = helper.invokeVirtual("invoke", "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;", new Value[0], new Value[]{
 				method,
 				instance,
 				helper.emptyArray(symbols.java_lang_Object)
@@ -72,14 +73,14 @@ public class ReflectionTest {
 
 	@Test
 	public void testField() {
-		var helper = vm.getHelper();
-		var symbols = vm.getSymbols();
-		var c = symbols.java_lang_Integer;
-		var primitive = ThreadLocalRandom.current().nextInt();
-		var instance = helper.invokeStatic(symbols.java_lang_Integer, "valueOf", "(I)Ljava/lang/Integer;", new Value[0], new Value[]{
+		val helper = vm.getHelper();
+		val symbols = vm.getSymbols();
+		val c = symbols.java_lang_Integer;
+		val primitive = ThreadLocalRandom.current().nextInt();
+		val instance = helper.invokeStatic(symbols.java_lang_Integer, "valueOf", "(I)Ljava/lang/Integer;", new Value[0], new Value[]{
 				new IntValue(primitive)
 		}).getResult();
-		var field = (InstanceValue) helper.invokeVirtual("getDeclaredField", "(Ljava/lang/String;)Ljava/lang/reflect/Field;", new Value[0], new Value[]{
+		val field = (InstanceValue) helper.invokeVirtual("getDeclaredField", "(Ljava/lang/String;)Ljava/lang/reflect/Field;", new Value[0], new Value[]{
 				c.getOop(),
 				helper.newUtf8("value"),
 		}).getResult();
@@ -88,7 +89,7 @@ public class ReflectionTest {
 		// and backtrace is empty at this point
 		// since we call all methods 'outside' of VM
 		field.setBoolean("override", true);
-		var backing = helper.invokeVirtual("getInt", "(Ljava/lang/Object;)I", new Value[0], new Value[]{
+		val backing = helper.invokeVirtual("getInt", "(Ljava/lang/Object;)I", new Value[0], new Value[]{
 				field,
 				instance,
 		}).getResult();

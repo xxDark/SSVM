@@ -3,6 +3,7 @@ package dev.xdark.ssvm.execution.asm;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
+import lombok.val;
 import org.objectweb.asm.tree.TypeInsnNode;
 
 /**
@@ -14,11 +15,11 @@ public final class InstanceArrayProcessor implements InstructionProcessor<TypeIn
 
 	@Override
 	public Result execute(TypeInsnNode insn, ExecutionContext ctx) {
-		var stack = ctx.getStack();
-		var length = stack.pop().asInt();
-		var vm = ctx.getVM();
-		var helper = vm.getHelper();
-		var klass = helper.findClass(ctx.getOwner().getClassLoader(), insn.desc, true);
+		val stack = ctx.getStack();
+		val length = stack.pop().asInt();
+		val vm = ctx.getVM();
+		val helper = vm.getHelper();
+		val klass = helper.findClass(ctx.getOwner().getClassLoader(), insn.desc, true);
 		if (klass == null) {
 			helper.throwException(vm.getSymbols().java_lang_NoClassDefFoundError, insn.desc);
 		}

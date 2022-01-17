@@ -4,6 +4,7 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.util.UnsafeUtil;
 import dev.xdark.ssvm.value.*;
+import lombok.val;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
@@ -65,7 +66,7 @@ public final class InstanceJavaClass implements JavaClass {
 		this.classReader = classReader;
 		this.node = node;
 		this.oop = oop;
-		var lock = new ReentrantLock();
+		val lock = new ReentrantLock();
 		initializationLock = lock;
 		signal = lock.newCondition();
 	}
@@ -89,7 +90,7 @@ public final class InstanceJavaClass implements JavaClass {
 
 	@Override
 	public String getName() {
-		var normalName = this.normalName;
+		val normalName = this.normalName;
 		if (normalName == null) {
 			return this.normalName = node.name.replace('/', '.');
 		}
@@ -103,7 +104,7 @@ public final class InstanceJavaClass implements JavaClass {
 
 	@Override
 	public String getDescriptor() {
-		var descriptor = this.descriptor;
+		val descriptor = this.descriptor;
 		if (descriptor == null) {
 			return this.descriptor = 'L' + node.name + ';';
 		}
@@ -127,7 +128,7 @@ public final class InstanceJavaClass implements JavaClass {
 
 	@Override
 	public void initialize() {
-		var lock = initializationLock;
+		val lock = initializationLock;
 		lock.lock();
 		if (state == State.COMPLETE) {
 			lock.unlock();
@@ -135,7 +136,7 @@ public final class InstanceJavaClass implements JavaClass {
 		}
 		if (state == State.FAILED) {
 			lock.unlock();
-			var vm = this.vm;
+			val vm = this.vm;
 			vm.getHelper().throwException(vm.getSymbols().java_lang_ExceptionInInitializerError, getInternalName());
 		}
 		if (state == State.IN_PROGRESS) {
@@ -146,7 +147,7 @@ public final class InstanceJavaClass implements JavaClass {
 			// Wait for initialization to complete
 			// and invoke initialize again
 			// 'cause maybe we crashed
-			var signal = this.signal;
+			val signal = this.signal;
 			while (true) {
 				try {
 					signal.wait();
@@ -160,8 +161,8 @@ public final class InstanceJavaClass implements JavaClass {
 		}
 		state = State.IN_PROGRESS;
 		initializer = Thread.currentThread();
-		var vm = this.vm;
-		var helper = vm.getHelper();
+		val vm = this.vm;
+		val helper = vm.getHelper();
 		loadSuperClass(true);
 		loadInterfaces(true);
 		// Build class layout
@@ -170,7 +171,7 @@ public final class InstanceJavaClass implements JavaClass {
 			vrtFieldLayout = createVirtualFieldLayout();
 		}
 		helper.initializeStaticFields(this);
-		var clinit = getStaticMethod("<clinit>", "()V");
+		val clinit = getStaticMethod("<clinit>", "()V");
 		try {
 			if (clinit != null) {
 				helper.invokeStatic(this, clinit, new Value[0], new Value[0]);
@@ -178,8 +179,8 @@ public final class InstanceJavaClass implements JavaClass {
 			state = State.COMPLETE;
 		} catch (VMException ex) {
 			state = State.FAILED;
-			var oop = ex.getOop();
-			var symbols = vm.getSymbols();
+			InstanceValue oop = ex.getOop();
+			val symbols = vm.getSymbols();
 			if (!symbols.java_lang_Error.isAssignableFrom(oop.getJavaClass())) {
 				oop = vm.getHelper().newException(symbols.java_lang_ExceptionInInitializerError, oop);
 				throw new VMException(oop);
@@ -195,7 +196,7 @@ public final class InstanceJavaClass implements JavaClass {
 	@Override
 	public boolean isAssignableFrom(JavaClass other) {
 		if (other == null) {
-			var vm = this.vm;
+			val vm = this.vm;
 			vm.getHelper().throwException(vm.getSymbols().java_lang_NullPointerException);
 			// keep javac happy.
 			return false;
@@ -208,14 +209,14 @@ public final class InstanceJavaClass implements JavaClass {
 		}
 		if (other.isArray()) {
 			if (isInterface()) {
-				var internalName = node.name;
+				val internalName = node.name;
 				return "java/io/Serializable".equals(internalName) || "java/lang/Cloneable".equals(internalName);
 			} else {
 				return this == vm.getSymbols().java_lang_Object;
 			}
 		} else if (other.isInterface()) {
 			if (isInterface()) {
-				var toCheck = new ArrayDeque<>(Arrays.asList(other.getInterfaces()));
+				val toCheck = new ArrayDeque<>(Arrays.asList(other.getInterfaces()));
 				JavaClass popped;
 				while ((popped = toCheck.poll()) != null) {
 					if (popped == this) {
@@ -228,9 +229,9 @@ public final class InstanceJavaClass implements JavaClass {
 				return this == vm.getSymbols().java_lang_Object;
 			}
 		} else {
-			var toCheck = new ArrayDeque<JavaClass>();
+			val toCheck = new ArrayDeque<JavaClass>();
 			if (isInterface()) {
-				var superClass = other.getSuperClass();
+				JavaClass superClass = other.getSuperClass();
 				if (superClass != null)
 					toCheck.add(superClass);
 				toCheck.addAll(Arrays.asList(other.getInterfaces()));
@@ -243,7 +244,7 @@ public final class InstanceJavaClass implements JavaClass {
 					toCheck.addAll(Arrays.asList(popped.getInterfaces()));
 				}
 			} else {
-				var superClass = other.getSuperClass();
+				JavaClass superClass = other.getSuperClass();
 				if (superClass != null)
 					toCheck.add(superClass);
 				JavaClass popped;
@@ -285,7 +286,7 @@ public final class InstanceJavaClass implements JavaClass {
 
 	@Override
 	public FieldLayout getStaticFieldLayout() {
-		var staticLayout = this.staticFieldLayout;
+		val staticLayout = this.staticFieldLayout;
 		// Build class layout
 		// VM might've set it already, do not override.
 		if (staticLayout == null) {
@@ -308,9 +309,9 @@ public final class InstanceJavaClass implements JavaClass {
 
 	@Override
 	public ArrayJavaClass newArrayClass() {
-		var arrayClass = this.arrayClass;
+		ArrayJavaClass arrayClass = this.arrayClass;
 		if (arrayClass == null) {
-			var vm = this.vm;
+			val vm = this.vm;
 			arrayClass = this.arrayClass = new ArrayJavaClass(vm, '[' + getDescriptor(), 1, this);
 			vm.getHelper().setComponentType(arrayClass, this);
 		}
@@ -348,9 +349,9 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @return class method or {@code null}, if not found.
 	 */
 	public JavaMethod getVirtualMethodRecursively(String name, String desc) {
-		var layout = getVirtualMethodLayout();
-		var methods = layout.getMethods();
-		var jc = this;
+		val layout = getVirtualMethodLayout();
+		val methods = layout.getMethods();
+		InstanceJavaClass jc = this;
 		JavaMethod method;
 		do {
 			method = methods.get(new MemberKey(jc, name, desc));
@@ -383,7 +384,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @return class method or {@code null}, if not found.
 	 */
 	public JavaMethod getStaticMethodRecursively(String name, String desc) {
-		var jc = this;
+		InstanceJavaClass jc = this;
 		JavaMethod method;
 		do {
 			method = jc.getStaticMethodLayout().getMethods().get(new MemberKey(jc, name, desc));
@@ -416,8 +417,8 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @return class method or {@code null}, if not found.
 	 */
 	public JavaMethod getMethod(String name, String desc) {
-		var key = new MemberKey(this, name, desc);
-		var jm = getVirtualMethodLayout().getMethods().get(key);
+		val key = new MemberKey(this, name, desc);
+		JavaMethod jm = getVirtualMethodLayout().getMethods().get(key);
 		if (jm == null) {
 			jm = getStaticMethodLayout().getMethods().get(key);
 		}
@@ -436,11 +437,11 @@ public final class InstanceJavaClass implements JavaClass {
 	public Value getStaticValue(MemberKey field) {
 		initialize();
 
-		var offset = (int) staticFieldLayout.getFieldOffset(field);
+		val offset = (int) staticFieldLayout.getFieldOffset(field);
 		if (offset == -1L) return null;
-		var oop = this.oop;
-		var memoryManager = vm.getMemoryManager();
-		var resultingOffset = memoryManager.getStaticOffset(this) + offset;
+		val oop = this.oop;
+		val memoryManager = vm.getMemoryManager();
+		val resultingOffset = memoryManager.getStaticOffset(this) + offset;
 		switch (field.getDesc()) {
 			case "J":
 				return new LongValue(memoryManager.readLong(oop, resultingOffset));
@@ -490,11 +491,11 @@ public final class InstanceJavaClass implements JavaClass {
 	 */
 	public boolean setFieldValue(MemberKey field, Value value) {
 		initialize();
-		var offset = (int) staticFieldLayout.getFieldOffset(field);
+		val offset = (int) staticFieldLayout.getFieldOffset(field);
 		if (offset == -1L) return false;
-		var oop = this.oop;
-		var memoryManager = vm.getMemoryManager();
-		var resultingOffset = memoryManager.getStaticOffset(this) + offset;
+		val oop = this.oop;
+		val memoryManager = vm.getMemoryManager();
+		val resultingOffset = memoryManager.getStaticOffset(this) + offset;
 		switch (field.getDesc()) {
 			case "J":
 				memoryManager.writeLong(oop, resultingOffset, value.asLong());
@@ -568,10 +569,10 @@ public final class InstanceJavaClass implements JavaClass {
 	 */
 	public long getFieldOffsetRecursively(String name, String desc) {
 		initialize();
-		var layout = this.vrtFieldLayout;
-		var jc = this;
+		val layout = this.vrtFieldLayout;
+		InstanceJavaClass jc = this;
 		do {
-			var offset = layout.getFieldOffset(new MemberKey(jc, name, desc));
+			val offset = layout.getFieldOffset(new MemberKey(jc, name, desc));
 			if (offset != -1L) return offset;
 		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
 		return -1L;
@@ -587,10 +588,10 @@ public final class InstanceJavaClass implements JavaClass {
 	 */
 	public long getFieldOffsetRecursively(String name) {
 		initialize();
-		var layout = this.vrtFieldLayout;
-		var jc = this;
+		val layout = this.vrtFieldLayout;
+		InstanceJavaClass jc = this;
 		do {
-			var offset = layout.getFieldOffset(jc, name);
+			val offset = layout.getFieldOffset(jc, name);
 			if (offset != -1L) return offset;
 		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
 		return -1L;
@@ -651,13 +652,13 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @return static class layout.
 	 */
 	public FieldLayout createStaticFieldLayout() {
-		var map = new HashMap<MemberKey, JavaField>();
-		var offset = 0L;
+		val map = new HashMap<MemberKey, JavaField>();
+		long offset = 0L;
 		int slot = getVirtualFieldCount();
-		var fields = node.fields;
-		for (var field : fields) {
+		val fields = node.fields;
+		for (val field : fields) {
 			if ((field.access & Opcodes.ACC_STATIC) != 0) {
-				var desc = field.desc;
+				val desc = field.desc;
 				map.put(new MemberKey(this, field.name, desc), new JavaField(this, field, slot++, offset));
 				offset += UnsafeUtil.getSizeFor(desc);
 			}
@@ -671,20 +672,20 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @return virtual class layout.
 	 */
 	public FieldLayout createVirtualFieldLayout() {
-		var map = new HashMap<MemberKey, JavaField>();
-		var deque = new ArrayDeque<InstanceJavaClass>();
-		var offset = 0L;
-		var javaClass = this;
+		val map = new HashMap<MemberKey, JavaField>();
+		val deque = new ArrayDeque<InstanceJavaClass>();
+		long offset = 0L;
+		InstanceJavaClass javaClass = this;
 		while (javaClass != null) {
 			deque.addFirst(javaClass);
 			javaClass = javaClass.getSuperclassWithoutResolving();
 		}
 		int slot = 0;
 		while ((javaClass = deque.pollFirst()) != null) {
-			var fields = javaClass.node.fields;
-			for (var field : fields) {
+			val fields = javaClass.node.fields;
+			for (val field : fields) {
 				if ((field.access & Opcodes.ACC_STATIC) == 0) {
-					var desc = field.desc;
+					val desc = field.desc;
 					map.put(new MemberKey(javaClass, field.name, desc), new JavaField(javaClass, field, slot++, offset));
 					offset += UnsafeUtil.getSizeFor(desc);
 				}
@@ -715,9 +716,9 @@ public final class InstanceJavaClass implements JavaClass {
 	 * Loads hierarchy of classes without marking them as resolved.
 	 */
 	public void loadClassesWithoutMarkingResolved() {
-		var lock = this.initializationLock;
+		val lock = this.initializationLock;
 		lock.lock();
-		var vm = this.vm;
+		val vm = this.vm;
 		if (state == State.FAILED) {
 			lock.unlock();
 			vm.getHelper().throwException(vm.getSymbols().java_lang_ExceptionInInitializerError);
@@ -725,7 +726,7 @@ public final class InstanceJavaClass implements JavaClass {
 		try {
 			loadSuperClass(false);
 			loadInterfaces(false);
-			for (var ifc : interfaces) {
+			for (val ifc : interfaces) {
 				ifc.loadClassesWithoutMarkingResolved();
 			}
 		} catch (VMException ex) {
@@ -746,13 +747,13 @@ public final class InstanceJavaClass implements JavaClass {
 	 */
 	public List<JavaMethod> getDeclaredMethods(boolean publicOnly) {
 		if (publicOnly) {
-			var publicMethods = this.publicMethods;
+			val publicMethods = this.publicMethods;
 			if (publicMethods == null) {
 				return this.publicMethods = getDeclaredMethods0(true, false);
 			}
 			return publicMethods;
 		}
-		var declaredMethods = this.declaredMethods;
+		val declaredMethods = this.declaredMethods;
 		if (declaredMethods == null) {
 			return this.declaredMethods = getDeclaredMethods0(false, false);
 		}
@@ -769,13 +770,13 @@ public final class InstanceJavaClass implements JavaClass {
 	 */
 	public List<JavaMethod> getDeclaredConstructors(boolean publicOnly) {
 		if (publicOnly) {
-			var publicConstructors = this.publicConstructors;
+			val publicConstructors = this.publicConstructors;
 			if (publicConstructors == null) {
 				return this.publicConstructors = getDeclaredMethods0(true, true);
 			}
 			return publicConstructors;
 		}
-		var declaredConstructors = this.declaredConstructors;
+		val declaredConstructors = this.declaredConstructors;
 		if (declaredConstructors == null) {
 			return this.declaredConstructors = getDeclaredMethods0(false, true);
 		}
@@ -792,13 +793,13 @@ public final class InstanceJavaClass implements JavaClass {
 	 */
 	public List<JavaField> getDeclaredFields(boolean publicOnly) {
 		if (publicOnly) {
-			var publicFields = this.publicFields;
+			val publicFields = this.publicFields;
 			if (publicFields == null) {
 				return this.publicFields = getDeclaredFields0(true);
 			}
 			return publicFields;
 		}
-		var declaredFields = this.declaredFields;
+		val declaredFields = this.declaredFields;
 		if (declaredFields == null) {
 			return this.declaredFields = getDeclaredFields0(false);
 		}
@@ -811,7 +812,7 @@ public final class InstanceJavaClass implements JavaClass {
 	}
 
 	private List<JavaMethod> getDeclaredMethods0(boolean publicOnly, boolean constructors) {
-		var staticMethods = constructors ? Stream.<JavaMethod>empty() : getStaticMethods0(publicOnly);
+		val staticMethods = constructors ? Stream.<JavaMethod>empty() : getStaticMethods0(publicOnly);
 		return Stream.concat(staticMethods, getVirtualMethodLayout()
 						.getMethods()
 						.values()
@@ -833,7 +834,7 @@ public final class InstanceJavaClass implements JavaClass {
 	}
 
 	private List<JavaField> getDeclaredFields0(boolean publicOnly) {
-		var staticFields = getDeclaredStaticFields0(publicOnly);
+		val staticFields = getDeclaredStaticFields0(publicOnly);
 		return Stream.concat(staticFields, getVirtualFieldLayout()
 						.getFields()
 						.values()
@@ -853,16 +854,13 @@ public final class InstanceJavaClass implements JavaClass {
 	}
 
 	private void loadSuperClass(boolean initialize) {
-		var superClass = this.superClass;
+		InstanceJavaClass superClass = this.superClass;
 		if (superClass == null) {
-			var vm = this.vm;
-			var superName = node.superName;
+			val vm = this.vm;
+			val superName = node.superName;
 			if (superName != null) {
 				// Load parent class.
 				superClass = (InstanceJavaClass) vm.findClass(classLoader, superName, initialize);
-				if (superClass == null) {
-					vm.getHelper().throwException(vm.getSymbols().java_lang_NoClassDefFoundError, superName);
-				}
 				this.superClass = superClass;
 			}
 		}
@@ -870,14 +868,14 @@ public final class InstanceJavaClass implements JavaClass {
 	}
 
 	private void loadInterfaces(boolean initialize) {
-		var $interfaces = this.interfaces;
+		InstanceJavaClass[] $interfaces = this.interfaces;
 		if ($interfaces == null) {
-			var _interfaces = node.interfaces;
+			val _interfaces = node.interfaces;
 			$interfaces = new InstanceJavaClass[_interfaces.size()];
-			var vm = this.vm;
-			var classLoader = this.classLoader;
+			val vm = this.vm;
+			val classLoader = this.classLoader;
 			for (int i = 0, j = _interfaces.size(); i < j; i++) {
-				var iface = $interfaces[i] = (InstanceJavaClass) vm.findClass(classLoader, _interfaces.get(i), initialize);
+				val iface = $interfaces[i] = (InstanceJavaClass) vm.findClass(classLoader, _interfaces.get(i), initialize);
 				if (iface == null) {
 					vm.getHelper().throwException(vm.getSymbols().java_lang_NoClassDefFoundError, _interfaces.get(i));
 				}
@@ -885,15 +883,15 @@ public final class InstanceJavaClass implements JavaClass {
 			this.interfaces = $interfaces;
 		}
 		if (initialize) {
-			for (var ifc : $interfaces) ifc.initialize();
+			for (val ifc : $interfaces) ifc.initialize();
 		}
 	}
 
 	private int getVirtualFieldCount() {
 		int count = 0;
-		var jc = this;
+		InstanceJavaClass jc = this;
 		do {
-			for (var field : jc.node.fields) {
+			for (val field : jc.node.fields) {
 				if ((field.access & Opcodes.ACC_STATIC) == 0) count++;
 			}
 		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
@@ -906,21 +904,21 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @return virtual method layout.
 	 */
 	public MethodLayout getVirtualMethodLayout() {
-		var vrtMethodLayout = this.vrtMethodLayout;
+		MethodLayout vrtMethodLayout = this.vrtMethodLayout;
 		if (vrtMethodLayout == null) {
-			var map = new HashMap<MemberKey, JavaMethod>();
-			var deque = new ArrayDeque<InstanceJavaClass>();
-			var javaClass = this;
+			val map = new HashMap<MemberKey, JavaMethod>();
+			val deque = new ArrayDeque<InstanceJavaClass>();
+			InstanceJavaClass javaClass = this;
 			while (javaClass != null) {
 				deque.addFirst(javaClass);
 				javaClass = javaClass.getSuperclassWithoutResolving();
 			}
 			int slot = 0;
 			while ((javaClass = deque.pollFirst()) != null) {
-				var methods = javaClass.node.methods;
-				for (var method : methods) {
+				val methods = javaClass.node.methods;
+				for (val method : methods) {
 					if ((method.access & Opcodes.ACC_STATIC) == 0) {
-						var desc = method.desc;
+						val desc = method.desc;
 						map.put(new MemberKey(javaClass, method.name, desc), new JavaMethod(javaClass, method, slot++));
 					}
 				}
@@ -937,14 +935,14 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @return static method layout.
 	 */
 	public MethodLayout getStaticMethodLayout() {
-		var staticMethodLayout = this.staticMethodLayout;
+		MethodLayout staticMethodLayout = this.staticMethodLayout;
 		if (staticMethodLayout == null) {
-			var map = new HashMap<MemberKey, JavaMethod>();
+			val map = new HashMap<MemberKey, JavaMethod>();
 			int slot = getVirtualMethodCount();
-			var methods = node.methods;
-			for (var method : methods) {
+			val methods = node.methods;
+			for (val method : methods) {
 				if ((method.access & Opcodes.ACC_STATIC) != 0) {
-					var desc = method.desc;
+					val desc = method.desc;
 					map.put(new MemberKey(this, method.name, desc), new JavaMethod(this, method, slot++));
 				}
 			}
@@ -956,9 +954,9 @@ public final class InstanceJavaClass implements JavaClass {
 
 	private int getVirtualMethodCount() {
 		int count = 0;
-		var jc = this;
+		InstanceJavaClass jc = this;
 		do {
-			for (var field : jc.node.methods) {
+			for (val field : jc.node.methods) {
 				if ((field.access & Opcodes.ACC_STATIC) == 0) count++;
 			}
 		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
@@ -966,10 +964,10 @@ public final class InstanceJavaClass implements JavaClass {
 	}
 
 	private InstanceJavaClass getSuperclassWithoutResolving() {
-		var superName = node.superName;
+		val superName = node.superName;
 		if (superName == null) return null;
-		var vm = this.vm;
-		var jc = (InstanceJavaClass) vm.findClass(classLoader, superName, false);
+		val vm = this.vm;
+		val jc = (InstanceJavaClass) vm.findClass(classLoader, superName, false);
 		if (jc == null) {
 			vm.getHelper().throwException(vm.getSymbols().java_lang_NoClassDefFoundError, superName);
 		}

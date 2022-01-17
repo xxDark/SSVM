@@ -4,6 +4,7 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.value.IntValue;
+import lombok.val;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 /**
@@ -16,9 +17,9 @@ public final class LongCompareProcessor implements InstructionProcessor<Abstract
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
-		var stack = ctx.getStack();
-		var v2 = stack.popWide().asLong();
-		var v1 = stack.popWide().asLong();
+		val stack = ctx.getStack();
+		val v2 = stack.popWide().asLong();
+		val v1 = stack.popWide().asLong();
 		stack.push(new IntValue(Long.compare(v1, v2)));
 		return Result.CONTINUE;
 	}

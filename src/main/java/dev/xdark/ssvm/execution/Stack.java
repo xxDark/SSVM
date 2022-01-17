@@ -2,6 +2,7 @@ package dev.xdark.ssvm.execution;
 
 import dev.xdark.ssvm.value.TopValue;
 import dev.xdark.ssvm.value.Value;
+import lombok.val;
 
 import java.util.Objects;
 
@@ -41,7 +42,7 @@ public final class Stack {
 	 * 		Value to push.
 	 */
 	public void pushWide(Value value) {
-		var stack = this.stack;
+		val stack = this.stack;
 		int cursor = this.cursor;
 		stack[cursor++] = Objects.requireNonNull(value, "value");
 		stack[cursor++] = TopValue.INSTANCE;
@@ -103,7 +104,7 @@ public final class Stack {
 	 * @return generic value popped off the stack.
 	 */
 	public <V extends Value> V popGeneric() {
-		var top = pop();
+		val top = pop();
 		if (top == TopValue.INSTANCE) {
 			return pop();
 		}
@@ -133,8 +134,8 @@ public final class Stack {
 	 * Duplicate the top operand stack value and insert two values down.
 	 */
 	public void dupx1() {
-		var v1 = pop();
-		var v2 = pop();
+		val v1 = pop();
+		val v2 = pop();
 		push(v1);
 		push(v2);
 		push(v1);
@@ -145,14 +146,14 @@ public final class Stack {
 	 * and insert two or three values down.
 	 */
 	public void dupx2() {
-		var v1 = pop();
-		var v2 = popGeneric();
+		val v1 = pop();
+		val v2 = popGeneric();
 		if (v2.isWide()) {
 			push(v1);
 			pushWide(v2);
 			push(v1);
 		} else {
-			var v3 = pop();
+			val v3 = pop();
 			push(v1);
 			push(v3);
 			push(v2);
@@ -164,12 +165,12 @@ public final class Stack {
 	 * Duplicate the top one or two operand stack values.
 	 */
 	public void dup2() {
-		var v = popGeneric();
+		val v = popGeneric();
 		if (v.isWide()) {
 			pushWide(v);
 			pushWide(v);
 		} else {
-			var v2 = pop();
+			val v2 = pop();
 			push(v2);
 			push(v);
 			push(v2);
@@ -182,15 +183,15 @@ public final class Stack {
 	 * and insert two or three values down.
 	 */
 	public void dup2x1() {
-		var v = popGeneric();
+		val v = popGeneric();
 		if (v.isWide()) {
-			var v2 = pop();
+			val v2 = pop();
 			pushWide(v);
 			push(v2);
 			pushWide(v);
 		} else {
-			var v2 = pop();
-			var v3 = pop();
+			val v2 = pop();
+			val v3 = pop();
 			push(v2);
 			push(v);
 			push(v3);
@@ -204,22 +205,22 @@ public final class Stack {
 	 * and insert two, three, or four values down.
 	 */
 	public void dup2x2() {
-		var v1 = popGeneric();
-		var v2 = popGeneric();
+		val v1 = popGeneric();
+		val v2 = popGeneric();
 		if (v1.isWide()) {
 			if (v2.isWide()) {
 				pushWide(v1);
 				pushWide(v2);
 				pushWide(v1);
 			} else {
-				var v3 = pop();
+				val v3 = pop();
 				pushWide(v1);
 				push(v3);
 				push(v2);
 				pushWide(v1);
 			}
 		} else {
-			var v3 = popGeneric();
+			val v3 = popGeneric();
 			//noinspection IfStatementWithIdenticalBranches
 			if (v3.isWide()) {
 				push(v2);
@@ -228,7 +229,7 @@ public final class Stack {
 				push(v2);
 				push(v1);
 			} else {
-				var v4 = pop();
+				val v4 = pop();
 				push(v2);
 				push(v1);
 				push(v4);
@@ -243,10 +244,10 @@ public final class Stack {
 	 * Swap the top two operand stack values.
 	 */
 	public void swap() {
-		var stack = this.stack;
-		var cursor = this.cursor;
-		var v1 = stack[cursor - 1];
-		var v2 = stack[cursor - 2];
+		val stack = this.stack;
+		val cursor = this.cursor;
+		val v1 = stack[cursor - 1];
+		val v2 = stack[cursor - 2];
 		stack[cursor - 1] = v2;
 		stack[cursor - 2] = v1;
 	}

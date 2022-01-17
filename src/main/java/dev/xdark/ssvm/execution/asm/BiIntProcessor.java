@@ -5,6 +5,7 @@ import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.util.BiIntToIntFunction;
 import dev.xdark.ssvm.value.IntValue;
+import lombok.val;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 /**
@@ -26,9 +27,9 @@ public final class BiIntProcessor implements InstructionProcessor<AbstractInsnNo
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
-		var stack = ctx.getStack();
-		var v2 = stack.pop().asInt();
-		var v1 = stack.pop().asInt();
+		val stack = ctx.getStack();
+		int v2 = stack.pop().asInt();
+		int v1 = stack.pop().asInt();
 		stack.push(new IntValue(op.apply(v1, v2)));
 		return Result.CONTINUE;
 	}

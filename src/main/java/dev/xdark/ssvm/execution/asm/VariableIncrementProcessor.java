@@ -4,6 +4,7 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.value.IntValue;
+import lombok.val;
 import org.objectweb.asm.tree.IincInsnNode;
 
 /**
@@ -15,8 +16,8 @@ public final class VariableIncrementProcessor implements InstructionProcessor<Ii
 
 	@Override
 	public Result execute(IincInsnNode insn, ExecutionContext ctx) {
-		var locals = ctx.getLocals();
-		var idx = insn.var;
+		val locals = ctx.getLocals();
+		int idx = insn.var;
 		locals.set(idx, new IntValue(locals.load(idx).asInt() + insn.incr));
 		return Result.CONTINUE;
 	}

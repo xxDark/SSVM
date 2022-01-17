@@ -4,6 +4,7 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import lombok.val;
 import org.objectweb.asm.tree.FieldInsnNode;
 
 /**
@@ -15,13 +16,10 @@ public final class PutStaticProcessor implements InstructionProcessor<FieldInsnN
 
 	@Override
 	public Result execute(FieldInsnNode insn, ExecutionContext ctx) {
-		var vm = ctx.getVM();
-		var helper = vm.getHelper();
-		var owner = (InstanceJavaClass) helper.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
-		if (owner == null) {
-			helper.throwException(vm.getSymbols().java_lang_NoClassDefFoundError, insn.owner);
-		}
-		var value = ctx.getStack().popGeneric();
+		val vm = ctx.getVM();
+		val helper = vm.getHelper();
+		val owner = (InstanceJavaClass) helper.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
+		val value = ctx.getStack().popGeneric();
 		if (!owner.setFieldValue(insn.name, insn.desc, value)) {
 			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, insn.owner + '.' + insn.name + insn.desc);
 		}

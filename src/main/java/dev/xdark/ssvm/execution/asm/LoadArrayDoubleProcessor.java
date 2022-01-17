@@ -5,6 +5,7 @@ import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.DoubleValue;
+import lombok.val;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 /**
@@ -16,9 +17,9 @@ public final class LoadArrayDoubleProcessor implements InstructionProcessor<Abst
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
-		var stack = ctx.getStack();
-		var index = stack.pop().asInt();
-		var array = stack.<ArrayValue>pop();
+		val stack = ctx.getStack();
+		int index = stack.pop().asInt();
+		val array = stack.<ArrayValue>pop();
 		ctx.getHelper().rangeCheck(array, index);
 		stack.pushWide(new DoubleValue(array.getDouble(index)));
 		return Result.CONTINUE;

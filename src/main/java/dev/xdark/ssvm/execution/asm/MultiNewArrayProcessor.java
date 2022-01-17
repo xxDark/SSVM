@@ -4,6 +4,7 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
+import lombok.val;
 import org.objectweb.asm.tree.MultiANewArrayInsnNode;
 
 /**
@@ -15,13 +16,13 @@ public final class MultiNewArrayProcessor implements InstructionProcessor<MultiA
 
 	@Override
 	public Result execute(MultiANewArrayInsnNode insn, ExecutionContext ctx) {
-		var helper = ctx.getHelper();
-		var type = helper.findClass(ctx.getOwner().getClassLoader(), insn.desc, true);
-		var dimensions = insn.dims;
-		var stack = ctx.getStack();
-		var lengths = new int[dimensions];
+		val helper = ctx.getHelper();
+		val type = helper.findClass(ctx.getOwner().getClassLoader(), insn.desc, true);
+		int dimensions = insn.dims;
+		val stack = ctx.getStack();
+		val lengths = new int[dimensions];
 		while (dimensions-- != 0) lengths[dimensions] = stack.pop().asInt();
-		var array = helper.newMultiArray((ArrayJavaClass) type, lengths);
+		val array = helper.newMultiArray((ArrayJavaClass) type, lengths);
 		stack.push(array);
 		return Result.CONTINUE;
 	}

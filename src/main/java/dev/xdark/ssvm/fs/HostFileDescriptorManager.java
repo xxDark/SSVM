@@ -1,9 +1,11 @@
 package dev.xdark.ssvm.fs;
 
+import lombok.val;
+
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
-import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.Map;
@@ -54,20 +56,20 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 
 	@Override
 	public void close(long handle) throws IOException {
-		var in = inputs.remove(handle);
+		val in = inputs.remove(handle);
 		if (in != null) {
 			in.close();
 		} else {
-			var out = outputs.remove(handle);
+			val out = outputs.remove(handle);
 			if (out != null) out.close();
 		}
 	}
 
 	@Override
 	public long newFD() {
-		var rng = ThreadLocalRandom.current();
-		var inputs = this.inputs;
-		var outputs = this.outputs;
+		val rng = ThreadLocalRandom.current();
+		val inputs = this.inputs;
+		val outputs = this.outputs;
 		long handle;
 		Long wrapper;
 		do {
@@ -80,17 +82,17 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 	public long newFD(int stream) {
 		switch (stream) {
 			case 0: {
-				var handle = newFD();
+				val handle = newFD();
 				inputs.put(handle, stdin);
 				return handle;
 			}
 			case 1: {
-				var handle = newFD();
+				val handle = newFD();
 				outputs.put(handle, stdout);
 				return handle;
 			}
 			case 2: {
-				var handle = newFD();
+				val handle = newFD();
 				outputs.put(handle, stderr);
 				return handle;
 			}
@@ -113,20 +115,20 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 	public long open(String path, int mode) throws IOException {
 		switch (mode) {
 			case READ: {
-				var fd = newFD();
-				var in = new FileInputStream(path);
+				val fd = newFD();
+				val in = new FileInputStream(path);
 				inputs.put(fd, in);
 				return fd;
 			}
 			case WRITE: {
-				var fd = newFD();
-				var out = new FileOutputStream(path);
+				val fd = newFD();
+				val out = new FileOutputStream(path);
 				outputs.put(fd, out);
 				return fd;
 			}
 			case APPEND: {
-				var fd = newFD();
-				var out = new FileOutputStream(path, true);
+				val fd = newFD();
+				val out = new FileOutputStream(path, true);
 				outputs.put(fd, out);
 				return fd;
 			}
@@ -137,8 +139,13 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 
 	@Override
 	public <A extends BasicFileAttributes> A getAttributes(String path, Class<A> attrType, LinkOption... options) throws IOException {
-		var p = Path.of(path);
+		val p = Paths.get(path);
 		if (!p.toFile().exists()) return null;
 		return Files.readAttributes(p, attrType, options);
+	}
+
+	@Override
+	public String[] list(String path) {
+		return new File(path).list();
 	}
 }

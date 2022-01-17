@@ -6,6 +6,7 @@ import dev.xdark.ssvm.classloading.ClassParseResult;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.value.NullValue;
+import lombok.val;
 
 /**
  * Holder for the boot class loader.
@@ -36,31 +37,30 @@ final class BootClassLoaderHolder {
 	 *
 	 * @param name
 	 * 		Name of the class.
-	 * @param setOop
-	 * 		Should oop be set.
 	 *
 	 * @return Resolved class or {@code null}, if not found.
 	 */
 	JavaClass findBootClass(String name) {
-		var dimensions = 0;
+		int dimensions = 0;
 		while (name.charAt(dimensions) == '[') dimensions++;
-		var data = this.data;
-		var trueName = dimensions == 0 ? name : name.substring(dimensions + 1, name.length() - 1);
+		val data = this.data;
+		val trueName = dimensions == 0 ? name : name.substring(dimensions + 1, name.length() - 1);
+		JavaClass jc;
 		synchronized (data) {
-			var jc = data.getClass(trueName);
+			jc = data.getClass(trueName);
 			if (jc == null) {
-				var result = bootClassLoader.findBootClass(trueName);
+				val result = bootClassLoader.findBootClass(trueName);
 				if (result == null) return null;
-				var vm = this.vm;
+				val vm = this.vm;
 				jc = new InstanceJavaClass(vm, NullValue.INSTANCE, result.getClassReader(), result.getNode());
-				var oop = vm.getMemoryManager().setOopForClass(jc);
+				val oop = vm.getMemoryManager().setOopForClass(jc);
 				((InstanceJavaClass) jc).setOop(oop);
 				data.linkClass(jc);
 				vm.getHelper().initializeDefaultValues(jc.getOop());
 			}
-			while (dimensions-- != 0) jc = jc.newArrayClass();
-			return jc;
 		}
+		while (dimensions-- != 0) jc = jc.newArrayClass();
+		return jc;
 	}
 
 	/**

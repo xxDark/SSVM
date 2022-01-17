@@ -1,6 +1,8 @@
 package dev.xdark.ssvm.util;
 
 import dev.xdark.ssvm.mirror.JavaMethod;
+import lombok.experimental.UtilityClass;
+import lombok.val;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
@@ -13,13 +15,11 @@ import static org.objectweb.asm.Opcodes.*;
  *
  * @author xDark
  */
-public final class AsmUtil {
+@UtilityClass
+public class AsmUtil {
 
-	private static final Field INSN_INDEX;
-	private static final String[] INSN_NAMES;
-
-	private AsmUtil() {
-	}
+	private final Field INSN_INDEX;
+	private final String[] INSN_NAMES;
 
 	/**
 	 * Returns maximum amount of local variable slots.
@@ -29,14 +29,14 @@ public final class AsmUtil {
 	 *
 	 * @return maximum amount of local variable slots.
 	 */
-	public static int getMaxLocals(JavaMethod mn) {
-		var access = mn.getAccess();
+	public int getMaxLocals(JavaMethod mn) {
+		int access = mn.getAccess();
 		if ((access & Opcodes.ACC_NATIVE) != 0 || (access & Opcodes.ACC_ABSTRACT) != 0) {
-			var max = 0;
+			int max = 0;
 			if ((access & Opcodes.ACC_STATIC) == 0) {
 				max++;
 			}
-			for (var type : mn.getType().getArgumentTypes()) {
+			for (val type : mn.getType().getArgumentTypes()) {
 				max += type.getSize();
 			}
 			return max;
@@ -55,7 +55,7 @@ public final class AsmUtil {
 	 * @throws IllegalStateException
 	 * 		If index could not be extracted.
 	 */
-	public static int getIndex(AbstractInsnNode insnNode) {
+	public int getIndex(AbstractInsnNode insnNode) {
 		try {
 			return INSN_INDEX.getInt(insnNode);
 		} catch (IllegalAccessException ex) {
@@ -71,7 +71,7 @@ public final class AsmUtil {
 	 *
 	 * @return opcode name.
 	 */
-	public static String getName(int opcode) {
+	public String getName(int opcode) {
 		return INSN_NAMES[opcode];
 	}
 
@@ -81,7 +81,7 @@ public final class AsmUtil {
 	 * @param desc
 	 * 		Type descriptor.
 	 */
-	public static Object getDefaultValue(String desc) {
+	public Object getDefaultValue(String desc) {
 		switch (desc) {
 			case "J":
 				return 0L;
@@ -111,7 +111,7 @@ public final class AsmUtil {
 	 * @throws IllegalStateException
 	 * 		If handle mode cannot be remapped.
 	 */
-	public static int remapInvokeDynamic(int handle) {
+	public int remapInvokeDynamic(int handle) {
 		switch (handle) {
 			case H_INVOKESTATIC:
 				return INVOKESTATIC;
@@ -140,13 +140,13 @@ public final class AsmUtil {
 		} catch (NoSuchFieldException ex) {
 			throw new ExceptionInInitializerError(ex);
 		}
-		var insnNames = new String[Opcodes.IFNONNULL + 1];
+		val insnNames = new String[Opcodes.IFNONNULL + 1];
 		try {
-			for (var f : Opcodes.class.getDeclaredFields()) {
+			for (val f : Opcodes.class.getDeclaredFields()) {
 				if (f.getType() != int.class) {
 					continue;
 				}
-				var value = f.getInt(null);
+				val value = f.getInt(null);
 				if (value >= Opcodes.NOP && value <= Opcodes.IFNONNULL)
 					insnNames[value] = f.getName();
 			}

@@ -12,13 +12,16 @@ import dev.xdark.ssvm.fs.FileDescriptorManager;
 import dev.xdark.ssvm.mirror.*;
 import dev.xdark.ssvm.thread.Backtrace;
 import dev.xdark.ssvm.value.*;
+import lombok.val;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.FieldNode;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.List;
 
 import static org.objectweb.asm.Opcodes.*;
 
@@ -41,7 +44,7 @@ public final class NativeJava {
 	 * 		VM to set up.
 	 */
 	static void vmInit(VirtualMachine vm) {
-		var vmi = vm.getInterface();
+		val vmi = vm.getInterface();
 		injectVMFields(vm);
 		setInstructions(vmi);
 		initClass(vm);
@@ -50,9 +53,10 @@ public final class NativeJava {
 		initThread(vm);
 		initClassLoader(vm);
 		initThrowable(vm);
+		initNativeLibrary(vm);
 
 		// JDK9+
-		var utf16 = (InstanceJavaClass) vm.findBootstrapClass("java/lang/StringUTF16");
+		val utf16 = (InstanceJavaClass) vm.findBootstrapClass("java/lang/StringUTF16");
 		if (utf16 != null) {
 			vmi.setInvoker(utf16, "isBigEndian", "()Z", ctx -> {
 				ctx.setResult(new IntValue(vm.getMemoryManager().getByteOrder() == ByteOrder.BIG_ENDIAN ? 1 : 0));
@@ -62,15 +66,16 @@ public final class NativeJava {
 
 		initVM(vm);
 
-		var unsafe = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/Unsafe");
-		var newUnsafe = unsafe != null;
+		InstanceJavaClass unsafe = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/Unsafe");
+		UnsafeHelper unsafeHelper;
 		if (unsafe == null) {
 			unsafe = (InstanceJavaClass) vm.findBootstrapClass("sun/misc/Unsafe");
+			unsafeHelper = new OldUnsafeHelper();
+		} else {
+			unsafeHelper = new NewUnsafeHelper();
 		}
 		vmi.setInvoker(unsafe, "registerNatives", "()V", ctx -> Result.ABORT);
-		if (newUnsafe) {
-			initNewUnsafe(vm, unsafe);
-		}
+		initUnsafe(vm, unsafe, unsafeHelper);
 
 		initRuntime(vm);
 		initDouble(vm);
@@ -88,8 +93,10 @@ public final class NativeJava {
 		initModuleSystem(vm);
 		initSignal(vm);
 		initString(vm);
+		initAtomicLong(vm);
+		initUcp(vm);
 
-		var win32ErrorMode = (InstanceJavaClass) vm.findBootstrapClass("sun/io/Win32ErrorMode");
+		val win32ErrorMode = (InstanceJavaClass) vm.findBootstrapClass("sun/io/Win32ErrorMode");
 		if (win32ErrorMode != null) {
 			vmi.setInvoker(win32ErrorMode, "setErrorMode", "(J)J", ctx -> {
 				ctx.setResult(new LongValue(0L));
@@ -105,8 +112,8 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	private static void initVM(VirtualMachine vm) {
-		var vmi = vm.getInterface();
-		var klass = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/VM");
+		val vmi = vm.getInterface();
+		InstanceJavaClass klass = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/VM");
 		if (klass != null) {
 			vmi.setInvoker(klass, "initializeFromArchive", "(Ljava/lang/Class;)V", ctx -> Result.ABORT);
 		} else {
@@ -129,7 +136,7 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	private static void initSignal(VirtualMachine vm) {
-		var signal = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/Signal");
+		InstanceJavaClass signal = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/Signal");
 		if (signal == null) {
 			signal = (InstanceJavaClass) vm.findBootstrapClass("sun/misc/Signal");
 			if (signal == null) {
@@ -137,11 +144,16 @@ public final class NativeJava {
 			}
 		}
 		// TODO: implement this?
-		var vmi = vm.getInterface();
-		vmi.setInvoker(signal, "findSignal0", "(Ljava/lang/String;)I", ctx -> {
+		val vmi = vm.getInterface();
+		MethodInvoker findSignal = ctx -> {
 			ctx.setResult(new IntValue(0));
 			return Result.ABORT;
-		});
+		};
+		if (!vmi.setInvoker(signal,"findSignal0", "(Ljava/lang/String;)I", findSignal)) {
+			if (!vmi.setInvoker(signal,"findSignal", "(Ljava/lang/String;)I", findSignal)) {
+				throw new IllegalStateException("Could not locate Signal#findSignal");
+			}
+		}
 		vmi.setInvoker(signal, "handle0", "(IJ)J", ctx -> {
 			ctx.setResult(new LongValue(0L));
 			return Result.ABORT;
@@ -155,13 +167,49 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	private static void initString(VirtualMachine vm) {
-		var vmi = vm.getInterface();
-		var symbols = vm.getSymbols();
-		var string = symbols.java_lang_String;
+		val vmi = vm.getInterface();
+		val symbols = vm.getSymbols();
+		val string = symbols.java_lang_String;
 		vmi.setInvoker(string, "intern", "()Ljava/lang/String;", ctx -> {
-			ctx.setResult(ctx.getLocals().load(0));
+			val str = ctx.getLocals().<InstanceValue>load(0);
+			ctx.setResult(vm.getStringPool().intern(str));
 			return Result.ABORT;
 		});
+	}
+
+	/**
+	 * Initializes java/util/concurrent/AtomicLong.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initAtomicLong(VirtualMachine vm) {
+		val vmi = vm.getInterface();
+		val symbols = vm.getSymbols();
+		val atomicLong = symbols.java_util_concurrent_atomic_AtomicLong;
+		vmi.setInvoker(atomicLong, "VMSupportsCS8", "()Z", ctx -> {
+			ctx.setResult(new IntValue(0));
+			return Result.ABORT;
+		});
+	}
+
+	/**
+	 * Initializes sun/misc/URLClassPath.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initUcp(VirtualMachine vm) {
+		val vmi = vm.getInterface();
+		val symbols = vm.getSymbols();
+		val ucp = (InstanceJavaClass) vm.findBootstrapClass("sun/misc/URLClassPath");
+		if (ucp != null) {
+			// static jobjectArray get_lookup_cache_urls(JNIEnv *env, jobject loader, TRAPS) {return NULL;}
+			vmi.setInvoker(ucp, "getLookupCacheURLs", "(Ljava/lang/ClassLoader;)[Ljava/net/URL;", ctx -> {
+				ctx.setResult(NullValue.INSTANCE);
+				return Result.ABORT;
+			});
+		}
 	}
 
 	/**
@@ -171,8 +219,8 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	private static void initRuntime(VirtualMachine vm) {
-		var vmi = vm.getInterface();
-		var runtime = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Runtime");
+		val vmi = vm.getInterface();
+		val runtime = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Runtime");
 		vmi.setInvoker(runtime, "availableProcessors", "()I", ctx -> {
 			ctx.setResult(new IntValue(Runtime.getRuntime().availableProcessors()));
 			return Result.ABORT;
@@ -186,9 +234,9 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	private static void initDouble(VirtualMachine vm) {
-		var vmi = vm.getInterface();
-		var symbols = vm.getSymbols();
-		var doubleClass = symbols.java_lang_Double;
+		val vmi = vm.getInterface();
+		val symbols = vm.getSymbols();
+		val doubleClass = symbols.java_lang_Double;
 		vmi.setInvoker(doubleClass, "doubleToRawLongBits", "(D)J", ctx -> {
 			ctx.setResult(new LongValue(Double.doubleToRawLongBits(ctx.getLocals().load(0).asDouble())));
 			return Result.ABORT;
@@ -206,9 +254,9 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	private static void initFloat(VirtualMachine vm) {
-		var vmi = vm.getInterface();
-		var symbols = vm.getSymbols();
-		var floatClass = symbols.java_lang_Float;
+		val vmi = vm.getInterface();
+		val symbols = vm.getSymbols();
+		val floatClass = symbols.java_lang_Float;
 		vmi.setInvoker(floatClass, "floatToRawIntBits", "(F)I", ctx -> {
 			ctx.setResult(new IntValue(Float.floatToRawIntBits(ctx.getLocals().load(0).asFloat())));
 			return Result.ABORT;
@@ -226,33 +274,33 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	private static void initArray(VirtualMachine vm) {
-		var vmi = vm.getInterface();
-		var symbols = vm.getSymbols();
-		var array = symbols.java_lang_reflect_Array;
+		val vmi = vm.getInterface();
+		val symbols = vm.getSymbols();
+		val array = symbols.java_lang_reflect_Array;
 		vmi.setInvoker(array, "getLength", "(Ljava/lang/Object;)I", ctx -> {
-			var value = ctx.getLocals().load(0);
+			val value = ctx.getLocals().load(0);
 			vm.getHelper().checkArray(value);
 			ctx.setResult(new IntValue(((ArrayValue) value).getLength()));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(array, "newArray", "(Ljava/lang/Class;I)Ljava/lang/Object;", ctx -> {
-			var locals = ctx.getLocals();
-			var local = locals.load(0);
-			var helper = vm.getHelper();
+			val locals = ctx.getLocals();
+			val local = locals.load(0);
+			val helper = vm.getHelper();
 			helper.checkNotNull(local);
 			if (!(local instanceof JavaValue)) {
 				helper.throwException(symbols.java_lang_IllegalArgumentException);
 			}
-			var wrapper = ((JavaValue<?>) local).getValue();
+			val wrapper = ((JavaValue<?>) local).getValue();
 			if (!(wrapper instanceof JavaClass)) {
 				helper.throwException(symbols.java_lang_IllegalArgumentException);
 			}
-			var klass = (JavaClass) wrapper;
+			val klass = (JavaClass) wrapper;
 			if (klass.isArray()) {
 				helper.throwException(symbols.java_lang_IllegalArgumentException);
 			}
-			var length = locals.load(1).asInt();
-			var result = helper.newArray(klass, length);
+			val length = locals.load(1).asInt();
+			val result = helper.newArray(klass, length);
 			ctx.setResult(result);
 			return Result.ABORT;
 		});
@@ -265,10 +313,10 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	private static void initFS(VirtualMachine vm) {
-		var vmi = vm.getInterface();
-		var fd = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileDescriptor");
+		val vmi = vm.getInterface();
+		val fd = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileDescriptor");
 		vmi.setInvoker(fd, "initIDs", "()V", ctx -> Result.ABORT);
-		vmi.setInvoker(fd, "getHandle", "(I)J", ctx -> {
+		MethodInvoker set = ctx -> {
 			try {
 				ctx.setResult(new LongValue(vm.getFileDescriptorManager().newFD(ctx.getLocals().load(0).asInt())));
 			} catch (VMException ex) {
@@ -277,13 +325,18 @@ public final class NativeJava {
 				vm.getHelper().throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
 			}
 			return Result.ABORT;
-		});
+		};
+		if (!vmi.setInvoker(fd, "getHandle", "(I)J", set)) {
+			if (!vmi.setInvoker(fd, "set", "(I)J", set)) {
+				throw new IllegalStateException("Could not locate FileDescriptor#getHandle/set");
+			}
+		}
 		vmi.setInvoker(fd, "getAppend", "(I)Z", ctx -> {
 			ctx.setResult(new IntValue(vm.getFileDescriptorManager().isAppend(ctx.getLocals().load(0).asInt()) ? 1 : 0));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fd, "close0", "()V", ctx -> {
-			var handle = ctx.getLocals().<InstanceValue>load(0).getLong("handle");
+			val handle = ctx.getLocals().<InstanceValue>load(0).getLong("handle");
 			try {
 				vm.getFileDescriptorManager().close(handle);
 			} catch (IOException ex) {
@@ -291,18 +344,18 @@ public final class NativeJava {
 			}
 			return Result.ABORT;
 		});
-		var fos = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileOutputStream");
+		val fos = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileOutputStream");
 		vmi.setInvoker(fos, "initIDs", "()V", ctx -> Result.ABORT);
 		vmi.setInvoker(fos, "writeBytes", "([BIIZ)V", ctx -> {
-			var locals = ctx.getLocals();
-			var _this = locals.<InstanceValue>load(0);
-			var helper = vm.getHelper();
-			var handle = helper.getFileOutputStreamHandle(_this);
-			var out = vm.getFileDescriptorManager().getFdOut(handle);
+			val locals = ctx.getLocals();
+			val _this = locals.<InstanceValue>load(0);
+			val helper = vm.getHelper();
+			val handle = helper.getFileStreamHandle(_this);
+			val out = vm.getFileDescriptorManager().getFdOut(handle);
 			if (out == null) return Result.ABORT;
-			var bytes = helper.toJavaBytes(locals.load(1));
-			var off = locals.load(2).asInt();
-			var len = locals.load(3).asInt();
+			val bytes = helper.toJavaBytes(locals.load(1));
+			val off = locals.load(2).asInt();
+			val len = locals.load(3).asInt();
 			try {
 				out.write(bytes, off, len);
 			} catch (IOException ex) {
@@ -311,11 +364,11 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fos, "write", "(BZ)V", ctx -> {
-			var locals = ctx.getLocals();
-			var _this = locals.<InstanceValue>load(0);
-			var helper = vm.getHelper();
-			var handle = helper.getFileOutputStreamHandle(_this);
-			var out = vm.getFileDescriptorManager().getFdOut(handle);
+			val locals = ctx.getLocals();
+			val _this = locals.<InstanceValue>load(0);
+			val helper = vm.getHelper();
+			val handle = helper.getFileStreamHandle(_this);
+			val out = vm.getFileDescriptorManager().getFdOut(handle);
 			if (out == null) return Result.ABORT;
 			try {
 				out.write(locals.load(1).asByte());
@@ -325,41 +378,53 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fos, "open0", "(Ljava/lang/String;Z)V", ctx -> {
-			var locals = ctx.getLocals();
-			var _this = locals.<InstanceValue>load(0);
-			var helper = vm.getHelper();
-			var path = helper.readUtf8(locals.load(1));
-			var append = locals.load(2).asBoolean();
+			val locals = ctx.getLocals();
+			val _this = locals.<InstanceValue>load(0);
+			val helper = vm.getHelper();
+			val path = helper.readUtf8(locals.load(1));
+			val append = locals.load(2).asBoolean();
 			try {
-				var handle = vm.getFileDescriptorManager().open(path, append ? FileDescriptorManager.APPEND : FileDescriptorManager.WRITE);
+				val handle = vm.getFileDescriptorManager().open(path, append ? FileDescriptorManager.APPEND : FileDescriptorManager.WRITE);
 				((InstanceValue) _this.getValue("fd", "Ljava/io/FileDescriptor;")).setLong("handle", handle);
 			} catch (IOException ex) {
 				helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
 			}
 			return Result.ABORT;
 		});
-		var fis = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileInputStream");
+		vmi.setInvoker(fos, "close0", "()V", ctx -> {
+			val locals = ctx.getLocals();
+			val _this = locals.<InstanceValue>load(0);
+			val helper = vm.getHelper();
+			val handle = helper.getFileStreamHandle(_this);
+			try {
+				vm.getFileDescriptorManager().close(handle);
+			} catch (IOException ex) {
+				helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+			}
+			return Result.ABORT;
+		});
+		val fis = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileInputStream");
 		vmi.setInvoker(fis, "initIDs", "()V", ctx -> Result.ABORT);
 		vmi.setInvoker(fis, "readBytes", "([BII)I", ctx -> {
-			var locals = ctx.getLocals();
-			var _this = locals.<InstanceValue>load(0);
-			var helper = vm.getHelper();
-			var handle = helper.getFileOutputStreamHandle(_this);
-			var in = vm.getFileDescriptorManager().getFdIn(handle);
+			val locals = ctx.getLocals();
+			val _this = locals.<InstanceValue>load(0);
+			val helper = vm.getHelper();
+			val handle = helper.getFileStreamHandle(_this);
+			val in = vm.getFileDescriptorManager().getFdIn(handle);
 			if (in == null) {
 				ctx.setResult(new IntValue(-1));
 			} else {
 				try {
-					var off = locals.load(2).asInt();
-					var len = locals.load(3).asInt();
-					var arraySize = len - off;
-					var bytes = new byte[arraySize];
-					var read = in.read(bytes);
+					val off = locals.load(2).asInt();
+					val len = locals.load(3).asInt();
+					val arraySize = len - off;
+					val bytes = new byte[arraySize];
+					val read = in.read(bytes);
 					if (read > 0) {
-						var vmBuffer = locals.<ArrayValue>load(1);
-						var memoryManager = vm.getMemoryManager();
-						var start = memoryManager.arrayBaseOffset(byte.class) + off;
-						var data = vmBuffer.getMemory().getData().slice();
+						val vmBuffer = locals.<ArrayValue>load(1);
+						val memoryManager = vm.getMemoryManager();
+						val start = memoryManager.arrayBaseOffset(byte.class) + off;
+						val data = vmBuffer.getMemory().getData().slice();
 						data.position(start);
 						data.put(bytes);
 					}
@@ -371,11 +436,11 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fis, "read0", "()I", ctx -> {
-			var locals = ctx.getLocals();
-			var _this = locals.<InstanceValue>load(0);
-			var helper = vm.getHelper();
-			var handle = helper.getFileOutputStreamHandle(_this);
-			var in = vm.getFileDescriptorManager().getFdIn(handle);
+			val locals = ctx.getLocals();
+			val _this = locals.<InstanceValue>load(0);
+			val helper = vm.getHelper();
+			val handle = helper.getFileStreamHandle(_this);
+			val in = vm.getFileDescriptorManager().getFdIn(handle);
 			if (in == null) {
 				ctx.setResult(new IntValue(-1));
 			} else {
@@ -388,11 +453,11 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fis, "skip0", "(J)J", ctx -> {
-			var locals = ctx.getLocals();
-			var _this = locals.<InstanceValue>load(0);
-			var helper = vm.getHelper();
-			var handle = helper.getFileOutputStreamHandle(_this);
-			var in = vm.getFileDescriptorManager().getFdIn(handle);
+			val locals = ctx.getLocals();
+			val _this = locals.<InstanceValue>load(0);
+			val helper = vm.getHelper();
+			val handle = helper.getFileStreamHandle(_this);
+			val in = vm.getFileDescriptorManager().getFdIn(handle);
 			if (in == null) {
 				ctx.setResult(new LongValue(0L));
 			} else {
@@ -405,13 +470,42 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fis, "open0", "(Ljava/lang/String;)V", ctx -> {
-			var locals = ctx.getLocals();
-			var _this = locals.<InstanceValue>load(0);
-			var helper = vm.getHelper();
-			var path = helper.readUtf8(locals.load(1));
+			val locals = ctx.getLocals();
+			val _this = locals.<InstanceValue>load(0);
+			val helper = vm.getHelper();
+			val path = helper.readUtf8(locals.load(1));
 			try {
-				var handle = vm.getFileDescriptorManager().open(path, FileDescriptorManager.READ);
+				val handle = vm.getFileDescriptorManager().open(path, FileDescriptorManager.READ);
 				((InstanceValue) _this.getValue("fd", "Ljava/io/FileDescriptor;")).setLong("handle", handle);
+			} catch (IOException ex) {
+				helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(fis, "available0", "()I", ctx -> {
+			val locals = ctx.getLocals();
+			val _this = locals.<InstanceValue>load(0);
+			val helper = vm.getHelper();
+			val handle = helper.getFileStreamHandle(_this);
+			val in = vm.getFileDescriptorManager().getFdIn(handle);
+			if (in == null) {
+				ctx.setResult(new IntValue(0));
+			} else {
+				try {
+					ctx.setResult(new IntValue(in.available()));
+				} catch (IOException ex) {
+					helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+				}
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(fis, "close0", "()V", ctx -> {
+			val locals = ctx.getLocals();
+			val _this = locals.<InstanceValue>load(0);
+			val helper = vm.getHelper();
+			val handle = helper.getFileStreamHandle(_this);
+			try {
+				vm.getFileDescriptorManager().close(handle);
 			} catch (IOException ex) {
 				helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
 			}
@@ -426,22 +520,22 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	private static void initStackTraceElement(VirtualMachine vm) {
-		var vmi = vm.getInterface();
-		var stackTraceElement = (InstanceJavaClass) vm.findBootstrapClass("java/lang/StackTraceElement");
+		val vmi = vm.getInterface();
+		val stackTraceElement = (InstanceJavaClass) vm.findBootstrapClass("java/lang/StackTraceElement");
 		vmi.setInvoker(stackTraceElement, "initStackTraceElements", "([Ljava/lang/StackTraceElement;Ljava/lang/Throwable;)V", ctx -> {
-			var helper = vm.getHelper();
-			var locals = ctx.getLocals();
-			var arr = locals.load(0);
+			val helper = vm.getHelper();
+			val locals = ctx.getLocals();
+			val arr = locals.load(0);
 			helper.checkNotNull(arr);
-			var ex = locals.load(1);
+			val ex = locals.load(1);
 			helper.checkNotNull(ex);
-			var backtrace = ((JavaValue<Backtrace>) ((InstanceValue) ex).getValue("backtrace", "Ljava/lang/Object;")).getValue();
-			var storeTo = (ArrayValue) arr;
+			val backtrace = ((JavaValue<Backtrace>) ((InstanceValue) ex).getValue("backtrace", "Ljava/lang/Object;")).getValue();
+			val storeTo = (ArrayValue) arr;
 
-			var x = 0;
+			int x = 0;
 			for (int i = backtrace.count(); i != 0; ) {
-				var frame = backtrace.get(--i);
-				var element = helper.newStackTraceElement(frame, true);
+				val frame = backtrace.get(--i);
+				val element = helper.newStackTraceElement(frame, true);
 				storeTo.setValue(x++, element);
 			}
 			return Result.ABORT;
@@ -455,8 +549,8 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	private static void initModuleSystem(VirtualMachine vm) {
-		var vmi = vm.getInterface();
-		var bootLoader = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/loader/BootLoader");
+		val vmi = vm.getInterface();
+		val bootLoader = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/loader/BootLoader");
 		if (bootLoader != null) {
 			vmi.setInvoker(bootLoader, "setBootLoaderUnnamedModule0", "(Ljava/lang/Module;)V", ctx -> Result.ABORT);
 			vmi.setInvoker(bootLoader, "getSystemPackageLocation", "(Ljava/lang/String;)Ljava/lang/String;", ctx -> {
@@ -464,7 +558,7 @@ public final class NativeJava {
 				return Result.ABORT;
 			});
 		}
-		var module = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Module");
+		val module = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Module");
 		if (module != null) {
 			vmi.setInvoker(module, "defineModule0", "(Ljava/lang/Module;ZLjava/lang/String;Ljava/lang/String;[Ljava/lang/String;)V", ctx -> Result.ABORT);
 			vmi.setInvoker(module, "addReads0", "(Ljava/lang/Module;Ljava/lang/Module;)V", ctx -> Result.ABORT);
@@ -472,7 +566,7 @@ public final class NativeJava {
 			vmi.setInvoker(module, "addExportsToAll0", "(Ljava/lang/Module;Ljava/lang/String;)V", ctx -> Result.ABORT);
 			vmi.setInvoker(module, "addExportsToAllUnnamed0", "(Ljava/lang/Module;Ljava/lang/String;)V", ctx -> Result.ABORT);
 		}
-		var moduleLayer = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ModuleLayer");
+		val moduleLayer = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ModuleLayer");
 		if (moduleLayer != null) {
 			vmi.setInvoker(moduleLayer, "defineModules", "(Ljava/lang/module/Configuration;Ljava/util/function/Function;)Ljava/lang/ModuleLayer;", ctx -> {
 				ctx.setResult(ctx.getLocals().load(0));
@@ -488,28 +582,38 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	private static void initAccessController(VirtualMachine vm) {
-		var vmi = vm.getInterface();
-		var accController = (InstanceJavaClass) vm.findBootstrapClass("java/security/AccessController");
+		val vmi = vm.getInterface();
+		val accController = (InstanceJavaClass) vm.findBootstrapClass("java/security/AccessController");
 		vmi.setInvoker(accController, "getStackAccessControlContext", "()Ljava/security/AccessControlContext;", ctx -> {
 			// TODO implement?
 			ctx.setResult(NullValue.INSTANCE);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(accController, "doPrivileged", "(Ljava/security/PrivilegedAction;)Ljava/lang/Object;", ctx -> {
-			var action = ctx.getLocals().load(0);
-			var helper = vm.getHelper();
+			val action = ctx.getLocals().load(0);
+			val helper = vm.getHelper();
 			helper.checkNotNull(action);
-			var result = helper.invokeInterface(vm.getSymbols().java_security_PrivilegedAction, "run", "()Ljava/lang/Object;", new Value[0], new Value[]{
+			val result = helper.invokeInterface(vm.getSymbols().java_security_PrivilegedAction, "run", "()Ljava/lang/Object;", new Value[0], new Value[]{
+					action
+			}).getResult();
+			ctx.setResult(result);
+			return Result.ABORT;
+		});
+		vmi.setInvoker(accController, "doPrivileged", "(Ljava/security/PrivilegedExceptionAction;)Ljava/lang/Object;", ctx -> {
+			val action = ctx.getLocals().load(0);
+			val helper = vm.getHelper();
+			helper.checkNotNull(action);
+			val result = helper.invokeInterface(vm.getSymbols().java_security_PrivilegedExceptionAction, "run", "()Ljava/lang/Object;", new Value[0], new Value[]{
 					action
 			}).getResult();
 			ctx.setResult(result);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(accController, "doPrivileged", "(Ljava/security/PrivilegedExceptionAction;Ljava/security/AccessControlContext;)Ljava/lang/Object;", ctx -> {
-			var action = ctx.getLocals().load(0);
-			var helper = vm.getHelper();
+			val action = ctx.getLocals().load(0);
+			val helper = vm.getHelper();
 			helper.checkNotNull(action);
-			var result = helper.invokeInterface(vm.getSymbols().java_security_PrivilegedExceptionAction, "run", "()Ljava/lang/Object;", new Value[0], new Value[]{
+			val result = helper.invokeInterface(vm.getSymbols().java_security_PrivilegedExceptionAction, "run", "()Ljava/lang/Object;", new Value[0], new Value[]{
 					action
 			}).getResult();
 			ctx.setResult(result);
@@ -524,13 +628,13 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	private static void initClass(VirtualMachine vm) {
-		var vmi = vm.getInterface();
-		var symbols = vm.getSymbols();
-		var jlc = symbols.java_lang_Class;
+		val vmi = vm.getInterface();
+		val symbols = vm.getSymbols();
+		val jlc = symbols.java_lang_Class;
 		vmi.setInvoker(jlc, "registerNatives", "()V", ctx -> Result.ABORT);
 		vmi.setInvoker(jlc, "getPrimitiveClass", "(Ljava/lang/String;)Ljava/lang/Class;", ctx -> {
-			var name = vm.getHelper().readUtf8(ctx.getLocals().load(0));
-			var primitives = vm.getPrimitives();
+			val name = vm.getHelper().readUtf8(ctx.getLocals().load(0));
+			val primitives = vm.getPrimitives();
 			Value result;
 			switch (name) {
 				case "long":
@@ -572,15 +676,15 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "forName0", "(Ljava/lang/String;ZLjava/lang/ClassLoader;Ljava/lang/Class;)Ljava/lang/Class;", ctx -> {
-			var locals = ctx.getLocals();
-			var helper = vm.getHelper();
-			var $name = locals.load(0);
+			val locals = ctx.getLocals();
+			val helper = vm.getHelper();
+			val $name = locals.load(0);
 			helper.checkNotNull($name);
-			var name = helper.readUtf8($name);
-			var initialize = locals.load(1).asBoolean();
-			var loader = locals.load(2);
+			val name = helper.readUtf8($name);
+			val initialize = locals.load(1).asBoolean();
+			val loader = locals.load(2);
 			//noinspection ConstantConditions
-			var klass = helper.findClass(loader, name.replace('.', '/'), initialize);
+			val klass = helper.findClass(loader, name.replace('.', '/'), initialize);
 			if (klass == null) {
 				helper.throwException(symbols.java_lang_ClassNotFoundException, name);
 			} else {
@@ -588,8 +692,8 @@ public final class NativeJava {
 			}
 			return Result.ABORT;
 		});
-		var classNameInit = (MethodInvoker) ctx -> {
-			ctx.setResult(vm.getHelper().newUtf8(ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue().getName()));
+		val classNameInit = (MethodInvoker) ctx -> {
+			ctx.setResult(vm.getStringPool().intern(ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue().getName()));
 			return Result.ABORT;
 		};
 		if (!vmi.setInvoker(jlc, "getName0", "()Ljava/lang/String;", classNameInit)) {
@@ -602,67 +706,68 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "isAssignableFrom", "(Ljava/lang/Class;)Z", ctx -> {
-			var locals = ctx.getLocals();
-			var _this = locals.<JavaValue<JavaClass>>load(0).getValue();
-			var arg = locals.<JavaValue<JavaClass>>load(1).getValue();
+			val locals = ctx.getLocals();
+			val _this = locals.<JavaValue<JavaClass>>load(0).getValue();
+			val arg = locals.<JavaValue<JavaClass>>load(1).getValue();
 			ctx.setResult(new IntValue(_this.isAssignableFrom(arg) ? 1 : 0));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "isInterface", "()Z", ctx -> {
-			var locals = ctx.getLocals();
-			var _this = locals.<JavaValue<JavaClass>>load(0).getValue();
+			val locals = ctx.getLocals();
+			val _this = locals.<JavaValue<JavaClass>>load(0).getValue();
 			ctx.setResult(new IntValue(_this.isInterface() ? 1 : 0));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "isPrimitive", "()Z", ctx -> {
-			var locals = ctx.getLocals();
-			var _this = locals.<JavaValue<JavaClass>>load(0).getValue();
+			val locals = ctx.getLocals();
+			val _this = locals.<JavaValue<JavaClass>>load(0).getValue();
 			ctx.setResult(new IntValue(_this.isPrimitive() ? 1 : 0));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getSuperclass", "()Ljava/lang/Class;", ctx -> {
-			var locals = ctx.getLocals();
-			var _this = locals.<JavaValue<JavaClass>>load(0).getValue();
-			var superClass = _this.getSuperClass();
+			val locals = ctx.getLocals();
+			val _this = locals.<JavaValue<JavaClass>>load(0).getValue();
+			val superClass = _this.getSuperClass();
 			ctx.setResult(superClass == null ? NullValue.INSTANCE : superClass.getOop());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getModifiers", "()I", ctx -> {
-			var locals = ctx.getLocals();
-			var _this = locals.<JavaValue<JavaClass>>load(0).getValue();
+			val locals = ctx.getLocals();
+			val _this = locals.<JavaValue<JavaClass>>load(0).getValue();
 			ctx.setResult(new IntValue(_this.getModifiers()));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getDeclaredConstructors0", "(Z)[Ljava/lang/reflect/Constructor;", ctx -> {
-			var locals = ctx.getLocals();
-			var klass = locals.<JavaValue<JavaClass>>load(0).getValue();
-			var helper = vm.getHelper();
+			val locals = ctx.getLocals();
+			val klass = locals.<JavaValue<JavaClass>>load(0).getValue();
+			val helper = vm.getHelper();
 			if (!(klass instanceof InstanceJavaClass)) {
-				var empty = helper.emptyArray(symbols.java_lang_reflect_Constructor);
+				val empty = helper.emptyArray(symbols.java_lang_reflect_Constructor);
 				ctx.setResult(empty);
 			} else {
 				klass.initialize();
-				var publicOnly = locals.load(1).asBoolean();
-				var methods = ((InstanceJavaClass) klass).getDeclaredConstructors(publicOnly);
-				var loader = klass.getClassLoader();
-				var refFactory = symbols.reflect_ReflectionFactory;
-				var reflectionFactory = (InstanceValue) helper.invokeStatic(refFactory, "getReflectionFactory", "()" + refFactory.getDescriptor(), new Value[0], new Value[0]).getResult();
-				var result = helper.newArray(symbols.java_lang_reflect_Constructor, methods.size());
-				var classArray = helper.emptyArray(symbols.java_lang_Class);
-				var callerOop = klass.getOop();
-				var emptyByteArray = helper.emptyArray(vm.getPrimitives().bytePrimitive);
+				val pool = vm.getStringPool();
+				val publicOnly = locals.load(1).asBoolean();
+				val methods = ((InstanceJavaClass) klass).getDeclaredConstructors(publicOnly);
+				val loader = klass.getClassLoader();
+				val refFactory = symbols.reflect_ReflectionFactory;
+				val reflectionFactory = (InstanceValue) helper.invokeStatic(refFactory, "getReflectionFactory", "()" + refFactory.getDescriptor(), new Value[0], new Value[0]).getResult();
+				val result = helper.newArray(symbols.java_lang_reflect_Constructor, methods.size());
+				val classArray = helper.emptyArray(symbols.java_lang_Class);
+				val callerOop = klass.getOop();
+				val emptyByteArray = helper.emptyArray(vm.getPrimitives().bytePrimitive);
 				for (int j = 0; j < methods.size(); j++) {
-					var mn = methods.get(j);
-					var types = mn.getType().getArgumentTypes();
-					var parameters = helper.convertClasses(helper.convertTypes(loader, types, true));
-					var c = helper.invokeVirtual("newConstructor", "(Ljava/lang/Class;[Ljava/lang/Class;[Ljava/lang/Class;IILjava/lang/String;[B[B)Ljava/lang/reflect/Constructor;", new Value[0], new Value[]{
+					val mn = methods.get(j);
+					val types = mn.getType().getArgumentTypes();
+					val parameters = helper.convertClasses(helper.convertTypes(loader, types, true));
+					val c = helper.invokeVirtual("newConstructor", "(Ljava/lang/Class;[Ljava/lang/Class;[Ljava/lang/Class;IILjava/lang/String;[B[B)Ljava/lang/reflect/Constructor;", new Value[0], new Value[]{
 							reflectionFactory,
 							callerOop,
 							parameters,
 							classArray,
 							new IntValue(mn.getAccess()),
 							new IntValue(mn.getSlot()),
-							helper.newUtf8(mn.getSignature()),
+							pool.intern(mn.getSignature()),
 							emptyByteArray,
 							emptyByteArray
 					}).getResult();
@@ -673,11 +778,11 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getDeclaredMethods0", "(Z)[Ljava/lang/reflect/Method;", ctx -> {
-			var locals = ctx.getLocals();
-			var klass = locals.<JavaValue<JavaClass>>load(0).getValue();
-			var helper = vm.getHelper();
+			val locals = ctx.getLocals();
+			JavaClass klass = locals.<JavaValue<JavaClass>>load(0).getValue();
+			val helper = vm.getHelper();
 			if (klass.isPrimitive()) {
-				var empty = helper.emptyArray(symbols.java_lang_reflect_Method);
+				val empty = helper.emptyArray(symbols.java_lang_reflect_Method);
 				ctx.setResult(empty);
 				return Result.ABORT;
 			}
@@ -685,31 +790,32 @@ public final class NativeJava {
 				klass = symbols.java_lang_Object;
 			}
 			klass.initialize();
-			var publicOnly = locals.load(1).asBoolean();
-			var methods = ((InstanceJavaClass) klass).getDeclaredMethods(publicOnly);
-			var loader = klass.getClassLoader();
-			var refFactory = symbols.reflect_ReflectionFactory;
-			var reflectionFactory = (InstanceValue) helper.invokeStatic(refFactory, "getReflectionFactory", "()" + refFactory.getDescriptor(), new Value[0], new Value[0]).getResult();
-			var result = helper.newArray(symbols.java_lang_reflect_Method, methods.size());
-			var classArray = helper.emptyArray(symbols.java_lang_Class);
-			var callerOop = klass.getOop();
-			var emptyByteArray = helper.emptyArray(vm.getPrimitives().bytePrimitive);
+			val pool = vm.getStringPool();
+			val publicOnly = locals.load(1).asBoolean();
+			val methods = ((InstanceJavaClass) klass).getDeclaredMethods(publicOnly);
+			val loader = klass.getClassLoader();
+			val refFactory = symbols.reflect_ReflectionFactory;
+			val reflectionFactory = (InstanceValue) helper.invokeStatic(refFactory, "getReflectionFactory", "()" + refFactory.getDescriptor(), new Value[0], new Value[0]).getResult();
+			val result = helper.newArray(symbols.java_lang_reflect_Method, methods.size());
+			val classArray = helper.emptyArray(symbols.java_lang_Class);
+			val callerOop = klass.getOop();
+			val emptyByteArray = helper.emptyArray(vm.getPrimitives().bytePrimitive);
 			for (int j = 0; j < methods.size(); j++) {
-				var mn = methods.get(j);
-				var type = mn.getType();
-				var types = type.getArgumentTypes();
-				var rt = helper.findClass(loader, type.getReturnType().getInternalName(), true);
-				var parameters = helper.convertClasses(helper.convertTypes(loader, types, true));
-				var c = helper.invokeVirtual("newMethod", "(Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Class;Ljava/lang/Class;[Ljava/lang/Class;IILjava/lang/String;[B[B[B)Ljava/lang/reflect/Method;", new Value[0], new Value[]{
+				val mn = methods.get(j);
+				val type = mn.getType();
+				val types = type.getArgumentTypes();
+				val rt = helper.findClass(loader, type.getReturnType().getInternalName(), true);
+				val parameters = helper.convertClasses(helper.convertTypes(loader, types, true));
+				val c = helper.invokeVirtual("newMethod", "(Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Class;Ljava/lang/Class;[Ljava/lang/Class;IILjava/lang/String;[B[B[B)Ljava/lang/reflect/Method;", new Value[0], new Value[]{
 						reflectionFactory,
 						callerOop,
-						helper.newUtf8(mn.getName()),
+						pool.intern(mn.getName()),
 						parameters,
 						rt.getOop(),
 						classArray,
 						new IntValue(mn.getAccess()),
 						new IntValue(mn.getSlot()),
-						helper.newUtf8(mn.getSignature()),
+						pool.intern(mn.getSignature()),
 						emptyByteArray,
 						emptyByteArray,
 						emptyByteArray
@@ -720,33 +826,34 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getDeclaredFields0", "(Z)[Ljava/lang/reflect/Field;", ctx -> {
-			var locals = ctx.getLocals();
-			var klass = locals.<JavaValue<JavaClass>>load(0).getValue();
-			var helper = vm.getHelper();
+			val locals = ctx.getLocals();
+			val klass = locals.<JavaValue<JavaClass>>load(0).getValue();
+			val helper = vm.getHelper();
 			if (!(klass instanceof InstanceJavaClass)) {
-				var empty = helper.emptyArray(symbols.java_lang_reflect_Field);
+				val empty = helper.emptyArray(symbols.java_lang_reflect_Field);
 				ctx.setResult(empty);
 			} else {
 				klass.initialize();
-				var publicOnly = locals.load(1).asBoolean();
-				var fields = ((InstanceJavaClass) klass).getDeclaredFields(publicOnly);
-				var loader = klass.getClassLoader();
-				var refFactory = symbols.reflect_ReflectionFactory;
-				var reflectionFactory = (InstanceValue) helper.invokeStatic(refFactory, "getReflectionFactory", "()" + refFactory.getDescriptor(), new Value[0], new Value[0]).getResult();
-				var result = helper.newArray(symbols.java_lang_reflect_Field, fields.size());
-				var callerOop = klass.getOop();
-				var emptyByteArray = helper.emptyArray(vm.getPrimitives().bytePrimitive);
+				val pool = vm.getStringPool();
+				val publicOnly = locals.load(1).asBoolean();
+				val fields = ((InstanceJavaClass) klass).getDeclaredFields(publicOnly);
+				val loader = klass.getClassLoader();
+				val refFactory = symbols.reflect_ReflectionFactory;
+				val reflectionFactory = (InstanceValue) helper.invokeStatic(refFactory, "getReflectionFactory", "()" + refFactory.getDescriptor(), new Value[0], new Value[0]).getResult();
+				val result = helper.newArray(symbols.java_lang_reflect_Field, fields.size());
+				val callerOop = klass.getOop();
+				val emptyByteArray = helper.emptyArray(vm.getPrimitives().bytePrimitive);
 				for (int j = 0; j < fields.size(); j++) {
-					var fn = fields.get(j);
-					var type = helper.findClass(loader, fn.getType().getInternalName(), true);
-					var c = helper.invokeVirtual("newField", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Class;IILjava/lang/String;[B)Ljava/lang/reflect/Field;", new Value[0], new Value[]{
+					val fn = fields.get(j);
+					val type = helper.findClass(loader, fn.getType().getInternalName(), true);
+					val c = helper.invokeVirtual("newField", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Class;IILjava/lang/String;[B)Ljava/lang/reflect/Field;", new Value[0], new Value[]{
 							reflectionFactory,
 							callerOop,
-							helper.newUtf8(fn.getName()),
+							pool.intern(fn.getName()),
 							type.getOop(),
 							new IntValue(fn.getAccess()),
 							new IntValue(fn.getSlot()),
-							helper.newUtf8(fn.getSignature()),
+							pool.intern(fn.getSignature()),
 							emptyByteArray
 					}).getResult();
 					result.setValue(j, (ObjectValue) c);
@@ -756,61 +863,62 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getInterfaces0", "()[Ljava/lang/Class;", ctx -> {
-			var _this = ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue();
-			var interfaces = _this.getInterfaces();
-			var types = vm.getHelper().convertClasses(interfaces);
+			val _this = ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue();
+			val interfaces = _this.getInterfaces();
+			val types = vm.getHelper().convertClasses(interfaces);
 			ctx.setResult(types);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getEnclosingMethod0", "()[Ljava/lang/Object;", ctx -> {
-			var klasas = ((JavaValue<JavaClass>) ctx.getLocals().load(0)).getValue();
+			val klasas = ((JavaValue<JavaClass>) ctx.getLocals().load(0)).getValue();
 			if (!(klasas instanceof InstanceJavaClass)) {
 				ctx.setResult(NullValue.INSTANCE);
 			} else {
-				var node = ((InstanceJavaClass) klasas).getNode();
-				var enclosingClass = node.outerClass;
-				var enclosingMethod = node.outerMethod;
-				var enclosingDesc = node.outerMethodDesc;
+				val node = ((InstanceJavaClass) klasas).getNode();
+				val enclosingClass = node.outerClass;
+				val enclosingMethod = node.outerMethod;
+				val enclosingDesc = node.outerMethodDesc;
 				if (enclosingClass == null || enclosingMethod == null || enclosingDesc == null) {
 					ctx.setResult(NullValue.INSTANCE);
 				} else {
-					var helper = vm.getHelper();
-					var outerHost = helper.findClass(ctx.getOwner().getClassLoader(), enclosingClass, false);
+					val helper = vm.getHelper();
+					val pool = vm.getStringPool();
+					val outerHost = helper.findClass(ctx.getOwner().getClassLoader(), enclosingClass, false);
 					ctx.setResult(helper.toVMValues(new ObjectValue[]{
 							outerHost.getOop(),
-							helper.newUtf8(enclosingMethod),
-							helper.newUtf8(enclosingDesc)
+							pool.intern(enclosingMethod),
+							pool.intern(enclosingDesc)
 					}));
 				}
 			}
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getDeclaringClass0", "()Ljava/lang/Class;", ctx -> {
-			var klasas = ((JavaValue<JavaClass>) ctx.getLocals().load(0)).getValue();
+			val klasas = ((JavaValue<JavaClass>) ctx.getLocals().load(0)).getValue();
 			if (!(klasas instanceof InstanceJavaClass)) {
 				ctx.setResult(NullValue.INSTANCE);
 			} else {
-				var node = ((InstanceJavaClass) klasas).getNode();
-				var nestHostClass = node.nestHostClass;
+				val node = ((InstanceJavaClass) klasas).getNode();
+				val nestHostClass = node.nestHostClass;
 				if (nestHostClass == null) {
 					ctx.setResult(NullValue.INSTANCE);
 				} else {
-					var helper = vm.getHelper();
-					var oop = helper.findClass(ctx.getOwner().getClassLoader(), nestHostClass, false);
+					val helper = vm.getHelper();
+					val oop = helper.findClass(ctx.getOwner().getClassLoader(), nestHostClass, false);
 					ctx.setResult(oop.getOop());
 				}
 			}
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getSimpleBinaryName0", "()Ljava/lang/String;", ctx -> {
-			var klasas = ((JavaValue<JavaClass>) ctx.getLocals().load(0)).getValue();
+			val klasas = ((JavaValue<JavaClass>) ctx.getLocals().load(0)).getValue();
 			if (!(klasas instanceof InstanceJavaClass)) {
 				ctx.setResult(NullValue.INSTANCE);
 			} else {
-				var name = klasas.getInternalName();
-				var idx = name.lastIndexOf('$');
+				val name = klasas.getInternalName();
+				val idx = name.lastIndexOf('$');
 				if (idx != -1) {
-					ctx.setResult(vm.getHelper().newUtf8(name.substring(idx + 1)));
+					ctx.setResult(vm.getStringPool().intern(name.substring(idx + 1)));
 				} else {
 					ctx.setResult(NullValue.INSTANCE);
 				}
@@ -818,15 +926,20 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "isInstance", "(Ljava/lang/Object;)Z", ctx -> {
-			var locals = ctx.getLocals();
-			var value = locals.load(1);
+			val locals = ctx.getLocals();
+			val value = locals.load(1);
 			if (value.isNull()) {
 				ctx.setResult(new IntValue(0));
 			} else {
-				var klass = ((ObjectValue) value).getJavaClass();
-				var _this = locals.<JavaValue<JavaClass>>load(0).getValue();
+				val klass = ((ObjectValue) value).getJavaClass();
+				val _this = locals.<JavaValue<JavaClass>>load(0).getValue();
 				ctx.setResult(new IntValue(_this.isAssignableFrom(klass) ? 1 : 0));
 			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jlc, "getComponentType", "()Ljava/lang/Class;", ctx -> {
+			val type = ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue().getComponentType();
+			ctx.setResult(type == null ? NullValue.INSTANCE : type.getOop());
 			return Result.ABORT;
 		});
 	}
@@ -838,9 +951,9 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	private static void initObject(VirtualMachine vm) {
-		var vmi = vm.getInterface();
-		var symbols = vm.getSymbols();
-		var object = symbols.java_lang_Object;
+		val vmi = vm.getInterface();
+		val symbols = vm.getSymbols();
+		val object = symbols.java_lang_Object;
 		vmi.setInvoker(object, "registerNatives", "()V", ctx -> Result.ABORT);
 		vmi.setInvoker(object, "<init>", "()V", ctx -> {
 			ctx.getLocals().<InstanceValue>load(0).initialize();
@@ -859,7 +972,7 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "wait", "(J)V", ctx -> {
-			var locals = ctx.getLocals();
+			val locals = ctx.getLocals();
 			try {
 				locals.<ObjectValue>load(0).vmWait(locals.load(1).asLong());
 			} catch (InterruptedException ex) {
@@ -872,23 +985,23 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "clone", "()Ljava/lang/Object;", ctx -> {
-			var _this = ctx.getLocals().<ObjectValue>load(0);
-			var type = _this.getJavaClass();
-			var helper = vm.getHelper();
-			var memoryManager = vm.getMemoryManager();
+			val _this = ctx.getLocals().<ObjectValue>load(0);
+			val type = _this.getJavaClass();
+			val helper = vm.getHelper();
+			val memoryManager = vm.getMemoryManager();
 			ObjectValue clone;
 			if (type instanceof ArrayJavaClass) {
-				var arr = (ArrayValue) _this;
+				val arr = (ArrayValue) _this;
 				clone = memoryManager.newArray((ArrayJavaClass) type, arr.getLength(),
 						memoryManager.arrayIndexScale(type.getComponentType()));
 			} else {
 				clone = memoryManager.newInstance((InstanceJavaClass) type);
 			}
-			var originalOffset = memoryManager.valueBaseOffset(_this);
-			var offset = memoryManager.valueBaseOffset(clone);
+			val originalOffset = memoryManager.valueBaseOffset(_this);
+			val offset = memoryManager.valueBaseOffset(clone);
 			helper.checkEquals(originalOffset, offset);
-			var copyTo = clone.getMemory().getData().slice().position(offset);
-			var copyFrom = _this.getMemory().getData().slice().position(offset);
+			ByteBuffer copyTo = (ByteBuffer) clone.getMemory().getData().slice().position(offset);
+			ByteBuffer copyFrom = (ByteBuffer) _this.getMemory().getData().slice().position(offset);
 			copyTo.put(copyFrom);
 			ctx.setResult(clone);
 			return Result.ABORT;
@@ -902,9 +1015,9 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	private static void initSystem(VirtualMachine vm) {
-		var vmi = vm.getInterface();
-		var symbols = vm.getSymbols();
-		var sys = symbols.java_lang_System;
+		val vmi = vm.getInterface();
+		val symbols = vm.getSymbols();
+		val sys = symbols.java_lang_System;
 		vmi.setInvoker(sys, "registerNatives", "()V", ctx -> Result.ABORT);
 		vmi.setInvoker(sys, "currentTimeMillis", "()J", ctx -> {
 			ctx.setResult(new LongValue(System.currentTimeMillis()));
@@ -915,30 +1028,30 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "arraycopy", "(Ljava/lang/Object;ILjava/lang/Object;II)V", ctx -> {
-			var helper = vm.getHelper();
-			var locals = ctx.getLocals();
-			var $src = locals.load(0);
+			val helper = vm.getHelper();
+			val locals = ctx.getLocals();
+			val $src = locals.load(0);
 			helper.checkNotNull($src);
 			helper.checkArray($src);
-			var $dst = locals.load(2);
+			val $dst = locals.load(2);
 			helper.checkNotNull($dst);
 			helper.checkArray($dst);
-			var srcPos = locals.load(1).asInt();
-			var dstPos = locals.load(3).asInt();
-			var length = locals.load(4).asInt();
-			var src = (ArrayValue) $src;
-			var dst = (ArrayValue) $dst;
-			var memoryManager = vm.getMemoryManager();
-			var srcComponent = src.getJavaClass().getComponentType();
-			var dstComponent = dst.getJavaClass().getComponentType();
+			int srcPos = locals.load(1).asInt();
+			int dstPos = locals.load(3).asInt();
+			int length = locals.load(4).asInt();
+			val src = (ArrayValue) $src;
+			val dst = (ArrayValue) $dst;
+			val memoryManager = vm.getMemoryManager();
+			val srcComponent = src.getJavaClass().getComponentType();
+			val dstComponent = dst.getJavaClass().getComponentType();
 
-			var srcScale = memoryManager.arrayIndexScale(srcComponent);
-			var dstScale = memoryManager.arrayIndexScale(dstComponent);
+			int srcScale = memoryManager.arrayIndexScale(srcComponent);
+			int dstScale = memoryManager.arrayIndexScale(dstComponent);
 			if (srcScale != dstScale) {
 				helper.throwException(symbols.java_lang_IllegalArgumentException);
 			}
-			var srcStart = memoryManager.arrayBaseOffset(srcComponent);
-			var dstStart = memoryManager.arrayBaseOffset(dstComponent);
+			int srcStart = memoryManager.arrayBaseOffset(srcComponent);
+			int dstStart = memoryManager.arrayBaseOffset(dstComponent);
 			if (srcStart != dstStart) {
 				helper.throwException(symbols.java_lang_IllegalArgumentException);
 			}
@@ -965,15 +1078,15 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "initProperties", "(Ljava/util/Properties;)Ljava/util/Properties;", ctx -> {
-			var value = ctx.getLocals().<InstanceValue>load(0);
-			var jc = (InstanceJavaClass) value.getJavaClass();
-			var mn = jc.getVirtualMethod("put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
-			var properties = vm.getProperties();
-			var helper = vm.getHelper();
+			val value = ctx.getLocals().<InstanceValue>load(0);
+			val jc = (InstanceJavaClass) value.getJavaClass();
+			val mn = jc.getVirtualMethod("setProperty", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;");
+			val properties = vm.getProperties();
+			val helper = vm.getHelper();
 
-			for (var entry : properties.entrySet()) {
-				var key = entry.getKey();
-				var property = entry.getValue();
+			for (val entry : properties.entrySet()) {
+				val key = entry.getKey();
+				val property = entry.getValue();
 				helper.invokeExact(jc, mn, new Value[0], new Value[]{
 						value,
 						helper.newUtf8(key.toString()),
@@ -984,23 +1097,23 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "setIn0", "(Ljava/io/InputStream;)V", ctx -> {
-			var stream = ctx.getLocals().load(0);
+			val stream = ctx.getLocals().load(0);
 			sys.setFieldValue("in", "Ljava/io/InputStream;", stream);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "setOut0", "(Ljava/io/PrintStream;)V", ctx -> {
-			var stream = ctx.getLocals().load(0);
+			val stream = ctx.getLocals().load(0);
 			sys.setFieldValue("out", "Ljava/io/PrintStream;", stream);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "setErr0", "(Ljava/io/PrintStream;)V", ctx -> {
-			var stream = ctx.getLocals().load(0);
+			val stream = ctx.getLocals().load(0);
 			sys.setFieldValue("err", "Ljava/io/PrintStream;", stream);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "mapLibraryName", "(Ljava/lang/String;)Ljava/lang/String;", ctx -> {
-			var name = ctx.getLocals().<ObjectValue>load(0);
-			var helper = vm.getHelper();
+			val name = ctx.getLocals().<ObjectValue>load(0);
+			val helper = vm.getHelper();
 			helper.checkNotNull(name);
 			ctx.setResult(helper.newUtf8(vm.getNativeLibraryManager().mapLibraryName(helper.readUtf8(name))));
 			return Result.ABORT;
@@ -1014,32 +1127,32 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	private static void initThread(VirtualMachine vm) {
-		var vmi = vm.getInterface();
-		var symbols = vm.getSymbols();
-		var thread = symbols.java_lang_Thread;
+		val vmi = vm.getInterface();
+		val symbols = vm.getSymbols();
+		val thread = symbols.java_lang_Thread;
 		vmi.setInvoker(thread, "registerNatives", "()V", ctx -> Result.ABORT);
 		vmi.setInvoker(thread, "currentThread", "()Ljava/lang/Thread;", ctx -> {
 			ctx.setResult(vm.currentThread().getOop());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "interrupt", "()V", ctx -> {
-			var th = vm.getThreadManager().getVmThread(ctx.getLocals().<InstanceValue>load(0));
+			val th = vm.getThreadManager().getVmThread(ctx.getLocals().<InstanceValue>load(0));
 			th.interrupt();
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "setPriority0", "(I)V", ctx -> {
-			var locals = ctx.getLocals();
-			var th = vm.getThreadManager().getVmThread(locals.<InstanceValue>load(0));
+			val locals = ctx.getLocals();
+			val th = vm.getThreadManager().getVmThread(locals.<InstanceValue>load(0));
 			th.setPriority(locals.load(1).asInt());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "start0", "()V", ctx -> {
-			var th = vm.getThreadManager().getVmThread(ctx.getLocals().<InstanceValue>load(0));
+			val th = vm.getThreadManager().getVmThread(ctx.getLocals().<InstanceValue>load(0));
 			th.start();
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "isAlive", "()Z", ctx -> {
-			var th = vm.getThreadManager().getVmThread(ctx.getLocals().<InstanceValue>load(0));
+			val th = vm.getThreadManager().getVmThread(ctx.getLocals().<InstanceValue>load(0));
 			ctx.setResult(new IntValue(th.isAlive() ? 1 : 0));
 			return Result.ABORT;
 		});
@@ -1052,12 +1165,12 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	private static void initClassLoader(VirtualMachine vm) {
-		var vmi = vm.getInterface();
-		var symbols = vm.getSymbols();
-		var classLoader = symbols.java_lang_ClassLoader;
+		val vmi = vm.getInterface();
+		val symbols = vm.getSymbols();
+		val classLoader = symbols.java_lang_ClassLoader;
 		vmi.setInvoker(classLoader, "registerNatives", "()V", ctx -> Result.ABORT);
-		var clInitHook = (MethodInvoker) ctx -> {
-			var oop = vm.getMemoryManager().newJavaInstance(symbols.java_lang_Object, new ClassLoaderData());
+		val clInitHook = (MethodInvoker) ctx -> {
+			val oop = vm.getMemoryManager().newJavaInstance(symbols.java_lang_Object, new ClassLoaderData());
 			ctx.getLocals().<InstanceValue>load(0)
 					.setValue(CLASS_LOADER_OOP, "Ljava/lang/Object;", oop);
 			return Result.CONTINUE;
@@ -1068,39 +1181,43 @@ public final class NativeJava {
 			}
 		}
 		vmi.setInvoker(classLoader, "defineClass1", "(Ljava/lang/ClassLoader;Ljava/lang/String;[BIILjava/security/ProtectionDomain;Ljava/lang/String;)Ljava/lang/Class;", ctx -> {
-			var locals = ctx.getLocals();
-			var loader = locals.<ObjectValue>load(0);
-			var name = locals.<ObjectValue>load(1);
-			var b = locals.<ArrayValue>load(2);
-			var off = locals.load(3).asInt();
-			var length = locals.load(4).asInt();
-			var pd = locals.<ObjectValue>load(5);
-			var source = locals.<ObjectValue>load(6);
-			var helper = vm.getHelper();
-			var bytes = helper.toJavaBytes(b);
-			var defined = helper.defineClass(loader, helper.readUtf8(name), bytes, off, length, pd, helper.readUtf8(source));
+			val locals = ctx.getLocals();
+			val loader = locals.<ObjectValue>load(0);
+			val name = locals.<ObjectValue>load(1);
+			val b = locals.<ArrayValue>load(2);
+			val off = locals.load(3).asInt();
+			val length = locals.load(4).asInt();
+			val pd = locals.<ObjectValue>load(5);
+			val source = locals.<ObjectValue>load(6);
+			val helper = vm.getHelper();
+			val bytes = helper.toJavaBytes(b);
+			val defined = helper.defineClass(loader, helper.readUtf8(name), bytes, off, length, pd, helper.readUtf8(source));
 			//noinspection ConstantConditions
 			ctx.setResult(defined.getOop());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(classLoader, "findLoadedClass0", "(Ljava/lang/String;)Ljava/lang/Class;", ctx -> {
-			var locals = ctx.getLocals();
-			var name = locals.load(1);
-			var helper = vm.getHelper();
+			val locals = ctx.getLocals();
+			val name = locals.load(1);
+			val helper = vm.getHelper();
 			helper.checkNotNull(name);
-			var loader = locals.<InstanceValue>load(0);
-			var oop = ((JavaValue<ClassLoaderData>) loader.getValue(CLASS_LOADER_OOP, "Ljava/lang/Object;")).getValue();
-			var loadedClass = oop.getClass(helper.readUtf8(name).replace('.', '/'));
+			val loader = locals.<InstanceValue>load(0);
+			val oop = ((JavaValue<ClassLoaderData>) loader.getValue(CLASS_LOADER_OOP, "Ljava/lang/Object;")).getValue();
+			val loadedClass = oop.getClass(helper.readUtf8(name).replace('.', '/'));
 			ctx.setResult(loadedClass == null ? NullValue.INSTANCE : loadedClass.getOop());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(classLoader, "findBootstrapClass", "(Ljava/lang/String;)Ljava/lang/Class;", ctx -> {
-			var locals = ctx.getLocals();
-			var name = locals.load(1);
-			var helper = vm.getHelper();
+			val locals = ctx.getLocals();
+			val name = locals.load(1);
+			val helper = vm.getHelper();
 			helper.checkNotNull(name);
-			var loadedClass = vm.getBootClassLoaderData().getClass(helper.readUtf8(name).replace('.', '/'));
+			val loadedClass = vm.getBootClassLoaderData().getClass(helper.readUtf8(name).replace('.', '/'));
 			ctx.setResult(loadedClass == null ? NullValue.INSTANCE : loadedClass.getOop());
+			return Result.ABORT;
+		});
+		vmi.setInvoker(classLoader, "findBuiltinLib", "(Ljava/lang/String;)Ljava/lang/String;", ctx -> {
+			ctx.setResult(ctx.getLocals().load(0));
 			return Result.ABORT;
 		});
 	}
@@ -1112,16 +1229,36 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	private static void initThrowable(VirtualMachine vm) {
-		var vmi = vm.getInterface();
-		var symbols = vm.getSymbols();
-		var throwable = symbols.java_lang_Throwable;
+		val vmi = vm.getInterface();
+		val symbols = vm.getSymbols();
+		val throwable = symbols.java_lang_Throwable;
 		vmi.setInvoker(throwable, "fillInStackTrace", "(I)Ljava/lang/Throwable;", ctx -> {
-			var exception = ctx.getLocals().<InstanceValue>load(0);
-			var copy = vm.currentThread().getBacktrace().copy();
-			var backtrace = vm.getMemoryManager().newJavaInstance(symbols.java_lang_Object, copy);
+			val exception = ctx.getLocals().<InstanceValue>load(0);
+			val copy = vm.currentThread().getBacktrace().copy();
+			val backtrace = vm.getMemoryManager().newJavaInstance(symbols.java_lang_Object, copy);
 			exception.setValue("backtrace", "Ljava/lang/Object;", backtrace);
-			exception.setInt("depth", copy.count());
+			if (throwable.hasVirtualField("depth", "I")) {
+				exception.setInt("depth", copy.count());
+			}
 			ctx.setResult(exception);
+			return Result.ABORT;
+		});
+	}
+
+	/**
+	 * Initializes java/lang/ClassLoader$NativeLibrary.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	private static void initNativeLibrary(VirtualMachine vm) {
+		val vmi = vm.getInterface();
+		val symbols = vm.getSymbols();
+		val library = symbols.java_lang_ClassLoader$NativeLibrary;
+		vmi.setInvoker(library, "load", "(Ljava/lang/String;Z)V", ctx -> {
+			// TODO
+			val _this = ctx.getLocals().<InstanceValue>load(0);
+			_this.setBoolean("loaded", true);
 			return Result.ABORT;
 		});
 	}
@@ -1133,8 +1270,8 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	private static void initReflection(VirtualMachine vm) {
-		var vmi = vm.getInterface();
-		var reflection = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/Reflection");
+		val vmi = vm.getInterface();
+		InstanceJavaClass reflection = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/Reflection");
 		if (reflection == null) {
 			reflection = (InstanceJavaClass) vm.findBootstrapClass("sun/reflect/Reflection");
 			if (reflection == null) {
@@ -1142,12 +1279,12 @@ public final class NativeJava {
 			}
 		}
 		vmi.setInvoker(reflection, "getCallerClass", "()Ljava/lang/Class;", ctx -> {
-			var backtrace = vm.currentThread().getBacktrace();
+			val backtrace = vm.currentThread().getBacktrace();
 			ctx.setResult(backtrace.get(backtrace.count() - 3).getOwner().getOop());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(reflection, "getClassAccessFlags", "(Ljava/lang/Class;)I", ctx -> {
-			var klass = ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue();
+			val klass = ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue();
 			ctx.setResult(new IntValue(klass.getModifiers()));
 			return Result.ABORT;
 		});
@@ -1165,8 +1302,8 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	private static void initNativeConstructorAccessor(VirtualMachine vm) {
-		var vmi = vm.getInterface();
-		var accessor = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/NativeConstructorAccessorImpl");
+		val vmi = vm.getInterface();
+		InstanceJavaClass accessor = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/NativeConstructorAccessorImpl");
 		if (accessor == null) {
 			accessor = (InstanceJavaClass) vm.findBootstrapClass("sun/reflect/NativeConstructorAccessorImpl");
 			if (accessor == null) {
@@ -1174,14 +1311,14 @@ public final class NativeJava {
 			}
 		}
 		vmi.setInvoker(accessor, "newInstance0", "(Ljava/lang/reflect/Constructor;[Ljava/lang/Object;)Ljava/lang/Object;", ctx -> {
-			var locals = ctx.getLocals();
-			var c = locals.<InstanceValue>load(0);
-			var slot = c.getInt("slot");
-			var declaringClass = (InstanceJavaClass) ((JavaValue<JavaClass>) c.getValue("clazz", "Ljava/lang/Class;")).getValue();
-			var helper = vm.getHelper();
-			var methods = declaringClass.getDeclaredConstructors(false);
+			val locals = ctx.getLocals();
+			val c = locals.<InstanceValue>load(0);
+			val slot = c.getInt("slot");
+			val declaringClass = (InstanceJavaClass) ((JavaValue<JavaClass>) c.getValue("clazz", "Ljava/lang/Class;")).getValue();
+			val helper = vm.getHelper();
+			val methods = declaringClass.getDeclaredConstructors(false);
 			JavaMethod mn = null;
-			for (var m : methods) {
+			for (val m : methods) {
 				if (slot == m.getSlot()) {
 					mn = m;
 					break;
@@ -1190,19 +1327,19 @@ public final class NativeJava {
 			if (mn == null || !"<init>".equals(mn.getName())) {
 				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException);
 			}
-			var values = locals.load(1);
+			val values = locals.load(1);
 			Value[] converted;
-			var types = mn.getType().getArgumentTypes();
+			val types = mn.getType().getArgumentTypes();
 			if (!values.isNull()) {
-				var passedArgs = (ArrayValue) values;
+				val passedArgs = (ArrayValue) values;
 				helper.checkEquals(passedArgs.getLength(), types.length);
 				converted = convertReflectionArgs(vm, declaringClass.getClassLoader(), types, passedArgs);
 			} else {
 				helper.checkEquals(types.length, 0);
 				converted = new Value[0];
 			}
-			var instance = vm.getMemoryManager().newInstance(declaringClass);
-			var args = new Value[converted.length + 1];
+			val instance = vm.getMemoryManager().newInstance(declaringClass);
+			val args = new Value[converted.length + 1];
 			System.arraycopy(converted, 0, args, 1, converted.length);
 			args[0] = instance;
 			helper.invokeExact(declaringClass, "<init>", mn.getDesc(), new Value[0], args);
@@ -1218,8 +1355,8 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	private static void initNativeMethodAccessor(VirtualMachine vm) {
-		var vmi = vm.getInterface();
-		var accessor = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/NativeMethodAccessorImpl");
+		val vmi = vm.getInterface();
+		InstanceJavaClass accessor = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/NativeMethodAccessorImpl");
 		if (accessor == null) {
 			accessor = (InstanceJavaClass) vm.findBootstrapClass("sun/reflect/NativeMethodAccessorImpl");
 			if (accessor == null) {
@@ -1227,14 +1364,14 @@ public final class NativeJava {
 			}
 		}
 		vmi.setInvoker(accessor, "invoke0", "(Ljava/lang/reflect/Method;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;", ctx -> {
-			var locals = ctx.getLocals();
-			var m = locals.<InstanceValue>load(0);
-			var slot = m.getInt("slot");
-			var declaringClass = (InstanceJavaClass) ((JavaValue<JavaClass>) m.getValue("clazz", "Ljava/lang/Class;")).getValue();
-			var helper = vm.getHelper();
-			var methods = declaringClass.getDeclaredMethods(false);
+			val locals = ctx.getLocals();
+			val m = locals.<InstanceValue>load(0);
+			val slot = m.getInt("slot");
+			val declaringClass = (InstanceJavaClass) ((JavaValue<JavaClass>) m.getValue("clazz", "Ljava/lang/Class;")).getValue();
+			val helper = vm.getHelper();
+			val methods = declaringClass.getDeclaredMethods(false);
 			JavaMethod mn = null;
-			for (var candidate : methods) {
+			for (val candidate : methods) {
 				if (slot == candidate.getSlot()) {
 					mn = candidate;
 					break;
@@ -1243,24 +1380,24 @@ public final class NativeJava {
 			if (mn == null) {
 				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException);
 			}
-			var instance = locals.load(1);
-			var isStatic = (mn.getAccess() & ACC_STATIC) != 0;
+			val instance = locals.load(1);
+			val isStatic = (mn.getAccess() & ACC_STATIC) != 0;
 			if (!isStatic && instance.isNull()) {
 				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException);
 			}
-			var values = locals.load(2);
-			var types = mn.getType().getArgumentTypes();
-			var passedArgs = (ArrayValue) values;
+			val values = locals.load(2);
+			val types = mn.getType().getArgumentTypes();
+			val passedArgs = (ArrayValue) values;
 			helper.checkEquals(passedArgs.getLength(), types.length);
-			var args = convertReflectionArgs(vm, declaringClass.getClassLoader(), types, passedArgs);
+			Value[] args = convertReflectionArgs(vm, declaringClass.getClassLoader(), types, passedArgs);
 			if (!isStatic) {
-				var prev = args;
+				val prev = args;
 				args = new Value[args.length + 1];
 				System.arraycopy(prev, 0, args, 1, prev.length);
 				args[0] = instance;
 			}
-			var name = mn.getName();
-			var desc = mn.getDesc();
+			val name = mn.getName();
+			val desc = mn.getDesc();
 			Value result;
 			if (isStatic) {
 				result = helper.invokeStatic(declaringClass, name, desc, new Value[0], args).getResult();
@@ -1280,24 +1417,26 @@ public final class NativeJava {
 	 * 		VM instance.
 	 * @param unsafe
 	 * 		Unsafe class.
+	 * @param uhelper
+	 * 		Platform-specific implementation provider.
 	 */
-	private static void initNewUnsafe(VirtualMachine vm, InstanceJavaClass unsafe) {
-		var vmi = vm.getInterface();
-		vmi.setInvoker(unsafe, "allocateMemory0", "(J)J", ctx -> {
-			var memoryManager = vm.getMemoryManager();
-			var block = memoryManager.allocateDirect(ctx.getLocals().load(1).asLong());
+	private static void initUnsafe(VirtualMachine vm, InstanceJavaClass unsafe, UnsafeHelper uhelper) {
+		val vmi = vm.getInterface();
+		vmi.setInvoker(unsafe, uhelper.allocateMemory(), "(J)J", ctx -> {
+			val memoryManager = vm.getMemoryManager();
+			val block = memoryManager.allocateDirect(ctx.getLocals().load(1).asLong());
 			if (block == null) {
 				vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError);
 			}
 			ctx.setResult(new LongValue(block.getAddress()));
 			return Result.ABORT;
 		});
-		vmi.setInvoker(unsafe, "reallocateMemory0", "(JJ)J", ctx -> {
-			var memoryManager = vm.getMemoryManager();
-			var locals = ctx.getLocals();
-			var address = locals.load(1).asLong();
-			var bytes = locals.load(3).asLong();
-			var block = memoryManager.reallocateDirect(address, bytes);
+		vmi.setInvoker(unsafe, uhelper.reallocateMemory(), "(JJ)J", ctx -> {
+			val memoryManager = vm.getMemoryManager();
+			val locals = ctx.getLocals();
+			val address = locals.load(1).asLong();
+			val bytes = locals.load(3).asLong();
+			val block = memoryManager.reallocateDirect(address, bytes);
 			if (block == null) {
 				vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError);
 			}
@@ -1305,31 +1444,31 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "freeMemory", "(J)V", ctx -> {
-			var memoryManager = vm.getMemoryManager();
-			var locals = ctx.getLocals();
-			var address = locals.load(1).asLong();
+			val memoryManager = vm.getMemoryManager();
+			val locals = ctx.getLocals();
+			val address = locals.load(1).asLong();
 			if (!memoryManager.freeMemory(address)) {
 				throw new PanicException("Segfault");
 			}
 			return Result.ABORT;
 		});
-		vmi.setInvoker(unsafe, "setMemory0", "(Ljava/lang/Object;JJB)V", ctx -> {
-			var locals = ctx.getLocals();
-			var value = locals.<ObjectValue>load(1);
-			var memory = value.getMemory().getData();
-			var offset = locals.load(2).asLong();
-			var bytes = locals.load(4).asLong();
-			var b = locals.load(6).asByte();
+		vmi.setInvoker(unsafe, uhelper.setMemory(), "(Ljava/lang/Object;JJB)V", ctx -> {
+			val locals = ctx.getLocals();
+			val value = locals.<ObjectValue>load(1);
+			val memory = value.getMemory().getData();
+			long offset = locals.load(2).asLong();
+			val bytes = locals.load(4).asLong();
+			val b = locals.load(6).asByte();
 			for (; offset < bytes; offset++) {
 				memory.put((int) offset, b);
 			}
 			return Result.ABORT;
 		});
-		vmi.setInvoker(unsafe, "arrayBaseOffset0", "(Ljava/lang/Class;)I", ctx -> {
-			var locals = ctx.getLocals();
-			var value = locals.<JavaValue<JavaClass>>load(1);
-			var klass = value.getValue();
-			var component = klass.getComponentType();
+		vmi.setInvoker(unsafe, uhelper.arrayBaseOffset(), "(Ljava/lang/Class;)I", ctx -> {
+			val locals = ctx.getLocals();
+			val value = locals.<JavaValue<JavaClass>>load(1);
+			val klass = value.getValue();
+			val component = klass.getComponentType();
 			if (component == null) {
 				vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
 			} else {
@@ -1337,11 +1476,11 @@ public final class NativeJava {
 			}
 			return Result.ABORT;
 		});
-		vmi.setInvoker(unsafe, "arrayIndexScale0", "(Ljava/lang/Class;)I", ctx -> {
-			var locals = ctx.getLocals();
-			var value = locals.<JavaValue<JavaClass>>load(1);
-			var klass = value.getValue();
-			var component = klass.getComponentType();
+		vmi.setInvoker(unsafe, uhelper.arrayIndexScale(), "(Ljava/lang/Class;)I", ctx -> {
+			val locals = ctx.getLocals();
+			val value = locals.<JavaValue<JavaClass>>load(1);
+			val klass = value.getValue();
+			val component = klass.getComponentType();
 			if (component == null) {
 				vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
 			} else {
@@ -1349,7 +1488,7 @@ public final class NativeJava {
 			}
 			return Result.ABORT;
 		});
-		vmi.setInvoker(unsafe, "addressSize0", "()I", ctx -> {
+		vmi.setInvoker(unsafe, uhelper.addressSize(), "()I", ctx -> {
 			ctx.setResult(new IntValue(vm.getMemoryManager().addressSize()));
 			return Result.ABORT;
 		});
@@ -1362,14 +1501,14 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "objectFieldOffset1", "(Ljava/lang/Class;Ljava/lang/String;)J", ctx -> {
-			var locals = ctx.getLocals();
-			var klass = locals.<JavaValue<JavaClass>>load(1);
-			var wrapper = klass.getValue();
+			val locals = ctx.getLocals();
+			val klass = locals.<JavaValue<JavaClass>>load(1);
+			val wrapper = klass.getValue();
 			if (!(wrapper instanceof InstanceJavaClass)) {
 				ctx.setResult(new LongValue(-1L));
 			} else {
-				var utf = vm.getHelper().readUtf8(locals.load(2));
-				var offset = ((InstanceJavaClass) wrapper).getFieldOffsetRecursively(utf);
+				val utf = vm.getHelper().readUtf8(locals.load(2));
+				long offset = ((InstanceJavaClass) wrapper).getFieldOffsetRecursively(utf);
 				if (offset != -1L) offset += vm.getMemoryManager().valueBaseOffset(klass);
 				ctx.setResult(new LongValue(offset));
 			}
@@ -1378,20 +1517,20 @@ public final class NativeJava {
 		vmi.setInvoker(unsafe, "loadFence", "()V", ctx -> Result.ABORT);
 		vmi.setInvoker(unsafe, "storeFence", "()V", ctx -> Result.ABORT);
 		vmi.setInvoker(unsafe, "fullFence", "()V", ctx -> Result.ABORT);
-		vmi.setInvoker(unsafe, "compareAndSetInt", "(Ljava/lang/Object;JII)Z", ctx -> {
-			var helper = vm.getHelper();
-			var locals = ctx.getLocals();
-			var value = locals.load(1);
+		vmi.setInvoker(unsafe, uhelper.compareAndSetInt(), "(Ljava/lang/Object;JII)Z", ctx -> {
+			val helper = vm.getHelper();
+			val locals = ctx.getLocals();
+			val value = locals.load(1);
 			helper.checkNotNull(value);
 			if (!(value instanceof ObjectValue)) {
 				vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
 			}
-			var obj = (ObjectValue) value;
-			var offset = (int) locals.load(2).asLong();
-			var expected = locals.load(4).asInt();
-			var x = locals.load(5).asInt();
-			var memoryManager = vm.getMemoryManager();
-			var result = memoryManager.readInt(obj, offset) == expected;
+			val obj = (ObjectValue) value;
+			val offset = (int) locals.load(2).asLong();
+			val expected = locals.load(4).asInt();
+			val x = locals.load(5).asInt();
+			val memoryManager = vm.getMemoryManager();
+			val result = memoryManager.readInt(obj, offset) == expected;
 			if (result) {
 				memoryManager.writeInt(obj, offset, x);
 			}
@@ -1399,53 +1538,53 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "getObjectVolatile", "(Ljava/lang/Object;J)Ljava/lang/Object;", ctx -> {
-			var helper = vm.getHelper();
-			var locals = ctx.getLocals();
-			var value = locals.load(1);
+			val helper = vm.getHelper();
+			val locals = ctx.getLocals();
+			val value = locals.load(1);
 			helper.checkNotNull(value);
 			if (!(value instanceof ObjectValue)) {
 				vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
 			}
-			var obj = (ObjectValue) value;
-			var offset = (int) locals.load(2).asLong();
-			var memoryManager = vm.getMemoryManager();
+			val obj = (ObjectValue) value;
+			val offset = (int) locals.load(2).asLong();
+			val memoryManager = vm.getMemoryManager();
 			ctx.setResult(memoryManager.readValue(obj, offset));
 			return Result.ABORT;
 		});
-		vmi.setInvoker(unsafe, "compareAndSetObject", "(Ljava/lang/Object;JLjava/lang/Object;Ljava/lang/Object;)Z", ctx -> {
-			var helper = vm.getHelper();
-			var locals = ctx.getLocals();
-			var value = locals.load(1);
+		vmi.setInvoker(unsafe, uhelper.compareAndSetReference(), "(Ljava/lang/Object;JLjava/lang/Object;Ljava/lang/Object;)Z", ctx -> {
+			val helper = vm.getHelper();
+			val locals = ctx.getLocals();
+			val value = locals.load(1);
 			helper.checkNotNull(value);
 			if (!(value instanceof ObjectValue)) {
 				vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
 			}
-			var obj = (ObjectValue) value;
-			var offset = (int) locals.load(2).asLong();
-			var expected = locals.<ObjectValue>load(4);
-			var x = locals.<ObjectValue>load(5);
-			var memoryManager = vm.getMemoryManager();
-			var result = memoryManager.readValue(obj, offset) == expected;
+			val obj = (ObjectValue) value;
+			val offset = (int) locals.load(2).asLong();
+			val expected = locals.<ObjectValue>load(4);
+			val x = locals.<ObjectValue>load(5);
+			val memoryManager = vm.getMemoryManager();
+			val result = memoryManager.readValue(obj, offset) == expected;
 			if (result) {
 				memoryManager.writeValue(obj, offset, x);
 			}
 			ctx.setResult(new IntValue(result ? 1 : 0));
 			return Result.ABORT;
 		});
-		vmi.setInvoker(unsafe, "compareAndSetLong", "(Ljava/lang/Object;JJJ)Z", ctx -> {
-			var helper = vm.getHelper();
-			var locals = ctx.getLocals();
-			var value = locals.load(1);
+		vmi.setInvoker(unsafe, uhelper.compareAndSetLong(), "(Ljava/lang/Object;JJJ)Z", ctx -> {
+			val helper = vm.getHelper();
+			val locals = ctx.getLocals();
+			val value = locals.load(1);
 			helper.checkNotNull(value);
 			if (!(value instanceof ObjectValue)) {
 				vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
 			}
-			var obj = (ObjectValue) value;
-			var offset = (int) locals.load(2).asLong();
-			var expected = locals.load(4).asLong();
-			var x = locals.load(6).asLong();
-			var memoryManager = vm.getMemoryManager();
-			var result = memoryManager.readLong(obj, offset) == expected;
+			val obj = (ObjectValue) value;
+			val offset = (int) locals.load(2).asLong();
+			val expected = locals.load(4).asLong();
+			val x = locals.load(6).asLong();
+			val memoryManager = vm.getMemoryManager();
+			val result = memoryManager.readLong(obj, offset) == expected;
 			if (result) {
 				memoryManager.writeLong(obj, offset, x);
 			}
@@ -1453,54 +1592,54 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "putObjectVolatile", "(Ljava/lang/Object;JLjava/lang/Object;)V", ctx -> {
-			var helper = vm.getHelper();
-			var locals = ctx.getLocals();
-			var o = locals.load(1);
+			val helper = vm.getHelper();
+			val locals = ctx.getLocals();
+			val o = locals.load(1);
 			helper.checkNotNull(o);
-			var offset = (int) locals.load(2).asLong();
-			var value = locals.load(4);
-			var memoryManager = vm.getMemoryManager();
+			val offset = (int) locals.load(2).asLong();
+			val value = locals.load(4);
+			val memoryManager = vm.getMemoryManager();
 			memoryManager.writeValue((ObjectValue) o, offset, (ObjectValue) value);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "getIntVolatile", "(Ljava/lang/Object;J)I", ctx -> {
-			var locals = ctx.getLocals();
-			var value = locals.load(1);
+			val locals = ctx.getLocals();
+			val value = locals.load(1);
 			if (value.isNull()) {
 				throw new PanicException("Segfault");
 			}
-			var offset = locals.load(2).asInt();
-			var memoryManager = vm.getMemoryManager();
+			val offset = locals.load(2).asInt();
+			val memoryManager = vm.getMemoryManager();
 			ctx.setResult(new IntValue(memoryManager.readInt((ObjectValue) value, offset)));
 			return Result.ABORT;
 		});
-		vmi.setInvoker(unsafe, "ensureClassInitialized0", "(Ljava/lang/Class;)V", ctx -> {
-			var value = ctx.getLocals().load(1);
+		vmi.setInvoker(unsafe, uhelper.ensureClassInitialized(), "(Ljava/lang/Class;)V", ctx -> {
+			val value = ctx.getLocals().load(1);
 			vm.getHelper().checkNotNull(value);
 			((JavaValue<JavaClass>) value).getValue().initialize();
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "getObject", "(Ljava/lang/Object;J)Ljava/lang/Object;", ctx -> {
-			var locals = ctx.getLocals();
-			var value = locals.load(1);
+			val locals = ctx.getLocals();
+			val value = locals.load(1);
 			if (value.isNull()) {
 				throw new PanicException("Segfault");
 			}
-			var offset = locals.load(2).asInt();
-			var memoryManager = vm.getMemoryManager();
+			val offset = locals.load(2).asInt();
+			val memoryManager = vm.getMemoryManager();
 			ctx.setResult(memoryManager.readValue((ObjectValue) value, offset));
 			return Result.ABORT;
 		});
-		vmi.setInvoker(unsafe, "objectFieldOffset0", "(Ljava/lang/reflect/Field;)J", ctx -> {
-			var $field = ctx.getLocals().load(1);
-			var helper = vm.getHelper();
+		vmi.setInvoker(unsafe, uhelper.objectFieldOffset(), "(Ljava/lang/reflect/Field;)J", ctx -> {
+			val $field = ctx.getLocals().load(1);
+			val helper = vm.getHelper();
 			helper.checkNotNull($field);
-			var field = (InstanceValue) $field;
-			var declaringClass = ((JavaValue<InstanceJavaClass>) field.getValue("clazz", "Ljava/lang/Class;")).getValue();
-			var slot = field.getInt("slot");
-			for (var fn : declaringClass.getDeclaredFields(false)) {
+			val field = (InstanceValue) $field;
+			val declaringClass = ((JavaValue<InstanceJavaClass>) field.getValue("clazz", "Ljava/lang/Class;")).getValue();
+			val slot = field.getInt("slot");
+			for (val fn : declaringClass.getDeclaredFields(false)) {
 				if (slot == fn.getSlot()) {
-					var offset = vm.getMemoryManager().valueBaseOffset(declaringClass) + fn.getOffset();
+					val offset = vm.getMemoryManager().valueBaseOffset(declaringClass) + fn.getOffset();
 					ctx.setResult(new LongValue(offset));
 					return Result.ABORT;
 				}
@@ -1508,21 +1647,41 @@ public final class NativeJava {
 			ctx.setResult(new LongValue(-1L));
 			return Result.ABORT;
 		});
-		vmi.setInvoker(unsafe, "staticFieldOffset0", "(Ljava/lang/reflect/Field;)J", ctx -> {
-			var $field = ctx.getLocals().load(1);
-			var helper = vm.getHelper();
+		vmi.setInvoker(unsafe, uhelper.staticFieldOffset(), "(Ljava/lang/reflect/Field;)J", ctx -> {
+			val $field = ctx.getLocals().load(1);
+			val helper = vm.getHelper();
 			helper.checkNotNull($field);
-			var field = (InstanceValue) $field;
-			var declaringClass = ((JavaValue<InstanceJavaClass>) field.getValue("clazz", "Ljava/lang/Class;")).getValue();
-			var slot = field.getInt("slot");
-			for (var fn : declaringClass.getDeclaredFields(false)) {
+			val field = (InstanceValue) $field;
+			val declaringClass = ((JavaValue<InstanceJavaClass>) field.getValue("clazz", "Ljava/lang/Class;")).getValue();
+			val slot = field.getInt("slot");
+			for (val fn : declaringClass.getDeclaredFields(false)) {
 				if (slot == fn.getSlot()) {
-					var offset = vm.getMemoryManager().getStaticOffset(declaringClass) + fn.getOffset();
+					val offset = vm.getMemoryManager().getStaticOffset(declaringClass) + fn.getOffset();
 					ctx.setResult(new LongValue(offset));
 					return Result.ABORT;
 				}
 			}
 			ctx.setResult(new LongValue(-1L));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(unsafe, "putLong", "(JJ)V", ctx -> {
+			val memoryManager = vm.getMemoryManager();
+			val locals = ctx.getLocals();
+			val block = memoryManager.getMemory(locals.load(1).asLong());
+			if (block == null) {
+				throw new PanicException("Segfault");
+			}
+			block.getData().putLong(0, locals.load(3).asLong());
+			return Result.ABORT;
+		});
+		vmi.setInvoker(unsafe, "getByte", "(J)B", ctx -> {
+			val memoryManager = vm.getMemoryManager();
+			val locals = ctx.getLocals();
+			val block = memoryManager.getMemory(locals.load(1).asLong());
+			if (block == null) {
+				throw new PanicException("Segfault");
+			}
+			ctx.setResult(new IntValue(block.getData().get(0)));
 			return Result.ABORT;
 		});
 	}
@@ -1534,18 +1693,18 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	private static void initConstantPool(VirtualMachine vm) {
-		var cpClass = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/ConstantPool");
+		InstanceJavaClass cpClass = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/ConstantPool");
 		if (cpClass == null) {
 			cpClass = (InstanceJavaClass) vm.findBootstrapClass("sun/reflect/ConstantPool");
 			if (cpClass == null) {
 				throw new IllegalStateException("Unable to locate ConstantPool class");
 			}
 		}
-		var vmi = vm.getInterface();
+		val vmi = vm.getInterface();
 		vmi.setInvoker(cpClass, "getSize0", "(Ljav/lang/Object;)I", ctx -> {
-			var wrapper = getCpOop(ctx);
+			val wrapper = getCpOop(ctx);
 			if (wrapper instanceof InstanceJavaClass) {
-				var cr = ((InstanceJavaClass) wrapper).getClassReader();
+				val cr = ((InstanceJavaClass) wrapper).getClassReader();
 				ctx.setResult(new IntValue(cr.getItemCount()));
 			} else {
 				ctx.setResult(new IntValue(0));
@@ -1553,13 +1712,13 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(cpClass, "getClassAt0", "(Ljava/lang/Object;I)Ljava/lang/Class;", ctx -> {
-			var wrapper = getInstanceCpOop(ctx);
-			var cr = wrapper.getClassReader();
-			var index = cpRangeCheck(ctx, cr);
-			var offset = cr.getItem(index);
-			var className = cr.readClass(offset, new char[cr.getMaxStringLength()]);
-			var helper = vm.getHelper();
-			var result = helper.findClass(ctx.getOwner().getClassLoader(), className, true);
+			val wrapper = getInstanceCpOop(ctx);
+			val cr = wrapper.getClassReader();
+			val index = cpRangeCheck(ctx, cr);
+			val offset = cr.getItem(index);
+			val className = cr.readClass(offset, new char[cr.getMaxStringLength()]);
+			val helper = vm.getHelper();
+			val result = helper.findClass(ctx.getOwner().getClassLoader(), className, true);
 			if (result == null) {
 				helper.throwException(vm.getSymbols().java_lang_ClassNotFoundException, className);
 			}
@@ -1567,12 +1726,12 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(cpClass, "getClassAtIfLoaded0", "(Ljava/lang/Object;I)Ljava/lang/Class;", ctx -> {
-			var wrapper = getInstanceCpOop(ctx);
-			var cr = wrapper.getClassReader();
-			var index = cpRangeCheck(ctx, cr);
-			var offset = cr.getItem(index);
-			var className = cr.readClass(offset, new char[cr.getMaxStringLength()]);
-			var result = vm.getHelper().findClass(ctx.getOwner().getClassLoader(), className, true);
+			val wrapper = getInstanceCpOop(ctx);
+			val cr = wrapper.getClassReader();
+			val index = cpRangeCheck(ctx, cr);
+			val offset = cr.getItem(index);
+			val className = cr.readClass(offset, new char[cr.getMaxStringLength()]);
+			val result = vm.getHelper().findClass(ctx.getOwner().getClassLoader(), className, true);
 			if (result == null) {
 				ctx.setResult(NullValue.INSTANCE);
 			} else {
@@ -1583,69 +1742,69 @@ public final class NativeJava {
 		// getClassRefIndexAt0?
 		// TODO all reflection stuff
 		vmi.setInvoker(cpClass, "getIntAt0", "(Ljava/lang/Object;I)I", ctx -> {
-			var wrapper = getInstanceCpOop(ctx);
-			var cr = wrapper.getClassReader();
-			var index = cpRangeCheck(ctx, cr);
-			var offset = cr.getItem(index);
+			val wrapper = getInstanceCpOop(ctx);
+			val cr = wrapper.getClassReader();
+			val index = cpRangeCheck(ctx, cr);
+			val offset = cr.getItem(index);
 			ctx.setResult(new IntValue(cr.readInt(offset)));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(cpClass, "getLongAt0", "(Ljava/lang/Object;I)J", ctx -> {
-			var wrapper = getInstanceCpOop(ctx);
-			var cr = wrapper.getClassReader();
-			var index = cpRangeCheck(ctx, cr);
-			var offset = cr.getItem(index);
+			val wrapper = getInstanceCpOop(ctx);
+			val cr = wrapper.getClassReader();
+			val index = cpRangeCheck(ctx, cr);
+			val offset = cr.getItem(index);
 			ctx.setResult(new LongValue(cr.readLong(offset)));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(cpClass, "getFloatAt0", "(Ljava/lang/Object;I)F", ctx -> {
-			var wrapper = getInstanceCpOop(ctx);
-			var cr = wrapper.getClassReader();
-			var index = cpRangeCheck(ctx, cr);
-			var offset = cr.getItem(index);
+			val wrapper = getInstanceCpOop(ctx);
+			val cr = wrapper.getClassReader();
+			val index = cpRangeCheck(ctx, cr);
+			val offset = cr.getItem(index);
 			ctx.setResult(new FloatValue(Float.intBitsToFloat(cr.readInt(offset))));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(cpClass, "getDoubleAt0", "(Ljava/lang/Object;I)D", ctx -> {
-			var wrapper = getInstanceCpOop(ctx);
-			var cr = wrapper.getClassReader();
-			var index = cpRangeCheck(ctx, cr);
-			var offset = cr.getItem(index);
+			val wrapper = getInstanceCpOop(ctx);
+			val cr = wrapper.getClassReader();
+			val index = cpRangeCheck(ctx, cr);
+			val offset = cr.getItem(index);
 			ctx.setResult(new DoubleValue(Double.longBitsToDouble(cr.readLong(offset))));
 			return Result.ABORT;
 		});
 	}
 
 	private static void wrongCpType(ExecutionContext ctx) {
-		var vm = ctx.getVM();
+		val vm = ctx.getVM();
 		vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException, "Wrong cp entry type");
 	}
 
 	private static int cpRangeCheck(ExecutionContext ctx, ClassReader cr) {
-		var index = ctx.getLocals().load(1).asInt();
+		val index = ctx.getLocals().load(1).asInt();
 		if (index < 0 || index >= cr.getItemCount()) {
-			var vm = ctx.getVM();
+			val vm = ctx.getVM();
 			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
 		}
 		return index;
 	}
 
 	private static InstanceJavaClass getInstanceCpOop(ExecutionContext ctx) {
-		var jc = getCpOop(ctx);
+		val jc = getCpOop(ctx);
 		if (!(jc instanceof InstanceJavaClass)) {
-			var vm = ctx.getVM();
+			val vm = ctx.getVM();
 			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
 		}
 		return (InstanceJavaClass) jc;
 	}
 
 	private static JavaClass getCpOop(ExecutionContext ctx) {
-		var vm = ctx.getVM();
-		var value = ctx.getLocals().load(1);
+		val vm = ctx.getVM();
+		val value = ctx.getLocals().load(1);
 		if (!(value instanceof JavaValue)) {
 			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
 		}
-		var wrapper = ((JavaValue<?>) value).getValue();
+		val wrapper = ((JavaValue<?>) value).getValue();
 		if (!(wrapper instanceof JavaClass)) {
 			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
 		}
@@ -1659,13 +1818,13 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	private static void initWinFS(VirtualMachine vm) {
-		var winNTfs = (InstanceJavaClass) vm.findBootstrapClass("java/io/WinNTFileSystem");
+		val winNTfs = (InstanceJavaClass) vm.findBootstrapClass("java/io/WinNTFileSystem");
 		if (winNTfs != null) {
-			var vmi = vm.getInterface();
+			val vmi = vm.getInterface();
 			vmi.setInvoker(winNTfs, "initIDs", "()V", ctx -> Result.ABORT);
 			vmi.setInvoker(winNTfs, "canonicalize0", "(Ljava/lang/String;)Ljava/lang/String;", ctx -> {
-				var helper = vm.getHelper();
-				var path = helper.readUtf8(ctx.getLocals().load(1));
+				val helper = vm.getHelper();
+				val path = helper.readUtf8(ctx.getLocals().load(1));
 				try {
 					ctx.setResult(helper.newUtf8(vm.getFileDescriptorManager().canonicalize(path)));
 				} catch (IOException ex) {
@@ -1674,16 +1833,16 @@ public final class NativeJava {
 				return Result.ABORT;
 			});
 			vmi.setInvoker(winNTfs, "getBooleanAttributes", "(Ljava/io/File;)I", ctx -> {
-				var helper = vm.getHelper();
-				var value = ctx.getLocals().load(1);
+				val helper = vm.getHelper();
+				val value = ctx.getLocals().load(1);
 				helper.checkNotNull(value);
 				try {
-					var path = helper.readUtf8(helper.invokeVirtual("getAbsolutePath", "()Ljava/lang/String;", new Value[0], new Value[]{value}).getResult());
-					var attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
+					val path = helper.readUtf8(helper.invokeVirtual("getAbsolutePath", "()Ljava/lang/String;", new Value[0], new Value[]{value}).getResult());
+					val attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
 					if (attributes == null) {
 						ctx.setResult(new IntValue(0));
 					} else {
-						var res = 1;
+						int res = 1;
 						if (attributes.isDirectory()) {
 							res |= 4;
 						} else {
@@ -1696,15 +1855,36 @@ public final class NativeJava {
 				}
 				return Result.ABORT;
 			});
+			vmi.setInvoker(winNTfs, "list", "(Ljava/io/File;)[Ljava/lang/String;", ctx -> {
+				val helper = vm.getHelper();
+				val value = ctx.getLocals().load(1);
+				helper.checkNotNull(value);
+				val path = helper.readUtf8(helper.invokeVirtual("getAbsolutePath", "()Ljava/lang/String;", new Value[0], new Value[]{value}).getResult());
+				val list = vm.getFileDescriptorManager().list(path);
+				if (list == null) {
+					ctx.setResult(NullValue.INSTANCE);
+				} else {
+					val values = new ObjectValue[list.length];
+					for (int i = 0; i < list.length; i++) {
+						values[i] = helper.newUtf8(list[i]);
+					}
+					ctx.setResult(helper.toVMValues(values));
+				}
+				return Result.ABORT;
+			});
+			vmi.setInvoker(winNTfs, "canonicalizeWithPrefix0", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;", ctx -> {
+				ctx.setResult(ctx.getLocals().load(2));
+				return Result.ABORT;
+			});
 		}
 	}
 
 
 	private static final int
-			MN_IS_METHOD           = 0x00010000, // method (not constructor)
-			MN_IS_CONSTRUCTOR      = 0x00020000, // constructor
-			MN_IS_FIELD            = 0x00040000, // field
-			MN_IS_TYPE             = 0x00080000; // nested type
+			MN_IS_METHOD = 0x00010000, // method (not constructor)
+			MN_IS_CONSTRUCTOR = 0x00020000, // constructor
+			MN_IS_FIELD = 0x00040000, // field
+			MN_IS_TYPE = 0x00080000; // nested type
 
 	/**
 	 * Initializes method handles related classes.
@@ -1713,37 +1893,37 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	private static void initMethodHandles(VirtualMachine vm) {
-		var vmi = vm.getInterface();
-		var natives = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/MethodHandleNatives");
+		val vmi = vm.getInterface();
+		val natives = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/MethodHandleNatives");
 		vmi.setInvoker(natives, "registerNatives", "()V", ctx -> Result.ABORT);
 		vmi.setInvoker(natives, "resolve", "(Ljava/lang/invoke/MemberName;Ljava/lang/Class;Z)Ljava/lang/invoke/MemberName;", ctx -> {
-			var $memberName = ctx.getLocals().load(0);
-			var helper = vm.getHelper();
+			val $memberName = ctx.getLocals().load(0);
+			val helper = vm.getHelper();
 			helper.checkNotNull($memberName);
-			var symbols = vm.getSymbols();
-			var memberName = (InstanceValue) $memberName;
-			var classWrapper = (JavaValue<InstanceJavaClass>) memberName.getValue("clazz", "Ljava/lang/Class;");
-			var clazz = classWrapper.getValue();
-			var name = helper.readUtf8(memberName.getValue("name", "Ljava/lang/String;"));
-			var mt = memberName.getValue("type", "Ljava/lang/Object;");
-			var desc = helper.readUtf8(helper.invokeExact(symbols.java_lang_invoke_MethodType, "toMethodDescriptorString", "()Ljava/lang/String;", new Value[0], new Value[]{
+			val symbols = vm.getSymbols();
+			val memberName = (InstanceValue) $memberName;
+			val classWrapper = (JavaValue<InstanceJavaClass>) memberName.getValue("clazz", "Ljava/lang/Class;");
+			val clazz = classWrapper.getValue();
+			val name = helper.readUtf8(memberName.getValue("name", "Ljava/lang/String;"));
+			val mt = memberName.getValue("type", "Ljava/lang/Object;");
+			val desc = helper.readUtf8(helper.invokeExact(symbols.java_lang_invoke_MethodType, "toMethodDescriptorString", "()Ljava/lang/String;", new Value[0], new Value[]{
 					mt
 			}).getResult());
-			var handle = clazz.getMethod(name, desc);
+			val handle = clazz.getMethod(name, desc);
 			if (handle == null) {
 				helper.throwException(symbols.java_lang_NoSuchMethodError, clazz.getInternalName() + '.' + name + desc);
 			}
 			// Inject vmholder & vmtarget into resolved name
 			memberName.setInt(VM_INDEX, handle.getSlot());
-			var memoryManager = vm.getMemoryManager();
-			var resolvedName = memoryManager.newInstance(symbols.java_lang_invoke_ResolvedMethodName);
+			val memoryManager = vm.getMemoryManager();
+			val resolvedName = memoryManager.newInstance(symbols.java_lang_invoke_ResolvedMethodName);
 			resolvedName.initialize();
-			var jlo = symbols.java_lang_Object;
+			val jlo = symbols.java_lang_Object;
 			resolvedName.setValue(VM_TARGET, "Ljava/lang/Object;", memoryManager.newJavaInstance(jlo, handle));
 			resolvedName.setValue(VM_HOLDER, "Ljava/lang/Object;", classWrapper);
 			memberName.setValue("method", symbols.java_lang_invoke_ResolvedMethodName.getDescriptor(), resolvedName);
 			// Inject flags
-			var flags = handle.getAccess();
+			int flags = handle.getAccess();
 			if ("<init>".equals(handle.getName())) {
 				flags |= MN_IS_CONSTRUCTOR;
 			} else {
@@ -1762,8 +1942,8 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	static void injectVMFields(VirtualMachine vm) {
-		var symbols = vm.getSymbols();
-		var classLoader = symbols.java_lang_ClassLoader;
+		val symbols = vm.getSymbols();
+		val classLoader = symbols.java_lang_ClassLoader;
 
 		classLoader.getNode().fields.add(new FieldNode(
 				ACC_PRIVATE | ACC_FINAL,
@@ -1773,7 +1953,7 @@ public final class NativeJava {
 				null
 		));
 
-		var memberName = symbols.java_lang_invoke_MemberName;
+		val memberName = symbols.java_lang_invoke_MemberName;
 		memberName.getNode().fields.add(new FieldNode(
 				ACC_PRIVATE,
 				VM_INDEX,
@@ -1782,24 +1962,27 @@ public final class NativeJava {
 				null
 		));
 
-		var resolvedMethodName = symbols.java_lang_invoke_ResolvedMethodName;
-		{
-			var fields = resolvedMethodName.getNode().fields;
-			fields.add(new FieldNode(
-					ACC_PRIVATE,
-					VM_TARGET,
-					"Ljava/lang/Object;",
-					null,
-					null
-			));
-			fields.add(new FieldNode(
-					ACC_PRIVATE,
-					VM_HOLDER,
-					"Ljava/lang/Object;",
-					null,
-					null
-			));
+		val resolvedMethodName = symbols.java_lang_invoke_ResolvedMethodName;
+		List<FieldNode> fields;
+		if (resolvedMethodName != null) {
+			fields = resolvedMethodName.getNode().fields;
+		} else {
+			fields = memberName.getNode().fields;
 		}
+		fields.add(new FieldNode(
+				ACC_PRIVATE,
+				VM_TARGET,
+				"Ljava/lang/Object;",
+				null,
+				null
+		));
+		fields.add(new FieldNode(
+				ACC_PRIVATE,
+				VM_HOLDER,
+				"Ljava/lang/Object;",
+				null,
+				null
+		));
 	}
 
 	/**
@@ -1819,11 +2002,11 @@ public final class NativeJava {
 	 * @return original values array.
 	 */
 	private static Value[] convertReflectionArgs(VirtualMachine vm, Value loader, Type[] argTypes, ArrayValue array) {
-		var helper = vm.getHelper();
-		var result = new Value[argTypes.length];
+		val helper = vm.getHelper();
+		val result = new Value[argTypes.length];
 		for (int i = 0; i < argTypes.length; i++) {
-			var originalClass = helper.findClass(loader, argTypes[i].getInternalName(), true);
-			var value = (ObjectValue) array.getValue(i);
+			val originalClass = helper.findClass(loader, argTypes[i].getInternalName(), true);
+			val value = (ObjectValue) array.getValue(i);
 			if (value.isNull() || !originalClass.isPrimitive()) {
 				result[i] = value;
 			} else {
@@ -1840,7 +2023,7 @@ public final class NativeJava {
 	 * 		VM interface.
 	 */
 	private static void setInstructions(VMInterface vmi) {
-		var nop = new NopProcessor();
+		val nop = new NopProcessor();
 		vmi.setProcessor(NOP, nop);
 
 		vmi.setProcessor(ACONST_NULL, new ConstantProcessor(NullValue.INSTANCE));
@@ -2030,5 +2213,158 @@ public final class NativeJava {
 
 		vmi.setProcessor(IFNONNULL, new ValueJumpProcessor(value -> !value.isNull()));
 		vmi.setProcessor(IFNULL, new ValueJumpProcessor(Value::isNull));
+	}
+
+	private interface UnsafeHelper {
+
+		String allocateMemory();
+
+		String reallocateMemory();
+
+		String setMemory();
+
+		String arrayBaseOffset();
+
+		String arrayIndexScale();
+
+		String addressSize();
+
+		String ensureClassInitialized();
+
+		String objectFieldOffset();
+
+		String staticFieldOffset();
+
+		String compareAndSetReference();
+
+		String compareAndSetInt();
+
+		String compareAndSetLong();
+	}
+
+	private static class OldUnsafeHelper implements UnsafeHelper {
+
+		@Override
+		public String allocateMemory() {
+			return "allocateMemory";
+		}
+
+		@Override
+		public String reallocateMemory() {
+			return "reallocateMemory";
+		}
+
+		@Override
+		public String setMemory() {
+			return "setMemory";
+		}
+
+		@Override
+		public String arrayBaseOffset() {
+			return "arrayBaseOffset";
+		}
+
+		@Override
+		public String arrayIndexScale() {
+			return "arrayIndexScale";
+		}
+
+		@Override
+		public String addressSize() {
+			return "addressSize";
+		}
+
+		@Override
+		public String ensureClassInitialized() {
+			return "ensureClassInitialized";
+		}
+
+		@Override
+		public String objectFieldOffset() {
+			return "objectFieldOffset";
+		}
+
+		@Override
+		public String staticFieldOffset() {
+			return "staticFieldOffset";
+		}
+
+		@Override
+		public String compareAndSetReference() {
+			return "compareAndSwapObject";
+		}
+
+		@Override
+		public String compareAndSetInt() {
+			return "compareAndSwapInt";
+		}
+
+		@Override
+		public String compareAndSetLong() {
+			return "compareAndSwapLong";
+		}
+	}
+
+	private static final class NewUnsafeHelper implements UnsafeHelper {
+
+		@Override
+		public String allocateMemory() {
+			return "allocateMemory0";
+		}
+
+		@Override
+		public String reallocateMemory() {
+			return "reallocateMemory0";
+		}
+
+		@Override
+		public String setMemory() {
+			return "setMemory0";
+		}
+
+		@Override
+		public String arrayBaseOffset() {
+			return "arrayBaseOffset0";
+		}
+
+		@Override
+		public String arrayIndexScale() {
+			return "arrayIndexScale0";
+		}
+
+		@Override
+		public String addressSize() {
+			return "addressSize0";
+		}
+
+		@Override
+		public String ensureClassInitialized() {
+			return "ensureClassInitialized0";
+		}
+
+		@Override
+		public String objectFieldOffset() {
+			return "objectFieldOffset0";
+		}
+
+		@Override
+		public String staticFieldOffset() {
+			return "staticFieldOffset0";
+		}
+
+		@Override
+		public String compareAndSetReference() {
+			return "compareAndSetReference";
+		}
+
+		@Override
+		public String compareAndSetInt() {
+			return "compareAndSetInt";
+		}
+
+		@Override
+		public String compareAndSetLong() {
+			return "compareAndSetLong";
+		}
 	}
 }

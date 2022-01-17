@@ -7,6 +7,7 @@ import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.DoubleValue;
 import dev.xdark.ssvm.value.FloatValue;
 import dev.xdark.ssvm.value.LongValue;
+import lombok.val;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 /**
@@ -18,9 +19,9 @@ public final class LoadArrayLongProcessor implements InstructionProcessor<Abstra
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
-		var stack = ctx.getStack();
-		var index = stack.pop().asInt();
-		var array = stack.<ArrayValue>pop();
+		val stack = ctx.getStack();
+		int index = stack.pop().asInt();
+		val array = stack.<ArrayValue>pop();
 		ctx.getHelper().rangeCheck(array, index);
 		stack.pushWide(new LongValue(array.getLong(index)));
 		return Result.CONTINUE;

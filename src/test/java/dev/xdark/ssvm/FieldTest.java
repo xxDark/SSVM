@@ -1,8 +1,10 @@
 package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.value.Value;
+import lombok.val;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.tree.ClassNode;
 
 import java.util.concurrent.ThreadLocalRandom;
@@ -21,13 +23,13 @@ public class FieldTest {
 
 	@Test
 	public void testClassFieldDefaults() {
-		var node = new ClassNode();
-		var rng = ThreadLocalRandom.current();
-		var stringCst = "Hello, World!";
-		var longCst = rng.nextLong();
-		var doubleCst = rng.nextDouble();
-		var intCst = rng.nextInt();
-		var floatCst = rng.nextFloat();
+		val node = new ClassNode();
+		val rng = ThreadLocalRandom.current();
+		val stringCst = "Hello, World!";
+		val longCst = rng.nextLong();
+		val doubleCst = rng.nextDouble();
+		val intCst = rng.nextInt();
+		val floatCst = rng.nextFloat();
 		node.visit(V11, ACC_PUBLIC, "Test", null, null, null);
 		node.visitField(ACC_STATIC, "string", "Ljava/lang/String;", null, stringCst);
 		node.visitField(ACC_STATIC, "long", "J", null, longCst);
@@ -35,7 +37,7 @@ public class FieldTest {
 		node.visitField(ACC_STATIC, "int", "I", null, intCst);
 		node.visitField(ACC_STATIC, "float", "F", null, floatCst);
 
-		var c = TestUtil.createClass(vm, node);
+		val c = TestUtil.createClass(vm, node);
 		assertEquals(stringCst, vm.getHelper().readUtf8(c.getStaticValue("string", "Ljava/lang/String;")));
 		assertEquals(longCst, c.getStaticValue("long", "J").asLong());
 		assertEquals(doubleCst, c.getStaticValue("double", "D").asDouble());
@@ -45,13 +47,13 @@ public class FieldTest {
 
 	@Test
 	public void testVirtualFields() {
-		var node = new ClassNode();
-		var rng = ThreadLocalRandom.current();
-		var stringCst = "Hello, World!";
-		var longCst = rng.nextLong();
-		var doubleCst = rng.nextDouble();
-		var intCst = rng.nextInt();
-		var floatCst = rng.nextFloat();
+		val node = new ClassNode();
+		val rng = ThreadLocalRandom.current();
+		val stringCst = "Hello, World!";
+		val longCst = rng.nextLong();
+		val doubleCst = rng.nextDouble();
+		val intCst = rng.nextInt();
+		val floatCst = rng.nextFloat();
 		node.visit(V11, ACC_PUBLIC, "Test", null, "java/lang/Object", null);
 		node.visitField(ACC_PRIVATE, "string", "Ljava/lang/String;", null, null);
 		node.visitField(ACC_PRIVATE, "long", "J", null, null);
@@ -59,7 +61,7 @@ public class FieldTest {
 		node.visitField(ACC_PRIVATE, "int", "I", null, null);
 		node.visitField(ACC_PRIVATE, "float", "F", null, null);
 
-		var mv = node.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
+		val mv = node.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
 		mv.visitVarInsn(ALOAD, 0);
 		mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
 		mv.visitVarInsn(ALOAD, 0);
@@ -80,9 +82,9 @@ public class FieldTest {
 		mv.visitInsn(RETURN);
 		mv.visitMaxs(3, 1);
 
-		var c = TestUtil.createClass(vm, node);
-		var instance = vm.getMemoryManager().newInstance(c);
-		var helper = vm.getHelper();
+		val c = TestUtil.createClass(vm, node);
+		val instance = vm.getMemoryManager().newInstance(c);
+		val helper = vm.getHelper();
 		helper.invokeExact(c, "<init>", "()V", new Value[0], new Value[]{instance});
 		assertEquals(stringCst, vm.getHelper().readUtf8(instance.getValue("string", "Ljava/lang/String;")));
 		assertEquals(longCst, instance.getLong("long"));
@@ -93,18 +95,18 @@ public class FieldTest {
 
 	@Test
 	public void testVirtualStaticFields() {
-		var node = new ClassNode();
-		var rng = ThreadLocalRandom.current();
-		var staticStringCst = "Hello, World!";
-		var virtualStringCst = "Yet another Hello World!";
-		var staticDouble = rng.nextDouble();
-		var virtualFloat = rng.nextFloat();
+		val node = new ClassNode();
+		val rng = ThreadLocalRandom.current();
+		val staticStringCst = "Hello, World!";
+		val virtualStringCst = "Yet another Hello World!";
+		val staticDouble = rng.nextDouble();
+		val virtualFloat = rng.nextFloat();
 		node.visit(V11, ACC_PUBLIC, "Test", null, "java/lang/Object", null);
 		node.visitField(ACC_STATIC, "string", "Ljava/lang/String;", null, null);
 		node.visitField(ACC_STATIC, "double", "D", null, null);
 		node.visitField(ACC_PRIVATE, "string1", "Ljava/lang/String;", null, null);
 		node.visitField(ACC_PRIVATE, "float", "F", null, null);
-		var mv = node.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
+		MethodVisitor mv = node.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
 		mv.visitLdcInsn(staticStringCst);
 		mv.visitFieldInsn(PUTSTATIC, "Test", "string", "Ljava/lang/String;");
 		mv.visitLdcInsn(staticDouble);
@@ -124,9 +126,9 @@ public class FieldTest {
 		mv.visitInsn(RETURN);
 		mv.visitMaxs(2, 1);
 
-		var c = TestUtil.createClass(vm, node);
-		var instance = vm.getMemoryManager().newInstance(c);
-		var helper = vm.getHelper();
+		val c = TestUtil.createClass(vm, node);
+		val instance = vm.getMemoryManager().newInstance(c);
+		val helper = vm.getHelper();
 		helper.invokeExact(c, "<init>", "()V", new Value[0], new Value[]{instance});
 		assertEquals(staticStringCst, helper.readUtf8(c.getStaticValue("string", "Ljava/lang/String;")));
 		assertEquals(staticDouble, c.getStaticValue("double", "D").asDouble());

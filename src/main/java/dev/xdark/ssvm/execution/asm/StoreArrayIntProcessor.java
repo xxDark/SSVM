@@ -4,6 +4,7 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.value.ArrayValue;
+import lombok.val;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 /**
@@ -15,10 +16,10 @@ public final class StoreArrayIntProcessor implements InstructionProcessor<Abstra
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
-		var stack = ctx.getStack();
-		var value = stack.pop().asInt();
-		var index = stack.pop().asInt();
-		var array = stack.<ArrayValue>pop();
+		val stack = ctx.getStack();
+		val value = stack.pop().asInt();
+		int index = stack.pop().asInt();
+		val array = stack.<ArrayValue>pop();
 		ctx.getHelper().rangeCheck(array, index);
 		array.setInt(index, value);
 		return Result.CONTINUE;

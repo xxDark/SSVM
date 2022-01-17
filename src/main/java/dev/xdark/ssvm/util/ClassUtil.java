@@ -1,5 +1,7 @@
 package dev.xdark.ssvm.util;
 
+import lombok.experimental.UtilityClass;
+import lombok.val;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -8,10 +10,8 @@ import org.objectweb.asm.tree.ClassNode;
  *
  * @author xDark
  */
-public final class ClassUtil {
-
-	private ClassUtil() {
-	}
+@UtilityClass
+public class ClassUtil {
 
 	/**
 	 * Reads node from {@link ClassReader}.
@@ -23,8 +23,8 @@ public final class ClassUtil {
 	 *
 	 * @return read node.
 	 */
-	public static ClassNode readNode(ClassReader reader) {
-		var node = new ClassNode();
+	public ClassNode readNode(ClassReader reader) {
+		val node = new ClassNode();
 		reader.accept(node, ClassReader.SKIP_FRAMES);
 		return node;
 	}

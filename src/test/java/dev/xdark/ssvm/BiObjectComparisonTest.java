@@ -1,6 +1,7 @@
 package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.value.Value;
+import lombok.val;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.Label;
@@ -20,22 +21,22 @@ public class BiObjectComparisonTest {
 
 	@Test // a == b
 	public void test_IFACMPEQ() {
-		var value = "Hello, World!";
+		val value = "Hello, World!";
 		assertTrue(doValueOp(value, value, IF_ACMPEQ));
 	}
 
 	@Test // a != b
 	public void test_IFACMPNE() {
-		var v1 = "Hello, World!";
-		var v2 = "send help";
+		val v1 = "Hello, World!";
+		val v2 = "send help";
 		assertTrue(doValueOp(v1, v2, IF_ACMPNE));
 	}
 
 	private static boolean doValueOp(Object a, Object b, int opcode) {
-		var node = new ClassNode();
+		val node = new ClassNode();
 		node.visit(V11, ACC_PUBLIC, "Test", null, null, null);
-		var mv = node.visitMethod(ACC_STATIC, "test", "()Z", null, null);
-		var label = new Label();
+		val mv = node.visitMethod(ACC_STATIC, "test", "()Z", null, null);
+		val label = new Label();
 		TestUtil.visitLdc(mv, a);
 		if (a == b) {
 			mv.visitInsn(DUP);
@@ -49,8 +50,8 @@ public class BiObjectComparisonTest {
 		mv.visitInsn(ICONST_1);
 		mv.visitInsn(IRETURN);
 		mv.visitMaxs(2, 0);
-		var jc = TestUtil.createClass(vm, node);
-		var result = vm.getHelper().invokeStatic(jc, "test", "()Z", new Value[0], new Value[0]);
+		val jc = TestUtil.createClass(vm, node);
+		val result = vm.getHelper().invokeStatic(jc, "test", "()Z", new Value[0], new Value[0]);
 		return result.getResult().asBoolean();
 	}
 }

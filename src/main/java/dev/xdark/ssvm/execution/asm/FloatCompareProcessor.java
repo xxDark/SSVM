@@ -5,6 +5,7 @@ import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.Value;
+import lombok.val;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 /**
@@ -28,9 +29,9 @@ public final class FloatCompareProcessor implements InstructionProcessor<Abstrac
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
-		var stack = ctx.getStack();
-		var v2 = stack.pop().asFloat();
-		var v1 = stack.pop().asFloat();
+		val stack = ctx.getStack();
+		val v2 = stack.pop().asFloat();
+		val v1 = stack.pop().asFloat();
 		if (Float.isNaN(v1) || Float.isNaN(v2)) {
 			stack.push(nan);
 		} else {

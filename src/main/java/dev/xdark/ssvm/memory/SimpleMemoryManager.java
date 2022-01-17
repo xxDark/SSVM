@@ -7,6 +7,7 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.util.UnsafeUtil;
 import dev.xdark.ssvm.value.*;
+import lombok.val;
 import sun.misc.Unsafe;
 
 import java.nio.ByteBuffer;
@@ -46,21 +47,21 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public Memory reallocateDirect(long address, long bytes) {
-		var memory = memoryBlocks.remove(address);
+		Memory memory = memoryBlocks.remove(address);
 		if (memory == null || !memory.isDirect()) {
 			throw new PanicException("Segfault");
 		}
 		if (bytes == 0L) {
 			return new Memory(this, null, 0L, true);
 		}
-		var buffer = memory.getData();
-		var capacity = buffer.capacity();
+		val buffer = memory.getData();
+		val capacity = buffer.capacity();
 		if (bytes < capacity) {
 			// can we do that?
 			// TODO verify
 			throw new PanicException("Segfault");
 		}
-		var newBuffer = ByteBuffer.allocate((int) bytes);
+		val newBuffer = ByteBuffer.allocate((int) bytes);
 		newBuffer.put(buffer);
 		newBuffer.position(0);
 		memory = new Memory(this, newBuffer, address, true);
@@ -95,26 +96,26 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public InstanceValue newInstance(InstanceJavaClass javaClass) {
-		var memory = allocateObjectMemory(javaClass);
+		val memory = allocateObjectMemory(javaClass);
 		setClass(memory, javaClass);
-		var value = new InstanceValue(memory);
+		val value = new InstanceValue(memory);
 		objects.put(memory, value);
 		return value;
 	}
 
 	@Override
 	public <V> JavaValue<V> newJavaInstance(InstanceJavaClass javaClass, V value) {
-		var memory = allocateObjectMemory(javaClass);
+		val memory = allocateObjectMemory(javaClass);
 		setClass(memory, javaClass);
-		var wrapper = new JavaValue<>(memory, value);
+		val wrapper = new JavaValue<>(memory, value);
 		objects.put(memory, wrapper);
 		return wrapper;
 	}
 
 	@Override
-	public <V> JavaValue<V> newJavaLangClass(InstanceJavaClass javaClass, V value) {
-		var memory = allocateClassMemory(javaClass, javaClass);
-		var wrapper = new JavaValue<>(memory, value);
+	public InstanceValue newJavaLangClass(InstanceJavaClass javaClass) {
+		val memory = allocateClassMemory(javaClass, javaClass);
+		val wrapper = new JavaValue<>(memory, javaClass);
 		javaClass.setOop(wrapper);
 		setClass(memory, javaClass);
 		objects.put(memory, wrapper);
@@ -123,10 +124,10 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public ArrayValue newArray(ArrayJavaClass javaClass, int length, long componentSize) {
-		var memory = allocateArrayMemory(length, componentSize);
+		val memory = allocateArrayMemory(length, componentSize);
 		setClass(memory, javaClass);
 		memory.getData().putInt((int) ARRAY_LENGTH, length);
-		var value = new ArrayValue(memory);
+		val value = new ArrayValue(memory);
 		objects.put(memory, value);
 		return value;
 	}
@@ -178,17 +179,17 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public ObjectValue readValue(ObjectValue object, long offset) {
-		var address = object.getMemory().getData().getLong((int) (validate(offset)));
+		val address = object.getMemory().getData().getLong((int) (validate(offset)));
 		return objects.get(new Memory(null, null, address, false));
 	}
 
 	@Override
 	public JavaClass readClass(ObjectValue object) {
-		var value = objects.get(new Memory(null, null, object.getMemory().getData().getLong(0), false));
+		val value = objects.get(new Memory(null, null, object.getMemory().getData().getLong(0), false));
 		if (!(value instanceof JavaValue)) {
 			throw new PanicException("Segfault");
 		}
-		var wrapper = ((JavaValue<?>) value).getValue();
+		val wrapper = ((JavaValue<?>) value).getValue();
 		if (!(wrapper instanceof JavaClass)) {
 			throw new PanicException("Segfault");
 		}
@@ -352,10 +353,10 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public InstanceValue setOopForClass(JavaClass javaClass) {
-		var jlc = vm.findBootstrapClass("java/lang/Class");
-		var memory = allocateClassMemory(jlc, javaClass);
+		val jlc = vm.findBootstrapClass("java/lang/Class");
+		val memory = allocateClassMemory(jlc, javaClass);
 		setClass(memory, jlc);
-		var wrapper = new JavaValue<>(memory, javaClass);
+		val wrapper = new JavaValue<>(memory, javaClass);
 		objects.put(memory, wrapper);
 		return wrapper;
 	}
@@ -397,7 +398,7 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public int arrayIndexScale(JavaClass javaClass) {
-		var primitives = vm.getPrimitives();
+		val primitives = vm.getPrimitives();
 		if (javaClass == primitives.longPrimitive || javaClass == primitives.doublePrimitive) return 8;
 		if (javaClass == primitives.intPrimitive || javaClass == primitives.floatPrimitive) return 4;
 		if (javaClass == primitives.charPrimitive || javaClass == primitives.shortPrimitive) return 2;
@@ -421,7 +422,7 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public long getStaticOffset(JavaClass jc) {
-		var jlc = vm.findBootstrapClass("java/lang/Class");
+		val jlc = vm.findBootstrapClass("java/lang/Class");
 		return OBJECT_HEADER_SIZE + jlc.getVirtualFieldLayout().getSize();
 	}
 
@@ -430,23 +431,23 @@ public class SimpleMemoryManager implements MemoryManager {
 			vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError);
 			return null;
 		}
-		var rng =ThreadLocalRandom.current();
+		val rng =ThreadLocalRandom.current();
 		long address;
 		do {
 			address = rng.nextLong()  & 0xFFFFFFFFL;
 		} while (memoryBlocks.containsKey(address));
-		var block = new Memory(this, ByteBuffer.allocate((int) size), address, isDirect);
+		val block = new Memory(this, ByteBuffer.allocate((int) size), address, isDirect);
 		memoryBlocks.put(address, block);
 		return block;
 	}
 
 	private Memory allocateObjectMemory(JavaClass javaClass) {
-		var objectSize = OBJECT_HEADER_SIZE + javaClass.getVirtualFieldLayout().getSize();
+		val objectSize = OBJECT_HEADER_SIZE + javaClass.getVirtualFieldLayout().getSize();
 		return allocateHeap(objectSize);
 	}
 
 	private Memory allocateClassMemory(JavaClass jlc, JavaClass javaClass) {
-		var size = OBJECT_HEADER_SIZE + jlc.getVirtualFieldLayout().getSize() + javaClass.getStaticFieldLayout().getSize();
+		val size = OBJECT_HEADER_SIZE + jlc.getVirtualFieldLayout().getSize() + javaClass.getStaticFieldLayout().getSize();
 		return allocateHeap(size);
 	}
 
@@ -455,7 +456,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	private void setClass(Memory memory, JavaClass jc) {
-		var address = jc.getOop().getMemory().getAddress();
+		val address = jc.getOop().getMemory().getAddress();
 		memory.getData().putLong(0, address);
 	}
 

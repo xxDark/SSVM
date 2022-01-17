@@ -5,6 +5,7 @@ import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.Value;
+import lombok.val;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 /**
@@ -28,9 +29,9 @@ public final class DoubleCompareProcessor implements InstructionProcessor<Abstra
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
-		var stack = ctx.getStack();
-		var v2 = stack.popWide().asDouble();
-		var v1 = stack.popWide().asDouble();
+		val stack = ctx.getStack();
+		val v2 = stack.popWide().asDouble();
+		val v1 = stack.popWide().asDouble();
 		if (Double.isNaN(v1) || Double.isNaN(v2)) {
 			stack.push(nan);
 		} else {

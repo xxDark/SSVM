@@ -111,7 +111,7 @@ public final class JavaField {
 	 * @return field type.
 	 */
 	public Type getType() {
-		var type = this.type;
+		Type type = this.type;
 		if (type == null) {
 			return this.type = Type.getType(node.desc);
 		}

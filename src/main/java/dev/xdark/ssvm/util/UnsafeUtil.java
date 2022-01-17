@@ -1,5 +1,7 @@
 package dev.xdark.ssvm.util;
 
+import lombok.experimental.UtilityClass;
+import lombok.val;
 import sun.misc.Unsafe;
 
 /**
@@ -7,19 +9,17 @@ import sun.misc.Unsafe;
  *
  * @author xDark
  */
-public final class UnsafeUtil {
+@UtilityClass
+public class UnsafeUtil {
 
-	private static final Unsafe UNSAFE;
-
-	private UnsafeUtil() {
-	}
+	private final Unsafe UNSAFE;
 
 	/**
 	 * Returns page size.
 	 *
 	 * @return page size.
 	 */
-	public static int getPageSize() {
+	public int getPageSize() {
 		return UNSAFE.pageSize();
 	}
 
@@ -31,7 +31,7 @@ public final class UnsafeUtil {
 	 * 		Size of the type.
 	 */
 	@SuppressWarnings("DuplicateBranchesInSwitch")
-	public static long getSizeFor(String desc) {
+	public long getSizeFor(String desc) {
 		switch (desc) {
 			case "J":
 			case "D":
@@ -58,8 +58,8 @@ public final class UnsafeUtil {
 	 *
 	 * @return address of an object.
 	 */
-	public static long addressOf(Object value) {
-		var helper = new Object[]{value};
+	public long addressOf(Object value) {
+		val helper = new Object[]{value};
 		switch (Unsafe.ADDRESS_SIZE >> 2) {
 			case 1:
 				return UNSAFE.getInt(helper, Unsafe.ARRAY_OBJECT_BASE_OFFSET);
@@ -78,8 +78,8 @@ public final class UnsafeUtil {
 	 *
 	 * @return object at the specific address.
 	 */
-	public static Object byAddress(long address) {
-		var helper = new Object[]{null};
+	public Object byAddress(long address) {
+		val helper = new Object[]{null};
 		switch (Unsafe.ADDRESS_SIZE >> 2) {
 			case 1:
 				UNSAFE.putLong(helper, Unsafe.ARRAY_OBJECT_BASE_OFFSET, address);
@@ -95,7 +95,7 @@ public final class UnsafeUtil {
 
 	static {
 		try {
-			var field = Unsafe.class.getDeclaredField("theUnsafe");
+			val field = Unsafe.class.getDeclaredField("theUnsafe");
 			field.setAccessible(true);
 			UNSAFE = (Unsafe) field.get(null);
 		} catch (NoSuchFieldException | IllegalAccessException ex) {

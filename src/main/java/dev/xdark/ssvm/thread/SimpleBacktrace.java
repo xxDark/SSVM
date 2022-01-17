@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.thread;
 
 import dev.xdark.ssvm.execution.ExecutionContext;
+import lombok.val;
 
 import java.util.*;
 
@@ -23,13 +24,13 @@ public final class SimpleBacktrace implements Backtrace {
 
 	@Override
 	public ExecutionContext first() {
-		var backtrace = this.backtrace;
+		val backtrace = this.backtrace;
 		return backtrace.isEmpty() ? null : backtrace.get(0);
 	}
 
 	@Override
 	public ExecutionContext last() {
-		var backtrace = this.backtrace;
+		val backtrace = this.backtrace;
 		return backtrace.isEmpty() ? null : backtrace.get(backtrace.size() - 1);
 	}
 
@@ -50,7 +51,7 @@ public final class SimpleBacktrace implements Backtrace {
 
 	@Override
 	public ExecutionContext pop() {
-		var backtrace = this.backtrace;
+		val backtrace = this.backtrace;
 		return backtrace.remove(backtrace.size() - 1);
 	}
 

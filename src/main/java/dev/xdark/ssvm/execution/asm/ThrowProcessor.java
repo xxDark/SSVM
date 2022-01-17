@@ -8,6 +8,7 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
+import lombok.val;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 /**
@@ -19,11 +20,11 @@ public final class ThrowProcessor implements InstructionProcessor<AbstractInsnNo
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
-		var exception = ctx.getStack().<ObjectValue>pop();
+		ObjectValue exception = ctx.getStack().pop();
 		if (exception.isNull()) {
 			// NPE it is then.
-			var vm = ctx.getVM();
-			var exceptionClass = vm.getSymbols().java_lang_NullPointerException;
+			val vm = ctx.getVM();
+			val exceptionClass = vm.getSymbols().java_lang_NullPointerException;
 			exceptionClass.initialize();
 			exception = vm.getMemoryManager().newInstance(exceptionClass);
 			vm.getHelper().invokeExact(exceptionClass, "<init>", "()V", new Value[0], new Value[]{exception});

@@ -7,6 +7,7 @@ import dev.xdark.ssvm.util.BiIntToIntFunction;
 import dev.xdark.ssvm.util.LongIntToLongFunction;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.LongValue;
+import lombok.val;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 /**
@@ -28,9 +29,9 @@ public final class LongIntProcessor implements InstructionProcessor<AbstractInsn
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
-		var stack = ctx.getStack();
-		var v2 = stack.pop().asInt();
-		var v1 = stack.popWide().asLong();
+		val stack = ctx.getStack();
+		int v2 = stack.pop().asInt();
+		val v1 = stack.popWide().asLong();
 		stack.pushWide(new LongValue(op.apply(v1, v2)));
 		return Result.CONTINUE;
 	}

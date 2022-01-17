@@ -5,6 +5,7 @@ import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.Value;
+import lombok.val;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodInsnNode;
 
@@ -17,16 +18,16 @@ public final class VirtualCallProcessor implements InstructionProcessor<MethodIn
 
 	@Override
 	public Result execute(MethodInsnNode insn, ExecutionContext ctx) {
-		var vm = ctx.getVM();
-		//var owner = vm.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
-		var stack = ctx.getStack();
-		var args = Type.getArgumentTypes(insn.desc);
-		var localsLength = args.length + 1;
-		var locals = new Value[localsLength];
+		val vm = ctx.getVM();
+		//val owner = vm.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
+		val stack = ctx.getStack();
+		val args = Type.getArgumentTypes(insn.desc);
+		int localsLength = args.length + 1;
+		val locals = new Value[localsLength];
 		while (localsLength-- != 0) {
 			locals[localsLength] = stack.popGeneric();
 		}
-		var result = vm.getHelper().invokeVirtual(insn.name, insn.desc, new Value[0], locals);
+		val result = vm.getHelper().invokeVirtual(insn.name, insn.desc, new Value[0], locals);
 		if (Type.getReturnType(insn.desc) != Type.VOID_TYPE) {
 			stack.pushGeneric(result.getResult());
 		}

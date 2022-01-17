@@ -122,14 +122,10 @@ public interface MemoryManager {
 	 *
 	 * @param javaClass
 	 * 		java/lang/Class mirror.
-	 * @param value
-	 * 		Java value.
-	 * @param <V>
-	 * 		Type of Java value.
 	 *
 	 * @return allocated Java wrapper.
 	 */
-	<V> JavaValue<V> newJavaLangClass(InstanceJavaClass javaClass, V value);
+	InstanceValue newJavaLangClass(InstanceJavaClass javaClass);
 
 	/**
 	 * Allocates new array.

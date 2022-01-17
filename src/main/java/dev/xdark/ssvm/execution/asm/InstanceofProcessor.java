@@ -6,6 +6,7 @@ import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.ObjectValue;
+import lombok.val;
 import org.objectweb.asm.tree.TypeInsnNode;
 
 /**
@@ -15,11 +16,11 @@ public final class InstanceofProcessor implements InstructionProcessor<TypeInsnN
 
 	@Override
 	public Result execute(TypeInsnNode insn, ExecutionContext ctx) {
-		var vm = ctx.getVM();
-		var javaClass = vm.getHelper().findClass(ctx.getOwner().getClassLoader(), insn.desc, false);
+		val vm = ctx.getVM();
+		val javaClass = vm.getHelper().findClass(ctx.getOwner().getClassLoader(), insn.desc, false);
 		if (javaClass instanceof InstanceJavaClass) ((InstanceJavaClass) javaClass).loadClassesWithoutMarkingResolved();
-		var stack = ctx.getStack();
-		var value = stack.<ObjectValue>pop();
+		val stack = ctx.getStack();
+		val value = stack.<ObjectValue>pop();
 		if (value.isNull()) {
 			stack.push(new IntValue(0));
 		} else {

@@ -57,6 +57,11 @@ public class SimpleFileDescriptorManager implements FileDescriptorManager {
 
 	@Override
 	public <A extends BasicFileAttributes> A getAttributes(String path, Class<A> attrType, LinkOption... options) throws IOException {
-		throw new IOException("Unsupported");
+		return null;
+	}
+
+	@Override
+	public String[] list(String path) {
+		return new String[0];
 	}
 }

@@ -5,6 +5,7 @@ import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.*;
+import lombok.val;
 import org.objectweb.asm.tree.FieldInsnNode;
 
 /**
@@ -16,22 +17,22 @@ public final class GetFieldProcessor implements InstructionProcessor<FieldInsnNo
 
 	@Override
 	public Result execute(FieldInsnNode insn, ExecutionContext ctx) {
-		var vm = ctx.getVM();
-		var helper = vm.getHelper();
-		var owner = helper.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
+		val vm = ctx.getVM();
+		val helper = vm.getHelper();
+		val owner = helper.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
 		if (owner == null) {
 			helper.throwException(vm.getSymbols().java_lang_NoClassDefFoundError, insn.owner);
 		}
-		var stack = ctx.getStack();
-		var $instance = stack.pop();
+		val stack = ctx.getStack();
+		val $instance = stack.pop();
 		helper.checkNotNull($instance);
-		var instance = (InstanceValue) $instance;
-		var offset = helper.getFieldOffset((InstanceJavaClass) owner, instance.getJavaClass(), insn.name, insn.desc);
+		val instance = (InstanceValue) $instance;
+		long offset = helper.getFieldOffset((InstanceJavaClass) owner, instance.getJavaClass(), insn.name, insn.desc);
 		if (offset == -1L) {
 			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, insn.owner + '.' + insn.name + insn.desc);
 		}
 		Value value;
-		var manager = vm.getMemoryManager();
+		val manager = vm.getMemoryManager();
 		offset += manager.valueBaseOffset(instance);
 		switch (insn.desc) {
 			case "J":

@@ -4,6 +4,7 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.Value;
+import lombok.val;
 import org.objectweb.asm.Opcodes;
 
 public final class ArrayJavaClass implements JavaClass {
@@ -91,9 +92,9 @@ public final class ArrayJavaClass implements JavaClass {
 		if (dimensions == 256) {
 			throw new PanicException("Too much dimensions");
 		}
-		var arrayClass = this.arrayClass;
+		ArrayJavaClass arrayClass = this.arrayClass;
 		if (arrayClass == null) {
-			var vm = this.vm;
+			val vm = this.vm;
 			arrayClass = this.arrayClass = new ArrayJavaClass(vm, '[' + name, dimensions + 1, this);
 			vm.getHelper().setComponentType(arrayClass, this);
 		}

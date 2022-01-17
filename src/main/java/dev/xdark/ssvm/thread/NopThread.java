@@ -38,10 +38,6 @@ public final class NopThread extends Thread {
 		super(group, target, name, stackSize);
 	}
 
-	public NopThread(ThreadGroup group, Runnable target, String name, long stackSize, boolean inheritThreadLocals) {
-		super(group, target, name, stackSize, inheritThreadLocals);
-	}
-
 	@Override
 	public synchronized void start() {
 	}

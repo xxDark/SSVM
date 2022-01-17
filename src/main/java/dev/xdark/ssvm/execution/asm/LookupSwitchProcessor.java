@@ -19,7 +19,7 @@ public final class LookupSwitchProcessor implements InstructionProcessor<LookupS
 
 	@Override
 	public Result execute(LookupSwitchInsnNode insn, ExecutionContext ctx) {
-		var index = Collections.binarySearch(insn.keys, ctx.getStack().pop().asInt());
+		int index = Collections.binarySearch(insn.keys, ctx.getStack().pop().asInt());
 		if (index >= 0) {
 			ctx.setInsnPosition(AsmUtil.getIndex(insn.labels.get(index)));
 		} else {

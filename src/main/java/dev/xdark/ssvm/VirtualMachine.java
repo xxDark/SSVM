@@ -9,6 +9,8 @@ import dev.xdark.ssvm.fs.FileDescriptorManager;
 import dev.xdark.ssvm.fs.SimpleFileDescriptorManager;
 import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.memory.SimpleMemoryManager;
+import dev.xdark.ssvm.memory.SimpleStringPool;
+import dev.xdark.ssvm.memory.StringPool;
 import dev.xdark.ssvm.mirror.FieldLayout;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
@@ -21,10 +23,8 @@ import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.util.VMPrimitives;
 import dev.xdark.ssvm.util.VMSymbols;
-import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.NullValue;
-import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
+import dev.xdark.ssvm.value.*;
+import lombok.val;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.LineNumberNode;
 
@@ -43,14 +43,15 @@ public class VirtualMachine {
 	private final ThreadManager threadManager;
 	private final FileDescriptorManager fileDescriptorManager;
 	private final NativeLibraryManager nativeLibraryManager;
+	private final StringPool stringPool;
 	private final Properties properties;
 
 	public VirtualMachine() {
 		bootClassLoader = new BootClassLoaderHolder(this, createBootClassLoader());
 		// java/lang/Object & java/lang/Class must be loaded manually,
 		// otherwise some MemoryManager implementations will bottleneck.
-		var klass = internalLink("java/lang/Class");
-		var object = internalLink("java/lang/Object");
+		val klass = internalLink("java/lang/Class");
+		val object = internalLink("java/lang/Object");
 		memoryManager = createMemoryManager();
 		vmInterface = new VMInterface();
 		helper = new VMHelper(this);
@@ -66,6 +67,7 @@ public class VirtualMachine {
 		classDefiner = createClassDefiner();
 		fileDescriptorManager = createFileDescriptorManager();
 		nativeLibraryManager = createNativeLibraryManager();
+		stringPool = createStringPool();
 		NativeJava.vmInit(this);
 
 		object.initialize();
@@ -77,21 +79,21 @@ public class VirtualMachine {
 	 * Full VM initialization.
 	 */
 	public void bootstrap() {
-		var symbols = this.symbols;
+		val symbols = this.symbols;
 		symbols.java_lang_ClassLoader.initialize();
-		var helper = this.helper;
-		var sysClass = symbols.java_lang_System;
-		var memoryManager = this.memoryManager;
-		var threadManager = this.threadManager;
+		val helper = this.helper;
+		val sysClass = symbols.java_lang_System;
+		val memoryManager = this.memoryManager;
+		val threadManager = this.threadManager;
 
-		var groupClass = symbols.java_lang_ThreadGroup;
+		val groupClass = symbols.java_lang_ThreadGroup;
 		groupClass.initialize();
 		// Initialize system group
-		var sysGroup = memoryManager.newInstance(groupClass);
+		val sysGroup = memoryManager.newInstance(groupClass);
 		helper.invokeExact(groupClass, "<init>", "()V", new Value[0], new Value[]{sysGroup});
 		// Initialize main thread
-		var mainThread = threadManager.getVmThread(Thread.currentThread());
-		var oop = mainThread.getOop();
+		val mainThread = threadManager.getVmThread(Thread.currentThread());
+		val oop = mainThread.getOop();
 		oop.setValue("group", "Ljava/lang/ThreadGroup;", sysGroup);
 		helper.invokeExact(groupClass, "add", "(Ljava/lang/Thread;)V", new Value[0], new Value[]{sysGroup, oop});
 		sysClass.initialize();
@@ -99,12 +101,12 @@ public class VirtualMachine {
 		findBootstrapClass("java/lang/reflect/Field", true);
 		findBootstrapClass("java/lang/reflect/Constructor", true);
 
-		var initializeSystemClass = sysClass.getStaticMethod("initializeSystemClass", "()V");
+		val initializeSystemClass = sysClass.getStaticMethod("initializeSystemClass", "()V");
 		if (initializeSystemClass != null) {
 			// pre JDK 9 boot
 			helper.invokeStatic(sysClass, initializeSystemClass, new Value[0], new Value[0]);
 		} else {
-			var unsafeConstants = (InstanceJavaClass) findBootstrapClass("jdk/internal/misc/UnsafeConstants", true);
+			val unsafeConstants = (InstanceJavaClass) findBootstrapClass("jdk/internal/misc/UnsafeConstants", true);
 			if (unsafeConstants != null) {
 				// Inject constants
 				unsafeConstants.initialize();
@@ -119,13 +121,13 @@ public class VirtualMachine {
 			findBootstrapClass("java/lang/invoke/MemberName", true);
 			findBootstrapClass("java/lang/invoke/MethodHandleNatives", true);
 
-			var result = helper.invokeStatic(sysClass, "initPhase2", "(ZZ)I", new Value[0], new Value[]{new IntValue(1), new IntValue(1)}).getResult().asInt();
+			val result = helper.invokeStatic(sysClass, "initPhase2", "(ZZ)I", new Value[0], new Value[]{new IntValue(1), new IntValue(1)}).getResult().asInt();
 			if (result != 0) {
 				throw new IllegalStateException("VM initialization failed, initPhase2 returned " + result);
 			}
 			helper.invokeStatic(sysClass, "initPhase3", "()V", new Value[0], new Value[0]);
 		}
-		var classLoaderClass = symbols.java_lang_ClassLoader;
+		val classLoaderClass = symbols.java_lang_ClassLoader;
 		classLoaderClass.initialize();
 		helper.invokeStatic(classLoaderClass, "getSystemClassLoader", "()Ljava/lang/ClassLoader;", new Value[0], new Value[0]);
 	}
@@ -222,6 +224,15 @@ public class VirtualMachine {
 	}
 
 	/**
+	 * Returns string pool.
+	 *
+	 * @return string pool.
+	 */
+	public StringPool getStringPool() {
+		return stringPool;
+	}
+
+	/**
 	 * Returns current VM thread.
 	 *
 	 * @return current VM thread.
@@ -250,7 +261,7 @@ public class VirtualMachine {
 	 * @return bootstrap class or {@code null}, if not found.
 	 */
 	public JavaClass findBootstrapClass(String name, boolean initialize) {
-		var jc = bootClassLoader.findBootClass(name);
+		val jc = bootClassLoader.findBootClass(name);
 		if (jc != null && initialize) {
 			jc.initialize();
 		}
@@ -281,7 +292,7 @@ public class VirtualMachine {
 	 */
 	public JavaClass findClass(Value loader, String name, boolean initialize) {
 		JavaClass jc;
-		var helper = this.helper;
+		val helper = this.helper;
 		if (loader.isNull()) {
 			jc = findBootstrapClass(name, initialize);
 			if (jc == null) {
@@ -302,21 +313,21 @@ public class VirtualMachine {
 	 * 		Should VM search for VMI hooks.
 	 */
 	public void execute(ExecutionContext ctx, boolean useInvokers) {
-		var jm = ctx.getMethod();
-		var isNative = (jm.getAccess() & Opcodes.ACC_NATIVE) != 0;
+		val jm = ctx.getMethod();
+		val isNative = (jm.getAccess() & Opcodes.ACC_NATIVE) != 0;
 		if (isNative) {
 			ctx.setLineNumber(-2);
 		}
-		var backtrace = currentThread().getBacktrace();
+		val backtrace = currentThread().getBacktrace();
 		backtrace.push(ctx);
-		var vmi = vmInterface;
+		val vmi = vmInterface;
 		vmi.getInvocationHooks(jm, true)
 				.forEach(invocation -> invocation.handle(ctx));
 		try {
 			if (useInvokers) {
-				var invoker = vmi.getInvoker(jm);
+				val invoker = vmi.getInvoker(jm);
 				if (invoker != null) {
-					var result = invoker.intercept(ctx);
+					val result = invoker.intercept(ctx);
 					if (result == Result.ABORT) {
 						return;
 					}
@@ -325,37 +336,37 @@ public class VirtualMachine {
 			if (isNative) {
 				helper.throwException(symbols.java_lang_UnsatisfiedLinkError, ctx.getOwner().getInternalName() + '.' + jm.getName() + jm.getDesc());
 			}
-			var mn = jm.getNode();
-			var instructions = mn.instructions;
+			val mn = jm.getNode();
+			val instructions = mn.instructions;
 			exec:
 			while (true) {
 				try {
-					var pos = ctx.getInsnPosition();
+					val pos = ctx.getInsnPosition();
 					ctx.setInsnPosition(pos + 1);
-					var insn = instructions.get(pos);
+					val insn = instructions.get(pos);
 					// TODO handle misc. instructions
 					if (insn instanceof LineNumberNode) ctx.setLineNumber(((LineNumberNode) insn).line);
 					if (insn.getOpcode() == -1) continue;
-					var processor = vmi.getProcessor(insn);
+					val processor = vmi.getProcessor(insn);
 					if (processor == null) {
 						helper.throwException(symbols.java_lang_InternalError, "No implemented processor for " + insn.getOpcode());
 						continue;
 					}
-					var result = processor.execute(insn, ctx);
+					val result = processor.execute(insn, ctx);
 					if (result == Result.ABORT) break;
 				} catch (VMException ex) {
-					var oop = ex.getOop();
-					var exceptionType = oop.getJavaClass();
-					var tryCatchBlocks = mn.tryCatchBlocks;
-					var index = ctx.getInsnPosition() - 1;
+					val oop = ex.getOop();
+					val exceptionType = oop.getJavaClass();
+					val tryCatchBlocks = mn.tryCatchBlocks;
+					val index = ctx.getInsnPosition() - 1;
 					for (int i = 0, j = tryCatchBlocks.size(); i < j; i++) {
-						var block = tryCatchBlocks.get(i);
-						var type = block.type;
+						val block = tryCatchBlocks.get(i);
+						val type = block.type;
 						if (type == null) continue;
 						if (index < AsmUtil.getIndex(block.start) || index > AsmUtil.getIndex(block.end)) continue;
-						var candidate = findClass(ctx.getOwner().getClassLoader(), type, true);
+						val candidate = findClass(ctx.getOwner().getClassLoader(), type, true);
 						if (candidate.isAssignableFrom(exceptionType)) {
-							var stack = ctx.getStack();
+							val stack = ctx.getStack();
 							stack.clear();
 							stack.push(oop);
 							ctx.setInsnPosition(AsmUtil.getIndex(block.handler));
@@ -436,20 +447,30 @@ public class VirtualMachine {
 		return new SimpleNativeLibraryManager();
 	}
 
+	/**
+	 * Creates string pool.
+	 * One may override this method.
+	 *
+	 * @return string pool.
+	 */
+	protected StringPool createStringPool() {
+		return new SimpleStringPool(this);
+	}
+
 	private InstanceJavaClass internalLink(String name) {
-		var result = bootClassLoader.lookup(name);
+		val result = bootClassLoader.lookup(name);
 		if (result == null) {
 			throw new IllegalStateException("Bootstrap class not found: " + name);
 		}
-		var cr = result.getClassReader();
-		var node = result.getNode();
-		var jc = new InstanceJavaClass(this, NullValue.INSTANCE, cr, node);
+		val cr = result.getClassReader();
+		val node = result.getNode();
+		val jc = new InstanceJavaClass(this, NullValue.INSTANCE, cr, node);
 		bootClassLoader.forceLink(jc);
 		return jc;
 	}
 
 	private void setClassOop(InstanceJavaClass javaClass, InstanceJavaClass jlc) {
-		var oop = jlc == javaClass ? memoryManager.newJavaLangClass(javaClass, javaClass) : memoryManager.setOopForClass(javaClass);
+		InstanceValue oop = jlc == javaClass ? memoryManager.newJavaLangClass(javaClass) : memoryManager.setOopForClass(javaClass);
 		javaClass.setOop(oop);
 		helper.initializeDefaultValues(oop);
 	}

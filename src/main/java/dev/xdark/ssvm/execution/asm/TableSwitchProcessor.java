@@ -4,6 +4,7 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.util.AsmUtil;
+import lombok.val;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
 
 /**
@@ -15,7 +16,7 @@ public final class TableSwitchProcessor implements InstructionProcessor<TableSwi
 
 	@Override
 	public Result execute(TableSwitchInsnNode insn, ExecutionContext ctx) {
-		var value = ctx.getStack().pop().asInt();
+		int value = ctx.getStack().pop().asInt();
 		if (value < insn.min || value > insn.max) {
 			ctx.setInsnPosition(AsmUtil.getIndex(insn.dflt));
 		} else {

@@ -4,6 +4,7 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.value.ArrayValue;
+import lombok.val;
 import org.objectweb.asm.tree.IntInsnNode;
 
 import static org.objectweb.asm.Opcodes.*;
@@ -17,13 +18,13 @@ public final class PrimitiveArrayProcessor implements InstructionProcessor<IntIn
 
 	@Override
 	public Result execute(IntInsnNode insn, ExecutionContext ctx) {
-		var stack = ctx.getStack();
-		var length = stack.pop().asInt();
-		var vm = ctx.getVM();
+		val stack = ctx.getStack();
+		int length = stack.pop().asInt();
+		val vm = ctx.getVM();
 		vm.getHelper().checkArrayLength(length);
-		var operand = insn.operand;
-		var primitives = vm.getPrimitives();
-		var helper = vm.getHelper();
+		val operand = insn.operand;
+		val primitives = vm.getPrimitives();
+		val helper = vm.getHelper();
 		ArrayValue array;
 		switch (operand) {
 			case T_LONG:

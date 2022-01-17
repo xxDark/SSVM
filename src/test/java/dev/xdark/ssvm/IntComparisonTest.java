@@ -1,6 +1,7 @@
 package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.value.Value;
+import lombok.val;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.Label;
@@ -33,35 +34,35 @@ public class IntComparisonTest {
 
 	@Test // < 0
 	public void test_IFLT() {
-		var v = nextInt();
+		int v = nextInt();
 		assertTrue(doIntJump(-v, IFLT));
 	}
 
 	@Test // <= 0
 	public void test_IFLE() {
-		var v = nextInt();
+		int v = nextInt();
 		assertTrue(doIntJump(-v, IFLE));
 		assertTrue(doIntJump(0, IFLE));
 	}
 
 	@Test // > 0
 	public void test_IFGT() {
-		var v = nextInt();
+		int v = nextInt();
 		assertTrue(doIntJump(v, IFGT));
 	}
 
 	@Test // > 0
 	public void test_IFGE() {
-		var v = nextInt();
+		int v = nextInt();
 		assertTrue(doIntJump(v, IFGE));
 		assertTrue(doIntJump(0, IFGE));
 	}
 
 	private static boolean doIntJump(int value, int opcode) {
-		var node = new ClassNode();
+		val node = new ClassNode();
 		node.visit(V11, ACC_PUBLIC, "Test", null, null, null);
-		var mv = node.visitMethod(ACC_STATIC, "test", "()Z", null, null);
-		var label = new Label();
+		val mv = node.visitMethod(ACC_STATIC, "test", "()Z", null, null);
+		val label = new Label();
 		mv.visitLdcInsn(value);
 		mv.visitJumpInsn(opcode, label);
 		mv.visitInsn(ICONST_0);
@@ -70,8 +71,8 @@ public class IntComparisonTest {
 		mv.visitInsn(ICONST_1);
 		mv.visitInsn(IRETURN);
 		mv.visitMaxs(1, 0);
-		var jc = TestUtil.createClass(vm, node);
-		var result = vm.getHelper().invokeStatic(jc, "test", "()Z", new Value[0], new Value[0]);
+		val jc = TestUtil.createClass(vm, node);
+		val result = vm.getHelper().invokeStatic(jc, "test", "()Z", new Value[0], new Value[0]);
 		return result.getResult().asBoolean();
 	}
 

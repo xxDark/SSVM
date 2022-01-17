@@ -26,22 +26,18 @@ public final class NullInputStream extends InputStream {
 		return -1;
 	}
 
-	@Override
 	public byte[] readAllBytes() {
 		return new byte[0];
 	}
 
-	@Override
 	public byte[] readNBytes(int len) {
 		return new byte[0];
 	}
 
-	@Override
 	public int readNBytes(byte[] b, int off, int len) {
 		return 0;
 	}
 
-	@Override
 	public long transferTo(OutputStream out) throws IOException {
 		return 0L;
 	}

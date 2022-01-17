@@ -98,7 +98,7 @@ public final class JavaMethod {
 	 * @return method type.
 	 */
 	public Type getType() {
-		var type = this.type;
+		Type type = this.type;
 		if (type == null) {
 			return this.type = Type.getMethodType(node.desc);
 		}

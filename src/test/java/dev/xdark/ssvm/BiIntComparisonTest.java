@@ -1,6 +1,7 @@
 package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.value.Value;
+import lombok.val;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.Label;
@@ -35,35 +36,35 @@ public class BiIntComparisonTest {
 
 	@Test // a < b
 	public void test_IFICMPLT() {
-		var a = nextInt();
+		int a = nextInt();
 		assertTrue(doIntJump(a, a + 1, IF_ICMPLT));
 	}
 
 	@Test // a < = b
 	public void test_IFICMPLE() {
-		var v = nextInt();
+		int v = nextInt();
 		assertTrue(doIntJump(v, v + 1, IF_ICMPLE));
 		assertTrue(doIntJump(v, v, IF_ICMPLE));
 	}
 
 	@Test // a > b
 	public void test_IFICMPGT() {
-		var v = nextInt();
+		int v = nextInt();
 		assertTrue(doIntJump(v, v - 1, IF_ICMPGT));
 	}
 
 	@Test // a >= b
 	public void test_IFICMPGE() {
-		var v = nextInt();
+		int v = nextInt();
 		assertTrue(doIntJump(v, v - 1, IF_ICMPGE));
 		assertTrue(doIntJump(v, v, IF_ICMPGE));
 	}
 
 	private static boolean doIntJump(int a, int b, int opcode) {
-		var node = new ClassNode();
+		val node = new ClassNode();
 		node.visit(V11, ACC_PUBLIC, "Test", null, null, null);
-		var mv = node.visitMethod(ACC_STATIC, "test", "()Z", null, null);
-		var label = new Label();
+		val mv = node.visitMethod(ACC_STATIC, "test", "()Z", null, null);
+		val label = new Label();
 		mv.visitLdcInsn(a);
 		mv.visitLdcInsn(b);
 		mv.visitJumpInsn(opcode, label);
@@ -73,13 +74,13 @@ public class BiIntComparisonTest {
 		mv.visitInsn(ICONST_1);
 		mv.visitInsn(IRETURN);
 		mv.visitMaxs(2, 0);
-		var jc = TestUtil.createClass(vm, node);
-		var result = vm.getHelper().invokeStatic(jc, "test", "()Z", new Value[0], new Value[0]);
+		val jc = TestUtil.createClass(vm, node);
+		val result = vm.getHelper().invokeStatic(jc, "test", "()Z", new Value[0], new Value[0]);
 		return result.getResult().asBoolean();
 	}
 
 	private static int nextInt(int except) {
-		var rng = ThreadLocalRandom.current();
+		val rng = ThreadLocalRandom.current();
 		int i;
 		do {
 			i = rng.nextInt(1, Integer.MAX_VALUE - 1);

@@ -331,7 +331,7 @@ public final class NativeJava {
 				val out = (InstanceValue) fd.getStaticValue("out", "Ljava/io/FileDescriptor;");
 				out.setLong("handle", mapVMStream(vm, 1));
 				val err = (InstanceValue) fd.getStaticValue("err", "Ljava/io/FileDescriptor;");
-				err.setLong("handle", mapVMStream(vm, 2);
+				err.setLong("handle", mapVMStream(vm, 2));
 				return Result.ABORT;
 			});
 		} else {

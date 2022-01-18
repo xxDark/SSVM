@@ -327,9 +327,7 @@ public final class NativeJava {
 			return Result.ABORT;
 		};
 		if (!vmi.setInvoker(fd, "getHandle", "(I)J", set)) {
-			if (!vmi.setInvoker(fd, "set", "(I)J", set)) {
-				throw new IllegalStateException("Could not locate FileDescriptor#getHandle/set");
-			}
+			vmi.setInvoker(fd, "set", "(I)J", set);
 		}
 		vmi.setInvoker(fd, "getAppend", "(I)Z", ctx -> {
 			ctx.setResult(new IntValue(vm.getFileDescriptorManager().isAppend(ctx.getLocals().load(0).asInt()) ? 1 : 0));

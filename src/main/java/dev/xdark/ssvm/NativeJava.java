@@ -149,8 +149,8 @@ public final class NativeJava {
 			ctx.setResult(new IntValue(0));
 			return Result.ABORT;
 		};
-		if (!vmi.setInvoker(signal,"findSignal0", "(Ljava/lang/String;)I", findSignal)) {
-			if (!vmi.setInvoker(signal,"findSignal", "(Ljava/lang/String;)I", findSignal)) {
+		if (!vmi.setInvoker(signal, "findSignal0", "(Ljava/lang/String;)I", findSignal)) {
+			if (!vmi.setInvoker(signal, "findSignal", "(Ljava/lang/String;)I", findSignal)) {
 				throw new IllegalStateException("Could not locate Signal#findSignal");
 			}
 		}
@@ -1248,6 +1248,21 @@ public final class NativeJava {
 				exception.setInt("depth", copy.count());
 			}
 			ctx.setResult(exception);
+			return Result.ABORT;
+		});
+		vmi.setInvoker(throwable, "getStackTraceDepth", "()I", ctx -> {
+			val backtrace = ((JavaValue<Backtrace>) ((InstanceValue) ctx.getLocals().load(0)).getValue("backtrace", "Ljava/lang/Object;")).getValue();
+			ctx.setResult(new IntValue(backtrace.count()));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(throwable, "getStackTraceElement", "(I)Ljava/lang/StackTraceElement;", ctx -> {
+			val locals = ctx.getLocals();
+			val backtrace = ((JavaValue<Backtrace>) ((InstanceValue) locals.load(0)).getValue("backtrace", "Ljava/lang/Object;")).getValue();
+			int idx = locals.load(1).asInt();
+			val helper = vm.getHelper();
+			helper.rangeCheck(idx, 0, backtrace.count());
+			val element = helper.newStackTraceElement(backtrace.get(idx), false);
+			ctx.setResult(element);
 			return Result.ABORT;
 		});
 	}

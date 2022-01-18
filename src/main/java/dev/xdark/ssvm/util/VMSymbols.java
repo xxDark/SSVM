@@ -63,6 +63,7 @@ public final class VMSymbols {
 	public final InstanceJavaClass java_lang_invoke_ResolvedMethodName;
 	public final InstanceJavaClass java_util_concurrent_atomic_AtomicLong;
 	public final InstanceJavaClass java_lang_ClassLoader$NativeLibrary;
+	public final InstanceJavaClass java_io_FileDescriptor;
 
 	/**
 	 * @param vm
@@ -126,5 +127,6 @@ public final class VMSymbols {
 		java_lang_invoke_ResolvedMethodName = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/ResolvedMethodName");
 		java_util_concurrent_atomic_AtomicLong = (InstanceJavaClass) vm.findBootstrapClass("java/util/concurrent/atomic/AtomicLong");
 		java_lang_ClassLoader$NativeLibrary = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ClassLoader$NativeLibrary");
+		java_io_FileDescriptor = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileDescriptor");
 	}
 }

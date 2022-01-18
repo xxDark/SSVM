@@ -1260,8 +1260,9 @@ public final class NativeJava {
 			val backtrace = ((JavaValue<Backtrace>) ((InstanceValue) locals.load(0)).getValue("backtrace", "Ljava/lang/Object;")).getValue();
 			int idx = locals.load(1).asInt();
 			val helper = vm.getHelper();
-			helper.rangeCheck(idx, 0, backtrace.count());
-			val element = helper.newStackTraceElement(backtrace.get(idx), false);
+			int len = backtrace.count();
+			helper.rangeCheck(idx, 0, len);
+			val element = helper.newStackTraceElement(backtrace.get(len - idx - 1), false);
 			ctx.setResult(element);
 			return Result.ABORT;
 		});

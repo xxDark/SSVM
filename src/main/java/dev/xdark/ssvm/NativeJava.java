@@ -315,20 +315,29 @@ public final class NativeJava {
 	private static void initFS(VirtualMachine vm) {
 		val vmi = vm.getInterface();
 		val fd = vm.getSymbols().java_io_FileDescriptor;
-		vmi.setInvoker(fd, "initIDs", "()V", ctx -> Result.ABORT);
+
 		MethodInvoker set = ctx -> {
-			try {
-				ctx.setResult(new LongValue(vm.getFileDescriptorManager().newFD(ctx.getLocals().load(0).asInt())));
-			} catch (VMException ex) {
-				vm.getHelper().throwException(vm.getSymbols().java_io_IOException, ex.getOop());
-			} catch (IllegalStateException ex) {
-				vm.getHelper().throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
-			}
+			ctx.setResult(new LongValue(mapVMStream(vm, ctx.getLocals().load(0).asInt())));
 			return Result.ABORT;
 		};
+		boolean lateinit = false;
 		if (!vmi.setInvoker(fd, "getHandle", "(I)J", set)) {
-			vmi.setInvoker(fd, "set", "(I)J", set);
+			lateinit = !vmi.setInvoker(fd, "set", "(I)J", set);
 		}
+		if (lateinit) {
+			vmi.setInvoker(fd, "initIDs", "()V", ctx -> {
+				val in = (InstanceValue) fd.getStaticValue("in", "Ljava/io/FileDescriptor;");
+				in.setLong("handle", mapVMStream(vm, 0));
+				val out = (InstanceValue) fd.getStaticValue("out", "Ljava/io/FileDescriptor;");
+				out.setLong("handle", mapVMStream(vm, 1));
+				val err = (InstanceValue) fd.getStaticValue("err", "Ljava/io/FileDescriptor;");
+				err.setLong("handle", mapVMStream(vm, 2);
+				return Result.ABORT;
+			});
+		} else {
+			vmi.setInvoker(fd, "initIDs", "()V", ctx -> Result.ABORT);
+		}
+
 		vmi.setInvoker(fd, "getAppend", "(I)Z", ctx -> {
 			ctx.setResult(new IntValue(vm.getFileDescriptorManager().isAppend(ctx.getLocals().load(0).asInt()) ? 1 : 0));
 			return Result.ABORT;
@@ -2041,6 +2050,17 @@ public final class NativeJava {
 			}
 		}
 		return result;
+	}
+
+	private static long mapVMStream(VirtualMachine vm, int d) {
+		try {
+			return vm.getFileDescriptorManager().newFD(d);
+		} catch (VMException ex) {
+			vm.getHelper().throwException(vm.getSymbols().java_io_IOException, ex.getOop());
+		} catch (IllegalStateException ex) {
+			vm.getHelper().throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+		}
+		return 0L;
 	}
 
 	/**

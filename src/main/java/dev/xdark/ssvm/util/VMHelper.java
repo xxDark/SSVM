@@ -1355,7 +1355,7 @@ public final class VMHelper {
 		val methodName = frame.getMethodName();
 		val owner = frame.getDeclaringClass();
 		val className = owner.getName();
-		val sourceFile = owner.getNode().sourceFile;
+		val sourceFile = frame.getSourceFile();
 		val lineNumber = frame.getLineNumber();
 		val vm = this.vm;
 		val jc = vm.getSymbols().java_lang_StackTraceElement;

@@ -1280,7 +1280,7 @@ public final class NativeJava {
 		}
 		vmi.setInvoker(reflection, "getCallerClass", "()Ljava/lang/Class;", ctx -> {
 			val backtrace = vm.currentThread().getBacktrace();
-			ctx.setResult(backtrace.get(backtrace.count() - 3).getOwner().getOop());
+			ctx.setResult(backtrace.get(backtrace.count() - 3).getDeclaringClass().getOop());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(reflection, "getClassAccessFlags", "(Ljava/lang/Class;)I", ctx -> {

@@ -1,9 +1,10 @@
 package dev.xdark.ssvm.thread;
 
-import dev.xdark.ssvm.execution.ExecutionContext;
 import lombok.val;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Basic implementation for a backtrace.
@@ -12,9 +13,9 @@ import java.util.*;
  */
 public final class SimpleBacktrace implements Backtrace {
 
-	private final List<ExecutionContext> backtrace;
+	private final List<StackFrame> backtrace;
 
-	private SimpleBacktrace(List<ExecutionContext> backtrace) {
+	private SimpleBacktrace(List<StackFrame> backtrace) {
 		this.backtrace = backtrace;
 	}
 
@@ -23,19 +24,19 @@ public final class SimpleBacktrace implements Backtrace {
 	}
 
 	@Override
-	public ExecutionContext first() {
+	public StackFrame first() {
 		val backtrace = this.backtrace;
 		return backtrace.isEmpty() ? null : backtrace.get(0);
 	}
 
 	@Override
-	public ExecutionContext last() {
+	public StackFrame last() {
 		val backtrace = this.backtrace;
 		return backtrace.isEmpty() ? null : backtrace.get(backtrace.size() - 1);
 	}
 
 	@Override
-	public ExecutionContext get(int index) {
+	public StackFrame get(int index) {
 		return backtrace.get(index);
 	}
 
@@ -45,12 +46,12 @@ public final class SimpleBacktrace implements Backtrace {
 	}
 
 	@Override
-	public void push(ExecutionContext ctx) {
-		backtrace.add(ctx);
+	public void push(StackFrame frame) {
+		backtrace.add(frame);
 	}
 
 	@Override
-	public ExecutionContext pop() {
+	public StackFrame pop() {
 		val backtrace = this.backtrace;
 		return backtrace.remove(backtrace.size() - 1);
 	}
@@ -61,7 +62,7 @@ public final class SimpleBacktrace implements Backtrace {
 	}
 
 	@Override
-	public Iterator<ExecutionContext> iterator() {
+	public Iterator<StackFrame> iterator() {
 		return backtrace.iterator();
 	}
 }

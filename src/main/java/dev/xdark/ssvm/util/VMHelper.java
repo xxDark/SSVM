@@ -9,6 +9,7 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.thread.Backtrace;
+import dev.xdark.ssvm.thread.StackFrame;
 import dev.xdark.ssvm.thread.VMThread;
 import dev.xdark.ssvm.value.*;
 import lombok.val;
@@ -212,7 +213,7 @@ public final class VMHelper {
 		if (cst instanceof Type) {
 			val type = (Type) cst;
 			val ctx = vm.currentThread().getBacktrace().last();
-			val loader = ctx == null ? NullValue.INSTANCE : ctx.getOwner().getClassLoader();
+			val loader = ctx == null ? NullValue.INSTANCE : ctx.getDeclaringClass().getClassLoader();
 			val sort = type.getSort();
 			switch (sort) {
 				case Type.OBJECT: {
@@ -1306,12 +1307,12 @@ public final class VMHelper {
 		if (!backtrace.isNull()) {
 			val unmarshalled = ((JavaValue<Backtrace>) backtrace).getValue();
 			val stackTrace = StreamSupport.stream(unmarshalled.spliterator(), false)
-					.map(ctx -> {
-						val methodName = ctx.getMethod().getName();
-						val owner = ctx.getOwner();
+					.map(frame -> {
+						val methodName = frame.getMethodName();
+						val owner = frame.getDeclaringClass();
 						val className = owner.getName();
-						val sourceFile = owner.getNode().sourceFile;
-						val lineNumber = ctx.getLineNumber();
+						val sourceFile = frame.getSourceFile();
+						val lineNumber = frame.getLineNumber();
 						return new StackTraceElement(className, methodName, sourceFile, lineNumber);
 					})
 					.toArray(StackTraceElement[]::new);
@@ -1343,19 +1344,19 @@ public final class VMHelper {
 	/**
 	 * Constructs new VM StackTraceElement from backtrace frame.
 	 *
-	 * @param ctx
+	 * @param frame
 	 * 		Java frame.
 	 * @param injectDeclaringClass
 	 * 		See {@link StackTraceElement#declaringClassObject} description.
 	 *
 	 * @return VM StackTraceElement.
 	 */
-	public InstanceValue newStackTraceElement(ExecutionContext ctx, boolean injectDeclaringClass) {
-		val methodName = ctx.getMethod().getName();
-		val owner = ctx.getOwner();
+	public InstanceValue newStackTraceElement(StackFrame frame, boolean injectDeclaringClass) {
+		val methodName = frame.getMethodName();
+		val owner = frame.getDeclaringClass();
 		val className = owner.getName();
 		val sourceFile = owner.getNode().sourceFile;
-		val lineNumber = ctx.getLineNumber();
+		val lineNumber = frame.getLineNumber();
 		val vm = this.vm;
 		val jc = vm.getSymbols().java_lang_StackTraceElement;
 		val element = vm.getMemoryManager().newInstance(jc);

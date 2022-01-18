@@ -1,29 +1,25 @@
 package dev.xdark.ssvm.thread;
 
-import dev.xdark.ssvm.execution.ExecutionContext;
-
-import java.util.ArrayDeque;
-
 /**
  * Thread backtrace.
  *
  * @author xDark
  */
-public interface Backtrace extends Iterable<ExecutionContext> {
+public interface Backtrace extends Iterable<StackFrame> {
 
 	/**
 	 * Returns first frame.
 	 *
 	 * @return first frame.
 	 */
-	ExecutionContext first();
+	StackFrame first();
 
 	/**
 	 * Returns last frame.
 	 *
 	 * @return last frame.
 	 */
-	ExecutionContext last();
+	StackFrame last();
 
 	/**
 	 * Returns frame at the specific index.
@@ -33,7 +29,7 @@ public interface Backtrace extends Iterable<ExecutionContext> {
 	 *
 	 * @return frame at the specific index.
 	 */
-	ExecutionContext get(int index);
+	StackFrame get(int index);
 
 	/**
 	 * Returns backtrace depth.
@@ -45,17 +41,17 @@ public interface Backtrace extends Iterable<ExecutionContext> {
 	/**
 	 * Pushes frame.
 	 *
-	 * @param ctx
-	 * 		Context to push.
+	 * @param frame
+	 * 		Frame to push.
 	 */
-	void push(ExecutionContext ctx);
+	void push(StackFrame frame);
 
 	/**
 	 * Pops frame.
 	 *
 	 * @return popped frame.
 	 */
-	ExecutionContext pop();
+	StackFrame pop();
 
 	/**
 	 * Copies backtrace.

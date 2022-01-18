@@ -92,7 +92,7 @@ public class VirtualMachine {
 		val sysGroup = memoryManager.newInstance(groupClass);
 		helper.invokeExact(groupClass, "<init>", "()V", new Value[0], new Value[]{sysGroup});
 		// Initialize main thread
-		val mainThread = threadManager.getVmThread(Thread.currentThread());
+		val mainThread = threadManager.currentThread();
 		val oop = mainThread.getOop();
 		oop.setValue("group", "Ljava/lang/ThreadGroup;", sysGroup);
 		helper.invokeExact(groupClass, "add", "(Ljava/lang/Thread;)V", new Value[0], new Value[]{sysGroup, oop});
@@ -238,7 +238,7 @@ public class VirtualMachine {
 	 * @return current VM thread.
 	 */
 	public VMThread currentThread() {
-		return threadManager.getVmThread(Thread.currentThread());
+		return threadManager.currentThread();
 	}
 
 	/**
@@ -318,8 +318,9 @@ public class VirtualMachine {
 		if (isNative) {
 			ctx.setLineNumber(-2);
 		}
-		val backtrace = currentThread().getBacktrace();
-		backtrace.push(ctx);
+		val threadManager = this.threadManager;
+		val backtrace = threadManager.currentThread().getBacktrace();
+		backtrace.push(threadManager.newStackFrame(ctx));
 		val vmi = vmInterface;
 		vmi.getInvocationHooks(jm, true)
 				.forEach(invocation -> invocation.handle(ctx));

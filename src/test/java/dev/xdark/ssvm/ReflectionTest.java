@@ -23,6 +23,7 @@ public class ReflectionTest {
 
 	@Test
 	public void testConstructor() {
+		pushFrame();
 		val helper = vm.getHelper();
 		val symbols = vm.getSymbols();
 		val c = symbols.java_lang_String;
@@ -33,10 +34,6 @@ public class ReflectionTest {
 				c.getOop(),
 				parameters
 		}).getResult();
-		// We have to inject 'override' flag because VM
-		// performs caller check here
-		// and backtrace is empty at this point
-		// since we call all methods 'outside' of VM
 		constructor.setBoolean("override", true);
 		val value = helper.invokeVirtual("newInstance", "([Ljava/lang/Object;)Ljava/lang/Object;", new Value[0], new Value[]{
 				constructor,
@@ -47,6 +44,7 @@ public class ReflectionTest {
 
 	@Test
 	public void testMethod() {
+		pushFrame();
 		val helper = vm.getHelper();
 		val symbols = vm.getSymbols();
 		val c = symbols.java_lang_String;
@@ -58,10 +56,6 @@ public class ReflectionTest {
 				helper.newUtf8("toUpperCase"),
 				parameters
 		}).getResult();
-		// We have to inject 'override' flag because VM
-		// performs caller check here
-		// and backtrace is empty at this point
-		// since we call all methods 'outside' of VM
 		method.setBoolean("override", true);
 		val lower = helper.invokeVirtual("invoke", "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;", new Value[0], new Value[]{
 				method,
@@ -73,6 +67,7 @@ public class ReflectionTest {
 
 	@Test
 	public void testField() {
+		pushFrame();
 		val helper = vm.getHelper();
 		val symbols = vm.getSymbols();
 		val c = symbols.java_lang_Integer;
@@ -84,15 +79,22 @@ public class ReflectionTest {
 				c.getOop(),
 				helper.newUtf8("value"),
 		}).getResult();
-		// We have to inject 'override' flag because VM
-		// performs caller check here
-		// and backtrace is empty at this point
-		// since we call all methods 'outside' of VM
 		field.setBoolean("override", true);
 		val backing = helper.invokeVirtual("getInt", "(Ljava/lang/Object;)I", new Value[0], new Value[]{
 				field,
 				instance,
 		}).getResult();
 		assertEquals(primitive, backing.asInt());
+	}
+
+	private static void pushFrame() {
+		val threadManager = vm.getThreadManager();
+		threadManager.currentThread().getBacktrace()
+				.push(threadManager.newStackFrame(
+						vm.getSymbols().java_lang_System,
+						"junit",
+						null,
+						-2
+				));
 	}
 }

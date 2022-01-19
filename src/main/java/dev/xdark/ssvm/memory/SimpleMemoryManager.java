@@ -113,7 +113,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public InstanceValue newJavaLangClass(InstanceJavaClass javaClass) {
+	public JavaValue<InstanceJavaClass> newJavaLangClass(InstanceJavaClass javaClass) {
 		val memory = allocateClassMemory(javaClass, javaClass);
 		val wrapper = new JavaValue<>(memory, javaClass);
 		javaClass.setOop(wrapper);
@@ -352,7 +352,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public InstanceValue setOopForClass(JavaClass javaClass) {
+	public <C extends JavaClass>  JavaValue<C> setOopForClass(C javaClass) {
 		val jlc = vm.findBootstrapClass("java/lang/Class");
 		val memory = allocateClassMemory(jlc, javaClass);
 		setClass(memory, jlc);

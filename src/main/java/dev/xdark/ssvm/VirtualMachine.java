@@ -475,7 +475,7 @@ public class VirtualMachine {
 	}
 
 	private void setClassOop(InstanceJavaClass javaClass, InstanceJavaClass jlc) {
-		InstanceValue oop = jlc == javaClass ? memoryManager.newJavaLangClass(javaClass) : memoryManager.setOopForClass(javaClass);
+		JavaValue<InstanceJavaClass> oop = jlc == javaClass ? memoryManager.newJavaLangClass(javaClass) : memoryManager.setOopForClass(javaClass);
 		javaClass.setOop(oop);
 		helper.initializeDefaultValues(oop);
 	}

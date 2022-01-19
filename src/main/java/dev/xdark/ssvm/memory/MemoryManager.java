@@ -125,7 +125,7 @@ public interface MemoryManager {
 	 *
 	 * @return allocated Java wrapper.
 	 */
-	InstanceValue newJavaLangClass(InstanceJavaClass javaClass);
+	JavaValue<InstanceJavaClass> newJavaLangClass(InstanceJavaClass javaClass);
 
 	/**
 	 * Allocates new array.
@@ -770,7 +770,7 @@ public interface MemoryManager {
 	 *
 	 * @return oop.
 	 */
-	InstanceValue setOopForClass(JavaClass javaClass);
+	<C extends JavaClass> JavaValue<C> setOopForClass(C javaClass);
 
 	/**
 	 * Returns byte order of memory.

@@ -1235,7 +1235,7 @@ public final class VMHelper {
 			// Create class
 			val javaClass = new InstanceJavaClass(vm, classLoader, parsed.getClassReader(), parsed.getNode());
 			classLoaderData.linkClass(javaClass);
-			val oop = (InstanceValue) vm.getMemoryManager().setOopForClass(javaClass);
+			val oop = vm.getMemoryManager().setOopForClass(javaClass);
 			javaClass.setOop(oop);
 			vm.getHelper().initializeDefaultValues(oop);
 			setClassFields(oop, classLoader, protectionDomain);

@@ -45,7 +45,8 @@ final class BootClassLoaderHolder {
 		while (name.charAt(dimensions) == '[') dimensions++;
 		val data = this.data;
 		val trueName = dimensions == 0 ? name : name.substring(dimensions + 1, name.length() - 1);
-		JavaClass jc;
+		InstanceJavaClass jc;
+		JavaClass res;
 		synchronized (data) {
 			jc = data.getClass(trueName);
 			if (jc == null) {
@@ -54,13 +55,14 @@ final class BootClassLoaderHolder {
 				val vm = this.vm;
 				jc = new InstanceJavaClass(vm, NullValue.INSTANCE, result.getClassReader(), result.getNode());
 				val oop = vm.getMemoryManager().setOopForClass(jc);
-				((InstanceJavaClass) jc).setOop(oop);
+				jc.setOop(oop);
 				data.linkClass(jc);
 				vm.getHelper().initializeDefaultValues(jc.getOop());
 			}
+			res = jc;
 		}
-		while (dimensions-- != 0) jc = jc.newArrayClass();
-		return jc;
+		while (dimensions-- != 0) res = res.newArrayClass();
+		return res;
 	}
 
 	/**
@@ -81,7 +83,7 @@ final class BootClassLoaderHolder {
 	 * @param jc
 	 * 		Class to link.
 	 */
-	void forceLink(JavaClass jc) {
+	void forceLink(InstanceJavaClass jc) {
 		data.forceLinkClass(jc);
 	}
 

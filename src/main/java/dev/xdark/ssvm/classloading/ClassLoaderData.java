@@ -1,6 +1,6 @@
 package dev.xdark.ssvm.classloading;
 
-import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.mirror.InstanceJavaClass;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,7 +12,7 @@ import java.util.Map;
  */
 public final class ClassLoaderData {
 
-	private final Map<String, JavaClass> table = new HashMap<>();
+	private final Map<String, InstanceJavaClass> table = new HashMap<>();
 
 	/**
 	 * Returns a class based off it's name.
@@ -22,7 +22,7 @@ public final class ClassLoaderData {
 	 *
 	 * @return class.
 	 */
-	public JavaClass getClass(String name) {
+	public InstanceJavaClass getClass(String name) {
 		return table.get(name);
 	}
 
@@ -35,7 +35,7 @@ public final class ClassLoaderData {
 	 * @throws IllegalStateException
 	 * 		If the class with the name of {@code jc} is already linked.
 	 */
-	public void linkClass(JavaClass jc) {
+	public void linkClass(InstanceJavaClass jc) {
 		String name = jc.getInternalName();
 		if (table.putIfAbsent(name, jc) != null) {
 			throw new IllegalStateException(name);
@@ -49,7 +49,7 @@ public final class ClassLoaderData {
 	 * @param jc
 	 * 		Class to register.
 	 */
-	public void forceLinkClass(JavaClass jc) {
+	public void forceLinkClass(InstanceJavaClass jc) {
 		table.put(jc.getInternalName(), jc);
 	}
 }

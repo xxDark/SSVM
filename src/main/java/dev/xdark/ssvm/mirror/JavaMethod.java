@@ -118,8 +118,6 @@ public final class JavaMethod {
 
 	@Override
 	public int hashCode() {
-		int result = owner.hashCode();
-		result = 31 * result + node.hashCode();
-		return result;
+		return node.hashCode();
 	}
 }

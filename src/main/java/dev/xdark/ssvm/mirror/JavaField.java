@@ -117,4 +117,9 @@ public final class JavaField {
 		}
 		return type;
 	}
+
+	@Override
+	public int hashCode() {
+		return node.hashCode();
+	}
 }

@@ -18,7 +18,7 @@ public class ContextStackFrame implements StackFrame {
 
 	@Override
 	public InstanceJavaClass getDeclaringClass() {
-		return executionContext.getOwner();
+		return executionContext.getMethod().getOwner();
 	}
 
 	@Override
@@ -28,7 +28,7 @@ public class ContextStackFrame implements StackFrame {
 
 	@Override
 	public String getSourceFile() {
-		return executionContext.getOwner().getNode().sourceFile;
+		return getDeclaringClass().getNode().sourceFile;
 	}
 
 	@Override

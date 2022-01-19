@@ -334,7 +334,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @param oop
 	 * 		Class oop.
 	 */
-	public void setOop(InstanceValue oop) {
+	public void setOop(JavaValue<InstanceJavaClass> oop) {
 		this.oop = oop;
 	}
 

@@ -14,6 +14,7 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.thread.Backtrace;
+import dev.xdark.ssvm.thread.SimpleBacktrace;
 import dev.xdark.ssvm.value.*;
 import lombok.val;
 import org.objectweb.asm.ClassReader;
@@ -1251,7 +1252,12 @@ public final class NativeJava {
 		val throwable = symbols.java_lang_Throwable;
 		vmi.setInvoker(throwable, "fillInStackTrace", "(I)Ljava/lang/Throwable;", ctx -> {
 			val exception = ctx.getLocals().<InstanceValue>load(0);
-			val copy = vm.currentThread().getBacktrace().copy();
+			val threadManager = vm.getThreadManager();
+			val vmBacktrace = threadManager.currentThread().getBacktrace();
+			val copy = new SimpleBacktrace();
+			for (val frame : vmBacktrace) {
+				copy.push(threadManager.newStackFrame(frame.getDeclaringClass(), frame.getMethodName(), frame.getSourceFile(), frame.getLineNumber()));
+			}
 			val backtrace = vm.getMemoryManager().newJavaInstance(symbols.java_lang_Object, copy);
 			exception.setValue("backtrace", "Ljava/lang/Object;", backtrace);
 			if (throwable.hasVirtualField("depth", "I")) {

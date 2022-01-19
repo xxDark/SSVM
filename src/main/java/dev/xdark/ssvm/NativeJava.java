@@ -9,7 +9,10 @@ import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.execution.asm.*;
 import dev.xdark.ssvm.fs.FileDescriptorManager;
-import dev.xdark.ssvm.mirror.*;
+import dev.xdark.ssvm.mirror.ArrayJavaClass;
+import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.thread.Backtrace;
 import dev.xdark.ssvm.value.*;
 import lombok.val;
@@ -1225,6 +1228,13 @@ public final class NativeJava {
 		});
 		vmi.setInvoker(classLoader, "findBuiltinLib", "(Ljava/lang/String;)Ljava/lang/String;", ctx -> {
 			ctx.setResult(ctx.getLocals().load(0));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(classLoader, "resolveClass0", "(Ljava/lang/Class;)V", ctx -> {
+			val c = ctx.getLocals().load(1);
+			val helper = vm.getHelper();
+			helper.checkNotNull(c);
+			((JavaValue<JavaClass>) c).getValue().initialize();
 			return Result.ABORT;
 		});
 	}

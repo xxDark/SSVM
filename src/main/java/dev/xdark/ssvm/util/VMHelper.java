@@ -189,7 +189,11 @@ public final class VMHelper {
 	 * @return invocation result.
 	 */
 	public ExecutionContext invokeExact(InstanceJavaClass javaClass, String name, String desc, Value[] stack, Value[] locals) {
-		return invokeExact(javaClass, javaClass.getVirtualMethod(name, desc), stack, locals);
+		val mn = javaClass.getVirtualMethodRecursively(name, desc);
+		if (mn == null) {
+			throwException(vm.getSymbols().java_lang_NoSuchMethodError, javaClass.getInternalName() + '.' + name + desc);
+		}
+		return invokeExact(javaClass, mn, stack, locals);
 	}
 
 	/**
@@ -218,27 +222,16 @@ public final class VMHelper {
 			switch (sort) {
 				case Type.OBJECT: {
 					val name = type.getInternalName();
-					val klass = vm.findClass(loader, name, false); // fast path
-					if (klass == null) {
-						throwException(vm.getSymbols().java_lang_ClassNotFoundException, name);
-						return null;
-					}
-					return klass.getOop();
+					// fast path
+					return vm.findClass(loader, name, false).getOop();
 				}
 				case Type.ARRAY: {
 					val name = type.getInternalName();
-					val klass = findClass(loader, type.getInternalName(), false);
-					if (klass == null) {
-						throwException(vm.getSymbols().java_lang_ClassNotFoundException, name);
-					}
-					return klass.getOop();
+					return findClass(loader, type.getInternalName(), false).getOop();
 				}
 				case Type.METHOD: {
 					val name = type.getReturnType().getInternalName();
 					val rt = findClass(loader, name, false);
-					if (rt == null) {
-						throwException(vm.getSymbols().java_lang_ClassNotFoundException, name);
-					}
 					val classes = convertTypes(loader, type.getArgumentTypes(), false);
 					return methodType(rt, classes);
 				}
@@ -247,30 +240,6 @@ public final class VMHelper {
 			}
 		}
 		throw new UnsupportedOperationException("TODO: " + cst);
-	}
-
-	private JavaClass findType(Value loader, String name) {
-		val vm = this.vm;
-		switch (name) {
-			case "J":
-				return vm.getPrimitives().longPrimitive;
-			case "D":
-				return vm.getPrimitives().doublePrimitive;
-			case "I":
-				return vm.getPrimitives().intPrimitive;
-			case "F":
-				return vm.getPrimitives().floatPrimitive;
-			case "C":
-				return vm.getPrimitives().charPrimitive;
-			case "S":
-				return vm.getPrimitives().shortPrimitive;
-			case "B":
-				return vm.getPrimitives().bytePrimitive;
-			case "Z":
-				return vm.getPrimitives().booleanPrimitive;
-			default:
-				return vm.findClass(loader, name, false);
-		}
 	}
 
 	/**

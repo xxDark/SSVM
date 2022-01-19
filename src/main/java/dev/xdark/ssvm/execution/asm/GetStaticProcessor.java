@@ -30,7 +30,7 @@ public final class GetStaticProcessor implements InstructionProcessor<FieldInsnN
 			}
 			owner = owner.getSuperClass();
 		}
-		helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, insn.owner + '.' + insn.name + insn.desc);
+		helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, insn.name);
 		return Result.ABORT;
 	}
 }

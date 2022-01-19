@@ -30,7 +30,7 @@ public final class PutFieldProcessor implements InstructionProcessor<FieldInsnNo
 		val instance = (InstanceValue) $instance;
 		long offset = helper.getFieldOffset((InstanceJavaClass) owner, instance.getJavaClass(), insn.name, insn.desc);
 		if (offset == -1L) {
-			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, insn.owner + '.' + insn.name + insn.desc);
+			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, insn.name);
 		}
 		offset += vm.getMemoryManager().valueBaseOffset(instance);
 		val manager = vm.getMemoryManager();

@@ -29,7 +29,7 @@ public final class GetFieldProcessor implements InstructionProcessor<FieldInsnNo
 		val instance = (InstanceValue) $instance;
 		long offset = helper.getFieldOffset((InstanceJavaClass) owner, instance.getJavaClass(), insn.name, insn.desc);
 		if (offset == -1L) {
-			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, insn.owner + '.' + insn.name + insn.desc);
+			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, insn.name);
 		}
 		Value value;
 		val manager = vm.getMemoryManager();

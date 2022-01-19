@@ -21,7 +21,7 @@ public final class PutStaticProcessor implements InstructionProcessor<FieldInsnN
 		val owner = (InstanceJavaClass) helper.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
 		val value = ctx.getStack().popGeneric();
 		if (!owner.setFieldValue(insn.name, insn.desc, value)) {
-			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, insn.owner + '.' + insn.name + insn.desc);
+			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, insn.name);
 		}
 		return Result.CONTINUE;
 	}

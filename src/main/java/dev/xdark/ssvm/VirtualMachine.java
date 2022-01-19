@@ -299,7 +299,11 @@ public class VirtualMachine {
 				helper.throwException(symbols.java_lang_ClassNotFoundException, name);
 			}
 		} else {
-			jc = memoryManager.readClass((ObjectValue) helper.invokeVirtual("loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;", new Value[0], new Value[]{loader, helper.newUtf8(name.replace('/', '.')), new IntValue(initialize ? 1 : 0)}).getResult());
+			val c = helper.invokeVirtual("loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;", new Value[0], new Value[]{loader, helper.newUtf8(name.replace('/', '.')), new IntValue(initialize ? 1 : 0)}).getResult();
+			if (c == NullValue.INSTANCE) {
+				helper.throwException(symbols.java_lang_ClassNotFoundException, name);
+			}
+			jc = ((JavaValue<JavaClass>) c).getValue();
 		}
 		return jc;
 	}

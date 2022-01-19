@@ -101,26 +101,15 @@ public final class VMHelper {
 	 * @return invocation result.
 	 */
 	public ExecutionContext invokeVirtual(String name, String desc, Value[] stack, Value[] locals) {
-		InstanceJavaClass javaClass;
 		val instance = locals[0];
-		if (instance.isNull()) {
-			throwException(vm.getSymbols().java_lang_NullPointerException);
-		}
+		checkNotNull(instance);
+		InstanceJavaClass javaClass;
 		if (instance instanceof ArrayValue) {
 			javaClass = vm.getSymbols().java_lang_Object;
 		} else {
 			javaClass = ((InstanceValue) instance).getJavaClass();
 		}
-		javaClass.initialize();
-		val keep = javaClass;
-		val method = javaClass.getVirtualMethodRecursively(name, desc);
-		if (method == null) {
-			throwException(vm.getSymbols().java_lang_NoSuchMethodError, keep.getInternalName() + '.' + name + desc);
-		}
-		val ctx = createContext(javaClass, method);
-		contextPrepare(ctx, stack, locals, 0);
-		javaClass.getVM().execute(ctx, true);
-		return ctx;
+		return invokeExact(javaClass, name, desc, stack, locals);
 	}
 
 	/**
@@ -212,29 +201,20 @@ public final class VMHelper {
 			return new IntValue(((Number) cst).intValue());
 		if (cst instanceof Character) return new IntValue((Character) cst);
 		if (cst instanceof Float) return new FloatValue((Float) cst);
-		if (cst instanceof Boolean) return new IntValue((Boolean) cst ? 1 : 0);
-		if (cst instanceof String) return newUtf8((String) cst);
+		if (cst instanceof Boolean) return (Boolean) cst ? IntValue.ONE : IntValue.ZERO;
+		if (cst instanceof String) return vm.getStringPool().intern((String) cst);
 		if (cst instanceof Type) {
 			val type = (Type) cst;
 			val ctx = vm.currentThread().getBacktrace().last();
-			val loader = ctx == null ? NullValue.INSTANCE : ctx.getDeclaringClass().getClassLoader();
+			Value loader = ctx == null ? NullValue.INSTANCE : ctx.getDeclaringClass().getClassLoader();
 			val sort = type.getSort();
 			switch (sort) {
-				case Type.OBJECT: {
-					val name = type.getInternalName();
-					// fast path
-					return vm.findClass(loader, name, false).getOop();
-				}
-				case Type.ARRAY: {
-					val name = type.getInternalName();
+				case Type.OBJECT:
+					return vm.findClass(loader, type.getInternalName(), false).getOop();
+				case Type.ARRAY:
 					return findClass(loader, type.getInternalName(), false).getOop();
-				}
-				case Type.METHOD: {
-					val name = type.getReturnType().getInternalName();
-					val rt = findClass(loader, name, false);
-					val classes = convertTypes(loader, type.getArgumentTypes(), false);
-					return methodType(rt, classes);
-				}
+				case Type.METHOD:
+					return methodType(loader, type);
 				default:
 					throw new IllegalStateException("Not implemented yet: " + sort);
 			}

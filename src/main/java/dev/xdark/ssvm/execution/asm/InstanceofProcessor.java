@@ -22,9 +22,9 @@ public final class InstanceofProcessor implements InstructionProcessor<TypeInsnN
 		val stack = ctx.getStack();
 		val value = stack.<ObjectValue>pop();
 		if (value.isNull()) {
-			stack.push(new IntValue(0));
+			stack.push(IntValue.ZERO);
 		} else {
-			stack.push(new IntValue(javaClass.isAssignableFrom(value.getJavaClass()) ? 1 : 0));
+			stack.push(javaClass.isAssignableFrom(value.getJavaClass()) ? IntValue.ONE : IntValue.ZERO);
 		}
 		return Result.CONTINUE;
 	}

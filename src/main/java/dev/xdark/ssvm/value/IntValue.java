@@ -7,6 +7,9 @@ package dev.xdark.ssvm.value;
  */
 public final class IntValue extends NumericValue {
 
+	public static final IntValue ONE = new IntValue(1);
+	public static final IntValue ZERO = new IntValue(0);
+
 	private final int value;
 
 	public IntValue(int value) {
@@ -46,6 +49,11 @@ public final class IntValue extends NumericValue {
 	@Override
 	public byte asByte() {
 		return (byte) value;
+	}
+
+	@Override
+	public boolean asBoolean() {
+		return value != 0;
 	}
 
 	@Override

@@ -24,7 +24,7 @@ public final class StackTest {
 	public void testDupX1() {
 		val stack = new Stack(3);
 		stack.push(new IntValue(2));
-		stack.push(new IntValue(1));
+		stack.push(IntValue.ONE);
 		stack.dupx1();
 		assertEquals(1, stack.pop().asInt());
 		assertEquals(2, stack.pop().asInt());
@@ -37,7 +37,7 @@ public final class StackTest {
 		val stack = new Stack(4);
 		stack.push(new IntValue(3));
 		stack.push(new IntValue(2));
-		stack.push(new IntValue(1));
+		stack.push(IntValue.ONE);
 		stack.dupx2();
 		assertEquals(1, stack.pop().asInt());
 		assertEquals(2, stack.pop().asInt());
@@ -50,7 +50,7 @@ public final class StackTest {
 	public void testDupX2Form2() {
 		val stack = new Stack(4);
 		stack.pushWide(new LongValue(2L));
-		stack.push(new IntValue(1));
+		stack.push(IntValue.ONE);
 		stack.dupx2();
 		assertEquals(1, stack.pop().asInt());
 		assertEquals(2L, stack.popWide().asLong());
@@ -62,7 +62,7 @@ public final class StackTest {
 	public void testDup2Form1() {
 		val stack = new Stack(4);
 		stack.push(new IntValue(2));
-		stack.push(new IntValue(1));
+		stack.push(IntValue.ONE);
 		stack.dup2();
 		assertEquals(1, stack.pop().asInt());
 		assertEquals(2, stack.pop().asInt());
@@ -86,7 +86,7 @@ public final class StackTest {
 		val stack = new Stack(5);
 		stack.push(new IntValue(3));
 		stack.push(new IntValue(2));
-		stack.push(new IntValue(1));
+		stack.push(IntValue.ONE);
 		stack.dup2x1();
 		assertEquals(1, stack.pop().asInt());
 		assertEquals(2, stack.pop().asInt());
@@ -114,7 +114,7 @@ public final class StackTest {
 		stack.push(new IntValue(4));
 		stack.push(new IntValue(3));
 		stack.push(new IntValue(2));
-		stack.push(new IntValue(1));
+		stack.push(IntValue.ONE);
 		stack.dup2x2();
 		assertEquals(1, stack.pop().asInt());
 		assertEquals(2, stack.pop().asInt());
@@ -144,7 +144,7 @@ public final class StackTest {
 		val stack = new Stack(6);
 		stack.pushWide(new LongValue(3L));
 		stack.push(new IntValue(2));
-		stack.push(new IntValue(1));
+		stack.push(IntValue.ONE);
 		stack.dup2x2();
 		assertEquals(1, stack.pop().asInt());
 		assertEquals(2, stack.pop().asInt());

@@ -63,7 +63,7 @@ public final class NativeJava {
 		val utf16 = (InstanceJavaClass) vm.findBootstrapClass("java/lang/StringUTF16");
 		if (utf16 != null) {
 			vmi.setInvoker(utf16, "isBigEndian", "()Z", ctx -> {
-				ctx.setResult(new IntValue(vm.getMemoryManager().getByteOrder() == ByteOrder.BIG_ENDIAN ? 1 : 0));
+				ctx.setResult(vm.getMemoryManager().getByteOrder() == ByteOrder.BIG_ENDIAN ? IntValue.ONE : IntValue.ZERO);
 				return Result.ABORT;
 			});
 		}
@@ -150,7 +150,7 @@ public final class NativeJava {
 		// TODO: implement this?
 		val vmi = vm.getInterface();
 		MethodInvoker findSignal = ctx -> {
-			ctx.setResult(new IntValue(0));
+			ctx.setResult(IntValue.ZERO);
 			return Result.ABORT;
 		};
 		if (!vmi.setInvoker(signal, "findSignal0", "(Ljava/lang/String;)I", findSignal)) {
@@ -192,7 +192,7 @@ public final class NativeJava {
 		val symbols = vm.getSymbols();
 		val atomicLong = symbols.java_util_concurrent_atomic_AtomicLong;
 		vmi.setInvoker(atomicLong, "VMSupportsCS8", "()Z", ctx -> {
-			ctx.setResult(new IntValue(0));
+			ctx.setResult(IntValue.ZERO);
 			return Result.ABORT;
 		});
 	}
@@ -343,7 +343,7 @@ public final class NativeJava {
 		}
 
 		vmi.setInvoker(fd, "getAppend", "(I)Z", ctx -> {
-			ctx.setResult(new IntValue(vm.getFileDescriptorManager().isAppend(ctx.getLocals().load(0).asInt()) ? 1 : 0));
+			ctx.setResult(vm.getFileDescriptorManager().isAppend(ctx.getLocals().load(0).asInt()) ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fd, "close0", "()V", ctx -> {
@@ -500,7 +500,7 @@ public final class NativeJava {
 			val handle = helper.getFileStreamHandle(_this);
 			val in = vm.getFileDescriptorManager().getFdIn(handle);
 			if (in == null) {
-				ctx.setResult(new IntValue(0));
+				ctx.setResult(IntValue.ZERO);
 			} else {
 				try {
 					ctx.setResult(new IntValue(in.available()));
@@ -683,7 +683,7 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "desiredAssertionStatus0", "(Ljava/lang/Class;)Z", ctx -> {
-			ctx.setResult(new IntValue(0));
+			ctx.setResult(IntValue.ZERO);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "forName0", "(Ljava/lang/String;ZLjava/lang/ClassLoader;Ljava/lang/Class;)Ljava/lang/Class;", ctx -> {
@@ -713,26 +713,26 @@ public final class NativeJava {
 			}
 		}
 		vmi.setInvoker(jlc, "isArray", "()Z", ctx -> {
-			ctx.setResult(new IntValue(ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue().isArray() ? 1 : 0));
+			ctx.setResult(ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue().isArray() ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "isAssignableFrom", "(Ljava/lang/Class;)Z", ctx -> {
 			val locals = ctx.getLocals();
 			val _this = locals.<JavaValue<JavaClass>>load(0).getValue();
 			val arg = locals.<JavaValue<JavaClass>>load(1).getValue();
-			ctx.setResult(new IntValue(_this.isAssignableFrom(arg) ? 1 : 0));
+			ctx.setResult(_this.isAssignableFrom(arg) ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "isInterface", "()Z", ctx -> {
 			val locals = ctx.getLocals();
 			val _this = locals.<JavaValue<JavaClass>>load(0).getValue();
-			ctx.setResult(new IntValue(_this.isInterface() ? 1 : 0));
+			ctx.setResult(_this.isInterface() ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "isPrimitive", "()Z", ctx -> {
 			val locals = ctx.getLocals();
 			val _this = locals.<JavaValue<JavaClass>>load(0).getValue();
-			ctx.setResult(new IntValue(_this.isPrimitive() ? 1 : 0));
+			ctx.setResult(_this.isPrimitive() ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getSuperclass", "()Ljava/lang/Class;", ctx -> {
@@ -940,11 +940,11 @@ public final class NativeJava {
 			val locals = ctx.getLocals();
 			val value = locals.load(1);
 			if (value.isNull()) {
-				ctx.setResult(new IntValue(0));
+				ctx.setResult(IntValue.ZERO);
 			} else {
 				val klass = ((ObjectValue) value).getJavaClass();
 				val _this = locals.<JavaValue<JavaClass>>load(0).getValue();
-				ctx.setResult(new IntValue(_this.isAssignableFrom(klass) ? 1 : 0));
+				ctx.setResult(_this.isAssignableFrom(klass) ? IntValue.ONE : IntValue.ZERO);
 			}
 			return Result.ABORT;
 		});
@@ -1056,32 +1056,19 @@ public final class NativeJava {
 			val srcComponent = src.getJavaClass().getComponentType();
 			val dstComponent = dst.getJavaClass().getComponentType();
 
-			int srcScale = memoryManager.arrayIndexScale(srcComponent);
-			int dstScale = memoryManager.arrayIndexScale(dstComponent);
-			if (srcScale != dstScale) {
-				helper.throwException(symbols.java_lang_IllegalArgumentException);
-			}
-			int srcStart = memoryManager.arrayBaseOffset(srcComponent);
-			int dstStart = memoryManager.arrayBaseOffset(dstComponent);
-			if (srcStart != dstStart) {
-				helper.throwException(symbols.java_lang_IllegalArgumentException);
-			}
-			for (int i = 0; i < length; i++) {
-				switch (srcScale) {
-					case 8:
-						dst.setLong(dstPos++, src.getLong(srcPos++));
-						break;
-					case 4:
-						dst.setInt(dstPos++, src.getInt(srcPos++));
-						break;
-					case 2:
-						dst.setShort(dstPos++, src.getShort(srcPos++));
-						break;
-					case 1:
-						dst.setByte(dstPos++, src.getByte(srcPos++));
-						break;
-				}
-			}
+			int scale = memoryManager.arrayIndexScale(srcComponent);
+			helper.checkEquals(scale, memoryManager.arrayIndexScale(dstComponent));
+
+			int start = memoryManager.arrayBaseOffset(srcComponent);
+			helper.checkEquals(start, memoryManager.arrayBaseOffset(dstComponent));
+
+			val srcData = src.getMemory().getData().slice();
+			int dataStartPos = start + srcPos * scale;
+			srcData.position(dataStartPos).limit(dataStartPos + length * scale);
+			val dstData = dst.getMemory().getData().slice();
+			dstData.position(start + dstPos * scale);
+			dstData.put(srcData);
+
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "identityHashCode", "(Ljava/lang/Object;)I", ctx -> {
@@ -1164,7 +1151,7 @@ public final class NativeJava {
 		});
 		vmi.setInvoker(thread, "isAlive", "()Z", ctx -> {
 			val th = vm.getThreadManager().getVmThread(ctx.getLocals().<InstanceValue>load(0));
-			ctx.setResult(new IntValue(th.isAlive() ? 1 : 0));
+			ctx.setResult(th.isAlive() ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
 	}
@@ -1329,7 +1316,7 @@ public final class NativeJava {
 		});
 		// TODO FIXME
 		vmi.setInvoker(reflection, "isCallerSensitive", "(Ljava/lang/reflect/Method;)Z", ctx -> {
-			ctx.setResult(new IntValue(0));
+			ctx.setResult(IntValue.ZERO);
 			return Result.ABORT;
 		});
 	}
@@ -1532,11 +1519,11 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "isBigEndian0", "()Z", ctx -> {
-			ctx.setResult(new IntValue(vm.getMemoryManager().getByteOrder() == ByteOrder.BIG_ENDIAN ? 1 : 0));
+			ctx.setResult(vm.getMemoryManager().getByteOrder() == ByteOrder.BIG_ENDIAN ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "unalignedAccess0", "()Z", ctx -> {
-			ctx.setResult(new IntValue(0));
+			ctx.setResult(IntValue.ZERO);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "objectFieldOffset1", "(Ljava/lang/Class;Ljava/lang/String;)J", ctx -> {
@@ -1573,7 +1560,7 @@ public final class NativeJava {
 			if (result) {
 				memoryManager.writeInt(obj, offset, x);
 			}
-			ctx.setResult(new IntValue(result ? 1 : 0));
+			ctx.setResult(result ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "getObjectVolatile", "(Ljava/lang/Object;J)Ljava/lang/Object;", ctx -> {
@@ -1607,7 +1594,7 @@ public final class NativeJava {
 			if (result) {
 				memoryManager.writeValue(obj, offset, x);
 			}
-			ctx.setResult(new IntValue(result ? 1 : 0));
+			ctx.setResult(result ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, uhelper.compareAndSetLong(), "(Ljava/lang/Object;JJJ)Z", ctx -> {
@@ -1627,7 +1614,7 @@ public final class NativeJava {
 			if (result) {
 				memoryManager.writeLong(obj, offset, x);
 			}
-			ctx.setResult(new IntValue(result ? 1 : 0));
+			ctx.setResult(result ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "putObjectVolatile", "(Ljava/lang/Object;JLjava/lang/Object;)V", ctx -> {
@@ -1746,7 +1733,7 @@ public final class NativeJava {
 				val cr = ((InstanceJavaClass) wrapper).getClassReader();
 				ctx.setResult(new IntValue(cr.getItemCount()));
 			} else {
-				ctx.setResult(new IntValue(0));
+				ctx.setResult(IntValue.ZERO);
 			}
 			return Result.ABORT;
 		});
@@ -1886,7 +1873,7 @@ public final class NativeJava {
 				val path = helper.readUtf8(helper.invokeVirtual("getAbsolutePath", "()Ljava/lang/String;", new Value[0], new Value[]{value}).getResult());
 				val attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
 				if (attributes == null) {
-					ctx.setResult(new IntValue(0));
+					ctx.setResult(IntValue.ZERO);
 				} else {
 					int res = 1;
 					if (attributes.isDirectory()) {

@@ -112,16 +112,17 @@ public class VirtualMachine {
 				unsafeConstants.initialize();
 				unsafeConstants.setFieldValue("ADDRESS_SIZE0", "I", new IntValue(memoryManager.addressSize()));
 				unsafeConstants.setFieldValue("PAGE_SIZE", "I", new IntValue(memoryManager.pageSize()));
-				unsafeConstants.setFieldValue("BIG_ENDIAN", "Z", new IntValue(memoryManager.getByteOrder() == ByteOrder.BIG_ENDIAN ? 1 : 0));
+				unsafeConstants.setFieldValue("BIG_ENDIAN", "Z", memoryManager.getByteOrder() == ByteOrder.BIG_ENDIAN ? IntValue.ONE : IntValue.ZERO);
 			}
 			findBootstrapClass("java/lang/StringUTF16", true);
+
 			helper.invokeStatic(sysClass, "initPhase1", "()V", new Value[0], new Value[0]);
 			findBootstrapClass("java/lang/invoke/MethodHandle", true);
 			findBootstrapClass("java/lang/invoke/ResolvedMethodName", true);
 			findBootstrapClass("java/lang/invoke/MemberName", true);
 			findBootstrapClass("java/lang/invoke/MethodHandleNatives", true);
 
-			val result = helper.invokeStatic(sysClass, "initPhase2", "(ZZ)I", new Value[0], new Value[]{new IntValue(1), new IntValue(1)}).getResult().asInt();
+			val result = helper.invokeStatic(sysClass, "initPhase2", "(ZZ)I", new Value[0], new Value[]{IntValue.ONE, IntValue.ONE}).getResult().asInt();
 			if (result != 0) {
 				throw new IllegalStateException("VM initialization failed, initPhase2 returned " + result);
 			}
@@ -299,7 +300,7 @@ public class VirtualMachine {
 				helper.throwException(symbols.java_lang_ClassNotFoundException, name);
 			}
 		} else {
-			val c = helper.invokeVirtual("loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;", new Value[0], new Value[]{loader, helper.newUtf8(name.replace('/', '.')), new IntValue(initialize ? 1 : 0)}).getResult();
+			val c = helper.invokeVirtual("loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;", new Value[0], new Value[]{loader, helper.newUtf8(name.replace('/', '.')), initialize ? IntValue.ONE : IntValue.ZERO}).getResult();
 			if (c == NullValue.INSTANCE) {
 				helper.throwException(symbols.java_lang_ClassNotFoundException, name);
 			}

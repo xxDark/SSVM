@@ -13,6 +13,7 @@ import sun.misc.Unsafe;
 public class UnsafeUtil {
 
 	private final Unsafe UNSAFE;
+	private final int ADDRESS_SIZE = Unsafe.ADDRESS_SIZE >> 2;
 
 	/**
 	 * Returns page size.
@@ -25,10 +26,11 @@ public class UnsafeUtil {
 
 	/**
 	 * Returns size of the type.
+	 *
 	 * @param desc
 	 * 		Type to get size from.
-	 * @return
-	 * 		Size of the type.
+	 *
+	 * @return Size of the type.
 	 */
 	@SuppressWarnings("DuplicateBranchesInSwitch")
 	public long getSizeFor(String desc) {
@@ -60,7 +62,7 @@ public class UnsafeUtil {
 	 */
 	public long addressOf(Object value) {
 		val helper = new Object[]{value};
-		switch (Unsafe.ADDRESS_SIZE >> 2) {
+		switch (ADDRESS_SIZE) {
 			case 1:
 				return UNSAFE.getInt(helper, Unsafe.ARRAY_OBJECT_BASE_OFFSET);
 			case 2:
@@ -80,12 +82,12 @@ public class UnsafeUtil {
 	 */
 	public Object byAddress(long address) {
 		val helper = new Object[]{null};
-		switch (Unsafe.ADDRESS_SIZE >> 2) {
+		switch (ADDRESS_SIZE) {
 			case 1:
-				UNSAFE.putLong(helper, Unsafe.ARRAY_OBJECT_BASE_OFFSET, address);
+				UNSAFE.putInt(helper, Unsafe.ARRAY_OBJECT_BASE_OFFSET, (int) address);
 				break;
 			case 2:
-				UNSAFE.putInt(helper, Unsafe.ARRAY_OBJECT_BASE_OFFSET, (int) address);
+				UNSAFE.putLong(helper, Unsafe.ARRAY_OBJECT_BASE_OFFSET, address);
 				break;
 			default:
 				throw new RuntimeException("Unsupported address size: " + Unsafe.ADDRESS_SIZE);

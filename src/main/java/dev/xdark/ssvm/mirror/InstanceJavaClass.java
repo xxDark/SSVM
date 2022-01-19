@@ -456,8 +456,9 @@ public final class InstanceJavaClass implements JavaClass {
 			case "S":
 				return new IntValue(memoryManager.readShort(oop, resultingOffset));
 			case "B":
-			case "Z":
 				return new IntValue(memoryManager.readByte(oop, resultingOffset));
+			case "Z":
+				return memoryManager.readBoolean(oop, resultingOffset) ? IntValue.ONE : IntValue.ZERO;
 			default:
 				return memoryManager.readValue(oop, resultingOffset);
 		}
@@ -967,11 +968,7 @@ public final class InstanceJavaClass implements JavaClass {
 		val superName = node.superName;
 		if (superName == null) return null;
 		val vm = this.vm;
-		val jc = (InstanceJavaClass) vm.findClass(classLoader, superName, false);
-		if (jc == null) {
-			vm.getHelper().throwException(vm.getSymbols().java_lang_NoClassDefFoundError, superName);
-		}
-		return jc;
+		return (InstanceJavaClass) vm.findClass(classLoader, superName, false);
 	}
 
 	private enum State {

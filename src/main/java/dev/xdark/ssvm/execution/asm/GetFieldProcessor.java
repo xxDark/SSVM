@@ -57,7 +57,7 @@ public final class GetFieldProcessor implements InstructionProcessor<FieldInsnNo
 				value = new IntValue(manager.readByte(instance, offset));
 				break;
 			case "Z":
-				value = new IntValue(manager.readBoolean(instance, offset) ? 1 : 0);
+				value = manager.readBoolean(instance, offset) ? IntValue.ONE : IntValue.ZERO;
 				break;
 			default:
 				value = manager.readValue(instance, offset);

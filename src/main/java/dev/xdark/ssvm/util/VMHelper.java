@@ -16,6 +16,8 @@ import lombok.val;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -483,7 +485,6 @@ public final class VMHelper {
 	public ArrayValue toVMFloats(float[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
 		val vm = this.vm;
-		val memoryManager = vm.getMemoryManager();
 		val wrapper = newArray(vm.getPrimitives().floatPrimitive, newLength);
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setFloat(i++, array[startIndex]);
@@ -518,7 +519,6 @@ public final class VMHelper {
 	public ArrayValue toVMChars(char[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
 		val vm = this.vm;
-		val memoryManager = vm.getMemoryManager();
 		val wrapper = newArray(vm.getPrimitives().charPrimitive, newLength);
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setChar(i++, array[startIndex]);
@@ -553,7 +553,6 @@ public final class VMHelper {
 	public ArrayValue toVMShorts(short[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
 		val vm = this.vm;
-		val memoryManager = vm.getMemoryManager();
 		val wrapper = newArray(vm.getPrimitives().shortPrimitive, newLength);
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setShort(i++, array[startIndex]);
@@ -588,7 +587,6 @@ public final class VMHelper {
 	public ArrayValue toVMBytes(byte[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
 		val vm = this.vm;
-		val memoryManager = vm.getMemoryManager();
 		val wrapper = newArray(vm.getPrimitives().bytePrimitive, newLength);
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setByte(i++, array[startIndex]);
@@ -623,7 +621,6 @@ public final class VMHelper {
 	public ArrayValue toVMBooleans(boolean[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
 		val vm = this.vm;
-		val memoryManager = vm.getMemoryManager();
 		val wrapper = newArray(vm.getPrimitives().booleanPrimitive, newLength);
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setBoolean(i++, array[startIndex]);
@@ -658,7 +655,6 @@ public final class VMHelper {
 	public ArrayValue toVMValues(ObjectValue[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
 		val vm = this.vm;
-		val memoryManager = vm.getMemoryManager();
 		val wrapper = newArray(vm.getSymbols().java_lang_Object, newLength);
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setValue(i++, array[startIndex]);
@@ -1156,8 +1152,9 @@ public final class VMHelper {
 	 * @param protectionDomain
 	 * 		Protection domain of the class.
 	 */
-	public void setClassFields(InstanceValue oop, ObjectValue classLoader, @SuppressWarnings("unused") ObjectValue protectionDomain) {
+	public void setClassFields(InstanceValue oop, ObjectValue classLoader, ObjectValue protectionDomain) {
 		oop.setValue("classLoader", "Ljava/lang/ClassLoader;", classLoader);
+		oop.setValue(NativeJava.PROTECTION_DOMAIN, "Ljava/security/ProtectionDomain;", protectionDomain);
 	}
 
 	/**
@@ -1180,11 +1177,10 @@ public final class VMHelper {
 	 *
 	 * @return defined class.
 	 */
-	public JavaClass defineClass(ObjectValue classLoader, String name, byte[] b, int off, int len, ObjectValue protectionDomain, String source) {
+	public InstanceJavaClass defineClass(ObjectValue classLoader, String name, byte[] b, int off, int len, ObjectValue protectionDomain, String source) {
 		val vm = this.vm;
 		if ((off | len | (off + len) | (b.length - (off + len))) < 0) {
 			throwException(vm.getSymbols().java_lang_ArrayIndexOutOfBoundsException);
-			return null;
 		}
 		ClassLoaderData classLoaderData;
 		if (classLoader.isNull()) {
@@ -1195,22 +1191,19 @@ public final class VMHelper {
 		val parsed = vm.getClassDefiner().parseClass(name, b, off, len, source);
 		if (parsed == null) {
 			throwException(vm.getSymbols().java_lang_NoClassDefFoundError, name);
-			return null;
 		}
 		val classReaderName = parsed.getClassReader().getClassName();
 		if (name == null) {
 			name = classReaderName;
 		} else if (!classReaderName.equals(name.replace('.', '/'))) {
-			throwException(vm.getSymbols().java_lang_ClassNotFoundException, "Expected class name: " + classReaderName.replace('/', '.') + " but received: " + name);
-			return null;
+			throwException(vm.getSymbols().java_lang_ClassNotFoundException, "Expected class name " + classReaderName.replace('/', '.') + " but received: " + name);
 		}
 		if (name.contains("[")) {
 			throwException(vm.getSymbols().java_lang_NoClassDefFoundError, "Bad class name: " + classReaderName);
 		}
 		synchronized (classLoaderData) {
 			if (classLoaderData.getClass(name) != null) {
-				throwException(vm.getSymbols().java_lang_ClassNotFoundException, "Class already exists: " + name);
-				return null;
+				throwException(vm.getSymbols().java_lang_ClassNotFoundException, "Duplicate class name: " + name);
 			}
 			// Create class
 			val javaClass = new InstanceJavaClass(vm, classLoader, parsed.getClassReader(), parsed.getNode());
@@ -1265,13 +1258,7 @@ public final class VMHelper {
 						return new StackTraceElement(className, methodName, sourceFile, lineNumber);
 					})
 					.toArray(StackTraceElement[]::new);
-			val len = stackTrace.length;
-			for (int i = 0, j = len / 2; i < j; i++) {
-				val temp = stackTrace[i];
-				val idx = len - i - 1;
-				stackTrace[i] = stackTrace[idx];
-				stackTrace[idx] = temp;
-			}
+			Collections.reverse(Arrays.asList(stackTrace));
 			exception.setStackTrace(stackTrace);
 		}
 		val cause = oop.getValue("cause", "Ljava/lang/Throwable;");
@@ -1703,6 +1690,27 @@ public final class VMHelper {
 	 */
 	public ArrayValue newMultiArray(ArrayJavaClass type, int[] lengths) {
 		return newMultiArrayInner(type, lengths, 0);
+	}
+
+	/**
+	 * Creates new object instance.
+	 *
+	 * @param type
+	 * 		Type of object.
+	 * @param desc
+	 * 		Init method descriptor.
+	 * @param params
+	 * 		Init method arguments.
+	 *
+	 * @return new allocated object.
+	 */
+	public InstanceValue newInstance(InstanceJavaClass type, String desc, Value... params) {
+		val instance = vm.getMemoryManager().newInstance(type);
+		val args = new Value[params.length + 1];
+		args[0] = instance;
+		System.arraycopy(params, 0, args, 1, params.length);
+		invokeExact(type, "<init>", desc, new Value[0], args);
+		return instance;
 	}
 
 	private ArrayValue newMultiArrayInner(ArrayJavaClass type, int[] lengths, int depth) {

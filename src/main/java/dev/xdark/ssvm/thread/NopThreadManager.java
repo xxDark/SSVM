@@ -1,8 +1,6 @@
 package dev.xdark.ssvm.thread;
 
 import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.execution.ExecutionContext;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.InstanceValue;
 import lombok.val;
 
@@ -53,15 +51,5 @@ public final class NopThreadManager implements ThreadManager {
 	@Override
 	public void setVmThread(VMThread thread) {
 		threadMap.put(thread.getJavaThread(), thread);
-	}
-
-	@Override
-	public StackFrame newStackFrame(InstanceJavaClass declaringClass, String methodName, String sourceFile, int lineNumber) {
-		return new ContextlessStackFrame(declaringClass, methodName, sourceFile, lineNumber);
-	}
-
-	@Override
-	public StackFrame newStackFrame(ExecutionContext context) {
-		return new ContextStackFrame(context);
 	}
 }

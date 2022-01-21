@@ -1,5 +1,6 @@
 package dev.xdark.ssvm;
 
+import dev.xdark.ssvm.thread.StackFrame;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -90,7 +91,7 @@ public class ReflectionTest {
 	private static void pushFrame() {
 		val threadManager = vm.getThreadManager();
 		threadManager.currentThread().getBacktrace()
-				.push(threadManager.newStackFrame(
+				.push(StackFrame.from(
 						vm.getSymbols().java_lang_System,
 						"junit",
 						null,

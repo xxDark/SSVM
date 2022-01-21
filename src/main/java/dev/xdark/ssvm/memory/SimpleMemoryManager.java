@@ -24,6 +24,7 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class SimpleMemoryManager implements MemoryManager {
 
+	private static final ByteOrder ORDER = ByteOrder.nativeOrder();
 	private static final long OBJECT_HEADER_SIZE = Unsafe.ADDRESS_SIZE + 4L;
 	private static final long ARRAY_LENGTH = Unsafe.ADDRESS_SIZE;
 	private final Map<Long, Memory> memoryBlocks = new HashMap<>();
@@ -61,7 +62,7 @@ public class SimpleMemoryManager implements MemoryManager {
 			// TODO verify
 			throw new PanicException("Segfault");
 		}
-		val newBuffer = ByteBuffer.allocate((int) bytes);
+		val newBuffer = alloc((int) bytes);
 		newBuffer.put(buffer);
 		newBuffer.position(0);
 		memory = new Memory(this, newBuffer, address, true);
@@ -352,7 +353,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public <C extends JavaClass>  JavaValue<C> setOopForClass(C javaClass) {
+	public <C extends JavaClass> JavaValue<C> setOopForClass(C javaClass) {
 		val jlc = vm.findBootstrapClass("java/lang/Class");
 		val memory = allocateClassMemory(jlc, javaClass);
 		setClass(memory, jlc);
@@ -363,7 +364,7 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public ByteOrder getByteOrder() {
-		return ByteOrder.BIG_ENDIAN;
+		return ORDER;
 	}
 
 	@Override
@@ -431,12 +432,12 @@ public class SimpleMemoryManager implements MemoryManager {
 			vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError);
 			return null;
 		}
-		val rng =ThreadLocalRandom.current();
+		val rng = ThreadLocalRandom.current();
 		long address;
 		do {
-			address = rng.nextLong()  & 0xFFFFFFFFL;
+			address = rng.nextLong() & 0xFFFFFFFFL;
 		} while (memoryBlocks.containsKey(address));
-		val block = new Memory(this, ByteBuffer.allocate((int) size), address, isDirect);
+		val block = new Memory(this, alloc((int) size), address, isDirect);
 		memoryBlocks.put(address, block);
 		return block;
 	}
@@ -463,5 +464,9 @@ public class SimpleMemoryManager implements MemoryManager {
 	private static long validate(long off) {
 		if (off < 0L) throw new PanicException("Segfault");
 		return off;
+	}
+
+	private static ByteBuffer alloc(int size) {
+		return ByteBuffer.allocate(size).order(ORDER);
 	}
 }

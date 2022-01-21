@@ -4,18 +4,19 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.val;
 
 /**
- * Stack frame that has context attached to it.
+ * A frame that does not pull
+ * line number information from execution context.
  *
  * @author xDark
  */
+@Getter
 @RequiredArgsConstructor
-public class ContextStackFrame implements StackFrame {
+public class ContextFrozenStackFrame implements StackFrame {
 
-	@Getter
 	private final ExecutionContext executionContext;
+	private final int lineNumber;
 
 	@Override
 	public InstanceJavaClass getDeclaringClass() {
@@ -33,13 +34,7 @@ public class ContextStackFrame implements StackFrame {
 	}
 
 	@Override
-	public int getLineNumber() {
-		return executionContext.getLineNumber();
-	}
-
-	@Override
 	public StackFrame freeze() {
-		val executionContext = this.executionContext;
-		return new ContextFrozenStackFrame(executionContext, executionContext.getLineNumber());
+		return this;
 	}
 }

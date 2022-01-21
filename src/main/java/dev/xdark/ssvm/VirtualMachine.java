@@ -17,6 +17,7 @@ import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.nt.NativeLibraryManager;
 import dev.xdark.ssvm.nt.SimpleNativeLibraryManager;
 import dev.xdark.ssvm.thread.NopThreadManager;
+import dev.xdark.ssvm.thread.StackFrame;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.VMThread;
 import dev.xdark.ssvm.util.AsmUtil;
@@ -52,6 +53,7 @@ public class VirtualMachine {
 		// otherwise some MemoryManager implementations will bottleneck.
 		val klass = internalLink("java/lang/Class");
 		val object = internalLink("java/lang/Object");
+		NativeJava.injectPhase1(this);
 		memoryManager = createMemoryManager();
 		vmInterface = new VMInterface();
 		helper = new VMHelper(this);
@@ -68,10 +70,8 @@ public class VirtualMachine {
 		fileDescriptorManager = createFileDescriptorManager();
 		nativeLibraryManager = createNativeLibraryManager();
 		stringPool = createStringPool();
-		NativeJava.vmInit(this);
+		NativeJava.init(this);
 
-		object.initialize();
-		klass.initialize();
 		(properties = new Properties()).putAll(System.getProperties());
 	}
 
@@ -325,7 +325,7 @@ public class VirtualMachine {
 		}
 		val threadManager = this.threadManager;
 		val backtrace = threadManager.currentThread().getBacktrace();
-		backtrace.push(threadManager.newStackFrame(ctx));
+		backtrace.push(StackFrame.ofContext(ctx));
 		val vmi = vmInterface;
 		vmi.getInvocationHooks(jm, true)
 				.forEach(invocation -> invocation.handle(ctx));

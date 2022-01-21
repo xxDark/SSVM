@@ -6,7 +6,6 @@ import dev.xdark.ssvm.classloading.ClassLoaderData;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.execution.asm.*;
 import dev.xdark.ssvm.fs.FileDescriptorManager;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
@@ -25,6 +24,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.objectweb.asm.Opcodes.*;
@@ -40,6 +40,7 @@ public final class NativeJava {
 	public static final String VM_INDEX = "vmindex";
 	public static final String VM_TARGET = "vmtarget";
 	public static final String VM_HOLDER = "vmholder";
+	public static final String PROTECTION_DOMAIN = "protectionDomain";
 
 	/**
 	 * Sets up VM instance.
@@ -47,10 +48,10 @@ public final class NativeJava {
 	 * @param vm
 	 * 		VM to set up.
 	 */
-	static void vmInit(VirtualMachine vm) {
+	static void init(VirtualMachine vm) {
 		val vmi = vm.getInterface();
-		injectVMFields(vm);
 		setInstructions(vmi);
+		injectPhase2(vm);
 		initClass(vm);
 		initObject(vm);
 		initSystem(vm);
@@ -58,29 +59,8 @@ public final class NativeJava {
 		initClassLoader(vm);
 		initThrowable(vm);
 		initNativeLibrary(vm);
-
-		// JDK9+
-		val utf16 = (InstanceJavaClass) vm.findBootstrapClass("java/lang/StringUTF16");
-		if (utf16 != null) {
-			vmi.setInvoker(utf16, "isBigEndian", "()Z", ctx -> {
-				ctx.setResult(vm.getMemoryManager().getByteOrder() == ByteOrder.BIG_ENDIAN ? IntValue.ONE : IntValue.ZERO);
-				return Result.ABORT;
-			});
-		}
-
 		initVM(vm);
-
-		InstanceJavaClass unsafe = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/Unsafe");
-		UnsafeHelper unsafeHelper;
-		if (unsafe == null) {
-			unsafe = (InstanceJavaClass) vm.findBootstrapClass("sun/misc/Unsafe");
-			unsafeHelper = new OldUnsafeHelper();
-		} else {
-			unsafeHelper = new NewUnsafeHelper();
-		}
-		vmi.setInvoker(unsafe, "registerNatives", "()V", ctx -> Result.ABORT);
-		initUnsafe(vm, unsafe, unsafeHelper);
-
+		initUnsafe(vm);
 		initRuntime(vm);
 		initDouble(vm);
 		initFloat(vm);
@@ -100,6 +80,13 @@ public final class NativeJava {
 		initAtomicLong(vm);
 		initUcp(vm);
 
+		val utf16 = (InstanceJavaClass) vm.findBootstrapClass("java/lang/StringUTF16");
+		if (utf16 != null) {
+			vmi.setInvoker(utf16, "isBigEndian", "()Z", ctx -> {
+				ctx.setResult(vm.getMemoryManager().getByteOrder() == ByteOrder.BIG_ENDIAN ? IntValue.ONE : IntValue.ZERO);
+				return Result.ABORT;
+			});
+		}
 		val win32ErrorMode = (InstanceJavaClass) vm.findBootstrapClass("sun/io/Win32ErrorMode");
 		if (win32ErrorMode != null) {
 			vmi.setInvoker(win32ErrorMode, "setErrorMode", "(J)J", ctx -> {
@@ -205,7 +192,6 @@ public final class NativeJava {
 	 */
 	private static void initUcp(VirtualMachine vm) {
 		val vmi = vm.getInterface();
-		val symbols = vm.getSymbols();
 		val ucp = (InstanceJavaClass) vm.findBootstrapClass("sun/misc/URLClassPath");
 		if (ucp != null) {
 			// static jobjectArray get_lookup_cache_urls(JNIEnv *env, jobject loader, TRAPS) {return NULL;}
@@ -694,13 +680,8 @@ public final class NativeJava {
 			val name = helper.readUtf8($name);
 			val initialize = locals.load(1).asBoolean();
 			val loader = locals.load(2);
-			//noinspection ConstantConditions
 			val klass = helper.findClass(loader, name.replace('.', '/'), initialize);
-			if (klass == null) {
-				helper.throwException(symbols.java_lang_ClassNotFoundException, name);
-			} else {
-				ctx.setResult(klass.getOop());
-			}
+			ctx.setResult(klass.getOop());
 			return Result.ABORT;
 		});
 		val classNameInit = (MethodInvoker) ctx -> {
@@ -953,6 +934,11 @@ public final class NativeJava {
 			ctx.setResult(type == null ? NullValue.INSTANCE : type.getOop());
 			return Result.ABORT;
 		});
+		vmi.setInvoker(jlc, "getProtectionDomain0", "()Ljava/security/ProtectionDomain;", ctx -> {
+			val _this = ctx.getLocals().<InstanceValue>load(0);
+			ctx.setResult(_this.getValue(PROTECTION_DOMAIN, "Ljava/security/ProtectionDomain;"));
+			return Result.ABORT;
+		});
 	}
 
 	/**
@@ -1011,8 +997,8 @@ public final class NativeJava {
 			val originalOffset = memoryManager.valueBaseOffset(_this);
 			val offset = memoryManager.valueBaseOffset(clone);
 			helper.checkEquals(originalOffset, offset);
-			ByteBuffer copyTo = (ByteBuffer) clone.getMemory().getData().slice().position(offset);
-			ByteBuffer copyFrom = (ByteBuffer) _this.getMemory().getData().slice().position(offset);
+			val copyTo = (ByteBuffer) clone.getMemory().getData().slice().position(offset);
+			val copyFrom = (ByteBuffer) _this.getMemory().getData().slice().position(offset);
 			copyTo.put(copyFrom);
 			ctx.setResult(clone);
 			return Result.ABORT;
@@ -1178,7 +1164,7 @@ public final class NativeJava {
 				throw new IllegalStateException("Unable to locate ClassLoader init constructor");
 			}
 		}
-		vmi.setInvoker(classLoader, "defineClass1", "(Ljava/lang/ClassLoader;Ljava/lang/String;[BIILjava/security/ProtectionDomain;Ljava/lang/String;)Ljava/lang/Class;", ctx -> {
+		val defineClass1 = (MethodInvoker) ctx -> {
 			val locals = ctx.getLocals();
 			val loader = locals.<ObjectValue>load(0);
 			val name = locals.<ObjectValue>load(1);
@@ -1190,10 +1176,14 @@ public final class NativeJava {
 			val helper = vm.getHelper();
 			val bytes = helper.toJavaBytes(b);
 			val defined = helper.defineClass(loader, helper.readUtf8(name), bytes, off, length, pd, helper.readUtf8(source));
-			//noinspection ConstantConditions
 			ctx.setResult(defined.getOop());
 			return Result.ABORT;
-		});
+		};
+		if (!vmi.setInvoker(classLoader, "defineClass1", "(Ljava/lang/ClassLoader;Ljava/lang/String;[BIILjava/security/ProtectionDomain;Ljava/lang/String;)Ljava/lang/Class;", defineClass1)) {
+			if (!vmi.setInvoker(classLoader, "defineClass1", "(Ljava/lang/String;[BIILjava/security/ProtectionDomain;Ljava/lang/String;)Ljava/lang/Class;", defineClass1)) {
+				throw new IllegalStateException("Could not locate ClassLoader#defineClass1");
+			}
+		}
 		vmi.setInvoker(classLoader, "findLoadedClass0", "(Ljava/lang/String;)Ljava/lang/Class;", ctx -> {
 			val locals = ctx.getLocals();
 			val name = locals.load(1);
@@ -1243,7 +1233,7 @@ public final class NativeJava {
 			val vmBacktrace = threadManager.currentThread().getBacktrace();
 			val copy = new SimpleBacktrace();
 			for (val frame : vmBacktrace) {
-				copy.push(threadManager.newStackFrame(frame.getDeclaringClass(), frame.getMethodName(), frame.getSourceFile(), frame.getLineNumber()));
+				copy.push(frame.freeze());
 			}
 			val backtrace = vm.getMemoryManager().newJavaInstance(symbols.java_lang_Object, copy);
 			exception.setValue("backtrace", "Ljava/lang/Object;", backtrace);
@@ -1441,6 +1431,25 @@ public final class NativeJava {
 	 *
 	 * @param vm
 	 * 		VM instance.
+	 */
+	private static void initUnsafe(VirtualMachine vm) {
+		InstanceJavaClass unsafe = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/Unsafe");
+		UnsafeHelper unsafeHelper;
+		if (unsafe == null) {
+			unsafe = (InstanceJavaClass) vm.findBootstrapClass("sun/misc/Unsafe");
+			unsafeHelper = new OldUnsafeHelper();
+		} else {
+			unsafeHelper = new NewUnsafeHelper();
+		}
+		vm.getInterface().setInvoker(unsafe, "registerNatives", "()V", ctx -> Result.ABORT);
+		initUnsafe(vm, unsafe, unsafeHelper);
+	}
+
+	/**
+	 * Sets up jdk/internal/misc/Unsafe.
+	 *
+	 * @param vm
+	 * 		VM instance.
 	 * @param unsafe
 	 * 		Unsafe class.
 	 * @param uhelper
@@ -1485,8 +1494,14 @@ public final class NativeJava {
 			long offset = locals.load(2).asLong();
 			val bytes = locals.load(4).asLong();
 			val b = locals.load(6).asByte();
-			for (; offset < bytes; offset++) {
-				memory.put((int) offset, b);
+			if (memory.hasArray()) {
+				val arr = memory.array();
+				val off = memory.arrayOffset();
+				Arrays.fill(arr, off + (int) offset, off + (int) bytes, b);
+			} else {
+				for (; offset < bytes; offset++) {
+					memory.put((int) offset, b);
+				}
 			}
 			return Result.ABORT;
 		});
@@ -1968,14 +1983,33 @@ public final class NativeJava {
 	}
 
 	/**
-	 * Injects VM fields.
+	 * Injects VM related things.
+	 * This must be invoked as early as
+	 * possible.
 	 *
 	 * @param vm
 	 * 		VM instance.
 	 */
-	static void injectVMFields(VirtualMachine vm) {
-		val symbols = vm.getSymbols();
-		val classLoader = symbols.java_lang_ClassLoader;
+	static void injectPhase1(VirtualMachine vm) {
+		val cl = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Class");
+		cl.getNode().fields.add(new FieldNode(
+				ACC_PRIVATE,
+				PROTECTION_DOMAIN,
+				"Ljava/security/ProtectionDomain;",
+				null,
+				null
+		));
+	}
+
+	/**
+	 * Injects VM related things.
+	 *
+	 * @param vm
+	 * 		VM instance.
+	 */
+	static void injectPhase2(VirtualMachine vm) {
+		// Symbols are not initialized yet
+		val classLoader = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ClassLoader");
 
 		classLoader.getNode().fields.add(new FieldNode(
 				ACC_PRIVATE | ACC_FINAL,
@@ -1985,7 +2019,7 @@ public final class NativeJava {
 				null
 		));
 
-		val memberName = symbols.java_lang_invoke_MemberName;
+		val memberName = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/MemberName");
 		memberName.getNode().fields.add(new FieldNode(
 				ACC_PRIVATE,
 				VM_INDEX,
@@ -1995,7 +2029,7 @@ public final class NativeJava {
 		));
 
 		{
-			val resolvedMethodName = symbols.java_lang_invoke_ResolvedMethodName;
+			val resolvedMethodName = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/MemberName$ResolvedMethodName");
 			List<FieldNode> fields;
 			if (resolvedMethodName != null) {
 				fields = resolvedMethodName.getNode().fields;
@@ -2019,7 +2053,7 @@ public final class NativeJava {
 		}
 		inject:
 		{
-			val fd = symbols.java_io_FileDescriptor;
+			val fd = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileDescriptor");
 			// For whatever reason unix/macos does not have
 			// 'handle' field, we need to inject it
 			// TODO hidden fields on a VM level
@@ -2074,8 +2108,6 @@ public final class NativeJava {
 	private static long mapVMStream(VirtualMachine vm, int d) {
 		try {
 			return vm.getFileDescriptorManager().newFD(d);
-		} catch (VMException ex) {
-			vm.getHelper().throwException(vm.getSymbols().java_io_IOException, ex.getOop());
 		} catch (IllegalStateException ex) {
 			vm.getHelper().throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
 		}

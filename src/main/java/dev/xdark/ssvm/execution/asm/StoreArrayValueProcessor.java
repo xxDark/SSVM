@@ -18,11 +18,22 @@ public final class StoreArrayValueProcessor implements InstructionProcessor<Abst
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		val stack = ctx.getStack();
-		val value = stack.pop();
+		val value = stack.<ObjectValue>pop();
 		int index = stack.pop().asInt();
 		val array = stack.<ArrayValue>pop();
-		ctx.getHelper().rangeCheck(array, index);
-		array.setValue(index, (ObjectValue) value);
+		val helper = ctx.getHelper();
+		helper.rangeCheck(array, index);
+
+		if (!value.isNull()) {
+			val type = array.getJavaClass().getComponentType();
+			val valueType = value.getJavaClass();
+			if (!type.isAssignableFrom(valueType)) {
+				val symbols = ctx.getVM().getSymbols();
+				helper.throwException(symbols.java_lang_ArrayStoreException, valueType.getName());
+			}
+		}
+
+		array.setValue(index, value);
 		return Result.CONTINUE;
 	}
 }

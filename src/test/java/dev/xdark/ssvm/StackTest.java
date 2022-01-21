@@ -165,4 +165,15 @@ public final class StackTest {
 		assertEquals(1L, stack.popWide().asLong());
 		assertTrue(stack.isEmpty());
 	}
+
+	@Test
+	public void testSwap() {
+		val stack = new Stack(2);
+		stack.push(IntValue.ZERO);
+		stack.push(IntValue.ONE);
+		stack.swap();
+		assertEquals(0, stack.pop().asInt());
+		assertEquals(1, stack.pop().asInt());
+		assertTrue(stack.isEmpty());
+	}
 }

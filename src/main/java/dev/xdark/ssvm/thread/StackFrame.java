@@ -55,4 +55,45 @@ public interface StackFrame {
 	 * if no context is present.
 	 */
 	ExecutionContext getExecutionContext();
+
+	StackFrame freeze();
+
+	/**
+	 * Creates stack frame from the execution point.
+	 *
+	 * @param ctx
+	 * 		Execution context.
+	 *
+	 * @return stack frame that mirrors it's information from
+	 * execution context.
+	 */
+	static StackFrame ofContext(ExecutionContext ctx) {
+		return new ContextStackFrame(ctx);
+	}
+
+	/**
+	 * Creates new stack frame.
+	 *
+	 * @param declaringClass
+	 * 		the class containing
+	 * 		the execution point represented
+	 * 		by the stack frame.
+	 * @param methodName
+	 * 		name of
+	 * 		the method containing the execution point
+	 * 		by the stack frame.
+	 * @param sourceFile
+	 * 		name of the file containing
+	 * 		the execution point represented
+	 * 		by the stack frame.
+	 * @param lineNumber
+	 * 		line number of
+	 * 		the method containing the execution point
+	 * 		by the stack frame.
+	 *
+	 * @return new stack frame.
+	 */
+	static StackFrame from(InstanceJavaClass declaringClass, String methodName, String sourceFile, int lineNumber) {
+		return new ContextlessStackFrame(declaringClass, methodName, sourceFile, lineNumber);
+	}
 }

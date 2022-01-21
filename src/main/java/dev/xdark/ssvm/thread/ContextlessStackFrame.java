@@ -24,4 +24,9 @@ public class ContextlessStackFrame implements StackFrame {
 	public ExecutionContext getExecutionContext() {
 		return null;
 	}
+
+	@Override
+	public StackFrame freeze() {
+		return this;
+	}
 }

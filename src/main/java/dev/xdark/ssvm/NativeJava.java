@@ -2008,8 +2008,8 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	static void injectPhase2(VirtualMachine vm) {
-		// Symbols are not initialized yet
-		val classLoader = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ClassLoader");
+		val symbols = vm.getSymbols();
+		val classLoader = symbols.java_lang_ClassLoader;
 
 		classLoader.getNode().fields.add(new FieldNode(
 				ACC_PRIVATE | ACC_FINAL,
@@ -2019,7 +2019,7 @@ public final class NativeJava {
 				null
 		));
 
-		val memberName = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/MemberName");
+		val memberName = symbols.java_lang_invoke_MemberName;
 		memberName.getNode().fields.add(new FieldNode(
 				ACC_PRIVATE,
 				VM_INDEX,
@@ -2029,7 +2029,7 @@ public final class NativeJava {
 		));
 
 		{
-			val resolvedMethodName = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/MemberName$ResolvedMethodName");
+			val resolvedMethodName = symbols.java_lang_invoke_ResolvedMethodName;
 			List<FieldNode> fields;
 			if (resolvedMethodName != null) {
 				fields = resolvedMethodName.getNode().fields;
@@ -2053,7 +2053,7 @@ public final class NativeJava {
 		}
 		inject:
 		{
-			val fd = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileDescriptor");
+			val fd = symbols.java_io_FileDescriptor;
 			// For whatever reason unix/macos does not have
 			// 'handle' field, we need to inject it
 			// TODO hidden fields on a VM level

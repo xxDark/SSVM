@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.mirror;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.util.UnsafeUtil;
 import dev.xdark.ssvm.value.*;
@@ -13,6 +14,8 @@ import java.util.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -171,6 +174,7 @@ public final class InstanceJavaClass implements JavaClass {
 			vrtFieldLayout = createVirtualFieldLayout();
 		}
 		helper.initializeStaticFields(this);
+		helper.setupHiddenFrames(this);
 		val clinit = getStaticMethod("<clinit>", "()V");
 		try {
 			if (clinit != null) {
@@ -182,7 +186,9 @@ public final class InstanceJavaClass implements JavaClass {
 			InstanceValue oop = ex.getOop();
 			val symbols = vm.getSymbols();
 			if (!symbols.java_lang_Error.isAssignableFrom(oop.getJavaClass())) {
-				oop = vm.getHelper().newException(symbols.java_lang_ExceptionInInitializerError, oop);
+				val cause = oop;
+				oop = vm.getHelper().newException(symbols.java_lang_ExceptionInInitializerError);
+				oop.setValue("exception", "Ljava/lang/Throwable;", cause);
 				throw new VMException(oop);
 			}
 			throw ex;
@@ -214,49 +220,43 @@ public final class InstanceJavaClass implements JavaClass {
 			} else {
 				return this == vm.getSymbols().java_lang_Object;
 			}
-		} else if (other.isInterface()) {
+		}
+		if (this == vm.getSymbols().java_lang_Object) {
+			return true;
+		}
+		if (other.isInterface()) {
 			if (isInterface()) {
 				val toCheck = new ArrayDeque<>(Arrays.asList(other.getInterfaces()));
 				JavaClass popped;
 				while ((popped = toCheck.poll()) != null) {
-					if (popped == this) {
-						return true;
-					}
+					if (popped == this) return true;
 					toCheck.addAll(Arrays.asList(popped.getInterfaces()));
 				}
-				return false;
-			} else {
-				return this == vm.getSymbols().java_lang_Object;
 			}
 		} else {
 			val toCheck = new ArrayDeque<JavaClass>();
+			JavaClass superClass = other.getSuperClass();
+			if (superClass != null)
+				toCheck.add(superClass);
 			if (isInterface()) {
-				JavaClass superClass = other.getSuperClass();
-				if (superClass != null)
-					toCheck.add(superClass);
 				toCheck.addAll(Arrays.asList(other.getInterfaces()));
 				JavaClass popped;
 				while ((popped = toCheck.poll()) != null) {
 					if (popped == this) return true;
 					superClass = popped.getSuperClass();
-					if (superClass != null)
-						toCheck.add(superClass);
+					if (superClass != null) toCheck.add(superClass);
 					toCheck.addAll(Arrays.asList(popped.getInterfaces()));
 				}
 			} else {
-				JavaClass superClass = other.getSuperClass();
-				if (superClass != null)
-					toCheck.add(superClass);
 				JavaClass popped;
 				while ((popped = toCheck.poll()) != null) {
 					if (popped == this) return true;
 					superClass = popped.getSuperClass();
-					if (superClass != null)
-						toCheck.add(superClass);
+					if (superClass != null) toCheck.add(superClass);
 				}
 			}
-			return false;
 		}
+		return false;
 	}
 
 	@Override
@@ -349,12 +349,10 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @return class method or {@code null}, if not found.
 	 */
 	public JavaMethod getVirtualMethodRecursively(String name, String desc) {
-		val layout = getVirtualMethodLayout();
-		val methods = layout.getMethods();
 		InstanceJavaClass jc = this;
 		JavaMethod method;
 		do {
-			method = methods.get(new MemberKey(jc, name, desc));
+			method = jc.getVirtualMethodLayout().getMethods().get(new MemberKey(jc, name, desc));
 		} while (method == null && (jc = jc.getSuperclassWithoutResolving()) != null);
 		return method;
 	}
@@ -818,9 +816,9 @@ public final class InstanceJavaClass implements JavaClass {
 						.getMethods()
 						.values()
 						.stream()
-						.filter(x -> this == x.getOwner())
 						.filter(x -> constructors == "<init>".equals(x.getName()))
 						.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0))
+				.filter(nonHidden(JavaMethod::getAccess))
 				.collect(Collectors.toList());
 	}
 
@@ -829,7 +827,6 @@ public final class InstanceJavaClass implements JavaClass {
 				.getMethods()
 				.values()
 				.stream()
-				.filter(x -> this == x.getOwner())
 				.filter(x -> !"<clinit>".equals(x.getName()))
 				.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0);
 	}
@@ -842,6 +839,7 @@ public final class InstanceJavaClass implements JavaClass {
 						.stream()
 						.filter(x -> this == x.getOwner())
 						.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0))
+				.filter(nonHidden(JavaField::getAccess))
 				.collect(Collectors.toList());
 	}
 
@@ -908,20 +906,11 @@ public final class InstanceJavaClass implements JavaClass {
 		MethodLayout vrtMethodLayout = this.vrtMethodLayout;
 		if (vrtMethodLayout == null) {
 			val map = new HashMap<MemberKey, JavaMethod>();
-			val deque = new ArrayDeque<InstanceJavaClass>();
-			InstanceJavaClass javaClass = this;
-			while (javaClass != null) {
-				deque.addFirst(javaClass);
-				javaClass = javaClass.getSuperclassWithoutResolving();
-			}
 			int slot = 0;
-			while ((javaClass = deque.pollFirst()) != null) {
-				val methods = javaClass.node.methods;
-				for (val method : methods) {
-					if ((method.access & Opcodes.ACC_STATIC) == 0) {
-						val desc = method.desc;
-						map.put(new MemberKey(javaClass, method.name, desc), new JavaMethod(javaClass, method, slot++));
-					}
+			val methods = node.methods;
+			for (val method : methods) {
+				if ((method.access & Opcodes.ACC_STATIC) == 0) {
+					map.put(new MemberKey(this, method.name, method.desc), new JavaMethod(this, method, slot++));
 				}
 			}
 			vrtMethodLayout = new MethodLayout(Collections.unmodifiableMap(map));
@@ -969,6 +958,10 @@ public final class InstanceJavaClass implements JavaClass {
 		if (superName == null) return null;
 		val vm = this.vm;
 		return (InstanceJavaClass) vm.findClass(classLoader, superName, false);
+	}
+
+	private static <T> Predicate<T> nonHidden(ToIntFunction<T> function) {
+		return x -> !Modifier.isHiddenMember(function.applyAsInt(x));
 	}
 
 	private enum State {

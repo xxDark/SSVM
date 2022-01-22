@@ -14,6 +14,8 @@ public final class JavaMethod {
 	private final MethodNode node;
 	private final int slot;
 	private Type type;
+	private Type[] argumentTypes;
+	private Type returnType;
 
 	/**
 	 * @param owner
@@ -103,6 +105,32 @@ public final class JavaMethod {
 			return this.type = Type.getMethodType(node.desc);
 		}
 		return type;
+	}
+
+	/**
+	 * Returns array of types of arguments.
+	 *
+	 * @return array of types of arguments.
+	 */
+	public Type[] getArgumentTypes() {
+		Type[] argumentTypes = this.argumentTypes;
+		if (argumentTypes == null) {
+			argumentTypes = this.argumentTypes = getType().getArgumentTypes();
+		}
+		return argumentTypes.clone();
+	}
+
+	/**
+	 * Returns method return type.
+	 *
+	 * @return method return type.
+	 */
+	public Type getReturnType() {
+		Type returnType = this.returnType;
+		if (returnType == null) {
+			return this.returnType = getType().getReturnType();
+		}
+		return returnType;
 	}
 
 	@Override

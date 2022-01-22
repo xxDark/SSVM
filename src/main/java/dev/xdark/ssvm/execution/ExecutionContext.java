@@ -15,7 +15,7 @@ public final class ExecutionContext {
 	private final Stack stack;
 	private final Locals locals;
 	private int insnPosition;
-	private int lineNumber;
+	private int lineNumber = -1;
 	private Value result;
 
 	/**

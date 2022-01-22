@@ -11,4 +11,11 @@ import dev.xdark.ssvm.execution.Result;
 public interface MethodInvoker {
 
 	Result intercept(ExecutionContext ctx);
+
+	/**
+	 * @return method invoker that does nothing.
+	 */
+	static MethodInvoker noop() {
+		return ctx -> Result.ABORT;
+	}
 }

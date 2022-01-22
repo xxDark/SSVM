@@ -2,6 +2,7 @@ package dev.xdark.ssvm.util;
 
 import dev.xdark.ssvm.NativeJava;
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.classloading.ClassLoaderData;
 import dev.xdark.ssvm.execution.*;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
@@ -753,32 +754,6 @@ public final class VMHelper {
 	}
 
 	/**
-	 * Returns default descriptor value.
-	 *
-	 * @param desc
-	 * 		Type descriptor.
-	 */
-	public Value getDefaultValue(String desc) {
-		switch (desc) {
-			case "J":
-				return new LongValue(0L);
-			case "D":
-				return new DoubleValue(0.0D);
-			case "I":
-			case "S":
-			case "B":
-			case "Z":
-				return new IntValue(0);
-			case "F":
-				return new FloatValue(0.0F);
-			case "C":
-				return new IntValue('\0');
-			default:
-				return NullValue.INSTANCE;
-		}
-	}
-
-	/**
 	 * Initializes default static values of the class.
 	 *
 	 * @param javaClass
@@ -1466,20 +1441,140 @@ public final class VMHelper {
 	 *
 	 * @param value
 	 * 		Wrapper to unwrap.
+	 * @param jc
+	 * 		Primitive class.
 	 *
 	 * @return unwrapped value or itself.
 	 */
-	public Value unboxGeneric(ObjectValue value) {
+	public Value unboxGeneric(ObjectValue value, JavaClass jc) {
 		val primitive = vm.getPrimitives();
-		val klass = value.getJavaClass();
-		if (klass == primitive.longPrimitive) return unboxLong(value);
-		if (klass == primitive.doublePrimitive) return unboxDouble(value);
-		if (klass == primitive.intPrimitive) return unboxInt(value);
-		if (klass == primitive.floatPrimitive) return unboxFloat(value);
-		if (klass == primitive.charPrimitive) return unboxChar(value);
-		if (klass == primitive.shortPrimitive) return unboxShort(value);
-		if (klass == primitive.bytePrimitive) return unboxByte(value);
-		if (klass == primitive.booleanPrimitive) return unboxBoolean(value);
+		if (jc == primitive.longPrimitive) return unboxLong(value);
+		if (jc == primitive.doublePrimitive) return unboxDouble(value);
+		if (jc == primitive.intPrimitive) return unboxInt(value);
+		if (jc == primitive.floatPrimitive) return unboxFloat(value);
+		if (jc == primitive.charPrimitive) return unboxChar(value);
+		if (jc == primitive.shortPrimitive) return unboxShort(value);
+		if (jc == primitive.bytePrimitive) return unboxByte(value);
+		if (jc == primitive.booleanPrimitive) return unboxBoolean(value);
+		return value;
+	}
+
+	/**
+	 * Boxes long value.
+	 *
+	 * @param value
+	 * 		Value to box.
+	 *
+	 * @return boxed value.
+	 */
+	public Value boxLong(Value value) {
+		return invokeStatic(vm.getSymbols().java_lang_Long, "valueOf", "(J)Ljava/lang/Long;", new Value[0], new Value[]{value}).getResult();
+	}
+
+	/**
+	 * Boxes double value.
+	 *
+	 * @param value
+	 * 		Value to box.
+	 *
+	 * @return boxed value.
+	 */
+	public Value boxDouble(Value value) {
+		return invokeStatic(vm.getSymbols().java_lang_Double, "valueOf", "(D)Ljava/lang/Double;", new Value[0], new Value[]{value}).getResult();
+	}
+
+	/**
+	 * Boxes int value.
+	 *
+	 * @param value
+	 * 		Value to box.
+	 *
+	 * @return boxed value.
+	 */
+	public Value boxInt(Value value) {
+		return invokeStatic(vm.getSymbols().java_lang_Integer, "valueOf", "(I)Ljava/lang/Integer;", new Value[0], new Value[]{value}).getResult();
+	}
+
+	/**
+	 * Boxes float value.
+	 *
+	 * @param value
+	 * 		Value to box.
+	 *
+	 * @return boxed value.
+	 */
+	public Value boxFloat(Value value) {
+		return invokeStatic(vm.getSymbols().java_lang_Float, "valueOf", "(F)Ljava/lang/Float;", new Value[0], new Value[]{value}).getResult();
+	}
+
+	/**
+	 * Boxes char value.
+	 *
+	 * @param value
+	 * 		Value to box.
+	 *
+	 * @return boxed value.
+	 */
+	public Value boxChar(Value value) {
+		return invokeStatic(vm.getSymbols().java_lang_Character, "valueOf", "(C)Ljava/lang/Character;", new Value[0], new Value[]{value}).getResult();
+	}
+
+	/**
+	 * Boxes short value.
+	 *
+	 * @param value
+	 * 		Value to box.
+	 *
+	 * @return boxed value.
+	 */
+	public Value boxShort(Value value) {
+		return invokeStatic(vm.getSymbols().java_lang_Short, "valueOf", "(S)Ljava/lang/Short;", new Value[0], new Value[]{value}).getResult();
+	}
+
+	/**
+	 * Boxes byte value.
+	 *
+	 * @param value
+	 * 		Value to box.
+	 *
+	 * @return boxed value.
+	 */
+	public Value boxByte(Value value) {
+		return invokeStatic(vm.getSymbols().java_lang_Byte, "valueOf", "(B)Ljava/lang/Byte;", new Value[0], new Value[]{value}).getResult();
+	}
+
+	/**
+	 * Boxes boolean value.
+	 *
+	 * @param value
+	 * 		Value to box.
+	 *
+	 * @return boxed value.
+	 */
+	public Value boxBoolean(Value value) {
+		return invokeStatic(vm.getSymbols().java_lang_Boolean, "valueOf", "(Z)Ljava/lang/Boolean;", new Value[0], new Value[]{value}).getResult();
+	}
+
+	/**
+	 * Boxes primitive type if needed.
+	 *
+	 * @param value
+	 * 		Value to box.
+	 * @param type
+	 * 		Value type.
+	 *
+	 * @return boxed value or original,
+	 * if boxing is not needed.
+	 */
+	public Value boxGeneric(Value value, Type type) {
+		if (type == Type.LONG_TYPE) return boxLong(value);
+		if (type == Type.DOUBLE_TYPE) return boxDouble(value);
+		if (type == Type.INT_TYPE) return boxInt(value);
+		if (type == Type.FLOAT_TYPE) return boxFloat(value);
+		if (type == Type.CHAR_TYPE) return boxChar(value);
+		if (type == Type.SHORT_TYPE) return boxShort(value);
+		if (type == Type.BYTE_TYPE) return boxByte(value);
+		if (type == Type.BOOLEAN_TYPE) return boxBoolean(value);
 		return value;
 	}
 
@@ -1711,6 +1806,44 @@ public final class VMHelper {
 		System.arraycopy(params, 0, args, 1, params.length);
 		invokeExact(type, "<init>", desc, new Value[0], args);
 		return instance;
+	}
+
+	/**
+	 * Marks method as a hidden method.
+	 *
+	 * @param method
+	 * 		Method to make hidden.
+	 *
+	 * @see Modifier#ACC_HIDDEN_FRAME
+	 */
+	public void makeHiddenMethod(JavaMethod method) {
+		val node = method.getNode();
+		node.access |= Modifier.ACC_HIDDEN_FRAME;
+	}
+
+	/**
+	 * Makes necessary methods of a class hidden.
+	 *
+	 * @param jc
+	 * 		Class to setup.
+	 */
+	public void setupHiddenFrames(InstanceJavaClass jc) {
+		val throwable = vm.getSymbols().java_lang_Throwable;
+		if (throwable.isAssignableFrom(jc)) {
+			for (val jm : jc.getVirtualMethodLayout().getMethods().values()) {
+				val name = jm.getName();
+				if ("<init>".equals(name)) {
+					makeHiddenMethod(jm);
+					continue;
+				}
+				if ("fillInStackTrace".equals(name)) {
+					val args = jm.getArgumentTypes();
+					if (args.length == 0 || (args[0].equals(Type.INT_TYPE))) {
+						makeHiddenMethod(jm);
+					}
+				}
+			}
+		}
 	}
 
 	private ArrayValue newMultiArrayInner(ArrayJavaClass type, int[] lengths, int depth) {

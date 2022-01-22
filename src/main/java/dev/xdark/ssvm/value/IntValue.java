@@ -9,6 +9,7 @@ public final class IntValue extends NumericValue {
 
 	public static final IntValue ONE = new IntValue(1);
 	public static final IntValue ZERO = new IntValue(0);
+	public static final IntValue M_ONE = new IntValue(-1);
 
 	private final int value;
 
@@ -59,5 +60,10 @@ public final class IntValue extends NumericValue {
 	@Override
 	public boolean isWide() {
 		return false;
+	}
+
+	@Override
+	public String toString() {
+		return "int(" + value + ")";
 	}
 }

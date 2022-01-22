@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.value;
 
 import dev.xdark.ssvm.memory.Memory;
+import dev.xdark.ssvm.mirror.JavaClass;
 
 import java.nio.ByteBuffer;
 
@@ -35,5 +36,10 @@ public final class NullValue extends ObjectValue {
 	@Override
 	public boolean isNull() {
 		return true;
+	}
+
+	@Override
+	public JavaClass getJavaClass() {
+		return null;
 	}
 }

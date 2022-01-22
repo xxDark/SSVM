@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.LinkOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.zip.ZipFile;
 
 /**
  * Maps VM file descriptors to native descriptors.

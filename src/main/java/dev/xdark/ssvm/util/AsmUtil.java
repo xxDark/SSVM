@@ -36,7 +36,7 @@ public class AsmUtil {
 			if ((access & Opcodes.ACC_STATIC) == 0) {
 				max++;
 			}
-			for (val type : mn.getType().getArgumentTypes()) {
+			for (val type : mn.getArgumentTypes()) {
 				max += type.getSize();
 			}
 			return max;

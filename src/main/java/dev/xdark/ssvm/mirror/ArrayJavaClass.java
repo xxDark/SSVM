@@ -10,6 +10,7 @@ import org.objectweb.asm.Opcodes;
 public final class ArrayJavaClass implements JavaClass {
 
 	private final VirtualMachine vm;
+	private final String internalName;
 	private final String name;
 	private final int dimensions;
 	private final JavaClass componentType;
@@ -20,18 +21,19 @@ public final class ArrayJavaClass implements JavaClass {
 	/**
 	 * @param vm
 	 * 		VM instance.
-	 * @param name
-	 * 		Name of the array class.
+	 * @param internalName
+	 * 		Internal name of the array class.
 	 * @param dimensions
 	 * 		Amount of dimensions.
 	 * @param componentType
 	 * 		Component of the array.
 	 */
-	public ArrayJavaClass(VirtualMachine vm, String name, int dimensions, JavaClass componentType) {
+	public ArrayJavaClass(VirtualMachine vm, String internalName, int dimensions, JavaClass componentType) {
 		this.vm = vm;
-		this.name = name;
+		this.internalName = internalName;
 		this.dimensions = dimensions;
 		this.componentType = componentType;
+		name = internalName.replace('/', '.');
 		oop = vm.getMemoryManager().setOopForClass(this);
 		objectClass = vm.getSymbols().java_lang_Object;
 	}
@@ -43,7 +45,7 @@ public final class ArrayJavaClass implements JavaClass {
 
 	@Override
 	public String getInternalName() {
-		return name;
+		return internalName;
 	}
 
 	@Override

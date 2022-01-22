@@ -7,6 +7,10 @@ package dev.xdark.ssvm.value;
  */
 public final class LongValue extends NumericValue implements WideValue {
 
+	public static final LongValue ONE = new LongValue(0L);
+	public static final LongValue ZERO = new LongValue(0L);
+	public static final LongValue M_ONE = new LongValue(-1L);
+
 	private final long value;
 
 	public LongValue(long value) {
@@ -46,5 +50,10 @@ public final class LongValue extends NumericValue implements WideValue {
 	@Override
 	public byte asByte() {
 		return (byte) value;
+	}
+
+	@Override
+	public String toString() {
+		return "long(" + value + ")";
 	}
 }

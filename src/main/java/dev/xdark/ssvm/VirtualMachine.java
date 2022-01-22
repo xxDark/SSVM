@@ -7,6 +7,8 @@ import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.fs.FileDescriptorManager;
 import dev.xdark.ssvm.fs.SimpleFileDescriptorManager;
+import dev.xdark.ssvm.jvm.ManagementInterface;
+import dev.xdark.ssvm.jvm.SimpleManagementInterface;
 import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.memory.SimpleMemoryManager;
 import dev.xdark.ssvm.memory.SimpleStringPool;
@@ -45,6 +47,7 @@ public class VirtualMachine {
 	private final FileDescriptorManager fileDescriptorManager;
 	private final NativeLibraryManager nativeLibraryManager;
 	private final StringPool stringPool;
+	private final ManagementInterface managementInterface;
 	private final Properties properties;
 
 	public VirtualMachine() {
@@ -70,6 +73,7 @@ public class VirtualMachine {
 		fileDescriptorManager = createFileDescriptorManager();
 		nativeLibraryManager = createNativeLibraryManager();
 		stringPool = createStringPool();
+		managementInterface = createManagementInterface();
 		NativeJava.init(this);
 
 		(properties = new Properties()).putAll(System.getProperties());
@@ -234,6 +238,15 @@ public class VirtualMachine {
 	}
 
 	/**
+	 * Returns management interface.
+	 *
+	 * @return management interface.
+	 */
+	public ManagementInterface getManagementInterface() {
+		return managementInterface;
+	}
+
+	/**
 	 * Returns current VM thread.
 	 *
 	 * @return current VM thread.
@@ -367,9 +380,9 @@ public class VirtualMachine {
 					val index = ctx.getInsnPosition() - 1;
 					for (int i = 0, j = tryCatchBlocks.size(); i < j; i++) {
 						val block = tryCatchBlocks.get(i);
-						val type = block.type;
-						if (type == null) continue;
+						String type = block.type;
 						if (index < AsmUtil.getIndex(block.start) || index > AsmUtil.getIndex(block.end)) continue;
+						if (type == null) type = "java/lang/Throwable";
 						val candidate = findClass(ctx.getOwner().getClassLoader(), type, true);
 						if (candidate.isAssignableFrom(exceptionType)) {
 							val stack = ctx.getStack();
@@ -400,7 +413,7 @@ public class VirtualMachine {
 	 * @return boot class loader.
 	 */
 	protected BootClassLoader createBootClassLoader() {
-		return new RuntimeBootClassLoader();
+		return RuntimeBootClassLoader.create();
 	}
 
 	/**
@@ -461,6 +474,16 @@ public class VirtualMachine {
 	 */
 	protected StringPool createStringPool() {
 		return new SimpleStringPool(this);
+	}
+
+	/**
+	 * Creates management interface.
+	 * One may override this method.
+	 *
+	 * @return management interface.
+	 */
+	protected ManagementInterface createManagementInterface() {
+		return new SimpleManagementInterface();
 	}
 
 	private InstanceJavaClass internalLink(String name) {

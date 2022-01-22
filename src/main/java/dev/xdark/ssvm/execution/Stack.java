@@ -4,6 +4,7 @@ import dev.xdark.ssvm.value.TopValue;
 import dev.xdark.ssvm.value.Value;
 import lombok.val;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -267,5 +268,13 @@ public final class Stack {
 	 */
 	public void clear() {
 		cursor = 0;
+	}
+
+	@Override
+	public String toString() {
+		return "Stack{" +
+				"stack=" + Arrays.toString(stack) +
+				", cursor=" + cursor +
+				'}';
 	}
 }

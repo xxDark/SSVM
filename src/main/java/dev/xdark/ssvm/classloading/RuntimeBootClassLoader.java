@@ -1,10 +1,6 @@
 package dev.xdark.ssvm.classloading;
 
-import dev.xdark.ssvm.util.ClassUtil;
-import lombok.val;
-import org.objectweb.asm.ClassReader;
-
-import java.io.IOException;
+import lombok.experimental.UtilityClass;
 
 /**
  * Default implementation of boot class loader that
@@ -12,23 +8,19 @@ import java.io.IOException;
  *
  * @author xDark
  */
-public final class RuntimeBootClassLoader implements BootClassLoader {
+@UtilityClass
+public class RuntimeBootClassLoader {
 
-	private final ClassLoader delegate = new BootClassLoaderDelegate();
+	private final ClassLoader DELEGATE = new BootClassLoaderDelegate();
 
-	@Override
-	public ClassParseResult findBootClass(String name) {
-		ClassReader cr;
-		try (val in = delegate.getResourceAsStream(name + ".class")) {
-			if (in == null) {
-				return null;
-			}
-			cr = new ClassReader(in);
-		} catch (IOException ex) {
-			throw new IllegalStateException("Could not read bootstrap class: " + name, ex);
-		}
-		val node = ClassUtil.readNode(cr);
-		return new ClassParseResult(cr, node);
+	/**
+	 * Returns boot class loader that
+	 * pulls classes from native boot class loader.
+	 *
+	 * @return boot class loader.
+	 */
+	public static BootClassLoader create() {
+		return new DelegatingBootClassLoader(DELEGATE);
 	}
 
 	private static final class BootClassLoaderDelegate extends ClassLoader {

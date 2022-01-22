@@ -47,4 +47,9 @@ public final class DoubleValue extends NumericValue implements WideValue {
 	public byte asByte() {
 		return (byte) value;
 	}
+
+	@Override
+	public String toString() {
+		return "double(" + value + ")";
+	}
 }

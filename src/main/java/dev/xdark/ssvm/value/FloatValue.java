@@ -52,4 +52,9 @@ public final class FloatValue extends NumericValue {
 	public boolean isWide() {
 		return false;
 	}
+
+	@Override
+	public String toString() {
+		return "float(" + value + ")";
+	}
 }

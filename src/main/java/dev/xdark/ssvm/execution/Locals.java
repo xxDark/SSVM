@@ -2,6 +2,7 @@ package dev.xdark.ssvm.execution;
 
 import dev.xdark.ssvm.value.Value;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -45,5 +46,12 @@ public final class Locals {
 	 */
 	public <V extends Value> V load(int index) {
 		return (V) table[index];
+	}
+
+	@Override
+	public String toString() {
+		return "Locals{" +
+				"table=" + Arrays.toString(table) +
+				'}';
 	}
 }

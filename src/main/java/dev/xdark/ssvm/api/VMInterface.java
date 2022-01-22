@@ -134,6 +134,8 @@ public final class VMInterface {
 	/**
 	 * Registers specific method enter hook.
 	 *
+	 * @param call
+	 * 		Method being hooked.
 	 * @param invocation
 	 * 		Hook to register.
 	 */
@@ -168,10 +170,24 @@ public final class VMInterface {
 	/**
 	 * Registers specific method exit hook.
 	 *
+	 * @param call
+	 * 		Method being hooked.
 	 * @param invocation
 	 * 		Hook to unregister.
 	 */
 	public void removeMethodEnter(JavaMethod call, MethodInvocation invocation) {
+		methodExit.put(call, invocation);
+	}
+
+	/**
+	 * Registers specific method exit hook.
+	 *
+	 * @param call
+	 * 		Method being hooked.
+	 * @param invocation
+	 * 		Hook to register.
+	 */
+	public void registerMethodExit(JavaMethod call, MethodInvocation invocation) {
 		methodExit.put(call, invocation);
 	}
 

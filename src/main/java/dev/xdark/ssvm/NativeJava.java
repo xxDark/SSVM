@@ -22,15 +22,14 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.FieldNode;
 
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.List;
 
+import static dev.xdark.ssvm.asm.Modifier.ACC_VM_HIDDEN;
 import static org.objectweb.asm.Opcodes.*;
-import static dev.xdark.ssvm.asm.Modifier.*;
 
 /**
  * A class to setup the VM instance.

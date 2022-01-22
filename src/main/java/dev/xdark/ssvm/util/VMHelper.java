@@ -5,10 +5,7 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.classloading.ClassLoaderData;
 import dev.xdark.ssvm.execution.*;
-import dev.xdark.ssvm.mirror.ArrayJavaClass;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaClass;
-import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.mirror.*;
 import dev.xdark.ssvm.thread.Backtrace;
 import dev.xdark.ssvm.thread.StackFrame;
 import dev.xdark.ssvm.thread.VMThread;
@@ -1844,6 +1841,46 @@ public final class VMHelper {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Returns method by it's slot.
+	 *
+	 * @param jc
+	 * 		Method owner.
+	 * @param slot
+	 * 		Method slot.
+	 * @return method by it's slot or {@code null},
+	 * if not found.
+	 */
+	public JavaMethod getMethodBySlot(InstanceJavaClass jc, int slot) {
+		for (val m : jc.getVirtualMethodLayout().getMethods().values()) {
+			if (slot == m.getSlot()) return m;
+		}
+		for (val m : jc.getStaticMethodLayout().getMethods().values()) {
+			if (slot == m.getSlot()) return m;
+		}
+		return null;
+	}
+
+	/**
+	 * Returns field by it's slot.
+	 *
+	 * @param jc
+	 * 		Field owner.
+	 * @param slot
+	 * 		Method slot.
+	 * @return field by it's slot or {@code null},
+	 * if not found.
+	 */
+	public JavaField getFieldBySlot(InstanceJavaClass jc, int slot) {
+		for (val f : jc.getVirtualFieldLayout().getFields().values()) {
+			if (slot == f.getSlot()) return f;
+		}
+		for (val f : jc.getStaticFieldLayout().getFields().values()) {
+			if (slot == f.getSlot()) return f;
+		}
+		return null;
 	}
 
 	private ArrayValue newMultiArrayInner(ArrayJavaClass type, int[] lengths, int depth) {

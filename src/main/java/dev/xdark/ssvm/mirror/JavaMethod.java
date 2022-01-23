@@ -4,6 +4,8 @@ import lombok.val;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodNode;
 
+import java.util.Arrays;
+
 /**
  * Method info.
  *
@@ -163,5 +165,11 @@ public final class JavaMethod {
 	@Override
 	public int hashCode() {
 		return node.hashCode();
+	}
+
+	@Override
+	public String toString() {
+		val node = this.node;
+		return owner.getInternalName() + '.' + node.name + node.desc;
 	}
 }

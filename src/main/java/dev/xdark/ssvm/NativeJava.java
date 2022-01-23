@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.zip.ZipEntry;
 
@@ -2454,6 +2455,47 @@ public final class NativeJava {
 			ctx.setResult(new LongValue(ctx.getLocals().<InstanceValue>load(0).getInt(VM_INDEX)));
 			return Result.ABORT;
 		});
+		vmi.setInvoker(natives, "getMembers", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Class;I[Ljava/lang/invoke/MemberName;)I", ctx -> {
+			ctx.setResult(IntValue.ZERO);
+			return Result.ABORT;
+		});
+		val mh = symbols.java_lang_invoke_MethodHandle;
+		val invoke = (MethodInvoker) ctx -> {
+			val locals = ctx.getLocals();
+			val helper = vm.getHelper();
+			val _this = locals.<InstanceValue>load(0);
+			val form = helper.<InstanceValue>checkNotNull(_this.getValue("form", "Ljava/lang/invoke/LambdaForm;"));
+			val vmentry = helper.<InstanceValue>checkNotNull(form.getValue("vmentry", "Ljava/lang/invoke/MemberName;"));
+			val resolved = (InstanceValue) vmentry.getValue("method", symbols.java_lang_invoke_ResolvedMethodName.getDescriptor());
+			val vmtarget = ((JavaValue<Object>) resolved.getValue(VM_TARGET, "Ljava/lang/Object;")).getValue();
+			if (vmtarget instanceof JavaMethod) {
+				val jm = (JavaMethod) vmtarget;
+				val name = jm.getName();
+				if ("<init>".equals(name)) {
+					throw new PanicException("TODO");
+				}
+				val lvt = locals.getTable();
+				if ((jm.getAccess() & ACC_STATIC) == 0) {
+					ctx.setResult(helper.invokeVirtual(name, jm.getDesc(), new Value[0], rewriteInvocationLVT(1, lvt)).getResult());
+				} else {
+					ctx.setResult(helper.invokeStatic(jm.getOwner(), jm, new Value[0], rewriteInvocationLVT(0, lvt)).getResult());
+				}
+			} else {
+				throw new PanicException("TODO: " + vmtarget);
+			}
+			return Result.ABORT;
+		};
+		vmi.setInvoker(mh, "invoke", "([Ljava/lang/Object;)Ljava/lang/Object;", invoke);
+		vmi.setInvoker(mh, "invokeBasic", "([Ljava/lang/Object;)Ljava/lang/Object;", invoke);
+		vmi.setInvoker(mh, "invokeExact", "([Ljava/lang/Object;)Ljava/lang/Object;", invoke);
+	}
+
+	private static Value[] rewriteInvocationLVT(int idx, Value[] lvt) {
+		int x = idx;
+		for (int i = x; i < lvt.length; i++) {
+			if (lvt[i] != null) x = i;
+		}
+		return Arrays.copyOfRange(lvt, idx, x + 1);
 	}
 
 	private static void initMemberNameMethod(VirtualMachine vm, InstanceValue memberName, InstanceValue obj) {

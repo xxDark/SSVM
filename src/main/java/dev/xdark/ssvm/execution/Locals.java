@@ -48,6 +48,13 @@ public final class Locals {
 		return (V) table[index];
 	}
 
+	/**
+	 * @return underlying content of the LVT.
+	 */
+	public Value[] getTable() {
+		return table;
+	}
+
 	@Override
 	public String toString() {
 		return "Locals{" +

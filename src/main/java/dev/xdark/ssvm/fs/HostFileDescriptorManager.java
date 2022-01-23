@@ -58,12 +58,20 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 
 	@Override
 	public void close(long handle) throws IOException {
-		val in = inputs.remove(handle);
+		val wrapper = (Long) handle;
+		val in = inputs.remove(wrapper);
 		if (in != null) {
 			in.close();
-		} else {
-			val out = outputs.remove(handle);
-			if (out != null) out.close();
+			return;
+		}
+		val out = outputs.remove(wrapper);
+		if (out != null) {
+			out.close();
+			return;
+		}
+		val zip = zipFiles.remove(wrapper);
+		if (zip != null) {
+			zip.close();
 		}
 	}
 

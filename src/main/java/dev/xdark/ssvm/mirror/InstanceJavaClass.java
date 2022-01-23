@@ -377,7 +377,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @return class method or {@code null}, if not found.
 	 */
 	public JavaMethod getVirtualMethod(String name, String desc) {
-		return lookupMethodIn(getVirtualMethodLayout(), name, desc, true);
+		return lookupMethodIn(getVirtualMethodLayout(), name, desc);
 	}
 
 	/**
@@ -438,7 +438,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @return class method or {@code null}, if not found.
 	 */
 	public JavaMethod getStaticMethod(String name, String desc) {
-		return lookupMethodIn(getStaticMethodLayout(), name, desc, false);
+		return lookupMethodIn(getStaticMethodLayout(), name, desc);
 	}
 
 	/**
@@ -1008,12 +1008,12 @@ public final class InstanceJavaClass implements JavaClass {
 		return (InstanceJavaClass) vm.findClass(classLoader, superName, false);
 	}
 
-	private JavaMethod lookupMethodIn(MethodLayout layout, String name, String desc, boolean virtual) {
+	private JavaMethod lookupMethodIn(MethodLayout layout, String name, String desc) {
 		val methods = layout.getMethods();
 		JavaMethod jm = methods.get(new MemberKey(this, name, desc));
 		if (jm == null) {
 			jm = methods.get(new MemberKey(this, name, POLYMORPHIC_DESC));
-			if (jm != null && (!jm.isPolymorphic() || virtual != ((jm.getAccess() & Opcodes.ACC_STATIC) == 0))) {
+			if (jm != null && !jm.isPolymorphic()) {
 				jm = null;
 			}
 		}

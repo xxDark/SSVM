@@ -438,7 +438,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @return class method or {@code null}, if not found.
 	 */
 	public JavaMethod getStaticMethod(String name, String desc) {
-		return lookupMethodIn(getStaticMethodLayout(), name, desc, isInterface());
+		return lookupMethodIn(getStaticMethodLayout(), name, desc, false);
 	}
 
 	/**

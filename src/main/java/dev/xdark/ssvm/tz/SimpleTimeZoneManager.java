@@ -20,7 +20,7 @@ public class SimpleTimeZoneManager implements TimeZoneManager {
 
 	@Override
 	public String getSystemGMTOffsetId() {
-		val tz = TimeZone.getDefault();
+		val tz = getSystemTimeZone();
 		val cal = GregorianCalendar.getInstance(tz);
 		int offsetInMillis = tz.getOffset(cal.getTimeInMillis());
 

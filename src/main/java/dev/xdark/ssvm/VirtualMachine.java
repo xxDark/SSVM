@@ -396,7 +396,7 @@ public class VirtualMachine {
 						String type = block.type;
 						if (index < AsmUtil.getIndex(block.start) || index > AsmUtil.getIndex(block.end)) continue;
 						if (type == null) type = "java/lang/Throwable";
-						val candidate = findClass(ctx.getOwner().getClassLoader(), type, true);
+						val candidate = findClass(ctx.getOwner().getClassLoader(), type, false);
 						if (candidate.isAssignableFrom(exceptionType)) {
 							val stack = ctx.getStack();
 							stack.clear();

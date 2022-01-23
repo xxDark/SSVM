@@ -56,7 +56,7 @@ public final class VMHelper {
 			throw new IllegalStateException("Method is not static");
 		}
 		javaClass.initialize();
-		val ctx = createContext(javaClass, method);
+		val ctx = createContext(javaClass, method, locals);
 		contextPrepare(ctx, stack, locals, 0);
 		javaClass.getVM().execute(ctx, true);
 		return ctx;
@@ -155,7 +155,7 @@ public final class VMHelper {
 			throw new IllegalStateException("Method is static");
 		}
 		javaClass.initialize();
-		val ctx = createContext(javaClass, method);
+		val ctx = createContext(javaClass, method, locals);
 		contextPrepare(ctx, stack, locals, 0);
 		javaClass.getVM().execute(ctx, true);
 		return ctx;
@@ -1065,11 +1065,28 @@ public final class VMHelper {
 	 *
 	 * @param value
 	 * 		Value to check.
+	 *
+	 * @param <V>
+	 *     	New value type after null check.
+	 *
+	 * @return value.
 	 */
-	public void checkNotNull(Value value) {
+	public <V extends ObjectValue> V checkNotNull(Value value) {
 		if (value.isNull()) {
 			throwException(vm.getSymbols().java_lang_NullPointerException);
 		}
+		return (V) value;
+	}
+
+	/**
+	 * Checks whether array is nonnull.
+	 *
+	 * @param value
+	 * 		Array to check.
+	 */
+	public ArrayValue checkNotNullArray(ObjectValue value) {
+		checkNotNull(value);
+		return checkArray(value);
 	}
 
 	/**
@@ -1077,11 +1094,14 @@ public final class VMHelper {
 	 *
 	 * @param value
 	 * 		Value to check.
+	 *
+	 * @return array value if cast succeeds.
 	 */
-	public void checkArray(Value value) {
+	public ArrayValue checkArray(Value value) {
 		if (!(value instanceof ArrayValue)) {
 			throwException(vm.getSymbols().java_lang_IllegalArgumentException);
 		}
+		return (ArrayValue) value;
 	}
 
 	/**
@@ -1125,8 +1145,10 @@ public final class VMHelper {
 	 * 		Protection domain of the class.
 	 */
 	public void setClassFields(InstanceValue oop, ObjectValue classLoader, ObjectValue protectionDomain) {
-		oop.setValue("classLoader", "Ljava/lang/ClassLoader;", classLoader);
-		oop.setValue(NativeJava.PROTECTION_DOMAIN, "Ljava/security/ProtectionDomain;", protectionDomain);
+		if (!classLoader.isNull()) {
+			oop.setValue("classLoader", "Ljava/lang/ClassLoader;", classLoader);
+			oop.setValue(NativeJava.PROTECTION_DOMAIN, "Ljava/security/ProtectionDomain;", protectionDomain);
+		}
 	}
 
 	/**
@@ -1267,6 +1289,7 @@ public final class VMHelper {
 		val lineNumber = frame.getLineNumber();
 		val vm = this.vm;
 		val jc = vm.getSymbols().java_lang_StackTraceElement;
+		jc.initialize();
 		val element = vm.getMemoryManager().newInstance(jc);
 		invokeExact(jc, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V", new Value[0], new Value[]{
 				element,
@@ -1692,8 +1715,7 @@ public final class VMHelper {
 	 */
 	public long getFileStreamHandle(InstanceValue fos) {
 		val fd = invokeVirtual("getFD", "()Ljava/io/FileDescriptor;", new Value[0], new Value[]{fos}).getResult();
-		checkNotNull(fd);
-		return ((InstanceValue) fd).getLong("handle");
+		return this.<InstanceValue>checkNotNull(fd).getLong("handle");
 	}
 
 	/**
@@ -1914,14 +1936,25 @@ public final class VMHelper {
 		}
 	}
 
-	private static ExecutionContext createContext(InstanceJavaClass jc, JavaMethod jm) {
+	private static ExecutionContext createContext(InstanceJavaClass jc, JavaMethod jm, Value[] locals) {
 		val mn = jm.getNode();
 		return new ExecutionContext(
 				jc.getVM(),
 				jc,
 				jm,
 				new Stack(mn.maxStack),
-				new Locals(AsmUtil.getMaxLocals(jm))
+				new Locals(getMaxLocals(jm, locals))
 		);
+	}
+
+	private static int getMaxLocals(JavaMethod jm, Value[] locals) {
+		if (jm.isPolymorphic()) {
+			int x = 0;
+			for (val local : locals) {
+				x += (local.isWide() ? 2 : 1);
+			}
+			return x;
+		}
+		return AsmUtil.getMaxLocals(jm);
 	}
 }

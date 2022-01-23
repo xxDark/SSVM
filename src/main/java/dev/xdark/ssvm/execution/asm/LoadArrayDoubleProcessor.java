@@ -19,8 +19,9 @@ public final class LoadArrayDoubleProcessor implements InstructionProcessor<Abst
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		val stack = ctx.getStack();
 		int index = stack.pop().asInt();
-		val array = stack.<ArrayValue>pop();
-		ctx.getHelper().rangeCheck(array, index);
+		val helper = ctx.getHelper();
+		val array = helper.checkNotNullArray(stack.pop());
+		helper.rangeCheck(array, index);
 		stack.pushWide(new DoubleValue(array.getDouble(index)));
 		return Result.CONTINUE;
 	}

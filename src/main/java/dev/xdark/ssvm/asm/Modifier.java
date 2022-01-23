@@ -10,8 +10,8 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class Modifier {
 
-	public final int ACC_VM_HIDDEN = 1 << 16;
-	public final int ACC_HIDDEN_FRAME = 1 << 17;
+	public static final int ACC_VM_HIDDEN = 1 << 16;
+	public static final int ACC_HIDDEN_FRAME = 1 << 17;
 
 	/**
 	 * Drops all VM related modifiers.

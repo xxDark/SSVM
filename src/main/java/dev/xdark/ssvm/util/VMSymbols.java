@@ -1,7 +1,12 @@
 package dev.xdark.ssvm.util;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.value.NullValue;
+import lombok.val;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
 
 /**
  * Common VM symbols.
@@ -69,6 +74,13 @@ public final class VMSymbols {
 	public final InstanceJavaClass java_lang_IllegalMonitorStateException;
 	public final InstanceJavaClass sun_management_VMManagementImpl;
 	public final InstanceJavaClass java_lang_Package;
+	public final InstanceJavaClass java_lang_invoke_MethodHandle;
+	public final InstanceJavaClass perf_Perf;
+	public final InstanceJavaClass java_nio_ByteBuffer;
+	public final InstanceJavaClass java_util_jar_JarFile;
+	public final InstanceJavaClass java_lang_StrictMath;
+	public final InstanceJavaClass java_util_TimeZone;
+	public final InstanceJavaClass java_util_zip_CRC32;
 
 	/**
 	 * @param vm
@@ -129,7 +141,7 @@ public final class VMSymbols {
 		java_lang_reflect_AccessibleObject = (InstanceJavaClass) vm.findBootstrapClass("java/lang/reflect/AccessibleObject");
 		java_security_PrivilegedExceptionAction = (InstanceJavaClass) vm.findBootstrapClass("java/security/PrivilegedExceptionAction");
 		java_lang_invoke_MemberName = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/MemberName");
-		java_lang_invoke_ResolvedMethodName = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/ResolvedMethodName");
+		java_lang_invoke_ResolvedMethodName = resolvedMemberName(vm);
 		java_util_concurrent_atomic_AtomicLong = (InstanceJavaClass) vm.findBootstrapClass("java/util/concurrent/atomic/AtomicLong");
 		java_lang_ClassLoader$NativeLibrary = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ClassLoader$NativeLibrary");
 		java_io_FileDescriptor = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileDescriptor");
@@ -138,5 +150,28 @@ public final class VMSymbols {
 		java_lang_IllegalMonitorStateException = (InstanceJavaClass) vm.findBootstrapClass("java/lang/IllegalMonitorStateException");
 		sun_management_VMManagementImpl = (InstanceJavaClass) vm.findBootstrapClass("sun/management/VMManagementImpl");
 		java_lang_Package = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Package");
+		java_lang_invoke_MethodHandle = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/MethodHandle");
+
+		InstanceJavaClass perf_Perf = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/perf/Perf");
+		if (perf_Perf == null) {
+			perf_Perf = (InstanceJavaClass) vm.findBootstrapClass("sun/misc/Perf");
+		}
+		this.perf_Perf = perf_Perf;
+		java_nio_ByteBuffer = (InstanceJavaClass) vm.findBootstrapClass("java/nio/ByteBuffer");
+		java_util_jar_JarFile = (InstanceJavaClass) vm.findBootstrapClass("java/util/jar/JarFile");
+		java_lang_StrictMath = (InstanceJavaClass) vm.findBootstrapClass("java/lang/StrictMath");
+		java_util_TimeZone = (InstanceJavaClass) vm.findBootstrapClass("java/util/TimeZone");
+		java_util_zip_CRC32 = (InstanceJavaClass) vm.findBootstrapClass("java/util/zip/CRC32");
+	}
+
+	private static InstanceJavaClass resolvedMemberName(VirtualMachine vm) {
+		InstanceJavaClass jc = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/MemberName$ResolvedMethodName");
+		if (jc == null) {
+			val writer = new ClassWriter(0);
+			writer.visit(Opcodes.V1_8, Modifier.ACC_VM_HIDDEN, "java/lang/invoke/MemberName$ResolvedMethodName", null, "java/lang/Object", null);
+			val b = writer.toByteArray();
+			jc = vm.getHelper().defineClass(NullValue.INSTANCE, "java/lang/invoke/MemberName$ResolvedMethodName", b, 0, b.length, NullValue.INSTANCE, "JVM_DefineClass");
+		}
+		return jc;
 	}
 }

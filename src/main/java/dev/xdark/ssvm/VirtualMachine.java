@@ -22,6 +22,8 @@ import dev.xdark.ssvm.thread.NopThreadManager;
 import dev.xdark.ssvm.thread.StackFrame;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.VMThread;
+import dev.xdark.ssvm.tz.SimpleTimeZoneManager;
+import dev.xdark.ssvm.tz.TimeZoneManager;
 import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.util.VMPrimitives;
@@ -48,6 +50,7 @@ public class VirtualMachine {
 	private final NativeLibraryManager nativeLibraryManager;
 	private final StringPool stringPool;
 	private final ManagementInterface managementInterface;
+	private final TimeZoneManager timeZoneManager;
 	private final Properties properties;
 
 	public VirtualMachine() {
@@ -67,13 +70,14 @@ public class VirtualMachine {
 		klass.setStaticFieldLayout(klass.createStaticFieldLayout());
 		setClassOop(klass, klass);
 		setClassOop(object, klass);
+		classDefiner = createClassDefiner();
 		symbols = new VMSymbols(this);
 		primitives = new VMPrimitives(this);
-		classDefiner = createClassDefiner();
 		fileDescriptorManager = createFileDescriptorManager();
 		nativeLibraryManager = createNativeLibraryManager();
 		stringPool = createStringPool();
 		managementInterface = createManagementInterface();
+		timeZoneManager = createTimeZoneManager();
 		NativeJava.init(this);
 
 		(properties = new Properties()).putAll(System.getProperties());
@@ -244,6 +248,15 @@ public class VirtualMachine {
 	 */
 	public ManagementInterface getManagementInterface() {
 		return managementInterface;
+	}
+
+	/**
+	 * Returns time zone manager.
+	 *
+	 * @return time zone manager.
+	 */
+	public TimeZoneManager getTimeZoneManager() {
+		return timeZoneManager;
 	}
 
 	/**
@@ -484,6 +497,16 @@ public class VirtualMachine {
 	 */
 	protected ManagementInterface createManagementInterface() {
 		return new SimpleManagementInterface();
+	}
+
+	/**
+	 * Creates time zone manager.
+	 * One may override this method.
+	 *
+	 * @return time zone manager.
+	 */
+	protected TimeZoneManager createTimeZoneManager() {
+		return new SimpleTimeZoneManager();
 	}
 
 	private InstanceJavaClass internalLink(String name) {

@@ -19,8 +19,9 @@ public final class StoreArrayShortProcessor implements InstructionProcessor<Abst
 		val stack = ctx.getStack();
 		val value = stack.pop().asShort();
 		int index = stack.pop().asInt();
-		val array = stack.<ArrayValue>pop();
-		ctx.getHelper().rangeCheck(array, index);
+		val helper = ctx.getHelper();
+		val array = helper.checkNotNullArray(stack.pop());
+		helper.rangeCheck(array, index);
 		array.setShort(index, value);
 		return Result.CONTINUE;
 	}

@@ -21,17 +21,25 @@ import java.util.stream.Stream;
 
 public final class InstanceJavaClass implements JavaClass {
 
+	private static final String POLYMORPHIC_DESC = "([Ljava/lang/Object;)Ljava/lang/Object;";
+
 	private final VirtualMachine vm;
 	private final Value classLoader;
+
 	private final Lock initializationLock;
 	private final Condition signal;
+
 	private final ClassReader classReader;
 	private final ClassNode node;
+
 	private InstanceValue oop;
+
 	private FieldLayout vrtFieldLayout;
 	private FieldLayout staticFieldLayout;
+
 	private MethodLayout vrtMethodLayout;
 	private MethodLayout staticMethodLayout;
+
 	private InstanceJavaClass superClass;
 	private InstanceJavaClass[] interfaces;
 	private ArrayJavaClass arrayClass;
@@ -43,6 +51,7 @@ public final class InstanceJavaClass implements JavaClass {
 	// Stuff to cache
 	private String normalName;
 	private String descriptor;
+
 	// Reflection cache.
 	private List<JavaMethod> declaredConstructors;
 	private List<JavaMethod> publicConstructors;
@@ -352,7 +361,7 @@ public final class InstanceJavaClass implements JavaClass {
 		InstanceJavaClass jc = this;
 		JavaMethod method;
 		do {
-			method = jc.getVirtualMethodLayout().getMethods().get(new MemberKey(jc, name, desc));
+			method = jc.getVirtualMethod(name, desc);
 		} while (method == null && (jc = jc.getSuperclassWithoutResolving()) != null);
 		return method;
 	}
@@ -368,7 +377,35 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @return class method or {@code null}, if not found.
 	 */
 	public JavaMethod getVirtualMethod(String name, String desc) {
-		return getVirtualMethodLayout().getMethods().get(new MemberKey(this, name, desc));
+		return lookupMethodIn(getVirtualMethodLayout(), name, desc, true);
+	}
+
+	/**
+	 * Searches for a virtual field by it's name and descriptor.
+	 *
+	 * @param name
+	 * 		Name of the field.
+	 * @param desc
+	 * 		Descriptor of the field.
+	 *
+	 * @return virtual class field or {@code null}, if not found.
+	 */
+	public JavaField getVirtualField(String name, String desc) {
+		return getVirtualFieldLayout().getFields().get(new MemberKey(this, name, desc));
+	}
+
+	/**
+	 * Searches for a static field by it's name and descriptor.
+	 *
+	 * @param name
+	 * 		Name of the field.
+	 * @param desc
+	 * 		Descriptor of the field.
+	 *
+	 * @return static class field or {@code null}, if not found.
+	 */
+	public JavaField getStaticField(String name, String desc) {
+		return getStaticFieldLayout().getFields().get(new MemberKey(this, name, desc));
 	}
 
 	/**
@@ -385,7 +422,7 @@ public final class InstanceJavaClass implements JavaClass {
 		InstanceJavaClass jc = this;
 		JavaMethod method;
 		do {
-			method = jc.getStaticMethodLayout().getMethods().get(new MemberKey(jc, name, desc));
+			method = jc.getStaticMethod(name, desc);
 		} while (method == null && (jc = jc.getSuperclassWithoutResolving()) != null);
 		return method;
 	}
@@ -401,7 +438,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @return class method or {@code null}, if not found.
 	 */
 	public JavaMethod getStaticMethod(String name, String desc) {
-		return getStaticMethodLayout().getMethods().get(new MemberKey(this, name, desc));
+		return lookupMethodIn(getStaticMethodLayout(), name, desc, isInterface());
 	}
 
 	/**
@@ -932,14 +969,25 @@ public final class InstanceJavaClass implements JavaClass {
 			val methods = node.methods;
 			for (val method : methods) {
 				if ((method.access & Opcodes.ACC_STATIC) != 0) {
-					val desc = method.desc;
-					map.put(new MemberKey(this, method.name, desc), new JavaMethod(this, method, slot++));
+					map.put(new MemberKey(this, method.name, method.desc), new JavaMethod(this, method, slot++));
 				}
 			}
 			staticMethodLayout = new MethodLayout(Collections.unmodifiableMap(map));
 			this.staticMethodLayout = staticMethodLayout;
 		}
 		return staticMethodLayout;
+	}
+
+	/**
+	 * @return {@code true} if the class should be initialized,
+	 * {@code false} otherwise.
+	 */
+	public boolean shouldBeInitialized() {
+		val lock = initializationLock;
+		lock.lock();
+		val isPending = state == State.PENDING;
+		lock.unlock();
+		return isPending;
 	}
 
 	private int getVirtualMethodCount() {
@@ -958,6 +1006,18 @@ public final class InstanceJavaClass implements JavaClass {
 		if (superName == null) return null;
 		val vm = this.vm;
 		return (InstanceJavaClass) vm.findClass(classLoader, superName, false);
+	}
+
+	private JavaMethod lookupMethodIn(MethodLayout layout, String name, String desc, boolean virtual) {
+		val methods = layout.getMethods();
+		JavaMethod jm = methods.get(new MemberKey(this, name, desc));
+		if (jm == null) {
+			jm = methods.get(new MemberKey(this, name, POLYMORPHIC_DESC));
+			if (jm != null && (!jm.isPolymorphic() || virtual != ((jm.getAccess() & Opcodes.ACC_STATIC) == 0))) {
+				jm = null;
+			}
+		}
+		return jm;
 	}
 
 	private static <T> Predicate<T> nonHidden(ToIntFunction<T> function) {

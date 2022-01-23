@@ -136,4 +136,28 @@ public interface FileDescriptorManager {
 	 * @return list of the elements of the directory.
 	 */
 	String[] list(String path);
+
+	/**
+	 * Opens new zip file.
+	 *
+	 * @param path
+	 * 		Path to the zip file.
+	 * @param mode
+	 * 		The mode in which the file is to be opened.
+	 *
+	 * @return opened zip file handle.
+	 *
+	 * @throws IOException
+	 * 		If any I/O error occurs.
+	 */
+	long openZipFile(String path, int mode) throws IOException;
+
+	/**
+	 * @param handle
+	 * 		Zip file handle.
+	 *
+	 * @return zip file by it's handle or {@code null},
+	 * if not found.
+	 */
+	ZipFile getZipFile(long handle);
 }

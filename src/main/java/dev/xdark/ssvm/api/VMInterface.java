@@ -3,6 +3,9 @@ package dev.xdark.ssvm.api;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Value;
 import lombok.val;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -36,6 +39,8 @@ public final class VMInterface {
 	 * 		Type of the instruction.
 	 * @param insn
 	 * 		Instruction to get processor for.
+	 *
+	 * @return instruction processor.
 	 */
 	public <I extends AbstractInsnNode> InstructionProcessor<I> getProcessor(I insn) {
 		return processors[insn.getOpcode()];
@@ -46,8 +51,12 @@ public final class VMInterface {
 	 *
 	 * @param opcode
 	 * 		Instruction opcode.
+	 * @param <I>
+	 * 		Instruction type.
+	 *
+	 * @return instruction processor.
 	 */
-	public InstructionProcessor<?> getProcessor(int opcode) {
+	public <I extends AbstractInsnNode> InstructionProcessor<I> getProcessor(int opcode) {
 		return processors[opcode];
 	}
 

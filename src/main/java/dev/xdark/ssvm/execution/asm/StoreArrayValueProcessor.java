@@ -20,8 +20,8 @@ public final class StoreArrayValueProcessor implements InstructionProcessor<Abst
 		val stack = ctx.getStack();
 		val value = stack.<ObjectValue>pop();
 		int index = stack.pop().asInt();
-		val array = stack.<ArrayValue>pop();
 		val helper = ctx.getHelper();
+		val array = helper.checkNotNullArray(stack.pop());
 		helper.rangeCheck(array, index);
 
 		if (!value.isNull()) {

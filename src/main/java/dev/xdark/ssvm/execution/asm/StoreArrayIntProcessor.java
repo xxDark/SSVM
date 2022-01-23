@@ -19,8 +19,9 @@ public final class StoreArrayIntProcessor implements InstructionProcessor<Abstra
 		val stack = ctx.getStack();
 		val value = stack.pop().asInt();
 		int index = stack.pop().asInt();
-		val array = stack.<ArrayValue>pop();
-		ctx.getHelper().rangeCheck(array, index);
+		val helper = ctx.getHelper();
+		val array = helper.checkNotNullArray(stack.pop());
+		helper.rangeCheck(array, index);
 		array.setInt(index, value);
 		return Result.CONTINUE;
 	}

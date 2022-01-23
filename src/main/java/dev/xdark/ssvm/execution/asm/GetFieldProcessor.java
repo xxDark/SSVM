@@ -24,9 +24,7 @@ public final class GetFieldProcessor implements InstructionProcessor<FieldInsnNo
 			helper.throwException(vm.getSymbols().java_lang_NoClassDefFoundError, insn.owner);
 		}
 		val stack = ctx.getStack();
-		val $instance = stack.pop();
-		helper.checkNotNull($instance);
-		val instance = (InstanceValue) $instance;
+		val instance = helper.<InstanceValue>checkNotNull(stack.pop());
 		long offset = helper.getFieldOffset((InstanceJavaClass) owner, instance.getJavaClass(), insn.name, insn.desc);
 		if (offset == -1L) {
 			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, insn.name);

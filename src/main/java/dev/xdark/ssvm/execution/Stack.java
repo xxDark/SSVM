@@ -5,6 +5,7 @@ import dev.xdark.ssvm.value.Value;
 import lombok.val;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -268,6 +269,34 @@ public final class Stack {
 	 */
 	public void clear() {
 		cursor = 0;
+	}
+
+	/**
+	 * @return current cursor position.
+	 */
+	public int position() {
+		return cursor;
+	}
+
+	/**
+	 * Gets value on the stack by an index.
+	 *
+	 * @param index
+	 * 		Value position.
+	 *
+	 * @return value at the specific position.
+	 */
+	public Value getAt(int index) {
+		return stack[index];
+	}
+
+	/**
+	 * Returns stack content as a list view.
+	 *
+	 * @return stack content as a list view.
+	 */
+	public List<Value> view() {
+		return Arrays.asList(Arrays.copyOf(stack, cursor));
 	}
 
 	@Override

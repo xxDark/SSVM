@@ -135,7 +135,7 @@ public class InstanceValue extends ObjectValue {
 	 *
 	 * @return VM value.
 	 */
-	public Value getValue(String field, String desc) {
+	public ObjectValue getValue(String field, String desc) {
 		return getMemoryManager().readValue(this, getFieldOffset(field, desc));
 	}
 

@@ -10,6 +10,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.zip.ZipFile;
 
 /**
  * File descriptor manager that uses host machine
@@ -21,6 +22,7 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 
 	protected final Map<Long, InputStream> inputs = new HashMap<>();
 	protected final Map<Long, OutputStream> outputs = new HashMap<>();
+	private final Map<Long, ZipFile> zipFiles = new HashMap<>();
 
 	private final InputStream stdin;
 	private final OutputStream stdout;
@@ -70,11 +72,12 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 		val rng = ThreadLocalRandom.current();
 		val inputs = this.inputs;
 		val outputs = this.outputs;
+		val zipFiles = this.zipFiles;
 		long handle;
 		Long wrapper;
 		do {
 			handle = rng.nextLong() & 0xFFFFFFFFL;
-		} while (inputs.containsKey(wrapper = handle) || outputs.containsKey(wrapper));
+		} while (inputs.containsKey(wrapper = handle) || outputs.containsKey(wrapper) || zipFiles.containsKey(wrapper));
 		return handle;
 	}
 
@@ -147,5 +150,18 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 	@Override
 	public String[] list(String path) {
 		return new File(path).list();
+	}
+
+	@Override
+	public long openZipFile(String path, int mode) throws IOException {
+		val fd = newFD();
+		val zf = new ZipFile(new File(path), mode);
+		zipFiles.put(fd, zf);
+		return fd;
+	}
+
+	@Override
+	public ZipFile getZipFile(long handle) {
+		return zipFiles.get(handle);
 	}
 }

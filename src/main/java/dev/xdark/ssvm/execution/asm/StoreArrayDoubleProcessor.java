@@ -19,8 +19,9 @@ public final class StoreArrayDoubleProcessor implements InstructionProcessor<Abs
 		val stack = ctx.getStack();
 		val value = stack.popWide().asDouble();
 		int index = stack.pop().asInt();
-		val array = stack.<ArrayValue>pop();
-		ctx.getHelper().rangeCheck(array, index);
+		val helper = ctx.getHelper();
+		val array = helper.checkNotNullArray(stack.pop());
+		helper.rangeCheck(array, index);
 		array.setDouble(index, value);
 		return Result.CONTINUE;
 	}

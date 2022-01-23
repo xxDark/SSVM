@@ -20,8 +20,9 @@ public final class LoadArrayFloatProcessor implements InstructionProcessor<Abstr
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		val stack = ctx.getStack();
 		int index = stack.pop().asInt();
-		val array = stack.<ArrayValue>pop();
-		ctx.getHelper().rangeCheck(array, index);
+		val helper = ctx.getHelper();
+		val array = helper.checkNotNullArray(stack.pop());
+		helper.rangeCheck(array, index);
 		stack.push(new FloatValue(array.getFloat(index)));
 		return Result.CONTINUE;
 	}

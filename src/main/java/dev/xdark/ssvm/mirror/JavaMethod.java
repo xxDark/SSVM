@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.mirror;
 
+import lombok.val;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -16,6 +17,7 @@ public final class JavaMethod {
 	private Type type;
 	private Type[] argumentTypes;
 	private Type returnType;
+	private Boolean polymorphic;
 
 	/**
 	 * @param owner
@@ -131,6 +133,20 @@ public final class JavaMethod {
 			return this.returnType = getType().getReturnType();
 		}
 		return returnType;
+	}
+
+	/**
+	 * @return {@code  true} if this method is polymorphic,
+	 * {@code false} otherwise.
+	 */
+	public boolean isPolymorphic() {
+		Boolean polymorphic = this.polymorphic;
+		if (polymorphic == null) {
+			val visibleAnnotations = node.visibleAnnotations;
+			return this.polymorphic = visibleAnnotations != null
+					&& visibleAnnotations.stream().anyMatch(x -> "Ljava/lang/invoke/MethodHandle$PolymorphicSignature;".equals(x.desc));
+		}
+		return polymorphic;
 	}
 
 	@Override

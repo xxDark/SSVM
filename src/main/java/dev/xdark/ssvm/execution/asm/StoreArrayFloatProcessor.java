@@ -19,8 +19,9 @@ public final class StoreArrayFloatProcessor implements InstructionProcessor<Abst
 		val stack = ctx.getStack();
 		val value = stack.pop().asFloat();
 		int index = stack.pop().asInt();
-		val array = stack.<ArrayValue>pop();
-		ctx.getHelper().rangeCheck(array, index);
+		val helper = ctx.getHelper();
+		val array = helper.checkNotNullArray(stack.pop());
+		helper.rangeCheck(array, index);
 		array.setFloat(index, value);
 		return Result.CONTINUE;
 	}

@@ -19,10 +19,7 @@ public final class InstanceArrayProcessor implements InstructionProcessor<TypeIn
 		val length = stack.pop().asInt();
 		val vm = ctx.getVM();
 		val helper = vm.getHelper();
-		val klass = helper.findClass(ctx.getOwner().getClassLoader(), insn.desc, true);
-		if (klass == null) {
-			helper.throwException(vm.getSymbols().java_lang_NoClassDefFoundError, insn.desc);
-		}
+		val klass = helper.findClass(ctx.getOwner().getClassLoader(), insn.desc, false);
 		helper.checkArrayLength(length);
 		stack.push(helper.newArray(klass, length));
 		return Result.CONTINUE;

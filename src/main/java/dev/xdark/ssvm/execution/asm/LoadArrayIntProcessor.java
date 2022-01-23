@@ -19,8 +19,9 @@ public final class LoadArrayIntProcessor implements InstructionProcessor<Abstrac
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		val stack = ctx.getStack();
 		int index = stack.pop().asInt();
-		val array = stack.<ArrayValue>pop();
-		ctx.getHelper().rangeCheck(array, index);
+		val helper = ctx.getHelper();
+		val array = helper.checkNotNullArray(stack.pop());
+		helper.rangeCheck(array, index);
 		stack.push(new IntValue(array.getInt(index)));
 		return Result.CONTINUE;
 	}

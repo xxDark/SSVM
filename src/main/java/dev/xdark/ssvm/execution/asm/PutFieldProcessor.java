@@ -25,9 +25,7 @@ public final class PutFieldProcessor implements InstructionProcessor<FieldInsnNo
 		}
 		val stack = ctx.getStack();
 		val value = stack.popGeneric();
-		val $instance = stack.pop();
-		helper.checkNotNull($instance);
-		val instance = (InstanceValue) $instance;
+		val instance = helper.<InstanceValue>checkNotNull(stack.pop());
 		long offset = helper.getFieldOffset((InstanceJavaClass) owner, instance.getJavaClass(), insn.name, insn.desc);
 		if (offset == -1L) {
 			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, insn.name);

@@ -1953,6 +1953,7 @@ public final class VMHelper {
 			for (val local : locals) {
 				x += (local.isWide() ? 2 : 1);
 			}
+			if ((jm.getAccess() & Opcodes.ACC_STATIC) == 0) x++;
 			return x;
 		}
 		return AsmUtil.getMaxLocals(jm);

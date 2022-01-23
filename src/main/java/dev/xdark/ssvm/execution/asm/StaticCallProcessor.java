@@ -32,8 +32,9 @@ public final class StaticCallProcessor implements InstructionProcessor<MethodIns
 			locals[localsLength] = stack.popGeneric();
 		}
 		val result = helper.invokeStatic((InstanceJavaClass) owner, insn.name, insn.desc, new Value[0], locals);
-		if (Type.getReturnType(insn.desc) != Type.VOID_TYPE) {
-			stack.pushGeneric(result.getResult());
+		val v = result.getResult();
+		if (!v.isVoid()) {
+			stack.pushGeneric(v);
 		}
 		return Result.CONTINUE;
 	}

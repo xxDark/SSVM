@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.api;
 
+import dev.xdark.ssvm.asm.VirtualInsnNode;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
@@ -43,7 +44,7 @@ public final class VMInterface {
 	 * @return instruction processor.
 	 */
 	public <I extends AbstractInsnNode> InstructionProcessor<I> getProcessor(I insn) {
-		return processors[insn.getOpcode()];
+		return processors[getOpcode(insn)];
 	}
 
 	/**
@@ -248,5 +249,10 @@ public final class VMInterface {
 		val stream = list.stream();
 		if (invocation == null) return stream;
 		return Stream.concat(Stream.of(invocation), stream);
+	}
+
+	private static int getOpcode(AbstractInsnNode node) {
+		if (node instanceof VirtualInsnNode) return ((VirtualInsnNode) node).getVirtualOpcode();
+		return node.getOpcode();
 	}
 }

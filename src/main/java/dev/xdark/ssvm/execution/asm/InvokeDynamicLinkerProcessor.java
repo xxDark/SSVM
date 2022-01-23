@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.execution.asm;
 
+import dev.xdark.ssvm.asm.MethodHandleInsnNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
@@ -54,7 +55,12 @@ public final class InvokeDynamicLinkerProcessor implements InstructionProcessor<
 					helper.methodType(caller.getClassLoader(), Type.getMethodType(desc))
 			};
 			val linker = (InstanceValue) helper.invokeStatic(symbols.java_lang_invoke_MethodHandleNatives, "linkMethodHandleConstant", "(Ljava/lang/Class;ILjava/lang/Class;Ljava/lang/String;Ljava/lang/Object;)Ljava/lang/invoke/MethodHandle;", new Value[0], args).getResult();
-
+			// Rewrite instruction
+			val list = ctx.getMethod().getNode().instructions;
+			list.set(insn, new MethodHandleInsnNode(insn, linker));
+			// Move insn position backwards so that VM visits
+			// us yet again.
+			ctx.setInsnPosition(ctx.getInsnPosition() - 1);
 		} catch (VMException ex) {
 			val oop = ex.getOop();
 			helper.throwException(symbols.java_lang_BootstrapMethodError, "CallSite initialization exception", oop);

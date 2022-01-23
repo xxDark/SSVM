@@ -33,7 +33,7 @@ public final class Stack {
 	 * 		Value to push.
 	 */
 	public void push(Value value) {
-		stack[cursor++] = Objects.requireNonNull(value, "value");
+		stack[cursor++] = checkValue(value);
 	}
 
 	/**
@@ -46,7 +46,7 @@ public final class Stack {
 	public void pushWide(Value value) {
 		val stack = this.stack;
 		int cursor = this.cursor;
-		stack[cursor++] = Objects.requireNonNull(value, "value");
+		stack[cursor++] = checkValue(value);
 		stack[cursor++] = TopValue.INSTANCE;
 		this.cursor = cursor;
 	}
@@ -305,5 +305,12 @@ public final class Stack {
 				"stack=" + Arrays.toString(stack) +
 				", cursor=" + cursor +
 				'}';
+	}
+
+	private static Value checkValue(Value value) {
+		if (Objects.requireNonNull(value, "value").isVoid()) {
+			throw new IllegalStateException("Cannot push void value");
+		}
+		return value;
 	}
 }

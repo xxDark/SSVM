@@ -9,8 +9,6 @@ import lombok.val;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodInsnNode;
 
-import java.util.Arrays;
-
 /**
  * Invokes interface method.
  *
@@ -31,8 +29,9 @@ public final class InterfaceCallProcessor implements InstructionProcessor<Method
 			locals[localsLength] = stack.popGeneric();
 		}
 		val result = helper.invokeInterface((InstanceJavaClass) owner, insn.name, insn.desc, new Value[0], locals);
-		if (Type.getReturnType(insn.desc) != Type.VOID_TYPE) {
-			stack.pushGeneric(result.getResult());
+		val v = result.getResult();
+		if (!v.isVoid()) {
+			stack.pushGeneric(v);
 		}
 		return Result.CONTINUE;
 	}

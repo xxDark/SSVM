@@ -5,6 +5,7 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.Value;
+import dev.xdark.ssvm.value.VoidValue;
 import org.objectweb.asm.tree.MethodNode;
 
 public final class ExecutionContext {
@@ -16,7 +17,7 @@ public final class ExecutionContext {
 	private final Locals locals;
 	private int insnPosition;
 	private int lineNumber = -1;
-	private Value result;
+	private Value result = VoidValue.INSTANCE; // void by default
 
 	/**
 	 * @param virtualMachine

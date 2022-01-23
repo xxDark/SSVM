@@ -37,4 +37,9 @@ public abstract class NumericValue implements Value {
 	public boolean isNull() {
 		return false;
 	}
+
+	@Override
+	public boolean isVoid() {
+		return false;
+	}
 }

@@ -51,6 +51,11 @@ public class ObjectValue implements Value {
 		return false;
 	}
 
+	@Override
+	public boolean isVoid() {
+		return false;
+	}
+
 	/**
 	 * Returns object class.
 	 *

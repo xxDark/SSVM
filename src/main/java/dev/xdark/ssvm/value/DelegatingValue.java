@@ -78,6 +78,11 @@ public final class DelegatingValue implements Value {
 		return delegate.isNull();
 	}
 
+	@Override
+	public boolean isVoid() {
+		return delegate.isVoid();
+	}
+
 	/**
 	 * Returns delegating value.
 	 *

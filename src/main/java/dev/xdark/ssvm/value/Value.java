@@ -128,4 +128,11 @@ public interface Value {
 	 * @return {@code true} if the value is null.
 	 */
 	boolean isNull();
+
+	/**
+	 * Returns whether this value is void or not.
+	 *
+	 * @return {@code true} if the value is void.
+	 */
+	boolean isVoid();
 }

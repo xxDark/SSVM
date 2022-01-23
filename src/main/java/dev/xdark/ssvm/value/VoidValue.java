@@ -1,15 +1,15 @@
 package dev.xdark.ssvm.value;
 
 /**
- * Internal TOP value.
+ * Represents void value.
  *
  * @author xDark
  */
-public final class TopValue implements Value {
+public final class VoidValue implements Value {
 
-	public static final TopValue INSTANCE = new TopValue();
+	public static final VoidValue INSTANCE = new VoidValue();
 
-	private TopValue() {
+	private VoidValue() {
 	}
 
 	@Override
@@ -34,6 +34,6 @@ public final class TopValue implements Value {
 
 	@Override
 	public boolean isVoid() {
-		throw new UnsupportedOperationException();
+		return true;
 	}
 }

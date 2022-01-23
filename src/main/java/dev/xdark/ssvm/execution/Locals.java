@@ -55,6 +55,13 @@ public final class Locals {
 		return table;
 	}
 
+	/**
+	 * @return the maximum amount of slots of this LVT.
+	 */
+	public int maxSlots() {
+		return table.length;
+	}
+
 	@Override
 	public String toString() {
 		return "Locals{" +

@@ -39,6 +39,11 @@ public final class NullValue extends ObjectValue {
 	}
 
 	@Override
+	public boolean isVoid() {
+		return false;
+	}
+
+	@Override
 	public JavaClass getJavaClass() {
 		return null;
 	}

@@ -2488,6 +2488,26 @@ public final class NativeJava {
 		vmi.setInvoker(mh, "invoke", "([Ljava/lang/Object;)Ljava/lang/Object;", invoke);
 		vmi.setInvoker(mh, "invokeBasic", "([Ljava/lang/Object;)Ljava/lang/Object;", invoke);
 		vmi.setInvoker(mh, "invokeExact", "([Ljava/lang/Object;)Ljava/lang/Object;", invoke);
+
+		val linkToXX = (MethodInvoker) ctx -> {
+			val locals = ctx.getLocals();
+			val helper = vm.getHelper();
+			int length = locals.maxSlots();
+			val memberName = locals.<InstanceValue>load(length - 1);
+			val resolved = (InstanceValue) memberName.getValue("method", symbols.java_lang_invoke_ResolvedMethodName.getDescriptor());
+			val vmtarget = ((JavaValue<JavaMethod>) resolved.getValue(VM_TARGET, "Ljava/lang/Object;")).getValue();
+			val args = Arrays.copyOfRange(locals.getTable(), 0, length - 1);
+			if ((vmtarget.getAccess() & ACC_STATIC) == 0) {
+				ctx.setResult(helper.invokeVirtual(vmtarget.getName(), vmtarget.getDesc(), new Value[0], args).getResult());
+			} else {
+				ctx.setResult(helper.invokeStatic(vmtarget.getOwner(), vmtarget, new Value[0], args).getResult());
+			}
+			return Result.ABORT;
+		};
+
+		vmi.setInvoker(mh, "linkToStatic", "([Ljava/lang/Object;)Ljava/lang/Object;", linkToXX);
+		vmi.setInvoker(mh, "linkToVirtual", "([Ljava/lang/Object;)Ljava/lang/Object;", linkToXX);
+		vmi.setInvoker(mh, "linkToInterface", "([Ljava/lang/Object;)Ljava/lang/Object;", linkToXX);
 	}
 
 	private static Value[] rewriteInvocationLVT(int idx, Value[] lvt) {

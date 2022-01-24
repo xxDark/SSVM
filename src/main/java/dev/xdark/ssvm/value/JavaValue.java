@@ -13,6 +13,7 @@ import dev.xdark.ssvm.memory.Memory;
 public final class JavaValue<V> extends InstanceValue {
 
 	private final V value;
+	private boolean wide;
 
 	/**
 	 * @param memory
@@ -32,5 +33,20 @@ public final class JavaValue<V> extends InstanceValue {
 	 */
 	public V getValue() {
 		return value;
+	}
+
+	@Override
+	public boolean isWide() {
+		return wide;
+	}
+
+	/**
+	 * Sets whether this value should be wide.
+	 *
+	 * @param wide
+	 * 		Wide flag.
+	 */
+	public void setWide(boolean wide) {
+		this.wide = wide;
 	}
 }

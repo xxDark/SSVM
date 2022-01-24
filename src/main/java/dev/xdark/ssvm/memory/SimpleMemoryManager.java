@@ -8,7 +8,6 @@ import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.util.UnsafeUtil;
 import dev.xdark.ssvm.value.*;
 import lombok.val;
-import sun.misc.Unsafe;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -25,8 +24,9 @@ import java.util.concurrent.ThreadLocalRandom;
 public class SimpleMemoryManager implements MemoryManager {
 
 	private static final ByteOrder ORDER = ByteOrder.nativeOrder();
-	private static final long OBJECT_HEADER_SIZE = Unsafe.ADDRESS_SIZE + 4L;
-	private static final long ARRAY_LENGTH = Unsafe.ADDRESS_SIZE;
+	private static final int ADDRESS_SIZE = 8;
+	private static final long OBJECT_HEADER_SIZE = ADDRESS_SIZE + 4L;
+	private static final long ARRAY_LENGTH = ADDRESS_SIZE;
 	private final Map<Long, Memory> memoryBlocks = new HashMap<>();
 	private final Map<Memory, ObjectValue> objects = new WeakHashMap<>();
 
@@ -77,7 +77,12 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public boolean freeMemory(long address) {
-		return memoryBlocks.remove(address) != null;
+		val mem = memoryBlocks.remove(address);
+		if (mem != null) {
+			objects.remove(mem);
+			return true;
+		}
+		return false;
 	}
 
 	@Override
@@ -369,7 +374,7 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public int addressSize() {
-		return Unsafe.ADDRESS_SIZE;
+		return ADDRESS_SIZE;
 	}
 
 	@Override

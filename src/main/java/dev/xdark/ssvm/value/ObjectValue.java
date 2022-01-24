@@ -37,6 +37,11 @@ public class ObjectValue implements Value {
 	}
 
 	@Override
+	public long asLong() {
+		return memory.getAddress();
+	}
+
+	@Override
 	public boolean isWide() {
 		return false;
 	}

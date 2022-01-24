@@ -134,18 +134,11 @@ public final class VMHelper {
 	public ExecutionContext invokeInterface(InstanceJavaClass javaClass, String name, String desc, Value[] stack, Value[] locals) {
 		val instance = locals[0];
 		checkNotNull(instance);
-		InstanceJavaClass prioritized;
-		if (instance instanceof ArrayValue) {
-			prioritized = vm.getSymbols().java_lang_Object;
-		} else {
-			prioritized = ((InstanceValue) instance).getJavaClass();
-		}
-		JavaMethod mn = prioritized.getVirtualMethodRecursively(name, desc);
+		val prioritized = ((InstanceValue) instance).getJavaClass();
+
+		JavaMethod mn = prioritized.getInterfaceMethodRecursively(name, desc);
 		if (mn == null) {
-			mn = javaClass.getInterfaceMethodRecursively(name, desc);
-			if (mn == null) {
-				throwException(vm.getSymbols().java_lang_NoSuchMethodError, javaClass.getInternalName() + '.' + name + desc);
-			}
+			throwException(vm.getSymbols().java_lang_NoSuchMethodError, javaClass.getInternalName() + '.' + name + desc);
 		}
 		return invokeExact(mn.getOwner(), mn, stack, locals);
 	}
@@ -1234,6 +1227,7 @@ public final class VMHelper {
 
 	/**
 	 * Creates new {@link InstanceJavaClass}.
+	 *
 	 * @param loader
 	 * 		Class loader.
 	 * @param protectionDomain

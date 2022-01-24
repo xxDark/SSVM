@@ -396,7 +396,7 @@ public final class InstanceJavaClass implements JavaClass {
 			search:
 			while ((jc = deque.poll()) != null) {
 				for (val iface : jc.getInterfaces()) {
-					method = iface.getVirtualMethodRecursively(name, desc);
+					method = iface.getVirtualMethod(name, desc);
 					if (method != null) break search;
 					deque.addAll(Arrays.asList(iface.getInterfaces()));
 				}

@@ -345,7 +345,8 @@ public class VirtualMachine {
 	 */
 	public void execute(ExecutionContext ctx, boolean useInvokers) {
 		val jm = ctx.getMethod();
-		val isNative = (jm.getAccess() & Opcodes.ACC_NATIVE) != 0;
+		val access = jm.getAccess();
+		val isNative = (access & Opcodes.ACC_NATIVE) != 0;
 		if (isNative) {
 			ctx.setLineNumber(-2);
 		}
@@ -367,6 +368,9 @@ public class VirtualMachine {
 			}
 			if (isNative) {
 				helper.throwException(symbols.java_lang_UnsatisfiedLinkError, ctx.getOwner().getInternalName() + '.' + jm.getName() + jm.getDesc());
+			}
+			if ((access & Opcodes.ACC_ABSTRACT) != 0) {
+				helper.throwException(symbols.java_lang_AbstractMethodError, ctx.getOwner().getInternalName() + '.' + jm.getName() + jm.getDesc());
 			}
 			val mn = jm.getNode();
 			val instructions = mn.instructions;

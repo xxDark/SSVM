@@ -71,7 +71,8 @@ public class VirtualMachine {
 		setClassOop(klass, klass);
 		setClassOop(object, klass);
 		classDefiner = createClassDefiner();
-		symbols = new VMSymbols(this);
+		val symbols = new VMSymbols(this);
+		this.symbols = symbols;
 		primitives = new VMPrimitives(this);
 		fileDescriptorManager = createFileDescriptorManager();
 		nativeLibraryManager = createNativeLibraryManager();
@@ -81,6 +82,8 @@ public class VirtualMachine {
 		NativeJava.init(this);
 
 		(properties = new Properties()).putAll(System.getProperties());
+		val groupClass = symbols.java_lang_ThreadGroup;
+		groupClass.initialize();
 	}
 
 	/**
@@ -94,9 +97,8 @@ public class VirtualMachine {
 		val memoryManager = this.memoryManager;
 		val threadManager = this.threadManager;
 
-		val groupClass = symbols.java_lang_ThreadGroup;
-		groupClass.initialize();
 		// Initialize system group
+		val groupClass = symbols.java_lang_ThreadGroup;
 		val sysGroup = memoryManager.newInstance(groupClass);
 		helper.invokeExact(groupClass, "<init>", "()V", new Value[0], new Value[]{sysGroup});
 		// Initialize main thread

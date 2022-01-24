@@ -238,8 +238,10 @@ public final class VMHelper {
 			}
 		}
 
-		val ctx = vm.currentThread().getBacktrace().last();
-		if (cst instanceof Handle) return linkMethodHandleConstant(ctx.getDeclaringClass(), (Handle) cst);
+		if (cst instanceof Handle) {
+			val ctx = vm.currentThread().getBacktrace().last();
+			return linkMethodHandleConstant(ctx.getDeclaringClass(), (Handle) cst);
+		}
 
 		throw new UnsupportedOperationException("TODO: " + cst);
 	}

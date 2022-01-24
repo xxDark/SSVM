@@ -221,8 +221,6 @@ public final class InstanceJavaClass implements JavaClass {
 		if (other == null) {
 			val vm = this.vm;
 			vm.getHelper().throwException(vm.getSymbols().java_lang_NullPointerException);
-			// keep javac happy.
-			return false;
 		}
 		if (other == this) {
 			return true;
@@ -1069,8 +1067,13 @@ public final class InstanceJavaClass implements JavaClass {
 		JavaMethod jm = methods.get(new MemberKey(this, name, desc));
 		if (jm == null) {
 			jm = methods.get(new MemberKey(this, name, POLYMORPHIC_DESC));
-			if (jm != null && !jm.isPolymorphic()) {
-				jm = null;
+			if (jm != null) {
+				if (!jm.isPolymorphic()) {
+					jm = null;
+				} else {
+					// TODO: this is really dumb.
+					jm = new JavaMethod(this, jm.getNode(), desc, jm.getSlot());
+				}
 			}
 		}
 		return jm;

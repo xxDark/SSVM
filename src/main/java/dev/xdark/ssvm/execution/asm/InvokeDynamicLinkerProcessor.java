@@ -1,13 +1,13 @@
 package dev.xdark.ssvm.execution.asm;
 
-import dev.xdark.ssvm.NativeJava;
 import dev.xdark.ssvm.asm.MethodHandleInsnNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.VMException;
-import dev.xdark.ssvm.mirror.JavaMethod;
-import dev.xdark.ssvm.value.*;
+import dev.xdark.ssvm.value.InstanceValue;
+import dev.xdark.ssvm.value.ObjectValue;
+import dev.xdark.ssvm.value.Value;
 import lombok.val;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;

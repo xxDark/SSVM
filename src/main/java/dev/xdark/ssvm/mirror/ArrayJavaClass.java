@@ -4,7 +4,6 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
 import lombok.val;
 import org.objectweb.asm.Opcodes;
 
@@ -110,7 +109,10 @@ public final class ArrayJavaClass implements JavaClass {
 
 	@Override
 	public boolean isAssignableFrom(JavaClass other) {
-		return componentType.isAssignableFrom(other.getComponentType());
+		if (other.isArray()) {
+			return componentType.isAssignableFrom(other.getComponentType());
+		}
+		return false;
 	}
 
 	@Override

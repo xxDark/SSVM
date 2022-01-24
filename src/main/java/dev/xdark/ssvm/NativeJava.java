@@ -24,6 +24,7 @@ import me.coley.cafedude.io.AnnotationWriter;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -31,10 +32,17 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import java.util.zip.ZipEntry;
 
 import static dev.xdark.ssvm.asm.Modifier.ACC_VM_HIDDEN;
@@ -608,7 +616,7 @@ public final class NativeJava {
 			val locals = ctx.getLocals();
 			val helper = vm.getHelper();
 			val loader = locals.load(0);
-			val name =locals.load(1);
+			val name = locals.load(1);
 			val bytes = helper.checkNotNullArray(locals.load(2));
 			val off = locals.load(3);
 			val len = locals.load(4);
@@ -621,7 +629,7 @@ public final class NativeJava {
 				result = helper.newInstanceClass(NullValue.INSTANCE, NullValue.INSTANCE, parsed.getClassReader(), parsed.getNode());
 				vm.getBootClassLoaderData().forceLinkClass(result);
 			} else {
-				result = ((JavaValue<InstanceJavaClass>)helper.invokeVirtual("defineClass", "(Ljava/lang/String;[BII)Ljava/lang/Class;", new Value[0], new Value[]{
+				result = ((JavaValue<InstanceJavaClass>) helper.invokeVirtual("defineClass", "(Ljava/lang/String;[BII)Ljava/lang/Class;", new Value[0], new Value[]{
 						loader,
 						name,
 						bytes,
@@ -1142,8 +1150,9 @@ public final class NativeJava {
 		});
 		vmi.setInvoker(jlc, "isAssignableFrom", "(Ljava/lang/Class;)Z", ctx -> {
 			val locals = ctx.getLocals();
+			val helper = vm.getHelper();
 			val _this = locals.<JavaValue<JavaClass>>load(0).getValue();
-			val arg = locals.<JavaValue<JavaClass>>load(1).getValue();
+			val arg = helper.<JavaValue<JavaClass>>checkNotNull(locals.load(1)).getValue();
 			ctx.setResult(_this.isAssignableFrom(arg) ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
@@ -2073,7 +2082,6 @@ public final class NativeJava {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, uhelper.compareAndSetReference(), "(Ljava/lang/Object;JLjava/lang/Object;Ljava/lang/Object;)Z", ctx -> {
-			val helper = vm.getHelper();
 			val locals = ctx.getLocals();
 			val obj = locals.load(1);
 			if (obj.isNull()) {
@@ -2206,7 +2214,7 @@ public final class NativeJava {
 			if (o.isNull()) {
 				throw new PanicException("Segfault");
 			}
-			o.getMemory().getData().putInt((int) locals.load(2).asLong(), locals.load(4).asInt());
+			vm.getMemoryManager().writeInt(o, locals.load(2).asLong(), locals.load(4).asInt());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, uhelper.staticFieldBase(), "(Ljava/lang/reflect/Field;)Ljava/lang/Object;", ctx -> {
@@ -2282,6 +2290,47 @@ public final class NativeJava {
 				classLoaderData = ((JavaValue<ClassLoaderData>) ((InstanceValue) loader).getValue(CLASS_LOADER_OOP, "Ljava/lang/Object;")).getValue();
 			}
 			classLoaderData.forceLinkClass(generated);
+
+			// handle cpPatches
+			val cpPatches = locals.load(3);
+			if (!cpPatches.isNull()) {
+				val arr = (ArrayValue) cpPatches;
+				val values = helper.toJavaValues(arr);
+
+				val cp = generated.getRawClassFile().getPool();
+				// TODO implement this in cafedude
+
+				// https://github.com/AdoptOpenJDK/openjdk-jdk8u/blob/master/hotspot/src/share/vm/oops/constantPool.cpp#L1858
+				val tmp = new ArrayList<ConstPoolEntry>(cp.size() + 1);
+				tmp.add(null);
+				for (val entry : cp) {
+					tmp.add(entry);
+					if (entry.isWide()) {
+						tmp.add(null);
+					}
+				}
+				val strings = generated.getNode().methods
+						.stream()
+						.map(x -> x.instructions)
+						.flatMap(x -> StreamSupport.stream(x.spliterator(), false))
+						.filter(x -> x instanceof LdcInsnNode)
+						.map(x -> (LdcInsnNode) x)
+						.filter(x -> x.cst instanceof String)
+						.collect(Collectors.groupingBy(x -> (String) x.cst, Collectors.mapping(Function.identity(), Collectors.toList())));
+				for (int i = 1; i < values.length; i++) {
+					val v = values[i];
+					if (!v.isNull()) {
+						val utf = ((CpUtf8) cp.get(((CpString) tmp.get(i)).getIndex())).getText();
+						val ldcs = strings.get(utf);
+						if (ldcs != null) {
+							for (val ldc : ldcs) {
+								ldc.cst = v;
+							}
+						}
+					}
+				}
+			}
+
 			ctx.setResult(generated.getOop());
 			return Result.ABORT;
 		});
@@ -2294,6 +2343,15 @@ public final class NativeJava {
 			val offset = locals.load(2).asInt();
 			val memoryManager = vm.getMemoryManager();
 			ctx.setResult(new IntValue(memoryManager.readInt((ObjectValue) value, offset)));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(unsafe, "putObject", "(Ljava/lang/Object;JLjava/lang/Object;)V", ctx -> {
+			val locals = ctx.getLocals();
+			val o = locals.<ObjectValue>load(1);
+			if (o.isNull()) {
+				throw new PanicException("Segfault");
+			}
+			vm.getMemoryManager().writeValue(o, locals.load(2).asLong(), locals.load(4));
 			return Result.ABORT;
 		});
 	}
@@ -2646,10 +2704,27 @@ public final class NativeJava {
 			ctx.setResult(new LongValue(ctx.getLocals().<InstanceValue>load(0).getInt(VM_INDEX)));
 			return Result.ABORT;
 		});
+		vmi.setInvoker(natives, "staticFieldBase", "(Ljava/lang/invoke/MemberName;)Ljava/lang/Object;", ctx -> {
+			ctx.setResult(ctx.getLocals().<InstanceValue>load(0).getValue("clazz", "Ljava/lang/Class;"));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(natives, "staticFieldOffset", "(Ljava/lang/invoke/MemberName;)J", ctx -> {
+			ctx.setResult(new LongValue(ctx.getLocals().<InstanceValue>load(0).getInt(VM_INDEX)));
+			return Result.ABORT;
+		});
 		vmi.setInvoker(natives, "getMembers", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Class;I[Ljava/lang/invoke/MemberName;)I", ctx -> {
 			ctx.setResult(IntValue.ZERO);
 			return Result.ABORT;
 		});
+
+		val setCallSiteTarget = (MethodInvoker) ctx -> {
+			val locals = ctx.getLocals();
+			locals.<InstanceValue>load(0).setValue("target", "Ljava/lang/invoke/MethodHandle;", locals.load(1));
+			return Result.ABORT;
+		};
+		vmi.setInvoker(natives, "setCallSiteTargetNormal", "(Ljava/lang/invoke/CallSite;Ljava/lang/invoke/MethodHandle;)V", setCallSiteTarget);
+		vmi.setInvoker(natives, "setCallSiteTargetVolatile", "(Ljava/lang/invoke/CallSite;Ljava/lang/invoke/MethodHandle;)V", setCallSiteTarget);
+
 		val mh = symbols.java_lang_invoke_MethodHandle;
 		val invoke = (MethodInvoker) ctx -> {
 			val locals = ctx.getLocals();
@@ -2679,11 +2754,14 @@ public final class NativeJava {
 						}
 					}
 				}
+
+				Value result;
 				if ((jm.getAccess() & ACC_STATIC) == 0) {
-					ctx.setResult(helper.invokeVirtual(name, jm.getDesc(), new Value[0], lvt).getResult());
+					result = helper.invokeVirtual(name, jm.getDesc(), new Value[0], lvt).getResult();
 				} else {
-					ctx.setResult(helper.invokeStatic(jm.getOwner(), jm, new Value[0], lvt).getResult());
+					result = helper.invokeStatic(jm.getOwner(), jm, new Value[0], lvt).getResult();
 				}
+				ctx.setResult(voidAsNull(result, ctx.getMethod()));
 			} else {
 				throw new PanicException("TODO: " + vmtarget);
 			}
@@ -2704,11 +2782,13 @@ public final class NativeJava {
 
 			val args = Arrays.copyOfRange(locals.getTable(), 0, length - 1);
 
+			Value result;
 			if ((vmtarget.getAccess() & ACC_STATIC) == 0) {
-				ctx.setResult(helper.invokeVirtual(vmtarget.getName(), vmtarget.getDesc(), new Value[0], args).getResult());
+				result = helper.invokeVirtual(vmtarget.getName(), vmtarget.getDesc(), new Value[0], args).getResult();
 			} else {
-				ctx.setResult(helper.invokeStatic(vmtarget.getOwner(), vmtarget, new Value[0], args).getResult());
+				result = helper.invokeStatic(vmtarget.getOwner(), vmtarget, new Value[0], args).getResult();
 			}
+			ctx.setResult(voidAsNull(result, ctx.getMethod()));
 			return Result.ABORT;
 		};
 
@@ -2748,7 +2828,7 @@ public final class NativeJava {
 		val field = helper.getFieldBySlot(clazz, slot);
 		memberName.setValue("clazz", "Ljava/lang/Class;", clazz.getOop());
 		memberName.setValue("name", "Ljava/lang/String;", vm.getStringPool().intern(field.getName()));
-		val mt = helper.methodType(clazz.getClassLoader(), field.getType());
+		val mt = helper.findClass(clazz.getClassLoader(), field.getType().getInternalName(), false).getOop();
 		memberName.setValue("type", "Ljava/lang/Object;", mt);
 		int refKind;
 		if ((field.getAccess() & ACC_STATIC) == 0) {
@@ -3002,6 +3082,16 @@ public final class NativeJava {
 			vm.getHelper().throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
 		}
 		return 0L;
+	}
+
+	private static Value voidAsNull(Value v, JavaMethod jm) {
+		if (v.isVoid()) {
+			// Return null if return type is non-void
+			if (jm.getReturnType() != Type.VOID_TYPE) {
+				return NullValue.INSTANCE;
+			}
+		}
+		return v;
 	}
 
 	/**

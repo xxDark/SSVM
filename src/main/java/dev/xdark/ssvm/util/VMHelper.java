@@ -112,7 +112,12 @@ public final class VMHelper {
 		} else {
 			javaClass = ((InstanceValue) instance).getJavaClass();
 		}
-		return invokeExact(javaClass, name, desc, stack, locals);
+		JavaMethod m = javaClass.getVirtualMethodRecursively(name, desc);
+		if (m == null) {
+			// Perform invokeInterface call.
+			return invokeInterface(javaClass, name, desc, stack, locals);
+		}
+		return invokeExact(javaClass, m, stack, locals);
 	}
 
 	/**

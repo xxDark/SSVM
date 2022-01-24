@@ -1,6 +1,5 @@
 package dev.xdark.ssvm.mirror;
 
-import dev.xdark.ssvm.util.AsmUtil;
 import lombok.val;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -15,6 +14,7 @@ public final class JavaMethod {
 
 	private final InstanceJavaClass owner;
 	private final MethodNode node;
+	private final String desc;
 	private final int slot;
 	private Type type;
 	private Type[] argumentTypes;
@@ -27,13 +27,28 @@ public final class JavaMethod {
 	 * 		Method owner.
 	 * @param node
 	 * 		ASM method info.
+	 * @param desc
+	 * 		Method descriptor override.
+	 * @param slot
+	 * 		Method slot.
+	 */
+	public JavaMethod(InstanceJavaClass owner, MethodNode node, String desc, int slot) {
+		this.owner = owner;
+		this.node = node;
+		this.desc = desc;
+		this.slot = slot;
+	}
+
+	/**
+	 * @param owner
+	 * 		Method owner.
+	 * @param node
+	 * 		ASM method info.
 	 * @param slot
 	 * 		Method slot.
 	 */
 	public JavaMethod(InstanceJavaClass owner, MethodNode node, int slot) {
-		this.owner = owner;
-		this.node = node;
-		this.slot = slot;
+		this(owner, node, node.desc, slot);
 	}
 
 	/**
@@ -78,7 +93,7 @@ public final class JavaMethod {
 	 * @return method descriptor.
 	 */
 	public String getDesc() {
-		return node.desc;
+		return desc;
 	}
 
 	/**
@@ -107,7 +122,7 @@ public final class JavaMethod {
 	public Type getType() {
 		Type type = this.type;
 		if (type == null) {
-			return this.type = Type.getMethodType(node.desc);
+			return this.type = Type.getMethodType(desc);
 		}
 		return type;
 	}
@@ -186,6 +201,6 @@ public final class JavaMethod {
 	@Override
 	public String toString() {
 		val node = this.node;
-		return owner.getInternalName() + '.' + node.name + node.desc;
+		return owner.getInternalName() + '.' + node.name + desc;
 	}
 }

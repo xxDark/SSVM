@@ -2947,7 +2947,6 @@ public final class NativeJava {
 			val fd = symbols.java_io_FileDescriptor;
 			// For whatever reason unix/macos does not have
 			// 'handle' field, we need to inject it
-			// TODO hidden fields on a VM level
 			val fields = fd.getNode().fields;
 			for (int i = 0; i < fields.size(); i++) {
 				val fn = fields.get(i);

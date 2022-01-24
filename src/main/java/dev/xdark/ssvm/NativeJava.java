@@ -3162,7 +3162,8 @@ public final class NativeJava {
 
 		vmi.setProcessor(GOTO, new GotoProcessor());
 
-		// JSR/RET?
+		vmi.setProcessor(JSR, new JSRProcessor());
+		vmi.setProcessor(RET, new RetProcessor());
 
 		vmi.setProcessor(TABLESWITCH, new TableSwitchProcessor());
 		vmi.setProcessor(LOOKUPSWITCH, new LookupSwitchProcessor());

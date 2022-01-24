@@ -1,14 +1,13 @@
 package dev.xdark.ssvm.execution.asm;
 
+import dev.xdark.ssvm.NativeJava;
 import dev.xdark.ssvm.asm.MethodHandleInsnNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.VMException;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.Value;
+import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.value.*;
 import lombok.val;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -27,37 +26,41 @@ public final class InvokeDynamicLinkerProcessor implements InstructionProcessor<
 		val helper = vm.getHelper();
 		val symbols = vm.getSymbols();
 		val bootstrap = insn.bsm;
-		val classLoader = ctx.getOwner().getClassLoader();
 		try {
+
 			if (bootstrap.getTag() != Opcodes.H_INVOKESTATIC) {
 				helper.throwException(symbols.java_lang_IllegalStateException, "Bootstrap tag is not static");
 			}
-			val owner = bootstrap.getOwner();
-			val jc = helper.findClass(classLoader, owner, true);
-			if (!(jc instanceof InstanceJavaClass)) {
-				helper.throwException(symbols.java_lang_ClassNotFoundException, owner);
-			}
-			val name = bootstrap.getName();
-			val desc = bootstrap.getDesc();
-			val bootstrapMethod = ((InstanceJavaClass) jc).getStaticMethod(name, desc);
-			if (bootstrapMethod == null) {
-				helper.throwException(symbols.java_lang_NoSuchMethodException, owner + '.' + name + desc);
-			}
-
 			val caller = ctx.getOwner();
 
-			// Call MethodHandleNatives#linkMethodHandleConstant
-			val args = new Value[]{
+			val linker = helper.linkMethodHandleConstant(caller, bootstrap);
+
+			val $bsmArgs = insn.bsmArgs;
+			val bsmArgs = new ObjectValue[$bsmArgs.length];
+			for (int i = 0; i < bsmArgs.length; i++) {
+				bsmArgs[i] = helper.forInvokeDynamicCall($bsmArgs[i]);
+			}
+
+			val stringPool = vm.getStringPool();
+			val appendix = helper.newArray(symbols.java_lang_Object, 1);
+			val args = helper.toVMValues(bsmArgs);
+			val linkArgs = new Value[]{
 					caller.getOop(),
-					new IntValue(bootstrap.getTag()),
-					jc.getOop(),
-					helper.newUtf8(name),
-					helper.methodType(caller.getClassLoader(), Type.getMethodType(desc))
+					linker,
+					stringPool.intern(insn.name),
+					helper.methodType(caller.getClassLoader(), Type.getMethodType(insn.desc)),
+					helper.toVMValues(new ObjectValue[]{args}),
+					appendix
 			};
-			val linker = (InstanceValue) helper.invokeStatic(symbols.java_lang_invoke_MethodHandleNatives, "linkMethodHandleConstant", "(Ljava/lang/Class;ILjava/lang/Class;Ljava/lang/String;Ljava/lang/Object;)Ljava/lang/invoke/MethodHandle;", new Value[0], args).getResult();
+
+			val natives = symbols.java_lang_invoke_MethodHandleNatives;
+			helper.invokeStatic(natives, "linkCallSite", "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/invoke/MemberName;", new Value[0], linkArgs);
+
+			val linked = (InstanceValue) appendix.getValue(0);
+
 			// Rewrite instruction
 			val list = ctx.getMethod().getNode().instructions;
-			list.set(insn, new MethodHandleInsnNode(insn, linker));
+			list.set(insn, new MethodHandleInsnNode(insn, linked));
 			// Move insn position backwards so that VM visits
 			// us yet again.
 			ctx.setInsnPosition(ctx.getInsnPosition() - 1);

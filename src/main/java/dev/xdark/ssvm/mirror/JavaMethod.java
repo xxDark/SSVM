@@ -1,6 +1,8 @@
 package dev.xdark.ssvm.mirror;
 
+import dev.xdark.ssvm.util.AsmUtil;
 import lombok.val;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -18,6 +20,7 @@ public final class JavaMethod {
 	private Type[] argumentTypes;
 	private Type returnType;
 	private Boolean polymorphic;
+	private int maxArgs = -1;
 
 	/**
 	 * @param owner
@@ -147,6 +150,21 @@ public final class JavaMethod {
 					&& visibleAnnotations.stream().anyMatch(x -> "Ljava/lang/invoke/MethodHandle$PolymorphicSignature;".equals(x.desc));
 		}
 		return polymorphic;
+	}
+
+	/**
+	 * @return the maximum amount of arguments,
+	 * including {@code this}.
+	 */
+	public int getMaxArgs() {
+		int maxArgs = this.maxArgs;
+		if (maxArgs == -1) {
+			int x = 0;
+			if ((node.access & Opcodes.ACC_STATIC) == 0) x++;
+			for (val t : getArgumentTypes()) x += t.getSize();
+			return this.maxArgs = x;
+		}
+		return maxArgs;
 	}
 
 	@Override

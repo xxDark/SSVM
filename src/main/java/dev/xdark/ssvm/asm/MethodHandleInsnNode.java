@@ -12,16 +12,16 @@ import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 public final class MethodHandleInsnNode extends DelegatingInsnNode<InvokeDynamicInsnNode> {
 
 	@Getter
-	private final InstanceValue linker;
+	private final InstanceValue methodHandle;
 
 	/**
 	 * @param delegate
 	 * 		Backing instruction.
-	 * @param linker
-	 * 		CallSite linker.
+	 * @param methodHandle
+	 * 		CallSite linked method handle.
 	 */
-	public MethodHandleInsnNode(InvokeDynamicInsnNode delegate, InstanceValue linker) {
+	public MethodHandleInsnNode(InvokeDynamicInsnNode delegate, InstanceValue methodHandle) {
 		super(delegate, VMOpcodes.METHOD_HANDLE);
-		this.linker = linker;
+		this.methodHandle = methodHandle;
 	}
 }

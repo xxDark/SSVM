@@ -3,6 +3,7 @@ package dev.xdark.ssvm.mirror;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.value.InstanceValue;
+import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 import lombok.val;
 import org.objectweb.asm.Opcodes;
@@ -59,7 +60,7 @@ public final class ArrayJavaClass implements JavaClass {
 	}
 
 	@Override
-	public Value getClassLoader() {
+	public ObjectValue getClassLoader() {
 		return componentType.getClassLoader();
 	}
 

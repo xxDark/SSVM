@@ -7,11 +7,16 @@ version '1.0'
 
 repositories {
     mavenCentral()
+    repositories {
+        maven { url 'https://jitpack.io' }
+    }
 }
 
 dependencies {
     implementation 'org.ow2.asm:asm:9.2'
     implementation 'org.ow2.asm:asm-tree:9.2'
+    implementation 'com.github.Col-E:CAFED00D:1.8.0'
+    implementation 'org.slf4j:slf4j-api:1.7.33'
 
     def junitVersion = '5.8.2'
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"

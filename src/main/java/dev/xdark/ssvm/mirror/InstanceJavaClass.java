@@ -6,6 +6,9 @@ import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.util.UnsafeUtil;
 import dev.xdark.ssvm.value.*;
 import lombok.val;
+import me.coley.cafedude.ClassFile;
+import me.coley.cafedude.InvalidClassException;
+import me.coley.cafedude.io.ClassFileReader;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
@@ -21,16 +24,18 @@ import java.util.stream.Stream;
 
 public final class InstanceJavaClass implements JavaClass {
 
+	private static final ClassFileReader READER = new ClassFileReader();
 	private static final String POLYMORPHIC_DESC = "([Ljava/lang/Object;)Ljava/lang/Object;";
 
 	private final VirtualMachine vm;
-	private final Value classLoader;
+	private final ObjectValue classLoader;
 
 	private final Lock initializationLock;
 	private final Condition signal;
 
 	private final ClassReader classReader;
 	private final ClassNode node;
+	private ClassFile rawClassFile;
 
 	private InstanceValue oop;
 
@@ -61,6 +66,9 @@ public final class InstanceJavaClass implements JavaClass {
 	private List<JavaField> publicFields;
 
 	/**
+	 * This constructor must be invoked ONLY
+	 * by the VM.
+	 *
 	 * @param vm
 	 * 		VM.
 	 * @param classLoader
@@ -72,7 +80,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @param oop
 	 * 		Clas oop.
 	 */
-	public InstanceJavaClass(VirtualMachine vm, Value classLoader, ClassReader classReader, ClassNode node, InstanceValue oop) {
+	public InstanceJavaClass(VirtualMachine vm, ObjectValue classLoader, ClassReader classReader, ClassNode node, InstanceValue oop) {
 		this.vm = vm;
 		this.classLoader = classLoader;
 		this.classReader = classReader;
@@ -96,7 +104,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @param node
 	 * 		ASM class data.
 	 */
-	public InstanceJavaClass(VirtualMachine vm, Value classLoader, ClassReader classReader, ClassNode node) {
+	public InstanceJavaClass(VirtualMachine vm, ObjectValue classLoader, ClassReader classReader, ClassNode node) {
 		this(vm, classLoader, classReader, node, null);
 	}
 
@@ -129,7 +137,7 @@ public final class InstanceJavaClass implements JavaClass {
 	}
 
 	@Override
-	public Value getClassLoader() {
+	public ObjectValue getClassLoader() {
 		return classLoader;
 	}
 
@@ -363,6 +371,37 @@ public final class InstanceJavaClass implements JavaClass {
 		do {
 			method = jc.getVirtualMethod(name, desc);
 		} while (method == null && (jc = jc.getSuperclassWithoutResolving()) != null);
+		return method;
+	}
+
+	/**
+	 * Searches for an interface method by it's name and descriptor recursively.
+	 *
+	 * @param name
+	 * 		Name of the method.
+	 * @param desc
+	 * 		Descriptor of the method.
+	 *
+	 * @return class method or {@code null}, if not found.
+	 */
+	public JavaMethod getInterfaceMethodRecursively(String name, String desc) {
+		InstanceJavaClass jc = this;
+		JavaMethod method;
+		val deque = new ArrayDeque<InstanceJavaClass>();
+		do {
+			method = jc.getVirtualMethod(name, desc);
+			deque.push(jc);
+		} while (method == null && (jc = jc.getSuperclassWithoutResolving()) != null);
+		if (method == null) {
+			search:
+			while ((jc = deque.poll()) != null) {
+				for (val iface : jc.getInterfaces()) {
+					method = iface.getVirtualMethodRecursively(name, desc);
+					if (method != null) break search;
+					deque.addAll(Arrays.asList(iface.getInterfaces()));
+				}
+			}
+		}
 		return method;
 	}
 
@@ -840,6 +879,23 @@ public final class InstanceJavaClass implements JavaClass {
 			return this.declaredFields = getDeclaredFields0(false);
 		}
 		return declaredFields;
+	}
+
+	/**
+	 * @return raw class file.
+	 */
+	public ClassFile getRawClassFile() {
+		ClassFile rawClassFile = this.rawClassFile;
+		if (rawClassFile == null) {
+			try {
+				return this.rawClassFile = READER.read(classReader.b);
+			} catch (InvalidClassException ex) {
+				// Should not happen.
+				// unless??
+				throw new RuntimeException("Cafedude returned invalid class file", ex);
+			}
+		}
+		return rawClassFile;
 	}
 
 	@Override

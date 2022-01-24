@@ -11,5 +11,5 @@ import org.objectweb.asm.Opcodes;
 @UtilityClass
 public class VMOpcodes {
 
-	public final int METHOD_HANDLE = Opcodes.IFNONNULL + 1;
+	public static final int METHOD_HANDLE = Opcodes.IFNONNULL + 1;
 }

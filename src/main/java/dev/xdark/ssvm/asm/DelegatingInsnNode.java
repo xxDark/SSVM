@@ -15,11 +15,11 @@ import org.objectweb.asm.tree.AbstractInsnNode;
  *
  * @author xDark
  */
+@Getter
 public abstract class DelegatingInsnNode<I extends AbstractInsnNode> extends AbstractInsnNode implements VirtualInsnNode {
 
 	@Delegate(types = AbstractInsnNode.class)
 	protected final I delegate;
-	@Getter
 	private final int virtualOpcode;
 
 	/**

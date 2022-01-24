@@ -81,6 +81,13 @@ public final class VMSymbols {
 	public final InstanceJavaClass java_lang_StrictMath;
 	public final InstanceJavaClass java_util_TimeZone;
 	public final InstanceJavaClass java_util_zip_CRC32;
+	public final InstanceJavaClass sun_security_provider_NativeSeedGenerator;
+	public final InstanceJavaClass java_net_NetworkInterface;
+	public final InstanceJavaClass sun_security_provider_SeedGenerator;
+	public final InstanceJavaClass java_lang_invoke_MethodHandles;
+	public final InstanceJavaClass java_lang_invoke_MethodHandles$Lookup;
+	public final InstanceJavaClass reflect_ConstantPool;
+	public final InstanceJavaClass java_lang_reflect_Proxy;
 
 	/**
 	 * @param vm
@@ -162,6 +169,17 @@ public final class VMSymbols {
 		java_lang_StrictMath = (InstanceJavaClass) vm.findBootstrapClass("java/lang/StrictMath");
 		java_util_TimeZone = (InstanceJavaClass) vm.findBootstrapClass("java/util/TimeZone");
 		java_util_zip_CRC32 = (InstanceJavaClass) vm.findBootstrapClass("java/util/zip/CRC32");
+		sun_security_provider_NativeSeedGenerator = (InstanceJavaClass) vm.findBootstrapClass("sun/security/provider/NativeSeedGenerator");
+		java_net_NetworkInterface = (InstanceJavaClass) vm.findBootstrapClass("java/net/NetworkInterface");
+		sun_security_provider_SeedGenerator = (InstanceJavaClass) vm.findBootstrapClass("sun/security/provider/SeedGenerator");
+		java_lang_invoke_MethodHandles = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/MethodHandles");
+		java_lang_invoke_MethodHandles$Lookup = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/MethodHandles$Lookup");
+		InstanceJavaClass reflect_ConstantPool = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/ConstantPool");
+		if (reflect_ConstantPool == null) {
+			reflect_ConstantPool = (InstanceJavaClass) vm.findBootstrapClass("sun/reflect/ConstantPool");
+		}
+		this.reflect_ConstantPool = reflect_ConstantPool;
+		java_lang_reflect_Proxy = (InstanceJavaClass) vm.findBootstrapClass("java/lang/reflect/Proxy");
 	}
 
 	private static InstanceJavaClass resolvedMemberName(VirtualMachine vm) {

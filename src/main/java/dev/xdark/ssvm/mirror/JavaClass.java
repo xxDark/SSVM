@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.mirror;
 
 import dev.xdark.ssvm.value.InstanceValue;
+import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 
 /**
@@ -43,7 +44,7 @@ public interface JavaClass {
 	 *
 	 * @return class loader.
 	 */
-	Value getClassLoader();
+	ObjectValue getClassLoader();
 
 	/**
 	 * Returns VM representation of this class.

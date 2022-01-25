@@ -16,6 +16,7 @@ import dev.xdark.ssvm.memory.StringPool;
 import dev.xdark.ssvm.mirror.FieldLayout;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.natives.IntrinsicsNatives;
 import dev.xdark.ssvm.nt.NativeLibraryManager;
 import dev.xdark.ssvm.nt.SimpleNativeLibraryManager;
 import dev.xdark.ssvm.thread.NopThreadManager;
@@ -84,6 +85,8 @@ public class VirtualMachine {
 		(properties = new Properties()).putAll(System.getProperties());
 		val groupClass = symbols.java_lang_ThreadGroup;
 		groupClass.initialize();
+
+		IntrinsicsNatives.init(this);
 	}
 
 	/**
@@ -328,11 +331,13 @@ public class VirtualMachine {
 				helper.throwException(symbols.java_lang_ClassNotFoundException, name);
 			}
 		} else {
-			val c = helper.invokeVirtual("loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;", new Value[0], new Value[]{loader, helper.newUtf8(name.replace('/', '.')), initialize ? IntValue.ONE : IntValue.ZERO}).getResult();
-			if (c == NullValue.INSTANCE) {
-				helper.throwException(symbols.java_lang_ClassNotFoundException, name);
+			val oop = ((JavaValue<ClassLoaderData>) ((InstanceValue) loader).getValue(NativeJava.CLASS_LOADER_OOP, "Ljava/lang/Object;")).getValue();
+			jc = oop.getClass(name);
+			if (jc == null) {
+				jc = ((JavaValue<JavaClass>) helper.invokeVirtual("loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;", new Value[0], new Value[]{loader, helper.newUtf8(name.replace('/', '.')), initialize ? IntValue.ONE : IntValue.ZERO}).getResult()).getValue();
+			} else if (initialize) {
+				jc.initialize();
 			}
-			jc = ((JavaValue<JavaClass>) c).getValue();
 		}
 		return jc;
 	}
@@ -358,6 +363,7 @@ public class VirtualMachine {
 		val vmi = vmInterface;
 		vmi.getInvocationHooks(jm, true)
 				.forEach(invocation -> invocation.handle(ctx));
+		jm.increaseInvocation();
 		try {
 			if (useInvokers) {
 				val invoker = vmi.getInvoker(jm);

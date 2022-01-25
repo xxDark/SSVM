@@ -21,6 +21,7 @@ public final class JavaMethod {
 	private Type returnType;
 	private Boolean polymorphic;
 	private int maxArgs = -1;
+	private int invocationCount;
 
 	/**
 	 * @param owner
@@ -180,6 +181,21 @@ public final class JavaMethod {
 			return this.maxArgs = x;
 		}
 		return maxArgs;
+	}
+
+	/**
+	 * @return amount of times
+	 * this method was invoked.
+	 */
+	public int getInvocationCount() {
+		return invocationCount;
+	}
+
+	/**
+	 * Increases invocation count.
+	 */
+	public void increaseInvocation() {
+		invocationCount++;
 	}
 
 	@Override

@@ -63,4 +63,18 @@ public interface VMThread {
 	 * {@code false} otherwise.
 	 */
 	boolean isAlive();
+
+	/**
+	 * Tests if some Thread has been interrupted.
+	 * The interrupted state is reset or not based on
+	 * the value of clear that is passed.
+	 *
+	 * @param clear
+	 * 		Whether interruption status
+	 * 		must be cleared.
+	 *
+	 * @return {@code true} if thread was interrupted,
+	 * {@code false} otherwise.
+	 */
+	boolean isInterrupted(boolean clear);
 }

@@ -8,8 +8,6 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 
 import java.lang.reflect.Field;
 
-import static org.objectweb.asm.Opcodes.*;
-
 /**
  * ASM utilities.
  *
@@ -97,40 +95,6 @@ public class AsmUtil {
 				return 0.0F;
 			default:
 				return null;
-		}
-	}
-
-	/**
-	 * Maps invokedynamic to JVM opcode.
-	 *
-	 * @param handle
-	 * 		Handle mode to remap.
-	 *
-	 * @return mapped JVM opcode.
-	 *
-	 * @throws IllegalStateException
-	 * 		If handle mode cannot be remapped.
-	 */
-	public int remapInvokeDynamic(int handle) {
-		switch (handle) {
-			case H_INVOKESTATIC:
-				return INVOKESTATIC;
-			case H_INVOKEVIRTUAL:
-				return INVOKEVIRTUAL;
-			case H_INVOKEINTERFACE:
-				return INVOKEINTERFACE;
-			case H_INVOKESPECIAL:
-				return INVOKESPECIAL;
-			case H_GETFIELD:
-				return GETFIELD;
-			case H_PUTFIELD:
-				return PUTFIELD;
-			case H_GETSTATIC:
-				return GETSTATIC;
-			case H_PUTSTATIC:
-				return PUTSTATIC;
-			default:
-				throw new IllegalStateException("Don't know to ho remap: " + handle);
 		}
 	}
 

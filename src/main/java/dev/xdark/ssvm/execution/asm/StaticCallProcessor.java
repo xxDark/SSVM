@@ -20,6 +20,7 @@ public final class StaticCallProcessor implements InstructionProcessor<MethodIns
 	public Result execute(MethodInsnNode insn, ExecutionContext ctx) {
 		val vm = ctx.getVM();
 		val helper = vm.getHelper();
+		// Pool strings forcibly.
 		val owner = helper.findClass(ctx.getOwner().getClassLoader(), insn.owner, true);
 		if (owner == null) {
 			helper.throwException(vm.getSymbols().java_lang_NoClassDefFoundError, insn.owner);

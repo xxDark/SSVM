@@ -41,4 +41,9 @@ public final class NopVMThread extends BaseVMThread {
 	public boolean isAlive() {
 		return false;
 	}
+
+	@Override
+	public boolean isInterrupted(boolean clear) {
+		return false;
+	}
 }

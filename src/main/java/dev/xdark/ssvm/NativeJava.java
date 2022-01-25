@@ -77,6 +77,7 @@ public final class NativeJava {
 		NetworkInterfaceNatives.init(vm);
 		SeedGeneratorNatives.init(vm);
 		ProxyNatives.init(vm);
+		InflaterNatives.init(vm);
 	}
 
 	/**

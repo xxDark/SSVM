@@ -50,5 +50,11 @@ public class ThreadNatives {
 			ctx.setResult(th.isAlive() ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
+		vmi.setInvoker(thread, "isInterrupted", "(Z)Z", ctx -> {
+			val locals = ctx.getLocals();
+			val th = vm.getThreadManager().getVmThread(locals.<InstanceValue>load(0));
+			ctx.setResult(th.isInterrupted(locals.load(1).asBoolean()) ? IntValue.ONE : IntValue.ZERO);
+			return Result.ABORT;
+		});
 	}
 }

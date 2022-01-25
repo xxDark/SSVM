@@ -129,7 +129,7 @@ public class ZipFileNatives {
 			vmi.setInvoker(zf, "getEntryCSize", "(J)J", ctx -> {
 				val locals = ctx.getLocals();
 				val value = locals.<JavaValue<ZipEntryHolder>>load(0).getValue().entry;
-				ctx.setResult(new LongValue(value.getCompressedSize()));
+				ctx.setResult(new LongValue(value.getSize())); // TODO change?
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntryMethod", "(J)I", ctx -> {
@@ -143,8 +143,71 @@ public class ZipFileNatives {
 			});
 			vmi.setInvoker(zf, "freeEntry", "(JJ)V", ctx -> {
 				val locals = ctx.getLocals();
-				val value = locals.<JavaValue<ZipEntryHolder>>load(2);
-				vm.getMemoryManager().freeMemory(value.asLong());
+				vm.getMemoryManager().freeMemory(locals.load(2).asLong());
+				return Result.ABORT;
+			});
+			vmi.setInvoker(zf, "read", "(JJJ[BII)I", ctx -> {
+				val locals = ctx.getLocals();
+				val entry = ((JavaValue<ZipEntryHolder>) vm.getMemoryManager().getValue(locals.load(2).asLong())).getValue();
+				val pos = locals.load(4).asLong();
+				if (pos > Integer.MAX_VALUE) {
+					vm.getHelper().throwException(vm.getSymbols().java_io_IOException, "Entry too large");
+				}
+				val bytes = locals.<ArrayValue>load(6);
+				int off = locals.load(7).asInt();
+				int len = locals.load(8).asInt();
+				byte[] read;
+				try {
+					read = entry.readEntry();
+				} catch (IOException ex) {
+					vm.getHelper().throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+					return Result.ABORT;
+				}
+				int start = (int) pos;
+				if (start >= read.length) {
+					ctx.setResult(IntValue.M_ONE);
+				} else {
+					int avail = read.length - start;
+					if (len > avail) {
+						len = avail;
+					}
+					if (len <= 0) {
+						ctx.setResult(IntValue.ZERO);
+					} else {
+						for (int i = 0; i < len; i++) {
+							bytes.setByte(off + i, read[start + i]);
+						}
+						ctx.setResult(new IntValue(len));
+					}
+				}
+				return Result.ABORT;
+			});
+			vmi.setInvoker(zf, "getNextEntry", "(JI)J", ctx -> {
+				val locals = ctx.getLocals();
+				val handle = locals.load(0).asLong();
+				val zip = vm.getFileDescriptorManager().getZipFile(handle);
+				val helper = vm.getHelper();
+				if (zip == null) {
+					helper.throwException(symbols.java_io_IOException, "zip closed");
+				}
+				int idx = locals.load(2).asInt();
+				val opt = zip.stream().skip(idx).findFirst();
+				if (!opt.isPresent()) {
+					ctx.setResult(LongValue.ZERO);
+				} else {
+					val entry = opt.get();
+					val value = vm.getMemoryManager().newJavaInstance(symbols.java_lang_Object, new ZipEntryHolder(zip, entry));
+					value.setWide(true);
+					ctx.setResult(value);
+				}
+				return Result.ABORT;
+			});
+			vmi.setInvoker(zf, "close", "(J)V", ctx -> {
+				try {
+					vm.getFileDescriptorManager().close(ctx.getLocals().load(0).asLong());
+				} catch (IOException ex) {
+					vm.getHelper().throwException(symbols.java_io_IOException, ex.getMessage());
+				}
 				return Result.ABORT;
 			});
 		}

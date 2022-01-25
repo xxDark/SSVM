@@ -261,15 +261,15 @@ public final class JitCompiler {
 		jit.visitVarInsn(ASTORE, CTX_SLOT);
 		// Load locals.
 		loadCtx();
-		GET_LOCALS.emmit(jit);
+		GET_LOCALS.emit(jit);
 		jit.visitVarInsn(ASTORE, LOCALS_SLOT);
 		// Load stack.
 		loadCtx();
-		GET_STACK.emmit(jit);
+		GET_STACK.emit(jit);
 		jit.visitVarInsn(ASTORE, STACK_SLOT);
 		// Load helper.
 		loadCtx();
-		GET_HELPER.emmit(jit);
+		GET_HELPER.emit(jit);
 		jit.visitVarInsn(ASTORE, HELPER_SLOT);
 
 		val instructions = target.instructions;
@@ -359,7 +359,7 @@ public final class JitCompiler {
 					pop(); // index array
 					jvm_swap();
 					loadCtx();
-					ARR_LOAD_INT.emmit(jit);
+					ARR_LOAD_INT.emit(jit);
 					push();
 					break;
 				case LALOAD:
@@ -367,7 +367,7 @@ public final class JitCompiler {
 					pop(); // index array
 					jvm_swap();
 					loadCtx();
-					ARR_LOAD_LONG.emmit(jit);
+					ARR_LOAD_LONG.emit(jit);
 					pushWide();
 					break;
 				case FALOAD:
@@ -375,7 +375,7 @@ public final class JitCompiler {
 					pop(); // index array
 					jvm_swap();
 					loadCtx();
-					ARR_LOAD_FLOAT.emmit(jit);
+					ARR_LOAD_FLOAT.emit(jit);
 					push();
 					break;
 				case DALOAD:
@@ -383,7 +383,7 @@ public final class JitCompiler {
 					pop(); // index array
 					jvm_swap();
 					loadCtx();
-					ARR_LOAD_DOUBLE.emmit(jit);
+					ARR_LOAD_DOUBLE.emit(jit);
 					pushWide();
 					break;
 				case AALOAD:
@@ -391,7 +391,7 @@ public final class JitCompiler {
 					pop(); // index array
 					jvm_swap();
 					loadCtx();
-					ARR_LOAD_VALUE.emmit(jit);
+					ARR_LOAD_VALUE.emit(jit);
 					push();
 					break;
 				case BALOAD:
@@ -399,7 +399,7 @@ public final class JitCompiler {
 					pop(); // index array
 					jvm_swap();
 					loadCtx();
-					ARR_LOAD_BYTE.emmit(jit);
+					ARR_LOAD_BYTE.emit(jit);
 					push();
 					break;
 				case CALOAD:
@@ -407,7 +407,7 @@ public final class JitCompiler {
 					pop(); // index array
 					jvm_swap();
 					loadCtx();
-					ARR_LOAD_CHAR.emmit(jit);
+					ARR_LOAD_CHAR.emit(jit);
 					push();
 					break;
 				case SALOAD:
@@ -415,7 +415,7 @@ public final class JitCompiler {
 					pop(); // index array
 					jvm_swap();
 					loadCtx();
-					ARR_LOAD_SHORT.emmit(jit);
+					ARR_LOAD_SHORT.emit(jit);
 					push();
 					break;
 				case ISTORE:
@@ -436,7 +436,7 @@ public final class JitCompiler {
 					pop(); // idx value array
 					jvm_swap(1, 2);
 					loadCtx();
-					ARR_STORE_INT.emmit(jit);
+					ARR_STORE_INT.emit(jit);
 					break;
 				case LASTORE:
 					popWide(); // value
@@ -445,7 +445,7 @@ public final class JitCompiler {
 					pop(); // idx value array
 					jvm_swap(1, 2);
 					loadCtx();
-					ARR_STORE_LONG.emmit(jit);
+					ARR_STORE_LONG.emit(jit);
 					break;
 				case FASTORE:
 					pop(); // value
@@ -454,7 +454,7 @@ public final class JitCompiler {
 					pop(); // idx value array
 					jvm_swap(1, 2);
 					loadCtx();
-					ARR_STORE_FLOAT.emmit(jit);
+					ARR_STORE_FLOAT.emit(jit);
 					break;
 				case DASTORE:
 					popWide(); // value
@@ -463,7 +463,7 @@ public final class JitCompiler {
 					pop(); // idx value array
 					jvm_swap(1, 2);
 					loadCtx();
-					ARR_STORE_DOUBLE.emmit(jit);
+					ARR_STORE_DOUBLE.emit(jit);
 					break;
 				case AASTORE:
 					pop(); // value
@@ -472,7 +472,7 @@ public final class JitCompiler {
 					pop(); // idx value array
 					jvm_swap(1, 2);
 					loadCtx();
-					ARR_STORE_VALUE.emmit(jit);
+					ARR_STORE_VALUE.emit(jit);
 					break;
 				case BASTORE:
 					pop(); // value
@@ -481,7 +481,7 @@ public final class JitCompiler {
 					pop(); // idx value array
 					jvm_swap(1, 2);
 					loadCtx();
-					ARR_STORE_BYTE.emmit(jit);
+					ARR_STORE_BYTE.emit(jit);
 					break;
 				case CASTORE:
 					pop(); // value
@@ -490,7 +490,7 @@ public final class JitCompiler {
 					pop(); // idx value array
 					jvm_swap(1, 2);
 					loadCtx();
-					ARR_STORE_CHAR.emmit(jit);
+					ARR_STORE_CHAR.emit(jit);
 					break;
 				case SASTORE:
 					pop(); // value
@@ -499,7 +499,7 @@ public final class JitCompiler {
 					pop(); // idx value array
 					jvm_swap(1, 2);
 					loadCtx();
-					ARR_STORE_SHORT.emmit(jit);
+					ARR_STORE_SHORT.emit(jit);
 					break;
 				case Opcodes.POP:
 					pop(true);
@@ -533,166 +533,166 @@ public final class JitCompiler {
 					pop();
 					pop();
 					jvm_swap();
-					ADD_INT.emmit(jit);
+					ADD_INT.emit(jit);
 					push();
 					break;
 				case LADD:
 					popWide();
 					popWide();
 					jvm_swap();
-					ADD_LONG.emmit(jit);
+					ADD_LONG.emit(jit);
 					pushWide();
 					break;
 				case FADD:
 					pop();
 					pop();
 					jvm_swap();
-					ADD_FLOAT.emmit(jit);
+					ADD_FLOAT.emit(jit);
 					push();
 					break;
 				case DADD:
 					popWide();
 					popWide();
 					jvm_swap();
-					ADD_DOUBLE.emmit(jit);
+					ADD_DOUBLE.emit(jit);
 					pushWide();
 					break;
 				case ISUB:
 					pop();
 					pop();
 					jvm_swap();
-					SUB_INT.emmit(jit);
+					SUB_INT.emit(jit);
 					push();
 					break;
 				case LSUB:
 					popWide();
 					popWide();
 					jvm_swap();
-					SUB_LONG.emmit(jit);
+					SUB_LONG.emit(jit);
 					pushWide();
 					break;
 				case FSUB:
 					pop();
 					pop();
 					jvm_swap();
-					SUB_FLOAT.emmit(jit);
+					SUB_FLOAT.emit(jit);
 					push();
 					break;
 				case DSUB:
 					popWide();
 					popWide();
 					jvm_swap();
-					SUB_DOUBLE.emmit(jit);
+					SUB_DOUBLE.emit(jit);
 					pushWide();
 					break;
 				case IMUL:
 					pop();
 					pop();
 					jvm_swap();
-					MUL_INT.emmit(jit);
+					MUL_INT.emit(jit);
 					push();
 					break;
 				case LMUL:
 					popWide();
 					popWide();
 					jvm_swap();
-					MUL_LONG.emmit(jit);
+					MUL_LONG.emit(jit);
 					pushWide();
 					break;
 				case FMUL:
 					pop();
 					pop();
 					jvm_swap();
-					MUL_FLOAT.emmit(jit);
+					MUL_FLOAT.emit(jit);
 					push();
 					break;
 				case DMUL:
 					popWide();
 					popWide();
 					jvm_swap();
-					MUL_DOUBLE.emmit(jit);
+					MUL_DOUBLE.emit(jit);
 					pushWide();
 					break;
 				case IDIV:
 					pop();
 					pop();
 					jvm_swap();
-					DIV_INT.emmit(jit);
+					DIV_INT.emit(jit);
 					push();
 					break;
 				case LDIV:
 					popWide();
 					popWide();
 					jvm_swap();
-					DIV_LONG.emmit(jit);
+					DIV_LONG.emit(jit);
 					pushWide();
 					break;
 				case FDIV:
 					pop();
 					pop();
 					jvm_swap();
-					DIV_FLOAT.emmit(jit);
+					DIV_FLOAT.emit(jit);
 					push();
 					break;
 				case DDIV:
 					popWide();
 					popWide();
 					jvm_swap();
-					DIV_DOUBLE.emmit(jit);
+					DIV_DOUBLE.emit(jit);
 					pushWide();
 					break;
 				case IREM:
 					pop();
 					pop();
 					jvm_swap();
-					REM_INT.emmit(jit);
+					REM_INT.emit(jit);
 					push();
 					break;
 				case LREM:
 					popWide();
 					popWide();
 					jvm_swap();
-					REM_LONG.emmit(jit);
+					REM_LONG.emit(jit);
 					pushWide();
 					break;
 				case FREM:
 					pop();
 					pop();
 					jvm_swap();
-					REM_FLOAT.emmit(jit);
+					REM_FLOAT.emit(jit);
 					push();
 					break;
 				case DREM:
 					popWide();
 					popWide();
 					jvm_swap();
-					REM_DOUBLE.emmit(jit);
+					REM_DOUBLE.emit(jit);
 					pushWide();
 					break;
 				case INEG:
 					pop();
-					AS_INT.emmit(jit);
+					AS_INT.emit(jit);
 					jit.visitInsn(Opcodes.INEG);
 					intOf();
 					push();
 					break;
 				case LNEG:
 					popWide();
-					AS_LONG.emmit(jit);
+					AS_LONG.emit(jit);
 					jit.visitInsn(Opcodes.LNEG);
 					longOf();
 					pushWide();
 					break;
 				case FNEG:
 					pop();
-					AS_FLOAT.emmit(jit);
+					AS_FLOAT.emit(jit);
 					jit.visitInsn(Opcodes.FNEG);
 					floatOf();
 					push();
 					break;
 				case DNEG:
 					popWide();
-					AS_DOUBLE.emmit(jit);
+					AS_DOUBLE.emit(jit);
 					jit.visitInsn(Opcodes.DNEG);
 					doubleOf();
 					pushWide();
@@ -701,159 +701,159 @@ public final class JitCompiler {
 					pop();
 					pop();
 					jvm_swap();
-					SHL_INT.emmit(jit);
+					SHL_INT.emit(jit);
 					push();
 					break;
 				case LSHL:
 					pop();
 					popWide();
 					jvm_swap();
-					SHL_LONG.emmit(jit);
+					SHL_LONG.emit(jit);
 					pushWide();
 					break;
 				case ISHR:
 					pop();
 					pop();
 					jvm_swap();
-					SHR_INT.emmit(jit);
+					SHR_INT.emit(jit);
 					push();
 					break;
 				case LSHR:
 					pop();
 					popWide();
 					jvm_swap();
-					SHR_LONG.emmit(jit);
+					SHR_LONG.emit(jit);
 					pushWide();
 					break;
 				case IUSHR:
 					pop();
 					pop();
 					jvm_swap();
-					USHR_INT.emmit(jit);
+					USHR_INT.emit(jit);
 					push();
 					break;
 				case LUSHR:
 					pop();
 					popWide();
 					jvm_swap();
-					USHR_LONG.emmit(jit);
+					USHR_LONG.emit(jit);
 					pushWide();
 					break;
 				case IAND:
 					pop();
 					pop();
 					jvm_swap();
-					AND_INT.emmit(jit);
+					AND_INT.emit(jit);
 					push();
 					break;
 				case LAND:
 					popWide();
 					popWide();
 					jvm_swap();
-					AND_LONG.emmit(jit);
+					AND_LONG.emit(jit);
 					pushWide();
 					break;
 				case IOR:
 					pop();
 					pop();
 					jvm_swap();
-					OR_INT.emmit(jit);
+					OR_INT.emit(jit);
 					push();
 					break;
 				case LOR:
 					popWide();
 					popWide();
 					jvm_swap();
-					OR_LONG.emmit(jit);
+					OR_LONG.emit(jit);
 					pushWide();
 					break;
 				case IXOR:
 					pop();
 					pop();
 					jvm_swap();
-					XOR_INT.emmit(jit);
+					XOR_INT.emit(jit);
 					push();
 					break;
 				case LXOR:
 					popWide();
 					popWide();
 					jvm_swap();
-					XOR_LONG.emmit(jit);
+					XOR_LONG.emit(jit);
 					pushWide();
 					break;
 				case IINC:
 					loadLocals();
 					jit.visitLdcInsn(((IincInsnNode) insn).var);
 					jit.visitLdcInsn(((IincInsnNode) insn).incr);
-					LOCAL_INCREMENT.emmit(jit);
+					LOCAL_INCREMENT.emit(jit);
 					break;
 				case I2L:
 				case F2L:
 					pop();
-					AS_LONG.emmit(jit);
+					AS_LONG.emit(jit);
 					longOf();
 					pushWide();
 					break;
 				case I2F:
 					pop();
-					AS_FLOAT.emmit(jit);
+					AS_FLOAT.emit(jit);
 					floatOf();
 					push();
 					break;
 				case I2D:
 				case F2D:
 					pop();
-					AS_DOUBLE.emmit(jit);
+					AS_DOUBLE.emit(jit);
 					doubleOf();
 					pushWide();
 					break;
 				case L2I:
 				case D2I:
 					popWide();
-					AS_INT.emmit(jit);
+					AS_INT.emit(jit);
 					intOf();
 					push();
 					break;
 				case L2F:
 				case D2F:
 					popWide();
-					AS_FLOAT.emmit(jit);
+					AS_FLOAT.emit(jit);
 					floatOf();
 					push();
 					break;
 				case L2D:
 					popWide();
-					AS_DOUBLE.emmit(jit);
+					AS_DOUBLE.emit(jit);
 					doubleOf();
 					pushWide();
 					break;
 				case F2I:
 					pop();
-					AS_INT.emmit(jit);
+					AS_INT.emit(jit);
 					intOf();
 					push();
 					break;
 				case D2L:
 					popWide();
-					AS_LONG.emmit(jit);
+					AS_LONG.emit(jit);
 					longOf();
 					pushWide();
 					break;
 				case I2B:
 					pop();
-					AS_BYTE.emmit(jit);
+					AS_BYTE.emit(jit);
 					intOf();
 					push();
 					break;
 				case I2C:
 					pop();
-					AS_CHAR.emmit(jit);
+					AS_CHAR.emit(jit);
 					intOf();
 					push();
 					break;
 				case I2S:
 					pop();
-					AS_SHORT.emmit(jit);
+					AS_SHORT.emit(jit);
 					intOf();
 					push();
 					break;
@@ -861,7 +861,7 @@ public final class JitCompiler {
 					popWide();
 					popWide();
 					jvm_swap();
-					COMPARE_LONG.emmit(jit);
+					COMPARE_LONG.emit(jit);
 					push();
 					break;
 				case FCMPL:
@@ -870,7 +870,7 @@ public final class JitCompiler {
 					pop();
 					jvm_swap();
 					jit.visitLdcInsn(opcode == FCMPL ? -1 : 1);
-					COMPARE_FLOAT.emmit(jit);
+					COMPARE_FLOAT.emit(jit);
 					push();
 					break;
 				case DCMPL:
@@ -879,7 +879,7 @@ public final class JitCompiler {
 					popWide();
 					jvm_swap();
 					jit.visitLdcInsn(opcode == DCMPL ? -1 : 1);
-					COMPARE_DOUBLE.emmit(jit);
+					COMPARE_DOUBLE.emit(jit);
 					push();
 					break;
 				case IFEQ:
@@ -889,7 +889,7 @@ public final class JitCompiler {
 				case IFGT:
 				case IFLE:
 					pop();
-					AS_INT.emmit(jit);
+					AS_INT.emit(jit);
 					jit.visitJumpInsn(opcode, labels.get(((JumpInsnNode) insn).label));
 					break;
 				case IF_ICMPEQ:
@@ -899,9 +899,9 @@ public final class JitCompiler {
 				case IF_ICMPGT:
 				case IF_ICMPLE:
 					pop();
-					AS_INT.emmit(jit);
+					AS_INT.emit(jit);
 					pop();
-					AS_INT.emmit(jit);
+					AS_INT.emit(jit);
 					jvm_swap();
 					jit.visitJumpInsn(opcode, labels.get(((JumpInsnNode) insn).label));
 					break;
@@ -920,7 +920,7 @@ public final class JitCompiler {
 				case TABLESWITCH:
 				case LOOKUPSWITCH:
 					pop();
-					AS_INT.emmit(jit);
+					AS_INT.emit(jit);
 					insn.clone(copy).accept(jit);
 					break;
 				case IRETURN:
@@ -928,14 +928,14 @@ public final class JitCompiler {
 				case ARETURN:
 					loadCtx();
 					pop();
-					SET_RESULT.emmit(jit);
+					SET_RESULT.emit(jit);
 					jit.visitInsn(RETURN);
 					break;
 				case LRETURN:
 				case DRETURN:
 					loadCtx();
 					popWide();
-					SET_RESULT.emmit(jit);
+					SET_RESULT.emit(jit);
 					jit.visitInsn(RETURN);
 					break;
 				case RETURN:
@@ -944,99 +944,99 @@ public final class JitCompiler {
 				case GETSTATIC:
 					pushField((FieldInsnNode) insn);
 					loadCtx();
-					GET_STATIC.emmit(jit);
+					GET_STATIC.emit(jit);
 					break;
 				case PUTSTATIC:
 					pushField((FieldInsnNode) insn);
 					loadCtx();
-					PUT_STATIC.emmit(jit);
+					PUT_STATIC.emit(jit);
 					break;
 				case GETFIELD:
 					pushField((FieldInsnNode) insn);
 					loadCtx();
-					GET_FIELD.emmit(jit);
+					GET_FIELD.emit(jit);
 					break;
 				case PUTFIELD:
 					pushField((FieldInsnNode) insn);
 					loadCtx();
-					PUT_FIELD.emmit(jit);
+					PUT_FIELD.emit(jit);
 					break;
 				case INVOKEVIRTUAL:
 					pushMethod((MethodInsnNode) insn);
 					loadCtx();
-					INVOKE_VIRTUAL.emmit(jit);
+					INVOKE_VIRTUAL.emit(jit);
 					break;
 				case INVOKESPECIAL:
 					pushMethod((MethodInsnNode) insn);
 					loadCtx();
-					INVOKE_SPECIAL.emmit(jit);
+					INVOKE_SPECIAL.emit(jit);
 					break;
 				case INVOKESTATIC:
 					pushMethod((MethodInsnNode) insn);
 					loadCtx();
-					INVOKE_STATIC.emmit(jit);
+					INVOKE_STATIC.emit(jit);
 					break;
 				case INVOKEINTERFACE:
 					pushMethod((MethodInsnNode) insn);
 					loadCtx();
-					INVOKE_INTERFACE.emmit(jit);
+					INVOKE_INTERFACE.emit(jit);
 					break;
 				case NEW:
 					jit.visitLdcInsn(((TypeInsnNode) insn).desc);
 					loadCtx();
-					NEW_INSTANCE.emmit(jit);
+					NEW_INSTANCE.emit(jit);
 					break;
 				case NEWARRAY:
 					jit.visitLdcInsn(((IntInsnNode) insn).operand);
 					loadCtx();
-					NEW_PRIMITIVE_ARRAY.emmit(jit);
+					NEW_PRIMITIVE_ARRAY.emit(jit);
 					break;
 				case ANEWARRAY:
 					jit.visitLdcInsn(((TypeInsnNode) insn).desc);
 					loadCtx();
-					NEW_INSTANCE_ARRAY.emmit(jit);
+					NEW_INSTANCE_ARRAY.emit(jit);
 					break;
 				case ARRAYLENGTH:
 					loadCtx();
-					GET_LENGTH.emmit(jit);
+					GET_LENGTH.emit(jit);
 					break;
 				case ATHROW:
 					loadCtx();
-					THROW_EXCEPTION.emmit(jit);
+					THROW_EXCEPTION.emit(jit);
 					break;
 				case CHECKCAST:
 					jit.visitLdcInsn(((TypeInsnNode) insn).desc);
 					loadCtx();
-					CHECK_CAST.emmit(jit);
+					CHECK_CAST.emit(jit);
 					break;
 				case INSTANCEOF:
 					jit.visitLdcInsn(((TypeInsnNode) insn).desc);
 					loadCtx();
-					INSTANCEOF_RES.emmit(jit);
+					INSTANCEOF_RES.emit(jit);
 					break;
 				case MONITORENTER:
 					loadCtx();
-					MONITOR_LOCK.emmit(jit);
+					MONITOR_LOCK.emit(jit);
 					break;
 				case MONITOREXIT:
 					loadCtx();
-					MONITOR_UNLOCK.emmit(jit);
+					MONITOR_UNLOCK.emit(jit);
 					break;
 				case MULTIANEWARRAY:
 					val array = (MultiANewArrayInsnNode) insn;
 					jit.visitLdcInsn(array.desc);
 					jit.visitLdcInsn(array.dims);
 					loadCtx();
-					NEW_MULTI_ARRAY.emmit(jit);
+					NEW_MULTI_ARRAY.emit(jit);
 					break;
 				case IFNULL:
 					pop();
-					IS_NULL.emmit(jit);
+					IS_NULL.emit(jit);
 					jit.visitJumpInsn(IFNE, labels.get(((JumpInsnNode) insn).label));
 					break;
 				case IFNONNULL:
 					pop();
-					IS_NULL.emmit(jit);
+					IS_NULL.emit(jit);
 					jit.visitJumpInsn(IFEQ, labels.get(((JumpInsnNode) insn).label));
 					break;
 				case INVOKEDYNAMIC:
@@ -1071,7 +1071,7 @@ public final class JitCompiler {
 
 	private void pop(boolean discard) {
 		loadStack();
-		POP.emmit(jit);
+		POP.emit(jit);
 		if (discard) {
 			jit.visitInsn(Opcodes.POP);
 		}
@@ -1083,7 +1083,7 @@ public final class JitCompiler {
 
 	private void popWide(boolean discard) {
 		loadStack();
-		POP_WIDE.emmit(jit);
+		POP_WIDE.emit(jit);
 		if (discard) {
 			jit.visitInsn(Opcodes.POP);
 		}
@@ -1097,63 +1097,63 @@ public final class JitCompiler {
 		// value
 		loadStack(); // value stack
 		jit.visitInsn(Opcodes.SWAP);
-		PUSH.emmit(jit);
+		PUSH.emit(jit);
 	}
 
 	private void pushWide() {
 		// value
 		loadStack(); // value stack
 		jit.visitInsn(Opcodes.SWAP);
-		PUSH_WIDE.emmit(jit);
+		PUSH_WIDE.emit(jit);
 	}
 
 	private void pushGeneric() {
 		// value
 		loadStack(); // value stack
 		jit.visitInsn(Opcodes.SWAP);
-		PUSH_GENERIC.emmit(jit);
+		PUSH_GENERIC.emit(jit);
 	}
 
 	private void dup() {
 		loadStack();
-		DUP.emmit(jit);
+		DUP.emit(jit);
 	}
 
 	private void dupx1() {
 		loadStack();
-		DUP_X1.emmit(jit);
+		DUP_X1.emit(jit);
 	}
 
 	private void dupx2() {
 		loadStack();
-		DUP_X2.emmit(jit);
+		DUP_X2.emit(jit);
 	}
 
 	private void dup2() {
 		loadStack();
-		DUP2.emmit(jit);
+		DUP2.emit(jit);
 	}
 
 	private void dup2x1() {
 		loadStack();
-		DUP2_X1.emmit(jit);
+		DUP2_X1.emit(jit);
 	}
 
 	private void dup2x2() {
 		loadStack();
-		DUP2_X2.emmit(jit);
+		DUP2_X2.emit(jit);
 	}
 
 	private void swap() {
 		loadStack();
-		SWAP.emmit(jit);
+		SWAP.emit(jit);
 	}
 
 	private void loadLocal(int idx) {
 		val jit = this.jit;
 		loadLocals();
 		jit.visitLdcInsn(idx);
-		LOAD.emmit(jit);
+		LOAD.emit(jit);
 	}
 
 	private void setLocal(int idx) {
@@ -1163,15 +1163,15 @@ public final class JitCompiler {
 		jit.visitInsn(Opcodes.SWAP); // locals value
 		jit.visitLdcInsn(idx);
 		jit.visitInsn(Opcodes.SWAP); // locals idx value
-		STORE.emmit(jit);
+		STORE.emit(jit);
 	}
 
 	private void loadNull() {
-		GET_NULL.emmit(jit);
+		GET_NULL.emit(jit);
 	}
 
 	private void intOf() {
-		INT_OF.emmit(jit);
+		INT_OF.emit(jit);
 	}
 
 	private void intOf(int v) {
@@ -1180,7 +1180,7 @@ public final class JitCompiler {
 	}
 
 	private void longOf() {
-		LONG_OF.emmit(jit);
+		LONG_OF.emit(jit);
 	}
 
 	private void longOf(long v) {
@@ -1194,7 +1194,7 @@ public final class JitCompiler {
 		newObj(FLOAT); // value wrapper
 		jit.visitInsn(Opcodes.DUP_X1);
 		jit.visitInsn(Opcodes.SWAP); // wrapper wrapper value
-		FLOAT_OF.emmit(jit);
+		FLOAT_OF.emit(jit);
 	}
 
 	private void floatOf(float v) {
@@ -1208,7 +1208,7 @@ public final class JitCompiler {
 		newObj(DOUBLE); // value wrapper
 		jit.visitInsn(Opcodes.DUP); // value wrwapper wrapper
 		jvm_swap(2, 2); // wrwapper wrapper value
-		DOUBLE_OF.emmit(jit);
+		DOUBLE_OF.emit(jit);
 	}
 
 	private void doubleOf(double v) {
@@ -1232,7 +1232,7 @@ public final class JitCompiler {
 			val jit = this.jit;
 			loadHelper();
 			jit.visitLdcInsn(value);
-			VALUE_FROM_LDC.emmit(jit);
+			VALUE_FROM_LDC.emit(jit);
 		}
 	}
 
@@ -1319,7 +1319,7 @@ public final class JitCompiler {
 			this(opcode, owner.internalName, name, toDescriptor(opcode >= GETSTATIC && opcode <= PUTFIELD, rt, args));
 		}
 
-		void emmit(MethodVisitor visitor) {
+		void emit(MethodVisitor visitor) {
 			val opcode = this.opcode;
 			if (opcode >= INVOKEVIRTUAL && opcode <= INVOKEINTERFACE) {
 				visitor.visitMethodInsn(opcode, owner, name, desc, opcode == INVOKEINTERFACE);

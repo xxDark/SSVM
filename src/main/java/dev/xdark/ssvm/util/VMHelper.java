@@ -761,6 +761,7 @@ public final class VMHelper {
 		} else {
 			if (jdk8) {
 				memoryManager.writeValue(wrapper, off, toVMChars(str));
+				wrapper.initialize();
 			} else {
 				invokeExact(jc, "<init>", "([C)V", new Value[0], new Value[]{wrapper, toVMChars(str)});
 			}
@@ -1340,7 +1341,6 @@ public final class VMHelper {
 		val vm = this.vm;
 		val jc = vm.getSymbols().java_lang_StackTraceElement;
 		jc.initialize();
-		val stringPool = vm.getStringPool();
 		val element = vm.getMemoryManager().newInstance(jc);
 		invokeExact(jc, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V", new Value[0], new Value[]{
 				element,

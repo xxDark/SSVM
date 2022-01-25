@@ -253,6 +253,9 @@ public final class JitCompiler {
 				case -1:
 					if (insn instanceof LabelNode) {
 						jit.visitLabel(labels.get((LabelNode) insn));
+					} else if (insn instanceof LineNumberNode) {
+						val ln = (LineNumberNode) insn;
+						jit.visitLineNumber(ln.line, labels.get(ln.start));
 					}
 					break;
 				case NOP:
@@ -293,7 +296,7 @@ public final class JitCompiler {
 					push();
 					break;
 				case LDC:
-					val cst = ((LdcInsnNode)insn).cst;
+					val cst = ((LdcInsnNode) insn).cst;
 					ldcOf(cst);
 					if (isWide(cst)) {
 						pushWide();

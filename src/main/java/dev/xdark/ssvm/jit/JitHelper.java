@@ -2,6 +2,7 @@ package dev.xdark.ssvm.jit;
 
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
+import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.*;
@@ -585,6 +586,7 @@ public class JitHelper {
 			exception = vm.getMemoryManager().newInstance(exceptionClass);
 			vm.getHelper().invokeExact(exceptionClass, "<init>", "()V", new Value[0], new Value[]{exception});
 		}
+		throw new VMException((InstanceValue) exception);
 	}
 
 	public void checkCast(String desc, ExecutionContext ctx) {

@@ -12,6 +12,7 @@ public class Modifier {
 
 	public static final int ACC_VM_HIDDEN = 1 << 16;
 	public static final int ACC_HIDDEN_FRAME = 1 << 17;
+	public static final int ACC_JIT = 1 << 18;
 
 	/**
 	 * Drops all VM related modifiers.
@@ -51,5 +52,20 @@ public class Modifier {
 	 */
 	public boolean isHiddenFrame(int modifiers) {
 		return (modifiers & ACC_HIDDEN_FRAME) != 0;
+	}
+
+	/**
+	 * Returns true if the integer argument
+	 * includes {@link Modifier#ACC_JIT} modifier.
+	 *
+	 * @param modifiers
+	 * 		A set of modifiers.
+	 *
+	 * @return true if the integer argument
+	 * includes {@link Modifier#ACC_JIT} modifier,
+	 * {@code false} otherwise.
+	 */
+	public boolean isCompiledMethod(int modifiers) {
+		return (modifiers & ACC_JIT) != 0;
 	}
 }

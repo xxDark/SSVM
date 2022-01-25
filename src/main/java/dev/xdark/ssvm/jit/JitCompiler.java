@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.jit;
 
+import dev.xdark.ssvm.asm.DelegatingInsnNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Stack;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.val;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
@@ -161,9 +163,9 @@ public final class JitCompiler {
 	private static final Access COMPARE_FLOAT = Access.staticCall(JIT_HELPER, "compareFloat", VALUE, VALUE, VALUE, J_INT);
 	private static final Access COMPARE_DOUBLE = Access.staticCall(JIT_HELPER, "compareDouble", VALUE, VALUE, VALUE, J_INT);
 	private static final Access GET_STATIC = Access.staticCall(JIT_HELPER, "getStatic", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access PUT_STATIC = Access.staticCall(JIT_HELPER, "getStatic", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
+	private static final Access PUT_STATIC = Access.staticCall(JIT_HELPER, "putStatic", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
 	private static final Access GET_FIELD = Access.staticCall(JIT_HELPER, "getField", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access PUT_FIELD = Access.staticCall(JIT_HELPER, "getField", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
+	private static final Access PUT_FIELD = Access.staticCall(JIT_HELPER, "putField", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
 	private static final Access INVOKE_VIRTUAL = Access.staticCall(JIT_HELPER, "invokeVirtual", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
 	private static final Access INVOKE_SPECIAL = Access.staticCall(JIT_HELPER, "invokeSpecial", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
 	private static final Access INVOKE_STATIC = Access.staticCall(JIT_HELPER, "invokeStatic", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
@@ -173,8 +175,8 @@ public final class JitCompiler {
 	private static final Access NEW_INSTANCE_ARRAY = Access.staticCall(JIT_HELPER, "allocateValueArray", J_VOID, J_STRING, CTX);
 	private static final Access GET_LENGTH = Access.staticCall(JIT_HELPER, "getArrayLength", J_VOID, CTX);
 	private static final Access THROW_EXCEPTION = Access.staticCall(JIT_HELPER, "throwException", J_VOID, CTX);
-	private static final Access CHECK_CAST = Access.staticCall(JIT_HELPER, "checkCast", J_VOID, CTX);
-	private static final Access INSTANCEOF_RES = Access.staticCall(JIT_HELPER, "instanceofResult", J_VOID, CTX);
+	private static final Access CHECK_CAST = Access.staticCall(JIT_HELPER, "checkCast", J_VOID, J_STRING, CTX);
+	private static final Access INSTANCEOF_RES = Access.staticCall(JIT_HELPER, "instanceofResult", J_VOID, J_STRING, CTX);
 	private static final Access MONITOR_LOCK = Access.staticCall(JIT_HELPER, "monitorEnter", J_VOID, CTX);
 	private static final Access MONITOR_UNLOCK = Access.staticCall(JIT_HELPER, "monitorExit", J_VOID, CTX);
 	private static final Access NEW_MULTI_ARRAY = Access.staticCall(JIT_HELPER, "multiNewArray", J_VOID, J_STRING, J_INT, CTX);
@@ -186,6 +188,27 @@ public final class JitCompiler {
 
 	private final MethodNode target;
 	private final MethodVisitor jit;
+
+	/**
+	 * @param jm
+	 * 		Method to check.
+	 *
+	 * @return {@code true} if method is compilable,
+	 * {@code false otherwise}.
+	 */
+	public static boolean isCompilable(JavaMethod jm) {
+		val node = jm.getNode();
+		if (!node.tryCatchBlocks.isEmpty()) return false;
+		val list = node.instructions;
+		if (list.size() == 0) return false;
+		for (AbstractInsnNode insn : list) {
+			insn = unmask(insn);
+			if (insn instanceof InvokeDynamicInsnNode) return false;
+			int opc = insn.getOpcode();
+			if (opc == JSR || opc == RET) return false;
+		}
+		return true;
+	}
 
 	/**
 	 * Compiles method.
@@ -215,6 +238,17 @@ public final class JitCompiler {
 		new JitCompiler(target, jit).compileInner();
 		jit.visitEnd();
 		jit.visitMaxs(-1, -1);
+		// Leave some debug info.
+		val owner = jm.getOwner();
+		int infoAcc = ACC_PRIVATE | ACC_STATIC | ACC_FINAL;
+		writer.visitField(infoAcc, "CLASS", "Ljava/lang/String;", null, owner.getInternalName());
+		writer.visitField(infoAcc, "METHOD_NAME", "Ljava/lang/String;", null, jm.getName());
+		writer.visitField(infoAcc, "METHOD_DESC", "Ljava/lang/String;", null, jm.getDesc());
+		val clNode = owner.getNode();
+		String sourceFile = clNode.sourceFile;
+		if (sourceFile == null) sourceFile = clNode.name;
+		writer.visitSource(sourceFile, clNode.sourceDebug);
+
 		val bc = writer.toByteArray();
 		return new JitClass(className, bc);
 	}
@@ -247,12 +281,17 @@ public final class JitCompiler {
 				.collect(Collectors.toMap(Map.Entry::getKey, x -> x.getValue().getLabel()));
 
 		// Process instructions.
-		for (val insn : instructions) {
+		Label last = new Label();
+		jit.visitLabel(last);
+		int x = 0;
+		for (AbstractInsnNode insn : instructions) {
+			insn = unmask(insn);
 			int opcode = insn.getOpcode();
+			jit.visitLineNumber(x++, last);
 			switch (opcode) {
 				case -1:
 					if (insn instanceof LabelNode) {
-						jit.visitLabel(labels.get((LabelNode) insn));
+						jit.visitLabel(last = labels.get((LabelNode) insn));
 					} else if (insn instanceof LineNumberNode) {
 						val ln = (LineNumberNode) insn;
 						jit.visitLineNumber(ln.line, labels.get(ln.start));
@@ -277,7 +316,7 @@ public final class JitCompiler {
 				case LCONST_0:
 				case LCONST_1:
 					longOf(opcode - LCONST_0);
-					push();
+					pushWide();
 					break;
 				case FCONST_0:
 				case FCONST_1:
@@ -288,7 +327,7 @@ public final class JitCompiler {
 				case DCONST_0:
 				case DCONST_1:
 					doubleOf(opcode - DCONST_0);
-					push();
+					pushWide();
 					break;
 				case BIPUSH:
 				case SIPUSH:
@@ -395,8 +434,7 @@ public final class JitCompiler {
 					pop(); // value idx
 					jvm_swap(); // idx value
 					pop(); // idx value array
-					jit.visitInsn(Opcodes.DUP_X2); // array idx value array
-					jit.visitInsn(Opcodes.POP); // array idx value
+					jvm_swap(1, 2);
 					loadCtx();
 					ARR_STORE_INT.emmit(jit);
 					break;
@@ -405,8 +443,7 @@ public final class JitCompiler {
 					pop(); // value idx
 					jvm_swap(); // idx value
 					pop(); // idx value array
-					jit.visitInsn(Opcodes.DUP_X2); // array idx value array
-					jit.visitInsn(Opcodes.POP); // array idx value
+					jvm_swap(1, 2);
 					loadCtx();
 					ARR_STORE_LONG.emmit(jit);
 					break;
@@ -415,8 +452,7 @@ public final class JitCompiler {
 					pop(); // value idx
 					jvm_swap(); // idx value
 					pop(); // idx value array
-					jit.visitInsn(Opcodes.DUP_X2); // array idx value array
-					jit.visitInsn(Opcodes.POP); // array idx value
+					jvm_swap(1, 2);
 					loadCtx();
 					ARR_STORE_FLOAT.emmit(jit);
 					break;
@@ -425,8 +461,7 @@ public final class JitCompiler {
 					pop(); // value idx
 					jvm_swap(); // idx value
 					pop(); // idx value array
-					jit.visitInsn(Opcodes.DUP_X2); // array idx value array
-					jit.visitInsn(Opcodes.POP); // array idx value
+					jvm_swap(1, 2);
 					loadCtx();
 					ARR_STORE_DOUBLE.emmit(jit);
 					break;
@@ -435,8 +470,7 @@ public final class JitCompiler {
 					pop(); // value idx
 					jvm_swap(); // idx value
 					pop(); // idx value array
-					jit.visitInsn(Opcodes.DUP_X2); // array idx value array
-					jit.visitInsn(Opcodes.POP); // array idx value
+					jvm_swap(1, 2);
 					loadCtx();
 					ARR_STORE_VALUE.emmit(jit);
 					break;
@@ -445,8 +479,7 @@ public final class JitCompiler {
 					pop(); // value idx
 					jvm_swap(); // idx value
 					pop(); // idx value array
-					jit.visitInsn(Opcodes.DUP_X2); // array idx value array
-					jit.visitInsn(Opcodes.POP); // array idx value
+					jvm_swap(1, 2);
 					loadCtx();
 					ARR_STORE_BYTE.emmit(jit);
 					break;
@@ -455,8 +488,7 @@ public final class JitCompiler {
 					pop(); // value idx
 					jvm_swap(); // idx value
 					pop(); // idx value array
-					jit.visitInsn(Opcodes.DUP_X2); // array idx value array
-					jit.visitInsn(Opcodes.POP); // array idx value
+					jvm_swap(1, 2);
 					loadCtx();
 					ARR_STORE_CHAR.emmit(jit);
 					break;
@@ -465,8 +497,7 @@ public final class JitCompiler {
 					pop(); // value idx
 					jvm_swap(); // idx value
 					pop(); // idx value array
-					jit.visitInsn(Opcodes.DUP_X2); // array idx value array
-					jit.visitInsn(Opcodes.POP); // array idx value
+					jvm_swap(1, 2);
 					loadCtx();
 					ARR_STORE_SHORT.emmit(jit);
 					break;
@@ -646,7 +677,7 @@ public final class JitCompiler {
 					push();
 					break;
 				case LNEG:
-					pop();
+					popWide();
 					AS_LONG.emmit(jit);
 					jit.visitInsn(Opcodes.LNEG);
 					longOf();
@@ -974,10 +1005,12 @@ public final class JitCompiler {
 					THROW_EXCEPTION.emmit(jit);
 					break;
 				case CHECKCAST:
+					jit.visitLdcInsn(((TypeInsnNode) insn).desc);
 					loadCtx();
 					CHECK_CAST.emmit(jit);
 					break;
 				case INSTANCEOF:
+					jit.visitLdcInsn(((TypeInsnNode) insn).desc);
 					loadCtx();
 					INSTANCEOF_RES.emmit(jit);
 					break;
@@ -1249,6 +1282,13 @@ public final class JitCompiler {
 
 	private static boolean isWide(Object cst) {
 		return cst instanceof Long || cst instanceof Double;
+	}
+
+	private static AbstractInsnNode unmask(AbstractInsnNode insnNode) {
+		if (insnNode instanceof DelegatingInsnNode) {
+			return ((DelegatingInsnNode<?>) insnNode).getDelegate();
+		}
+		return insnNode;
 	}
 
 	private static final class Type {

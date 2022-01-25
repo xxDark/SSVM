@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.api;
 
+import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.asm.VirtualInsnNode;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
@@ -89,9 +90,13 @@ public final class VMInterface {
 	 * 		Call information.
 	 * @param invoker
 	 * 		Method invoker.
+	 *
+	 * @see Modifier#ACC_JIT
 	 */
 	public void setInvoker(JavaMethod call, MethodInvoker invoker) {
 		invokerMap.put(call, invoker);
+		val node = call.getNode();
+		node.access |= Modifier.ACC_JIT;
 	}
 
 	/**
@@ -108,6 +113,8 @@ public final class VMInterface {
 	 *
 	 * @return {@code true} if method was registered,
 	 * {@code false} otherwise.
+	 *
+	 * @see Modifier#ACC_JIT
 	 */
 	public boolean setInvoker(InstanceJavaClass jc, String name, String desc, MethodInvoker invoker) {
 		val method = jc.getMethod(name, desc);

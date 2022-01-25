@@ -3,8 +3,7 @@ package dev.xdark.ssvm.execution.asm;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.Value;
+import dev.xdark.ssvm.jit.JitHelper;
 import lombok.val;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
@@ -16,27 +15,23 @@ import org.objectweb.asm.tree.AbstractInsnNode;
  */
 public final class DoubleCompareProcessor implements InstructionProcessor<AbstractInsnNode> {
 
-	private final Value nan;
+	private final int nan;
 
 	/**
 	 * @param nan
 	 * 		Value to be pushed to the stack
-	 * 		if one of the doubles is {@code NaN}
+	 * 		if one of the doubles is {@code NaN}.
 	 */
 	public DoubleCompareProcessor(int nan) {
-		this.nan = IntValue.of(nan);
+		this.nan = nan;
 	}
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		val stack = ctx.getStack();
-		val v2 = stack.popWide().asDouble();
-		val v1 = stack.popWide().asDouble();
-		if (Double.isNaN(v1) || Double.isNaN(v2)) {
-			stack.push(nan);
-		} else {
-			stack.push(IntValue.of(Double.compare(v1, v2)));
-		}
+		val v2 = stack.popWide();
+		val v1 = stack.popWide();
+		stack.pushWide(JitHelper.compareDouble(v1, v2, nan));
 		return Result.CONTINUE;
 	}
 }

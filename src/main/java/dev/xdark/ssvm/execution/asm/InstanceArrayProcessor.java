@@ -3,7 +3,7 @@ package dev.xdark.ssvm.execution.asm;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
-import lombok.val;
+import dev.xdark.ssvm.jit.JitHelper;
 import org.objectweb.asm.tree.TypeInsnNode;
 
 /**
@@ -15,13 +15,7 @@ public final class InstanceArrayProcessor implements InstructionProcessor<TypeIn
 
 	@Override
 	public Result execute(TypeInsnNode insn, ExecutionContext ctx) {
-		val stack = ctx.getStack();
-		val length = stack.pop().asInt();
-		val vm = ctx.getVM();
-		val helper = vm.getHelper();
-		val klass = helper.findClass(ctx.getOwner().getClassLoader(), insn.desc, false);
-		helper.checkArrayLength(length);
-		stack.push(helper.newArray(klass, length));
+		JitHelper.allocateValueArray(insn.desc, ctx);
 		return Result.CONTINUE;
 	}
 }

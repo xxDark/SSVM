@@ -3,6 +3,7 @@ package dev.xdark.ssvm.execution.asm;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.jit.JitHelper;
 import dev.xdark.ssvm.value.ArrayValue;
 import lombok.val;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -17,12 +18,10 @@ public final class StoreArrayDoubleProcessor implements InstructionProcessor<Abs
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		val stack = ctx.getStack();
-		val value = stack.popWide().asDouble();
-		int index = stack.pop().asInt();
-		val helper = ctx.getHelper();
-		val array = helper.checkNotNullArray(stack.pop());
-		helper.rangeCheck(array, index);
-		array.setDouble(index, value);
+		val value = stack.popWide();
+		val index = stack.pop();
+		val array = stack.pop();
+		JitHelper.arrayStoreDouble(array, index, value, ctx);
 		return Result.CONTINUE;
 	}
 }

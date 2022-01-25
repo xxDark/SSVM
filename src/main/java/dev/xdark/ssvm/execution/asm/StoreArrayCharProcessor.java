@@ -3,6 +3,7 @@ package dev.xdark.ssvm.execution.asm;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.jit.JitHelper;
 import dev.xdark.ssvm.value.ArrayValue;
 import lombok.val;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -17,12 +18,10 @@ public final class StoreArrayCharProcessor implements InstructionProcessor<Abstr
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		val stack = ctx.getStack();
-		val value = stack.pop().asChar();
-		int index = stack.pop().asInt();
-		val helper = ctx.getHelper();
-		val array = helper.checkNotNullArray(stack.pop());
-		helper.rangeCheck(array, index);
-		array.setChar(index, value);
+		val value = stack.pop();
+		val index = stack.pop();
+		val array = stack.pop();
+		JitHelper.arrayStoreChar(array, index, value, ctx);
 		return Result.CONTINUE;
 	}
 }

@@ -361,9 +361,9 @@ public class VirtualMachine {
 		val backtrace = threadManager.currentThread().getBacktrace();
 		backtrace.push(StackFrame.ofContext(ctx));
 		val vmi = vmInterface;
+		jm.increaseInvocation();
 		vmi.getInvocationHooks(jm, true)
 				.forEach(invocation -> invocation.handle(ctx));
-		jm.increaseInvocation();
 		try {
 			if (useInvokers) {
 				val invoker = vmi.getInvoker(jm);
@@ -388,7 +388,6 @@ public class VirtualMachine {
 					val pos = ctx.getInsnPosition();
 					ctx.setInsnPosition(pos + 1);
 					val insn = instructions.get(pos);
-					// TODO handle misc. instructions
 					if (insn instanceof LineNumberNode) ctx.setLineNumber(((LineNumberNode) insn).line);
 					if (insn.getOpcode() == -1) continue;
 					val processor = vmi.getProcessor(insn);
@@ -396,8 +395,7 @@ public class VirtualMachine {
 						helper.throwException(symbols.java_lang_InternalError, "No implemented processor for " + insn.getOpcode());
 						continue;
 					}
-					val result = processor.execute(insn, ctx);
-					if (result == Result.ABORT) break;
+					if (processor.execute(insn, ctx) == Result.ABORT) break;
 				} catch (VMException ex) {
 					val oop = ex.getOop();
 					val exceptionType = oop.getJavaClass();

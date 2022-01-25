@@ -746,16 +746,24 @@ public final class VMHelper {
 			val pooled = vm.getStringPool().getIfPresent(str);
 			if (pooled != null) return pooled;
 		}
-		val wrapper = vm.getMemoryManager().newInstance(jc);
+		val memoryManager = vm.getMemoryManager();
+		val wrapper = memoryManager.newInstance(jc);
+		long off = wrapper.getFieldOffset("value", "[C");
+		val jdk8 = off != -1L;
 		if (str.isEmpty()) {
-			if (jc.hasVirtualField("value", "[C")) {
-				// JDK 8
-				wrapper.setValue("value", "[C", toVMChars(new char[0]));
+			val primitives = vm.getPrimitives();
+			if (jdk8) {
+				memoryManager.writeValue(wrapper, off, emptyArray(primitives.charPrimitive));
 			} else {
-				wrapper.setValue("value", "[B", toVMBytes(new byte[0]));
+				wrapper.setValue("value", "[B", emptyArray(primitives.bytePrimitive));
 			}
+			wrapper.initialize();
 		} else {
-			invokeExact(jc, "<init>", "([C)V", new Value[0], new Value[]{wrapper, toVMChars(str.toCharArray())});
+			if (jdk8) {
+				memoryManager.writeValue(wrapper, off, toVMChars(str));
+			} else {
+				invokeExact(jc, "<init>", "([C)V", new Value[0], new Value[]{wrapper, toVMChars(str)});
+			}
 		}
 		return wrapper;
 	}
@@ -1332,6 +1340,7 @@ public final class VMHelper {
 		val vm = this.vm;
 		val jc = vm.getSymbols().java_lang_StackTraceElement;
 		jc.initialize();
+		val stringPool = vm.getStringPool();
 		val element = vm.getMemoryManager().newInstance(jc);
 		invokeExact(jc, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V", new Value[0], new Value[]{
 				element,
@@ -1991,6 +2000,24 @@ public final class VMHelper {
 		return (ObjectValue) valueFromLdc(cst);
 	}
 
+	/**
+	 * Converts Java string to VM array of chars.
+	 *
+	 * @param str
+	 * 		String to convert.
+	 *
+	 * @return VM array.
+	 */
+	public ArrayValue toVMChars(String str) {
+		int length = str.length();
+		val vm = this.vm;
+		val wrapper = newArray(vm.getPrimitives().charPrimitive, length);
+		while (length-- != 0) {
+			wrapper.setChar(length, str.charAt(length));
+		}
+		return wrapper;
+	}
+
 	private ArrayValue newMultiArrayInner(ArrayJavaClass type, int[] lengths, int depth) {
 		val newType = type.getComponentType();
 		val memoryManager = vm.getMemoryManager();
@@ -2042,10 +2069,8 @@ public final class VMHelper {
 		int x = 0;
 		for (val local : locals) {
 			if (local == null) x++;
-			else
-				x += (local.isWide() ? 2 : 1);
+			x++;
 		}
-		max = Math.max(max, x);
-		return max;
+		return Math.max(max, x);
 	}
 }

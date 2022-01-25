@@ -3,7 +3,7 @@ package dev.xdark.ssvm.execution.asm;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.value.ObjectValue;
+import dev.xdark.ssvm.jit.JitHelper;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 /**
@@ -15,7 +15,7 @@ public final class MonitorEnterProcessor implements InstructionProcessor<Abstrac
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
-		ctx.getStack().<ObjectValue>pop().monitorEnter();
+		JitHelper.monitorEnter(ctx);
 		return Result.CONTINUE;
 	}
 }

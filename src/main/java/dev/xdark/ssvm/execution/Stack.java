@@ -129,7 +129,9 @@ public final class Stack {
 	 * Duplicates value on the stack.
 	 */
 	public void dup() {
-		push(peek());
+		val stack = this.stack;
+		val cursor = this.cursor;
+		stack[this.cursor++] = stack[cursor - 1];
 	}
 
 	/**

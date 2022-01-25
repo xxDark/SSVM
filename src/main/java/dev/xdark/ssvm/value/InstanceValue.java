@@ -256,7 +256,16 @@ public class InstanceValue extends ObjectValue {
 		initialized = true;
 	}
 
-	private long getFieldOffset(String name, String desc) {
+	/**
+	 * @param name
+	 * 		Field name.
+	 * @param desc
+	 * 		Field desc.
+	 *
+	 * @return field offset for this object or {@code -1},
+	 * if not found.
+	 */
+	public long getFieldOffset(String name, String desc) {
 		long offset = getJavaClass().getFieldOffsetRecursively(name, desc);
 		return offset == -1L ? -1L : getMemoryManager().valueBaseOffset(this) + offset;
 	}

@@ -31,7 +31,7 @@ public final class DoubleCompareProcessor implements InstructionProcessor<Abstra
 		val stack = ctx.getStack();
 		val v2 = stack.popWide();
 		val v1 = stack.popWide();
-		stack.pushWide(JitHelper.compareDouble(v1, v2, nan));
+		stack.push(JitHelper.compareDouble(v1, v2, nan));
 		return Result.CONTINUE;
 	}
 }

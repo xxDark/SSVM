@@ -1,5 +1,7 @@
 package dev.xdark.ssvm.value;
 
+import lombok.val;
+
 /**
  * VM representation for long value.
  *
@@ -7,12 +9,22 @@ package dev.xdark.ssvm.value;
  */
 public final class LongValue extends NumericValue implements WideValue {
 
-	public static final LongValue ONE = new LongValue(0L);
-	public static final LongValue ZERO = new LongValue(0L);
-	public static final LongValue M_ONE = new LongValue(-1L);
+	private static final LongValue[] CACHE;
+	public static final LongValue ONE;
+	public static final LongValue ZERO;
+	public static final LongValue M_ONE;
 
 	private final long value;
 
+	/**
+	 * @param value
+	 * 		Long value.
+	 *
+	 * @deprecated Only for the VM,
+	 * use {@link LongValue#of(long)}
+	 * instead.
+	 */
+	@Deprecated
 	public LongValue(long value) {
 		this.value = value;
 	}
@@ -55,5 +67,29 @@ public final class LongValue extends NumericValue implements WideValue {
 	@Override
 	public String toString() {
 		return "long(" + value + ")";
+	}
+
+	/**
+	 * @param value
+	 * 		InLongt value.
+	 *
+	 * @return VM long value.
+	 */
+	public static LongValue of(long value) {
+		if (value >= LOW && value <= HIGH) {
+			return CACHE[(int) value - LOW];
+		}
+		return new LongValue(value);
+	}
+
+	static {
+		val cache = new LongValue[(HIGH - LOW) + 1];
+		int j = LOW;
+		for (int k = 0; k < cache.length; k++)
+			cache[k] = new LongValue(j++);
+		CACHE = cache;
+		ONE = of(1);
+		ZERO = of(0);
+		M_ONE = of(-1);
 	}
 }

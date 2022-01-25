@@ -20,7 +20,7 @@ public final class LongCompareProcessor implements InstructionProcessor<Abstract
 		val stack = ctx.getStack();
 		val v2 = stack.popWide().asLong();
 		val v1 = stack.popWide().asLong();
-		stack.push(new IntValue(Long.compare(v1, v2)));
+		stack.push(IntValue.of(Long.compare(v1, v2)));
 		return Result.CONTINUE;
 	}
 }

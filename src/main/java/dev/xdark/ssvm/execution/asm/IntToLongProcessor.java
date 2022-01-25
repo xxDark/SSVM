@@ -17,7 +17,7 @@ public final class IntToLongProcessor implements InstructionProcessor<AbstractIn
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		val stack = ctx.getStack();
-		stack.pushWide(new LongValue(stack.pop().asLong()));
+		stack.pushWide(LongValue.of(stack.pop().asLong()));
 		return Result.CONTINUE;
 	}
 }

@@ -24,7 +24,7 @@ public class DoubleNatives {
 		val symbols = vm.getSymbols();
 		val doubleClass = symbols.java_lang_Double;
 		vmi.setInvoker(doubleClass, "doubleToRawLongBits", "(D)J", ctx -> {
-			ctx.setResult(new LongValue(Double.doubleToRawLongBits(ctx.getLocals().load(0).asDouble())));
+			ctx.setResult(LongValue.of(Double.doubleToRawLongBits(ctx.getLocals().load(0).asDouble())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(doubleClass, "longBitsToDouble", "(J)D", ctx -> {

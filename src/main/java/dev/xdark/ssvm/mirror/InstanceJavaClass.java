@@ -516,19 +516,19 @@ public final class InstanceJavaClass implements JavaClass {
 		val resultingOffset = memoryManager.getStaticOffset(this) + offset;
 		switch (field.getDesc()) {
 			case "J":
-				return new LongValue(memoryManager.readLong(oop, resultingOffset));
+				return LongValue.of(memoryManager.readLong(oop, resultingOffset));
 			case "D":
 				return new DoubleValue(memoryManager.readDouble(oop, resultingOffset));
 			case "I":
-				return new IntValue(memoryManager.readInt(oop, resultingOffset));
+				return IntValue.of(memoryManager.readInt(oop, resultingOffset));
 			case "F":
 				return new FloatValue(memoryManager.readFloat(oop, resultingOffset));
 			case "C":
-				return new IntValue(memoryManager.readChar(oop, resultingOffset));
+				return IntValue.of(memoryManager.readChar(oop, resultingOffset));
 			case "S":
-				return new IntValue(memoryManager.readShort(oop, resultingOffset));
+				return IntValue.of(memoryManager.readShort(oop, resultingOffset));
 			case "B":
-				return new IntValue(memoryManager.readByte(oop, resultingOffset));
+				return IntValue.of(memoryManager.readByte(oop, resultingOffset));
 			case "Z":
 				return memoryManager.readBoolean(oop, resultingOffset) ? IntValue.ONE : IntValue.ZERO;
 			default:

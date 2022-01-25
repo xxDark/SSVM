@@ -67,7 +67,7 @@ public class UnsafeNatives {
 			if (block == null) {
 				vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError);
 			}
-			ctx.setResult(new LongValue(block.getAddress()));
+			ctx.setResult(LongValue.of(block.getAddress()));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, uhelper.reallocateMemory(), "(JJ)J", ctx -> {
@@ -79,7 +79,7 @@ public class UnsafeNatives {
 			if (block == null) {
 				vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError);
 			}
-			ctx.setResult(new LongValue(block.getAddress()));
+			ctx.setResult(LongValue.of(block.getAddress()));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "freeMemory", "(J)V", ctx -> {
@@ -111,7 +111,7 @@ public class UnsafeNatives {
 			if (component == null) {
 				vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
 			} else {
-				ctx.setResult(new IntValue(vm.getMemoryManager().arrayBaseOffset(component)));
+				ctx.setResult(IntValue.of(vm.getMemoryManager().arrayBaseOffset(component)));
 			}
 			return Result.ABORT;
 		});
@@ -123,12 +123,12 @@ public class UnsafeNatives {
 			if (component == null) {
 				vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
 			} else {
-				ctx.setResult(new IntValue(vm.getMemoryManager().arrayIndexScale(component)));
+				ctx.setResult(IntValue.of(vm.getMemoryManager().arrayIndexScale(component)));
 			}
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, uhelper.addressSize(), "()I", ctx -> {
-			ctx.setResult(new IntValue(vm.getMemoryManager().addressSize()));
+			ctx.setResult(IntValue.of(vm.getMemoryManager().addressSize()));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "isBigEndian0", "()Z", ctx -> {
@@ -149,7 +149,7 @@ public class UnsafeNatives {
 				val utf = vm.getHelper().readUtf8(locals.load(2));
 				long offset = ((InstanceJavaClass) wrapper).getFieldOffsetRecursively(utf);
 				if (offset != -1L) offset += vm.getMemoryManager().valueBaseOffset(klass);
-				ctx.setResult(new LongValue(offset));
+				ctx.setResult(LongValue.of(offset));
 			}
 			return Result.ABORT;
 		});
@@ -246,7 +246,7 @@ public class UnsafeNatives {
 			}
 			val offset = locals.load(2).asInt();
 			val memoryManager = vm.getMemoryManager();
-			ctx.setResult(new IntValue(memoryManager.readInt((ObjectValue) value, offset)));
+			ctx.setResult(IntValue.of(memoryManager.readInt((ObjectValue) value, offset)));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, uhelper.ensureClassInitialized(), "(Ljava/lang/Class;)V", ctx -> {
@@ -273,7 +273,7 @@ public class UnsafeNatives {
 			for (val fn : declaringClass.getDeclaredFields(false)) {
 				if (slot == fn.getSlot()) {
 					val offset = vm.getMemoryManager().valueBaseOffset(declaringClass) + fn.getOffset();
-					ctx.setResult(new LongValue(offset));
+					ctx.setResult(LongValue.of(offset));
 					return Result.ABORT;
 				}
 			}
@@ -288,7 +288,7 @@ public class UnsafeNatives {
 			for (val fn : declaringClass.getDeclaredFields(false)) {
 				if (slot == fn.getSlot()) {
 					val offset = vm.getMemoryManager().getStaticOffset(declaringClass) + fn.getOffset();
-					ctx.setResult(new LongValue(offset));
+					ctx.setResult(LongValue.of(offset));
 					return Result.ABORT;
 				}
 			}
@@ -312,7 +312,7 @@ public class UnsafeNatives {
 			if (block == null) {
 				throw new PanicException("Segfault");
 			}
-			ctx.setResult(new IntValue(block.getData().get(0)));
+			ctx.setResult(IntValue.of(block.getData().get(0)));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "putInt", "(Ljava/lang/Object;JI)V", ctx -> {
@@ -350,7 +350,7 @@ public class UnsafeNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, uhelper.pageSize(), "()I", ctx -> {
-			ctx.setResult(new IntValue(vm.getMemoryManager().pageSize()));
+			ctx.setResult(IntValue.of(vm.getMemoryManager().pageSize()));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "getLongVolatile", "(Ljava/lang/Object;J)J", ctx -> {
@@ -361,7 +361,7 @@ public class UnsafeNatives {
 			}
 			val offset = locals.load(2).asInt();
 			val memoryManager = vm.getMemoryManager();
-			ctx.setResult(new LongValue(memoryManager.readLong((ObjectValue) value, offset)));
+			ctx.setResult(LongValue.of(memoryManager.readLong((ObjectValue) value, offset)));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "getLong", "(J)J", ctx -> {
@@ -370,7 +370,7 @@ public class UnsafeNatives {
 			if (block == null) {
 				throw new PanicException("Segfault");
 			}
-			ctx.setResult(new LongValue(block.getData().getLong((int) (address - block.getAddress()))));
+			ctx.setResult(LongValue.of(block.getData().getLong((int) (address - block.getAddress()))));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "defineAnonymousClass", "(Ljava/lang/Class;[B[Ljava/lang/Object;)Ljava/lang/Class;", ctx -> {
@@ -449,7 +449,7 @@ public class UnsafeNatives {
 			}
 			val offset = locals.load(2).asInt();
 			val memoryManager = vm.getMemoryManager();
-			ctx.setResult(new IntValue(memoryManager.readInt((ObjectValue) value, offset)));
+			ctx.setResult(IntValue.of(memoryManager.readInt((ObjectValue) value, offset)));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "putObject", "(Ljava/lang/Object;JLjava/lang/Object;)V", ctx -> {

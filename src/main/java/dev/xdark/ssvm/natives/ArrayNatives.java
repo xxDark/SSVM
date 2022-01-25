@@ -28,7 +28,7 @@ public class ArrayNatives {
 		vmi.setInvoker(array, "getLength", "(Ljava/lang/Object;)I", ctx -> {
 			val value = ctx.getLocals().load(0);
 			vm.getHelper().checkArray(value);
-			ctx.setResult(new IntValue(((ArrayValue) value).getLength()));
+			ctx.setResult(IntValue.of(((ArrayValue) value).getLength()));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(array, "newArray", "(Ljava/lang/Class;I)Ljava/lang/Object;", ctx -> {

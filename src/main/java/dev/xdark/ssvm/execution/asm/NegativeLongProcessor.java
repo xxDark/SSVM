@@ -18,7 +18,7 @@ public final class NegativeLongProcessor implements InstructionProcessor<Abstrac
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		val stack = ctx.getStack();
-		stack.pushWide(new LongValue(-stack.popWide().asLong()));
+		stack.pushWide(LongValue.of(-stack.popWide().asLong()));
 		return Result.CONTINUE;
 	}
 }

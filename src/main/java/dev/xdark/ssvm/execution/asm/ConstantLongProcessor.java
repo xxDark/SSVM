@@ -22,7 +22,7 @@ public final class ConstantLongProcessor implements InstructionProcessor<Abstrac
 	 * 		Long constant.
 	 */
 	public ConstantLongProcessor(long cst) {
-		this.cst = new LongValue(cst);
+		this.cst = LongValue.of(cst);
 	}
 
 	@Override

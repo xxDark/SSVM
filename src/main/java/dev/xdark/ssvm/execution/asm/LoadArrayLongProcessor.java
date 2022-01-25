@@ -24,7 +24,7 @@ public final class LoadArrayLongProcessor implements InstructionProcessor<Abstra
 		val helper = ctx.getHelper();
 		val array = helper.checkNotNullArray(stack.pop());
 		helper.rangeCheck(array, index);
-		stack.pushWide(new LongValue(array.getLong(index)));
+		stack.pushWide(LongValue.of(array.getLong(index)));
 		return Result.CONTINUE;
 	}
 }

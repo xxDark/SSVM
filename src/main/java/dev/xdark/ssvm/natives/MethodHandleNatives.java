@@ -138,7 +138,7 @@ public class MethodHandleNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(natives, "objectFieldOffset", "(Ljava/lang/invoke/MemberName;)J", ctx -> {
-			ctx.setResult(new LongValue(ctx.getLocals().<InstanceValue>load(0).getInt(VM_INDEX)));
+			ctx.setResult(LongValue.of(ctx.getLocals().<InstanceValue>load(0).getInt(VM_INDEX)));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(natives, "staticFieldBase", "(Ljava/lang/invoke/MemberName;)Ljava/lang/Object;", ctx -> {
@@ -146,7 +146,7 @@ public class MethodHandleNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(natives, "staticFieldOffset", "(Ljava/lang/invoke/MemberName;)J", ctx -> {
-			ctx.setResult(new LongValue(ctx.getLocals().<InstanceValue>load(0).getInt(VM_INDEX)));
+			ctx.setResult(LongValue.of(ctx.getLocals().<InstanceValue>load(0).getInt(VM_INDEX)));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(natives, "getMembers", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Class;I[Ljava/lang/invoke/MemberName;)I", ctx -> {

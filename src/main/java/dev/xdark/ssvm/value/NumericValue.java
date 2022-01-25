@@ -8,6 +8,9 @@ package dev.xdark.ssvm.value;
  */
 public abstract class NumericValue implements Value {
 
+	// Min & max values for the cache.
+	protected static final int LOW = Short.MIN_VALUE, HIGH = Short.MAX_VALUE;
+
 	@Override
 	public <T> T as(Class<T> type) {
 		Object result;

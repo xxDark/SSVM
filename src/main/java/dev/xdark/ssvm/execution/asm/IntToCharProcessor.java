@@ -17,7 +17,7 @@ public final class IntToCharProcessor implements InstructionProcessor<AbstractIn
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		val stack = ctx.getStack();
-		stack.push(new IntValue(stack.pop().asChar()));
+		stack.push(IntValue.of(stack.pop().asChar()));
 		return Result.CONTINUE;
 	}
 }

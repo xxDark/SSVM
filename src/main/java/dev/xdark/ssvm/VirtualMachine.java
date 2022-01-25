@@ -123,8 +123,8 @@ public class VirtualMachine {
 			if (unsafeConstants != null) {
 				// Inject constants
 				unsafeConstants.initialize();
-				unsafeConstants.setFieldValue("ADDRESS_SIZE0", "I", new IntValue(memoryManager.addressSize()));
-				unsafeConstants.setFieldValue("PAGE_SIZE", "I", new IntValue(memoryManager.pageSize()));
+				unsafeConstants.setFieldValue("ADDRESS_SIZE0", "I", IntValue.of(memoryManager.addressSize()));
+				unsafeConstants.setFieldValue("PAGE_SIZE", "I", IntValue.of(memoryManager.pageSize()));
 				unsafeConstants.setFieldValue("BIG_ENDIAN", "Z", memoryManager.getByteOrder() == ByteOrder.BIG_ENDIAN ? IntValue.ONE : IntValue.ZERO);
 			}
 			findBootstrapClass("java/lang/StringUTF16", true);

@@ -24,7 +24,7 @@ public final class FloatCompareProcessor implements InstructionProcessor<Abstrac
 	 * 		if one of the floats is {@code NaN}
 	 */
 	public FloatCompareProcessor(int nan) {
-		this.nan = new IntValue(nan);
+		this.nan = IntValue.of(nan);
 	}
 
 	@Override
@@ -35,7 +35,7 @@ public final class FloatCompareProcessor implements InstructionProcessor<Abstrac
 		if (Float.isNaN(v1) || Float.isNaN(v2)) {
 			stack.push(nan);
 		} else {
-			stack.push(new IntValue(Float.compare(v1, v2)));
+			stack.push(IntValue.of(Float.compare(v1, v2)));
 		}
 		return Result.CONTINUE;
 	}

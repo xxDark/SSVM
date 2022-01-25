@@ -17,7 +17,7 @@ public final class DoubleToIntProcessor implements InstructionProcessor<Abstract
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		val stack = ctx.getStack();
-		stack.push(new IntValue(stack.popWide().asInt()));
+		stack.push(IntValue.of(stack.popWide().asInt()));
 		return Result.CONTINUE;
 	}
 }

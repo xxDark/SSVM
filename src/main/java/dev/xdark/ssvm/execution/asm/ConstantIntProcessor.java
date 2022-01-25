@@ -21,7 +21,7 @@ public final class ConstantIntProcessor implements InstructionProcessor<Abstract
 	 * 		Int constant.
 	 */
 	public ConstantIntProcessor(int cst) {
-		this.cst = new IntValue(cst);
+		this.cst = IntValue.of(cst);
 	}
 
 	@Override

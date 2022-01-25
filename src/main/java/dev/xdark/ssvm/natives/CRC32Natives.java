@@ -33,7 +33,7 @@ public class CRC32Natives {
 			for (int x = off + len; off < x; off++) {
 				crc = CrcUtil.update(crc, bytes.getByte(off));
 			}
-			ctx.setResult(new IntValue(crc));
+			ctx.setResult(IntValue.of(crc));
 			return Result.ABORT;
 		});
 	}

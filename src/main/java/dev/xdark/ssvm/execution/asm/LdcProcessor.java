@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.execution.asm;
 
+import dev.xdark.ssvm.asm.VMLdcInsnNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
@@ -26,7 +27,9 @@ public final class LdcProcessor implements InstructionProcessor<LdcInsnNode> {
 		} else {
 			value = ctx.getHelper().valueFromLdc(cst);
 		}
-		ctx.getStack().pushGeneric(value);
+		val list = ctx.getMethod().getNode().instructions;
+		list.set(insn, new VMLdcInsnNode(insn, value));
+		ctx.setInsnPosition(ctx.getInsnPosition() - 1);
 		return Result.CONTINUE;
 	}
 }

@@ -1,6 +1,7 @@
 package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.api.VMInterface;
+import dev.xdark.ssvm.asm.VMOpcodes;
 import dev.xdark.ssvm.execution.asm.*;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.natives.*;
@@ -392,5 +393,6 @@ public final class NativeJava {
 
 		// VM opcodes
 		vmi.setProcessor(METHOD_HANDLE, new DynamicCallProcessor());
+		vmi.setProcessor(VMOpcodes.LDC, new VMLdcProcessor());
 	}
 }

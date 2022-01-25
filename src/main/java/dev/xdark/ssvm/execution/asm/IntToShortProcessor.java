@@ -17,7 +17,7 @@ public final class IntToShortProcessor implements InstructionProcessor<AbstractI
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		val stack = ctx.getStack();
-		stack.push(new IntValue(stack.pop().asShort()));
+		stack.push(IntValue.of(stack.pop().asShort()));
 		return Result.CONTINUE;
 	}
 }

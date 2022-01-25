@@ -22,7 +22,7 @@ public final class LoadArrayIntProcessor implements InstructionProcessor<Abstrac
 		val helper = ctx.getHelper();
 		val array = helper.checkNotNullArray(stack.pop());
 		helper.rangeCheck(array, index);
-		stack.push(new IntValue(array.getInt(index)));
+		stack.push(IntValue.of(array.getInt(index)));
 		return Result.CONTINUE;
 	}
 }

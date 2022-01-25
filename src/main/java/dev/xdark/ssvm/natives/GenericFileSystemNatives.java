@@ -37,7 +37,7 @@ public class GenericFileSystemNatives {
 		val fd = vm.getSymbols().java_io_FileDescriptor;
 
 		MethodInvoker set = ctx -> {
-			ctx.setResult(new LongValue(mapVMStream(vm, ctx.getLocals().load(0).asInt())));
+			ctx.setResult(LongValue.of(mapVMStream(vm, ctx.getLocals().load(0).asInt())));
 			return Result.ABORT;
 		};
 		boolean lateinit = false;
@@ -154,7 +154,7 @@ public class GenericFileSystemNatives {
 						data.position(start);
 						data.put(bytes, 0, read);
 					}
-					ctx.setResult(new IntValue(read));
+					ctx.setResult(IntValue.of(read));
 				} catch (IOException ex) {
 					helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
 				}
@@ -171,7 +171,7 @@ public class GenericFileSystemNatives {
 				ctx.setResult(IntValue.M_ONE);
 			} else {
 				try {
-					ctx.setResult(new IntValue(in.read()));
+					ctx.setResult(IntValue.of(in.read()));
 				} catch (IOException ex) {
 					helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
 				}
@@ -188,7 +188,7 @@ public class GenericFileSystemNatives {
 				ctx.setResult(LongValue.ZERO);
 			} else {
 				try {
-					ctx.setResult(new LongValue(in.skip(locals.load(1).asLong())));
+					ctx.setResult(LongValue.of(in.skip(locals.load(1).asLong())));
 				} catch (IOException ex) {
 					helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
 				}
@@ -218,7 +218,7 @@ public class GenericFileSystemNatives {
 				ctx.setResult(IntValue.ZERO);
 			} else {
 				try {
-					ctx.setResult(new IntValue(in.available()));
+					ctx.setResult(IntValue.of(in.available()));
 				} catch (IOException ex) {
 					helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
 				}

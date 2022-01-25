@@ -30,7 +30,7 @@ public final class BiLongProcessor implements InstructionProcessor<AbstractInsnN
 		val stack = ctx.getStack();
 		val v2 = stack.popWide().asLong();
 		val v1 = stack.popWide().asLong();
-		stack.pushWide(new LongValue(op.apply(v1, v2)));
+		stack.pushWide(LongValue.of(op.apply(v1, v2)));
 		return Result.CONTINUE;
 	}
 }

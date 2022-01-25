@@ -1,5 +1,7 @@
 package dev.xdark.ssvm.value;
 
+import lombok.val;
+
 /**
  * VM representation for int value.
  *
@@ -7,12 +9,22 @@ package dev.xdark.ssvm.value;
  */
 public final class IntValue extends NumericValue {
 
-	public static final IntValue ONE = new IntValue(1);
-	public static final IntValue ZERO = new IntValue(0);
-	public static final IntValue M_ONE = new IntValue(-1);
+	private static final IntValue[] CACHE;
+	public static final IntValue ONE;
+	public static final IntValue ZERO;
+	public static final IntValue M_ONE;
 
 	private final int value;
 
+	/**
+	 * @param value
+	 * 		Int value.
+	 *
+	 * @deprecated Only for the VM,
+	 * use {@link IntValue#of(int)}
+	 * instead.
+	 */
+	@Deprecated
 	public IntValue(int value) {
 		this.value = value;
 	}
@@ -65,5 +77,29 @@ public final class IntValue extends NumericValue {
 	@Override
 	public String toString() {
 		return "int(" + value + ")";
+	}
+
+	/**
+	 * @param value
+	 * 		Int value.
+	 *
+	 * @return VM int value.
+	 */
+	public static IntValue of(int value) {
+		if (value >= LOW && value <= HIGH) {
+			return CACHE[value - LOW];
+		}
+		return new IntValue(value);
+	}
+
+	static {
+		val cache = new IntValue[(HIGH - LOW) + 1];
+		int j = LOW;
+		for (int k = 0; k < cache.length; k++)
+			cache[k] = new IntValue(j++);
+		CACHE = cache;
+		ONE = of(1);
+		ZERO = of(0);
+		M_ONE = of(-1);
 	}
 }

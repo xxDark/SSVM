@@ -4,6 +4,7 @@ import dev.xdark.ssvm.asm.MethodHandleInsnNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.Value;
 import lombok.val;
 import org.objectweb.asm.Type;
@@ -27,8 +28,14 @@ public final class DynamicCallProcessor implements InstructionProcessor<MethodHa
 		while (localsLength-- != 0) {
 			locals[--x] = stack.popGeneric();
 		}
-		locals[0] = insn.getMethodHandle();
-		val invoked = ctx.getHelper().invokeVirtual("invokeExact", desc, new Value[0], locals).getResult();
+		val vm = ctx.getVM();
+		val helper = vm.getHelper();
+		InstanceValue handle = insn.getMethodHandle();
+		if (vm.getSymbols().java_lang_invoke_CallSite.isAssignableFrom(handle.getJavaClass())) {
+			handle = helper.checkNotNull(helper.invokeVirtual("getTarget", "()Ljava/lang/invoke/MethodHandle;", new Value[0], new Value[]{handle}).getResult());
+		}
+		locals[0] = handle;
+		val invoked = helper.invokeVirtual("invokeExact", desc, new Value[0], locals).getResult();
 		if (!invoked.isVoid()) {
 			stack.pushGeneric(invoked);
 		}

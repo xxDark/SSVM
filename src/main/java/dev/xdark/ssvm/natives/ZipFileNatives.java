@@ -47,7 +47,7 @@ public class ZipFileNatives {
 				if (handle == 0L) {
 					helper.throwException(symbols.java_io_IOException, zipPath);
 				}
-				ctx.setResult(new LongValue(handle));
+				ctx.setResult(LongValue.of(handle));
 			} catch (IOException ex) {
 				helper.throwException(symbols.java_io_IOException, ex.getMessage());
 			}
@@ -58,7 +58,7 @@ public class ZipFileNatives {
 				if (zip == null) {
 					vm.getHelper().throwException(symbols.java_io_IOException, "zip closed");
 				}
-				ctx.setResult(new IntValue((int) zip.stream().count()));
+				ctx.setResult(IntValue.of((int) zip.stream().count()));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "startsWithLOC", "(J)Z", ctx -> {
@@ -111,29 +111,29 @@ public class ZipFileNatives {
 			vmi.setInvoker(zf, "getEntryTime", "(J)J", ctx -> {
 				val locals = ctx.getLocals();
 				val value = locals.<JavaValue<ZipEntryHolder>>load(0).getValue().entry;
-				ctx.setResult(new LongValue(value.getTime()));
+				ctx.setResult(LongValue.of(value.getTime()));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntryCrc", "(J)J", ctx -> {
 				val locals = ctx.getLocals();
 				val value = locals.<JavaValue<ZipEntryHolder>>load(0).getValue().entry;
-				ctx.setResult(new LongValue(value.getCrc()));
+				ctx.setResult(LongValue.of(value.getCrc()));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntrySize", "(J)J", ctx -> {
 				val locals = ctx.getLocals();
 				val value = locals.<JavaValue<ZipEntryHolder>>load(0).getValue().entry;
-				ctx.setResult(new LongValue(value.getSize()));
+				ctx.setResult(LongValue.of(value.getSize()));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntryCSize", "(J)J", ctx -> {
 				val locals = ctx.getLocals();
 				val value = locals.<JavaValue<ZipEntryHolder>>load(0).getValue().entry;
-				ctx.setResult(new LongValue(value.getSize())); // TODO change?
+				ctx.setResult(LongValue.of(value.getSize())); // TODO change?
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntryMethod", "(J)I", ctx -> {
-				ctx.setResult(new IntValue(ZipEntry.STORED)); // TODO change?
+				ctx.setResult(IntValue.of(ZipEntry.STORED)); // TODO change?
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntryFlag", "(J)I", ctx -> {
@@ -177,7 +177,7 @@ public class ZipFileNatives {
 						for (int i = 0; i < len; i++) {
 							bytes.setByte(off + i, read[start + i]);
 						}
-						ctx.setResult(new IntValue(len));
+						ctx.setResult(IntValue.of(len));
 					}
 				}
 				return Result.ABORT;

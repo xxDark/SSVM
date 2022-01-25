@@ -32,7 +32,7 @@ public final class LongIntProcessor implements InstructionProcessor<AbstractInsn
 		val stack = ctx.getStack();
 		int v2 = stack.pop().asInt();
 		val v1 = stack.popWide().asLong();
-		stack.pushWide(new LongValue(op.apply(v1, v2)));
+		stack.pushWide(LongValue.of(op.apply(v1, v2)));
 		return Result.CONTINUE;
 	}
 }

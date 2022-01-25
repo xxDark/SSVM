@@ -32,13 +32,13 @@ public class IntrinsicsNatives {
 		vmi.setInvoker(jc, "min", "(II)I", ctx -> {
 			printIntrinsic("min_II");
 			val locals = ctx.getLocals();
-			ctx.setResult(new IntValue(Math.min(locals.load(0).asInt(), locals.load(1).asInt())));
+			ctx.setResult(IntValue.of(Math.min(locals.load(0).asInt(), locals.load(1).asInt())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "min", "(JJ)J", ctx -> {
 			printIntrinsic("min_JJ");
 			val locals = ctx.getLocals();
-			ctx.setResult(new LongValue(Math.min(locals.load(0).asLong(), locals.load(2).asLong())));
+			ctx.setResult(LongValue.of(Math.min(locals.load(0).asLong(), locals.load(2).asLong())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "min", "(FF)F", ctx -> {
@@ -56,13 +56,13 @@ public class IntrinsicsNatives {
 		vmi.setInvoker(jc, "max", "(II)I", ctx -> {
 			printIntrinsic("max_II");
 			val locals = ctx.getLocals();
-			ctx.setResult(new IntValue(Math.max(locals.load(0).asInt(), locals.load(1).asInt())));
+			ctx.setResult(IntValue.of(Math.max(locals.load(0).asInt(), locals.load(1).asInt())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "max", "(JJ)J", ctx -> {
 			printIntrinsic("max_JJ");
 			val locals = ctx.getLocals();
-			ctx.setResult(new LongValue(Math.max(locals.load(0).asLong(), locals.load(2).asLong())));
+			ctx.setResult(LongValue.of(Math.max(locals.load(0).asLong(), locals.load(2).asLong())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "max", "(FF)F", ctx -> {
@@ -80,12 +80,12 @@ public class IntrinsicsNatives {
 		vmi.setInvoker(jc, "abs", "(I)I", ctx -> {
 			printIntrinsic("abs_I");
 			val locals = ctx.getLocals();
-			ctx.setResult(new IntValue(Math.abs(locals.load(0).asInt())));
+			ctx.setResult(IntValue.of(Math.abs(locals.load(0).asInt())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "abs", "(J)J", ctx -> {
 			val locals = ctx.getLocals();
-			ctx.setResult(new LongValue(Math.abs(locals.load(0).asLong())));
+			ctx.setResult(LongValue.of(Math.abs(locals.load(0).asLong())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "abs", "(F)F", ctx -> {
@@ -118,7 +118,7 @@ public class IntrinsicsNatives {
 		// This will only work on JDK 8, sadly.
 		if (jc.hasVirtualField("value", "[C")) {
 			vmi.setInvoker(jc, "length", "()I", ctx -> {
-				ctx.setResult(new IntValue(((ArrayValue)ctx.getLocals().<InstanceValue>load(0).getValue("value", "[C")).getLength()));
+				ctx.setResult(IntValue.of(((ArrayValue)ctx.getLocals().<InstanceValue>load(0).getValue("value", "[C")).getLength()));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(jc, "hashCode", "()I", ctx -> {
@@ -132,7 +132,7 @@ public class IntrinsicsNatives {
 					}
 					_this.setInt("hash", hc);
 				}
-				ctx.setResult(new IntValue(hc));
+				ctx.setResult(IntValue.of(hc));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(jc, "lastIndexOf", "(II)I", ctx -> {
@@ -141,7 +141,7 @@ public class IntrinsicsNatives {
 				val chars = (ArrayValue) _this.getValue("value", "[C");
 				int ch = locals.load(1).asInt();
 				int fromIndex = locals.load(2).asInt();
-				ctx.setResult(new IntValue(lastIndexOf(chars, ch, fromIndex)));
+				ctx.setResult(IntValue.of(lastIndexOf(chars, ch, fromIndex)));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(jc, "indexOf", "([CII[CIII)I", ctx -> {
@@ -153,7 +153,7 @@ public class IntrinsicsNatives {
 				int targetOffset = locals.load(4).asInt();
 				int targetCount = locals.load(5).asInt();
 				int fromIndex = locals.load(6).asInt();
-				ctx.setResult(new IntValue(indexOf(source, sourceOffset, sourceCount, target, targetOffset, targetCount, fromIndex)));
+				ctx.setResult(IntValue.of(indexOf(source, sourceOffset, sourceCount, target, targetOffset, targetCount, fromIndex)));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(jc, "indexOf", "(II)I", ctx -> {
@@ -162,7 +162,7 @@ public class IntrinsicsNatives {
 				val chars = (ArrayValue) _this.getValue("value", "[C");
 				int ch = locals.load(1).asInt();
 				int fromIndex = locals.load(2).asInt();
-				ctx.setResult(new IntValue(indexOf(chars, ch, fromIndex)));
+				ctx.setResult(IntValue.of(indexOf(chars, ch, fromIndex)));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(jc, "equals", "(Ljava/lang/Object;)Z", ctx -> {
@@ -297,11 +297,11 @@ public class IntrinsicsNatives {
 		val vmi = vm.getInterface();
 		val jc = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Character");
 		vmi.setInvoker(jc, "toLowerCase", "(I)I", ctx -> {
-			ctx.setResult(new IntValue(Character.toLowerCase(ctx.getLocals().load(0).asInt())));
+			ctx.setResult(IntValue.of(Character.toLowerCase(ctx.getLocals().load(0).asInt())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "toUpperCase", "(I)I", ctx -> {
-			ctx.setResult(new IntValue(Character.toUpperCase(ctx.getLocals().load(0).asInt())));
+			ctx.setResult(IntValue.of(Character.toUpperCase(ctx.getLocals().load(0).asInt())));
 			return Result.ABORT;
 		});
 	}

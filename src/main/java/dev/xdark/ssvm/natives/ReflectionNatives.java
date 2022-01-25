@@ -38,7 +38,7 @@ public class ReflectionNatives {
 		});
 		vmi.setInvoker(reflection, "getClassAccessFlags", "(Ljava/lang/Class;)I", ctx -> {
 			val klass = ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue();
-			ctx.setResult(new IntValue(Modifier.erase(klass.getModifiers())));
+			ctx.setResult(IntValue.of(Modifier.erase(klass.getModifiers())));
 			return Result.ABORT;
 		});
 		// TODO FIXME

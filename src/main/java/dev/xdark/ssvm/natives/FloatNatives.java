@@ -26,7 +26,7 @@ public class FloatNatives {
 		val symbols = vm.getSymbols();
 		val floatClass = symbols.java_lang_Float;
 		vmi.setInvoker(floatClass, "floatToRawIntBits", "(F)I", ctx -> {
-			ctx.setResult(new IntValue(Float.floatToRawIntBits(ctx.getLocals().load(0).asFloat())));
+			ctx.setResult(IntValue.of(Float.floatToRawIntBits(ctx.getLocals().load(0).asFloat())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(floatClass, "intBitsToFloat", "(I)F", ctx -> {

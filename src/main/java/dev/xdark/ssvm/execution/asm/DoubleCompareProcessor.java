@@ -24,7 +24,7 @@ public final class DoubleCompareProcessor implements InstructionProcessor<Abstra
 	 * 		if one of the doubles is {@code NaN}
 	 */
 	public DoubleCompareProcessor(int nan) {
-		this.nan = new IntValue(nan);
+		this.nan = IntValue.of(nan);
 	}
 
 	@Override
@@ -35,7 +35,7 @@ public final class DoubleCompareProcessor implements InstructionProcessor<Abstra
 		if (Double.isNaN(v1) || Double.isNaN(v2)) {
 			stack.push(nan);
 		} else {
-			stack.push(new IntValue(Double.compare(v1, v2)));
+			stack.push(IntValue.of(Double.compare(v1, v2)));
 		}
 		return Result.CONTINUE;
 	}

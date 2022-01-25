@@ -15,7 +15,7 @@ public final class ShortPushProcessor implements InstructionProcessor<IntInsnNod
 
 	@Override
 	public Result execute(IntInsnNode insn, ExecutionContext ctx) {
-		ctx.getStack().push(new IntValue(insn.operand));
+		ctx.getStack().push(IntValue.of(insn.operand));
 		return Result.CONTINUE;
 	}
 }

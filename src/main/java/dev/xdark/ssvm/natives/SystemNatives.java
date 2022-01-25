@@ -26,11 +26,11 @@ public class SystemNatives {
 		val sys = symbols.java_lang_System;
 		vmi.setInvoker(sys, "registerNatives", "()V", MethodInvoker.noop());
 		vmi.setInvoker(sys, "currentTimeMillis", "()J", ctx -> {
-			ctx.setResult(new LongValue(System.currentTimeMillis()));
+			ctx.setResult(LongValue.of(System.currentTimeMillis()));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "nanoTime", "()J", ctx -> {
-			ctx.setResult(new LongValue(System.nanoTime()));
+			ctx.setResult(LongValue.of(System.nanoTime()));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "arraycopy", "(Ljava/lang/Object;ILjava/lang/Object;II)V", ctx -> {
@@ -61,7 +61,7 @@ public class SystemNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "identityHashCode", "(Ljava/lang/Object;)I", ctx -> {
-			ctx.setResult(new IntValue(ctx.getLocals().load(0).hashCode()));
+			ctx.setResult(IntValue.of(ctx.getLocals().load(0).hashCode()));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "initProperties", "(Ljava/util/Properties;)Ljava/util/Properties;", ctx -> {

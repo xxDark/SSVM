@@ -17,7 +17,7 @@ public final class NegativeIntProcessor implements InstructionProcessor<Abstract
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		val stack = ctx.getStack();
-		stack.push(new IntValue(-stack.pop().asInt()));
+		stack.push(IntValue.of(-stack.pop().asInt()));
 		return Result.CONTINUE;
 	}
 }

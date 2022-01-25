@@ -32,7 +32,7 @@ public class ConstantPoolNatives {
 			val wrapper = getCpOop(ctx);
 			if (wrapper instanceof InstanceJavaClass) {
 				val cf = ((InstanceJavaClass) wrapper).getRawClassFile();
-				ctx.setResult(new IntValue(cf.getPool().size()));
+				ctx.setResult(IntValue.of(cf.getPool().size()));
 			} else {
 				ctx.setResult(IntValue.ZERO);
 			}
@@ -73,7 +73,7 @@ public class ConstantPoolNatives {
 			val cf = wrapper.getRawClassFile();
 			val index = cpRangeCheck(ctx, cf);
 			val item = cf.getCp(index);
-			ctx.setResult(new IntValue(((CpInt) item).getValue()));
+			ctx.setResult(IntValue.of(((CpInt) item).getValue()));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(cpClass, "getLongAt0", "(Ljava/lang/Object;I)J", ctx -> {
@@ -81,7 +81,7 @@ public class ConstantPoolNatives {
 			val cf = wrapper.getRawClassFile();
 			val index = cpRangeCheck(ctx, cf);
 			val item = cf.getCp(index);
-			ctx.setResult(new LongValue(((CpLong) item).getValue()));
+			ctx.setResult(LongValue.of(((CpLong) item).getValue()));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(cpClass, "getFloatAt0", "(Ljava/lang/Object;I)F", ctx -> {

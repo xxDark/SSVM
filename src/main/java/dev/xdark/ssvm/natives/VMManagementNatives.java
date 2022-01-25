@@ -29,7 +29,7 @@ public class VMManagementNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "getStartupTime", "()J", ctx -> {
-			ctx.setResult(new LongValue(vm.getManagementInterface().getStartupTime()));
+			ctx.setResult(LongValue.of(vm.getManagementInterface().getStartupTime()));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "getVmArguments0", "()[Ljava/lang/String;", ctx -> {

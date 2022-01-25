@@ -138,7 +138,7 @@ public class ClassNatives {
 		vmi.setInvoker(jlc, "getModifiers", "()I", ctx -> {
 			val locals = ctx.getLocals();
 			val _this = locals.<JavaValue<JavaClass>>load(0).getValue();
-			ctx.setResult(new IntValue(Modifier.erase(_this.getModifiers())));
+			ctx.setResult(IntValue.of(Modifier.erase(_this.getModifiers())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getDeclaredConstructors0", "(Z)[Ljava/lang/reflect/Constructor;", ctx -> {
@@ -168,8 +168,8 @@ public class ClassNatives {
 							callerOop,
 							parameters,
 							classArray,
-							new IntValue(Modifier.erase(mn.getAccess())),
-							new IntValue(mn.getSlot()),
+							IntValue.of(Modifier.erase(mn.getAccess())),
+							IntValue.of(mn.getSlot()),
 							pool.intern(mn.getSignature()),
 							NullValue.INSTANCE,
 							NullValue.INSTANCE
@@ -211,8 +211,8 @@ public class ClassNatives {
 						parameters,
 						rt.getOop(),
 						classArray,
-						new IntValue(Modifier.erase(mn.getAccess())),
-						new IntValue(mn.getSlot()),
+						IntValue.of(Modifier.erase(mn.getAccess())),
+						IntValue.of(mn.getSlot()),
 						pool.intern(mn.getSignature()),
 						NullValue.INSTANCE,
 						NullValue.INSTANCE,
@@ -248,8 +248,8 @@ public class ClassNatives {
 							callerOop,
 							pool.intern(fn.getName()),
 							type.getOop(),
-							new IntValue(Modifier.erase(fn.getAccess())),
-							new IntValue(fn.getSlot()),
+							IntValue.of(Modifier.erase(fn.getAccess())),
+							IntValue.of(fn.getSlot()),
 							pool.intern(fn.getSignature()),
 							NullValue.INSTANCE
 					}).getResult();

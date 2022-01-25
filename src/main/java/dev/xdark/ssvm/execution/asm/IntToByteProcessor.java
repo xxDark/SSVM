@@ -18,7 +18,7 @@ public final class IntToByteProcessor implements InstructionProcessor<AbstractIn
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		val stack = ctx.getStack();
-		stack.push(new IntValue(stack.pop().asByte()));
+		stack.push(IntValue.of(stack.pop().asByte()));
 		return Result.CONTINUE;
 	}
 }

@@ -49,7 +49,7 @@ public class ThrowableNatives {
 		});
 		vmi.setInvoker(throwable, "getStackTraceDepth", "()I", ctx -> {
 			val backtrace = ((JavaValue<Backtrace>) ((InstanceValue) ctx.getLocals().load(0)).getValue("backtrace", "Ljava/lang/Object;")).getValue();
-			ctx.setResult(new IntValue(backtrace.count()));
+			ctx.setResult(IntValue.of(backtrace.count()));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(throwable, "getStackTraceElement", "(I)Ljava/lang/StackTraceElement;", ctx -> {

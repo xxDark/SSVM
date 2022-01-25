@@ -213,11 +213,11 @@ public final class VMHelper {
 	 */
 	public Value valueFromLdc(Object cst) {
 		val vm = this.vm;
-		if (cst instanceof Long) return new LongValue((Long) cst);
+		if (cst instanceof Long) return LongValue.of((Long) cst);
 		if (cst instanceof Double) return new DoubleValue((Double) cst);
 		if (cst instanceof Integer || cst instanceof Short || cst instanceof Byte)
-			return new IntValue(((Number) cst).intValue());
-		if (cst instanceof Character) return new IntValue((Character) cst);
+			return IntValue.of(((Number) cst).intValue());
+		if (cst instanceof Character) return IntValue.of((Character) cst);
 		if (cst instanceof Float) return new FloatValue((Float) cst);
 		if (cst instanceof Boolean) return (Boolean) cst ? IntValue.ONE : IntValue.ZERO;
 		if (cst instanceof String) return vm.getStringPool().intern((String) cst);
@@ -1306,7 +1306,7 @@ public final class VMHelper {
 			val list = (InstanceJavaClass) vm.findBootstrapClass("java/util/List");
 			val size = invokeInterface(list, "size", "()I", new Value[0], new Value[]{suppressedExceptions}).getResult().asInt();
 			for (int i = 0; i < size; i++) {
-				val ex = invokeInterface(list, "get", "(I)Ljava/lang/Object;", new Value[]{new IntValue(i)}, new Value[]{suppressedExceptions}).getResult();
+				val ex = invokeInterface(list, "get", "(I)Ljava/lang/Object;", new Value[]{IntValue.of(i)}, new Value[]{suppressedExceptions}).getResult();
 				exception.addSuppressed(toJavaException((InstanceValue) ex));
 			}
 		}
@@ -1338,7 +1338,7 @@ public final class VMHelper {
 				newUtf8(className),
 				newUtf8(methodName),
 				newUtf8(sourceFile),
-				new IntValue(lineNumber)
+				IntValue.of(lineNumber)
 		});
 		if (injectDeclaringClass && jc.hasVirtualField("declaringClassObject", "Ljava/lang/Class;")) {
 			element.setValue("declaringClassObject", "Ljava/lang/Class;", owner.getOop());
@@ -1960,7 +1960,7 @@ public final class VMHelper {
 	public InstanceValue linkMethodHandleConstant(InstanceJavaClass caller, Handle handle) {
 		val args = new Value[]{
 				caller.getOop(),
-				new IntValue(handle.getTag()),
+				IntValue.of(handle.getTag()),
 				findClass(caller.getClassLoader(), handle.getOwner(), false).getOop(),
 				newUtf8(handle.getName()),
 				methodType(caller.getClassLoader(), Type.getMethodType(handle.getDesc()))
@@ -1980,12 +1980,12 @@ public final class VMHelper {
 	 * 		If constant value cannot be created.
 	 */
 	public ObjectValue forInvokeDynamicCall(Object cst) {
-		if (cst instanceof Long) return boxLong(new LongValue((Long) cst));
+		if (cst instanceof Long) return boxLong(LongValue.of((Long) cst));
 		if (cst instanceof Double) return boxDouble(new DoubleValue((Double) cst));
 		if (cst instanceof Integer || cst instanceof Short || cst instanceof Byte)
-			return boxInt(new IntValue(((Number) cst).intValue()));
+			return boxInt(IntValue.of(((Number) cst).intValue()));
 		if (cst instanceof Character)
-			return boxInt(new IntValue((Character) cst));
+			return boxInt(IntValue.of((Character) cst));
 		if (cst instanceof Float) return boxFloat(new FloatValue((Float) cst));
 		if (cst instanceof Boolean) return boxBoolean((Boolean) cst ? IntValue.ONE : IntValue.ZERO);
 		return (ObjectValue) valueFromLdc(cst);

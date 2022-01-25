@@ -12,4 +12,5 @@ import org.objectweb.asm.Opcodes;
 public class VMOpcodes {
 
 	public static final int METHOD_HANDLE = Opcodes.IFNONNULL + 1;
+	public static final int LDC = METHOD_HANDLE + 1;
 }

@@ -34,25 +34,25 @@ public final class GetFieldProcessor implements InstructionProcessor<FieldInsnNo
 		offset += manager.valueBaseOffset(instance);
 		switch (insn.desc) {
 			case "J":
-				value = new LongValue(manager.readLong(instance, offset));
+				value = LongValue.of(manager.readLong(instance, offset));
 				break;
 			case "D":
 				value = new DoubleValue(manager.readDouble(instance, offset));
 				break;
 			case "I":
-				value = new IntValue(manager.readInt(instance, offset));
+				value = IntValue.of(manager.readInt(instance, offset));
 				break;
 			case "F":
 				value = new FloatValue(manager.readFloat(instance, offset));
 				break;
 			case "C":
-				value = new IntValue(manager.readChar(instance, offset));
+				value = IntValue.of(manager.readChar(instance, offset));
 				break;
 			case "S":
-				value = new IntValue(manager.readShort(instance, offset));
+				value = IntValue.of(manager.readShort(instance, offset));
 				break;
 			case "B":
-				value = new IntValue(manager.readByte(instance, offset));
+				value = IntValue.of(manager.readByte(instance, offset));
 				break;
 			case "Z":
 				value = manager.readBoolean(instance, offset) ? IntValue.ONE : IntValue.ZERO;

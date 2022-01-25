@@ -63,7 +63,7 @@ public class OldFileSystemNatives {
 					} else {
 						res |= 2;
 					}
-					ctx.setResult(new IntValue(res));
+					ctx.setResult(IntValue.of(res));
 				}
 			} catch (IOException ex) {
 				helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
@@ -101,7 +101,7 @@ public class OldFileSystemNatives {
 				if (attributes == null) {
 					ctx.setResult(LongValue.ZERO);
 				} else {
-					ctx.setResult(new LongValue(attributes.lastModifiedTime().toMillis()));
+					ctx.setResult(LongValue.of(attributes.lastModifiedTime().toMillis()));
 				}
 			} catch (IOException ex) {
 				helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
@@ -118,7 +118,7 @@ public class OldFileSystemNatives {
 				if (attributes == null) {
 					ctx.setResult(LongValue.ZERO);
 				} else {
-					ctx.setResult(new LongValue(attributes.size()));
+					ctx.setResult(LongValue.of(attributes.size()));
 				}
 			} catch (IOException ex) {
 				helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());

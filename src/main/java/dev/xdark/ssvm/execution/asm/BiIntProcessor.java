@@ -30,7 +30,7 @@ public final class BiIntProcessor implements InstructionProcessor<AbstractInsnNo
 		val stack = ctx.getStack();
 		int v2 = stack.pop().asInt();
 		int v1 = stack.pop().asInt();
-		stack.push(new IntValue(op.apply(v1, v2)));
+		stack.push(IntValue.of(op.apply(v1, v2)));
 		return Result.CONTINUE;
 	}
 }

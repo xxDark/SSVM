@@ -57,7 +57,7 @@ public class ObjectNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "hashCode", "()I", ctx -> {
-			ctx.setResult(new IntValue(ctx.getLocals().load(0).hashCode()));
+			ctx.setResult(IntValue.of(ctx.getLocals().load(0).hashCode()));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "clone", "()Ljava/lang/Object;", ctx -> {

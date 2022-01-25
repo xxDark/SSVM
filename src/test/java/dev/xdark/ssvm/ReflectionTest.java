@@ -74,7 +74,7 @@ public class ReflectionTest {
 		val c = symbols.java_lang_Integer;
 		val primitive = ThreadLocalRandom.current().nextInt();
 		val instance = helper.invokeStatic(symbols.java_lang_Integer, "valueOf", "(I)Ljava/lang/Integer;", new Value[0], new Value[]{
-				new IntValue(primitive)
+				IntValue.of(primitive)
 		}).getResult();
 		val field = (InstanceValue) helper.invokeVirtual("getDeclaredField", "(Ljava/lang/String;)Ljava/lang/reflect/Field;", new Value[0], new Value[]{
 				c.getOop(),

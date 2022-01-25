@@ -89,6 +89,7 @@ public final class VMSymbols {
 	public final InstanceJavaClass reflect_ConstantPool;
 	public final InstanceJavaClass java_lang_reflect_Proxy;
 	public final InstanceJavaClass java_util_zip_Inflater;
+	public final InstanceJavaClass java_lang_invoke_CallSite;
 
 	/**
 	 * @param vm
@@ -182,6 +183,7 @@ public final class VMSymbols {
 		this.reflect_ConstantPool = reflect_ConstantPool;
 		java_lang_reflect_Proxy = (InstanceJavaClass) vm.findBootstrapClass("java/lang/reflect/Proxy");
 		java_util_zip_Inflater = (InstanceJavaClass) vm.findBootstrapClass("java/util/zip/Inflater");
+		java_lang_invoke_CallSite = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/CallSite");
 	}
 
 	private static InstanceJavaClass resolvedMemberName(VirtualMachine vm) {

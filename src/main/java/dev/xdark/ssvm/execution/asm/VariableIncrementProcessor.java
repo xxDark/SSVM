@@ -18,7 +18,7 @@ public final class VariableIncrementProcessor implements InstructionProcessor<Ii
 	public Result execute(IincInsnNode insn, ExecutionContext ctx) {
 		val locals = ctx.getLocals();
 		int idx = insn.var;
-		locals.set(idx, new IntValue(locals.load(idx).asInt() + insn.incr));
+		locals.set(idx, IntValue.of(locals.load(idx).asInt() + insn.incr));
 		return Result.CONTINUE;
 	}
 }

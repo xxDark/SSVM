@@ -23,7 +23,7 @@ public class RuntimeNatives {
 		val vmi = vm.getInterface();
 		val runtime = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Runtime");
 		vmi.setInvoker(runtime, "availableProcessors", "()I", ctx -> {
-			ctx.setResult(new IntValue(Runtime.getRuntime().availableProcessors()));
+			ctx.setResult(IntValue.of(Runtime.getRuntime().availableProcessors()));
 			return Result.ABORT;
 		});
 	}

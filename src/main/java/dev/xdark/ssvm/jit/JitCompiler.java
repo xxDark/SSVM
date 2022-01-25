@@ -1003,6 +1003,7 @@ public final class JitCompiler {
 				case ATHROW:
 					loadCtx();
 					THROW_EXCEPTION.emit(jit);
+					jit.visitInsn(RETURN);
 					break;
 				case CHECKCAST:
 					jit.visitLdcInsn(((TypeInsnNode) insn).desc);

@@ -1,11 +1,7 @@
 package dev.xdark.ssvm.thread;
 
 import dev.xdark.ssvm.value.InstanceValue;
-import lombok.Getter;
 import lombok.val;
-
-import java.util.LinkedList;
-import java.util.Queue;
 
 /**
  * Basic implementation of a VM thread.

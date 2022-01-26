@@ -21,9 +21,6 @@ import static org.objectweb.asm.Opcodes.*;
 @UtilityClass
 public class JitHelper {
 
-	final long MEMBER_NOT_FOUND = -1L;
-	final long CLASS_NOT_FOUND = -2L;
-
 	public Value arrayLoadInt(Value array, Value index, ExecutionContext ctx) {
 		val helper = ctx.getHelper();
 		val arr = helper.checkNotNullArray((ObjectValue) array);

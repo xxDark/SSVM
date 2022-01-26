@@ -16,7 +16,10 @@ import lombok.val;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -257,13 +260,13 @@ public final class JitCompiler {
 		writer.visitField(infoAcc, "METHOD_NAME", "Ljava/lang/String;", null, jm.getName());
 		writer.visitField(infoAcc, "METHOD_DESC", "Ljava/lang/String;", null, jm.getDesc());
 		writer.visitSource(jm.toString(), null);
-		val constants = new ArrayList<>(compiler.constants.keySet());
+		val constants = compiler.constants.keySet();
 		if (!constants.isEmpty()) {
 			writer.visitField(ACC_PRIVATE | ACC_STATIC, "constants", "[Ljava/lang/Object;", null, null);
 		}
 
 		val bc = writer.toByteArray();
-		return new JitClass(className, bc, Collections.unmodifiableList(new ArrayList<>(constants)));
+		return new JitClass(className, bc, constants.isEmpty() ? Collections.emptyList()Collections.unmodifiableList(new ArrayList<>(constants)));
 	}
 
 	private void compileInner() {

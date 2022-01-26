@@ -8,6 +8,8 @@ import dev.xdark.ssvm.value.*;
 import lombok.experimental.UtilityClass;
 import lombok.val;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * VM intrinsics.
  *
@@ -25,61 +27,55 @@ public class IntrinsicsNatives {
 		objectIntrinsics(vm);
 		stringIntrinsics(vm);
 		characterIntrinsics(vm);
+		intIntrinsics(vm);
+		longIntrinsics(vm);
+		arrayIntrinsics(vm);
 	}
 
 	private void mathIntrinsics(VirtualMachine vm) {
 		val vmi = vm.getInterface();
 		val jc = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Math");
 		vmi.setInvoker(jc, "min", "(II)I", ctx -> {
-			printIntrinsic("min_II");
 			val locals = ctx.getLocals();
 			ctx.setResult(IntValue.of(Math.min(locals.load(0).asInt(), locals.load(1).asInt())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "min", "(JJ)J", ctx -> {
-			printIntrinsic("min_JJ");
 			val locals = ctx.getLocals();
 			ctx.setResult(LongValue.of(Math.min(locals.load(0).asLong(), locals.load(2).asLong())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "min", "(FF)F", ctx -> {
-			printIntrinsic("min_FF");
 			val locals = ctx.getLocals();
 			ctx.setResult(new FloatValue(Math.min(locals.load(0).asFloat(), locals.load(1).asFloat())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "min", "(DD)D", ctx -> {
-			printIntrinsic("min_DD");
 			val locals = ctx.getLocals();
 			ctx.setResult(new DoubleValue(Math.min(locals.load(0).asDouble(), locals.load(2).asDouble())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "max", "(II)I", ctx -> {
-			printIntrinsic("max_II");
 			val locals = ctx.getLocals();
 			ctx.setResult(IntValue.of(Math.max(locals.load(0).asInt(), locals.load(1).asInt())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "max", "(JJ)J", ctx -> {
-			printIntrinsic("max_JJ");
 			val locals = ctx.getLocals();
 			ctx.setResult(LongValue.of(Math.max(locals.load(0).asLong(), locals.load(2).asLong())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "max", "(FF)F", ctx -> {
-			printIntrinsic("max_FF");
 			val locals = ctx.getLocals();
 			ctx.setResult(new FloatValue(Math.max(locals.load(0).asFloat(), locals.load(1).asFloat())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "max", "(DD)D", ctx -> {
-			printIntrinsic("max_DD");
 			val locals = ctx.getLocals();
 			ctx.setResult(new DoubleValue(Math.max(locals.load(0).asDouble(), locals.load(2).asDouble())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "abs", "(I)I", ctx -> {
-			printIntrinsic("abs_I");
 			val locals = ctx.getLocals();
 			ctx.setResult(IntValue.of(Math.abs(locals.load(0).asInt())));
 			return Result.ABORT;
@@ -90,13 +86,11 @@ public class IntrinsicsNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "abs", "(F)F", ctx -> {
-			printIntrinsic("abs_F");
 			val locals = ctx.getLocals();
 			ctx.setResult(new FloatValue(Math.abs(locals.load(0).asFloat())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "abs", "(D)D", ctx -> {
-			printIntrinsic("abs_D");
 			val locals = ctx.getLocals();
 			ctx.setResult(new DoubleValue(Math.abs(locals.load(0).asDouble())));
 			return Result.ABORT;
@@ -129,7 +123,6 @@ public class IntrinsicsNatives {
 			val hashOffset = offset + jc.getFieldOffset("hash", "I");
 			val valueOffset = offset + jc.getFieldOffset("value", "[C");
 			vmi.setInvoker(jc, "hashCode", "()I", ctx -> {
-				printIntrinsic("String_hashCode");
 				val _this = ctx.getLocals().<InstanceValue>load(0);
 				int hc = memoryManager.readInt(_this, hashOffset);
 				if (hc == 0) {
@@ -206,6 +199,40 @@ public class IntrinsicsNatives {
 				val _this = (ArrayValue) memoryManager.readValue(locals.<InstanceValue>load(0), valueOffset);
 				int toOffset = locals.load(2).asInt();
 				ctx.setResult(startsWith(_this, prefix, toOffset) ? IntValue.ONE : IntValue.ZERO);
+				return Result.ABORT;
+			});
+			val charPrimitive = vm.getPrimitives().charPrimitive;
+			vmi.setInvoker(jc, "replace", "(CC)Ljava/lang/String;", ctx -> {
+				val locals = ctx.getLocals();
+				val oldChar = locals.load(1).asChar();
+				val newChar = locals.load(2).asChar();
+				val _this = locals.<InstanceValue>load(0);
+				if (oldChar == newChar) {
+					ctx.setResult(_this);
+				} else {
+					val helper = vm.getHelper();
+					val value = (ArrayValue) memoryManager.readValue(_this, valueOffset);
+					int len = value.getLength();
+					int i = -1;
+					while (++i < len) {
+						if (value.getChar(i) == oldChar) {
+							break;
+						}
+					}
+					if (i < len) {
+						val buf = helper.newArray(charPrimitive, len);
+						for (int j = 0; j < i; j++) {
+							buf.setChar(j, value.getChar(j));
+						}
+						while (i < len) {
+							val c = value.getChar(i);
+							buf.setChar(i++, (c == oldChar) ? newChar : c);
+						}
+						ctx.setResult(helper.newUtf8(buf));
+					} else {
+						ctx.setResult(_this);
+					}
+				}
 				return Result.ABORT;
 			});
 		}
@@ -326,7 +353,7 @@ public class IntrinsicsNatives {
 
 	private void characterIntrinsics(VirtualMachine vm) {
 		val vmi = vm.getInterface();
-		val jc = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Character");
+		val jc = vm.getSymbols().java_lang_Character;
 		val toLowerCase = (MethodInvoker) ctx -> {
 			ctx.setResult(IntValue.of(Character.toLowerCase(ctx.getLocals().load(0).asInt())));
 			return Result.ABORT;
@@ -339,9 +366,309 @@ public class IntrinsicsNatives {
 		};
 		vmi.setInvoker(jc, "toUpperCase", "(I)I", toUpperCase);
 		vmi.setInvoker(jc, "toUpperCase", "(C)C", toUpperCase);
+		val digit = (MethodInvoker) ctx -> {
+			val locals = ctx.getLocals();
+			ctx.setResult(IntValue.of(Character.digit(locals.load(0).asInt(), locals.load(1).asInt())));
+			return Result.ABORT;
+		};
+		vmi.setInvoker(jc, "digit", "(II)I", digit);
+		vmi.setInvoker(jc, "digit", "(CI)I", digit);
+		vmi.setInvoker(jc, "forDigit", "(II)C", ctx -> {
+			val locals = ctx.getLocals();
+			ctx.setResult(IntValue.of(Character.forDigit(locals.load(0).asInt(), locals.load(1).asInt())));
+			return Result.ABORT;
+		});
 	}
 
-	private void printIntrinsic(String name) {
-		//System.err.println("[TRACE] calling intrinsic: " + name);
+	private void intIntrinsics(VirtualMachine vm) {
+		val vmi = vm.getInterface();
+		val jc = vm.getSymbols().java_lang_Integer;
+		vmi.setInvoker(jc, "hashCode", "(I)I", ctx -> {
+			ctx.setResult(IntValue.of(Integer.hashCode(ctx.getLocals().load(0).asInt())));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "highestOneBit", "(I)I", ctx -> {
+			ctx.setResult(IntValue.of(Integer.highestOneBit(ctx.getLocals().load(0).asInt())));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "numberOfLeadingZeros", "(I)I", ctx -> {
+			ctx.setResult(IntValue.of(Integer.numberOfLeadingZeros(ctx.getLocals().load(0).asInt())));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "numberOfTrailingZeros", "(I)I", ctx -> {
+			ctx.setResult(IntValue.of(Integer.numberOfTrailingZeros(ctx.getLocals().load(0).asInt())));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "bitCount", "(I)I", ctx -> {
+			ctx.setResult(IntValue.of(Integer.bitCount(ctx.getLocals().load(0).asInt())));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "reverse", "(I)I", ctx -> {
+			ctx.setResult(IntValue.of(Integer.reverse(ctx.getLocals().load(0).asInt())));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "reverseBytes", "(I)I", ctx -> {
+			ctx.setResult(IntValue.of(Integer.reverseBytes(ctx.getLocals().load(0).asInt())));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "toString", "(I)Ljava/lang/String;", ctx -> {
+			val locals = ctx.getLocals();
+			int value = locals.load(0).asInt();
+			ctx.setResult(vm.getHelper().newUtf8(Integer.toString(value)));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "toHexString", "(I)Ljava/lang/String;", ctx -> {
+			val locals = ctx.getLocals();
+			int value = locals.load(0).asInt();
+			ctx.setResult(vm.getHelper().newUtf8(Integer.toHexString(value)));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "toOctalString", "(I)Ljava/lang/String;", ctx -> {
+			val locals = ctx.getLocals();
+			int value = locals.load(0).asInt();
+			ctx.setResult(vm.getHelper().newUtf8(Integer.toOctalString(value)));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "toString", "(II)Ljava/lang/String;", ctx -> {
+			val locals = ctx.getLocals();
+			int value = locals.load(0).asInt();
+			int radix = locals.load(1).asInt();
+			ctx.setResult(vm.getHelper().newUtf8(Integer.toString(value, radix)));
+			return Result.ABORT;
+		});
+	}
+
+	private void longIntrinsics(VirtualMachine vm) {
+		val vmi = vm.getInterface();
+		val jc = vm.getSymbols().java_lang_Long;
+		vmi.setInvoker(jc, "hashCode", "(J)I", ctx -> {
+			ctx.setResult(IntValue.of(Long.hashCode(ctx.getLocals().load(0).asLong())));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "highestOneBit", "(J)J", ctx -> {
+			ctx.setResult(LongValue.of(Long.highestOneBit(ctx.getLocals().load(0).asLong())));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "numberOfLeadingZeros", "(J)I", ctx -> {
+			ctx.setResult(IntValue.of(Long.numberOfLeadingZeros(ctx.getLocals().load(0).asLong())));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "numberOfTrailingZeros", "(J)I", ctx -> {
+			ctx.setResult(IntValue.of(Long.numberOfTrailingZeros(ctx.getLocals().load(0).asLong())));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "bitCount", "(J)I", ctx -> {
+			ctx.setResult(IntValue.of(Long.bitCount(ctx.getLocals().load(0).asLong())));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "reverse", "(J)J", ctx -> {
+			ctx.setResult(LongValue.of(Long.reverse(ctx.getLocals().load(0).asLong())));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "reverseBytes", "(J)J", ctx -> {
+			ctx.setResult(LongValue.of(Long.reverseBytes(ctx.getLocals().load(0).asLong())));
+			return Result.ABORT;
+		});
+	}
+
+	private void arrayIntrinsics(VirtualMachine vm) {
+		val vmi = vm.getInterface();
+		val jc = (InstanceJavaClass) vm.findBootstrapClass("java/util/Arrays");
+		vmi.setInvoker(jc, "hashCode", "([J)I", ctx -> {
+			val arr = ctx.getLocals().<ObjectValue>load(0);
+			if (arr.isNull()) {
+				ctx.setResult(IntValue.ZERO);
+			} else {
+				val array = (ArrayValue) arr;
+				int result = 1;
+				for (int i = 0, j = array.getLength(); i < j; i++) {
+					result = 31 * result + Long.hashCode(array.getLong(i));
+				}
+				ctx.setResult(IntValue.of(result));
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "hashCode", "([D)I", ctx -> {
+			val arr = ctx.getLocals().<ObjectValue>load(0);
+			if (arr.isNull()) {
+				ctx.setResult(IntValue.ZERO);
+			} else {
+				val array = (ArrayValue) arr;
+				int result = 1;
+				for (int i = 0, j = array.getLength(); i < j; i++) {
+					result = 31 * result + Double.hashCode(array.getDouble(i));
+				}
+				ctx.setResult(IntValue.of(result));
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "hashCode", "([I)I", ctx -> {
+			val arr = ctx.getLocals().<ObjectValue>load(0);
+			if (arr.isNull()) {
+				ctx.setResult(IntValue.ZERO);
+			} else {
+				val array = (ArrayValue) arr;
+				int result = 1;
+				for (int i = 0, j = array.getLength(); i < j; i++) {
+					result = 31 * result + Integer.hashCode(array.getInt(i));
+				}
+				ctx.setResult(IntValue.of(result));
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "hashCode", "([F)I", ctx -> {
+			val arr = ctx.getLocals().<ObjectValue>load(0);
+			if (arr.isNull()) {
+				ctx.setResult(IntValue.ZERO);
+			} else {
+				val array = (ArrayValue) arr;
+				int result = 1;
+				for (int i = 0, j = array.getLength(); i < j; i++) {
+					result = 31 * result + Float.hashCode(array.getFloat(i));
+				}
+				ctx.setResult(IntValue.of(result));
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "hashCode", "([C)I", ctx -> {
+			val arr = ctx.getLocals().<ObjectValue>load(0);
+			if (arr.isNull()) {
+				ctx.setResult(IntValue.ZERO);
+			} else {
+				val array = (ArrayValue) arr;
+				int result = 1;
+				for (int i = 0, j = array.getLength(); i < j; i++) {
+					result = 31 * result + Character.hashCode(array.getChar(i));
+				}
+				ctx.setResult(IntValue.of(result));
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "hashCode", "([S)I", ctx -> {
+			val arr = ctx.getLocals().<ObjectValue>load(0);
+			if (arr.isNull()) {
+				ctx.setResult(IntValue.ZERO);
+			} else {
+				val array = (ArrayValue) arr;
+				int result = 1;
+				for (int i = 0, j = array.getLength(); i < j; i++) {
+					result = 31 * result + Short.hashCode(array.getShort(i));
+				}
+				ctx.setResult(IntValue.of(result));
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "hashCode", "([B)I", ctx -> {
+			val arr = ctx.getLocals().<ObjectValue>load(0);
+			if (arr.isNull()) {
+				ctx.setResult(IntValue.ZERO);
+			} else {
+				val array = (ArrayValue) arr;
+				int result = 1;
+				for (int i = 0, j = array.getLength(); i < j; i++) {
+					result = 31 * result + Byte.hashCode(array.getByte(i));
+				}
+				ctx.setResult(IntValue.of(result));
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "hashCode", "([Z)I", ctx -> {
+			val arr = ctx.getLocals().<ObjectValue>load(0);
+			if (arr.isNull()) {
+				ctx.setResult(IntValue.ZERO);
+			} else {
+				val array = (ArrayValue) arr;
+				int result = 1;
+				for (int i = 0, j = array.getLength(); i < j; i++) {
+					result = 31 * result + Boolean.hashCode(array.getBoolean(i));
+				}
+				ctx.setResult(IntValue.of(result));
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "fill", "([JJ)V", ctx -> {
+			val locals = ctx.getLocals();
+			val helper = vm.getHelper();
+			val arr = helper.checkNotNullArray(locals.load(0));
+			val v = locals.load(1).asLong();
+			for (int j = arr.getLength(); j != 0;) {
+				arr.setLong(--j, v);
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "fill", "([DD)V", ctx -> {
+			val locals = ctx.getLocals();
+			val helper = vm.getHelper();
+			val arr = helper.checkNotNullArray(locals.load(0));
+			val v = locals.load(1).asDouble();
+			for (int j = arr.getLength(); j != 0;) {
+				arr.setDouble(--j, v);
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "fill", "([II)V", ctx -> {
+			val locals = ctx.getLocals();
+			val helper = vm.getHelper();
+			val arr = helper.checkNotNullArray(locals.load(0));
+			val v = locals.load(1).asInt();
+			for (int j = arr.getLength(); j != 0;) {
+				arr.setInt(--j, v);
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "fill", "([FF)V", ctx -> {
+			val locals = ctx.getLocals();
+			val helper = vm.getHelper();
+			val arr = helper.checkNotNullArray(locals.load(0));
+			val v = locals.load(1).asFloat();
+			for (int j = arr.getLength(); j != 0;) {
+				arr.setFloat(--j, v);
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "fill", "([CC)V", ctx -> {
+			val locals = ctx.getLocals();
+			val helper = vm.getHelper();
+			val arr = helper.checkNotNullArray(locals.load(0));
+			val v = locals.load(1).asChar();
+			for (int j = arr.getLength(); j != 0;) {
+				arr.setChar(--j, v);
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "fill", "([SS)V", ctx -> {
+			val locals = ctx.getLocals();
+			val helper = vm.getHelper();
+			val arr = helper.checkNotNullArray(locals.load(0));
+			val v = locals.load(1).asShort();
+			for (int j = arr.getLength(); j != 0;) {
+				arr.setShort(--j, v);
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "fill", "([BB)V", ctx -> {
+			val locals = ctx.getLocals();
+			val helper = vm.getHelper();
+			val arr = helper.checkNotNullArray(locals.load(0));
+			val v = locals.load(1).asByte();
+			for (int j = arr.getLength(); j != 0;) {
+				arr.setByte(--j, v);
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "fill", "([ZZ)V", ctx -> {
+			val locals = ctx.getLocals();
+			val helper = vm.getHelper();
+			val arr = helper.checkNotNullArray(locals.load(0));
+			val v = locals.load(1).asBoolean();
+			for (int j = arr.getLength(); j != 0;) {
+				arr.setBoolean(--j, v);
+			}
+			return Result.ABORT;
+		});
+	}
+
+	private boolean nativeFillAvailable(ArrayValue value, int from, int to) {
+		return from >= 0 && from <= to && to <= value.getLength();
 	}
 }

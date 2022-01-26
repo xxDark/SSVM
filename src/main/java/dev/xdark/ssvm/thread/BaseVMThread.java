@@ -5,6 +5,7 @@ import lombok.Getter;
 
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Basic VMThread implementation.
@@ -15,7 +16,7 @@ public abstract class BaseVMThread implements VMThread {
 
 	private final Backtrace backtrace = new SimpleBacktrace();
 	@Getter
-	private final Queue<Runnable> taskQueue = new LinkedList<>();
+	private final Queue<Runnable> taskQueue = new ConcurrentLinkedQueue<>();
 	private final InstanceValue oop;
 
 	/**

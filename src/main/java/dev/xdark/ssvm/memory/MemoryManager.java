@@ -828,6 +828,17 @@ public interface MemoryManager {
 
 	/**
 	 * Reports the offset of the first element in
+	 * the storage allocation of a given array.
+	 *
+	 * @param array
+	 * 		Array value.
+	 *
+	 * @return offset of the first element.
+	 */
+	int arrayBaseOffset(ArrayValue array);
+
+	/**
+	 * Reports the offset of the first element in
 	 * the storage allocation of a given array class.
 	 *
 	 * @param javaClass

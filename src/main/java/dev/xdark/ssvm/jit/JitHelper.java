@@ -590,6 +590,22 @@ public class JitHelper {
 		}
 	}
 
+	public void invokeVirtualIntrinsic(Object name, Object desc, Object args, ExecutionContext ctx) {
+		val vm = ctx.getVM();
+		val stack = ctx.getStack();
+		val arr = (Type[]) args;
+		int localsLength = arr.length + 1;
+		val locals = new Value[localsLength];
+		while (localsLength-- != 0) {
+			locals[localsLength] = stack.popGeneric();
+		}
+		val result = vm.getHelper().invokeVirtual((String) name, (String) desc, new Value[0], locals);
+		val v = result.getResult();
+		if (!v.isVoid()) {
+			stack.pushGeneric(v);
+		}
+	}
+
 	public void invokeInterface(String owner, String name, String desc, ExecutionContext ctx) {
 		val vm = ctx.getVM();
 		val helper = vm.getHelper();

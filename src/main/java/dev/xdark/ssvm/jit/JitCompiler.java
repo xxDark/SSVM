@@ -16,10 +16,7 @@ import lombok.val;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -162,8 +159,6 @@ public final class JitCompiler {
 	private static final Access PUT_STATIC = staticCall(JIT_HELPER, "putStatic", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
 	private static final Access GET_FIELD = staticCall(JIT_HELPER, "getField", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
 	private static final Access PUT_FIELD = staticCall(JIT_HELPER, "putField", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access INVOKE_VIRTUAL = staticCall(JIT_HELPER, "invokeVirtual", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access INVOKE_SPECIAL = staticCall(JIT_HELPER, "invokeSpecial", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
 	private static final Access INVOKE_INTERFACE = staticCall(JIT_HELPER, "invokeInterface", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
 	private static final Access NEW_INSTANCE = staticCall(JIT_HELPER, "allocateInstance", J_VOID, J_STRING, CTX);
 	private static final Access NEW_PRIMITIVE_ARRAY = staticCall(JIT_HELPER, "allocatePrimitiveArray", J_VOID, J_INT, CTX);
@@ -190,10 +185,14 @@ public final class JitCompiler {
 	private static final Access GET_STATIC_BYTE = staticCall(JIT_HELPER, "getStaticIntrinsicB", J_VOID, J_OBJECT, J_LONG, CTX);
 	private static final Access GET_STATIC_VALUE = staticCall(JIT_HELPER, "getStaticIntrinsicA", J_VOID, J_OBJECT, J_LONG, CTX);
 	private static final Access GET_STATIC_FAIL = staticCall(JIT_HELPER, "getStaticIntrinsicFail", J_VOID, J_OBJECT, J_OBJECT, CTX);
+	private static final Access GET_STATIC_SLOW = staticCall(JIT_HELPER, "getStatic", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
 
 	private static final Access INVOKE_FAIL = staticCall(JIT_HELPER, "invokeFail", J_VOID, J_OBJECT, J_OBJECT, CTX);
 	private static final Access INVOKE_STATIC_INTRINSIC = staticCall(JIT_HELPER, "invokeStaticIntrinsic", J_VOID, J_OBJECT, J_OBJECT, CTX);
 	private static final Access INVOKE_SPECIAL_INTRINSIC = staticCall(JIT_HELPER, "invokeSpecialIntrinsic", J_VOID, J_OBJECT, J_OBJECT, CTX);
+	private static final Access INVOKE_VIRTUAL_INTRINSIC = staticCall(JIT_HELPER, "invokeVirtualIntrinsic", J_VOID, J_OBJECT, J_OBJECT, J_OBJECT, CTX);
+	private static final Access INVOKE_STATIC_SLOW = staticCall(JIT_HELPER, "invokeStatic", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
+	private static final Access INVOKE_SPECIAL_SLOW = staticCall(JIT_HELPER, "invokeSpecial", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
 
 	private static final int CTX_SLOT = 1;
 	private static final int LOCALS_SLOT = 2;
@@ -975,9 +974,7 @@ public final class JitCompiler {
 					PUT_FIELD.emit(jit);
 					break;
 				case INVOKEVIRTUAL:
-					pushMethod((MethodInsnNode) insn);
-					loadCtx();
-					INVOKE_VIRTUAL.emit(jit);
+					invokeVirtual((MethodInsnNode) insn);
 					break;
 				case INVOKESPECIAL:
 					invokeSpecial((MethodInsnNode) insn);
@@ -1309,11 +1306,13 @@ public final class JitCompiler {
 	private void loadCompilerConstant(Object value) {
 		val constants = this.constants;
 		Integer constant = constants.get(value);
+		val jit = this.jit;
 		if (constant == null) {
 			constant = constants.size();
 			constants.put(value, constant);
+			jit.visitLdcInsn("const " + constant + " = " + (value instanceof Object[] ? Arrays.toString((Object[]) value) : value));
+			jit.visitInsn(Opcodes.POP);
 		}
-		val jit = this.jit;
 		jit.visitFieldInsn(GETSTATIC, className, "constants", "[Ljava/lang/Object;");
 		jit.visitLdcInsn(constant);
 		jit.visitInsn(AALOAD);
@@ -1373,13 +1372,22 @@ public final class JitCompiler {
 				jit.visitLdcInsn(node.name);
 				access = GET_STATIC_FAIL;
 			} catch (VMException ex) {
-				jit.visitLdcInsn(node.owner);
-				jit.visitInsn(ACONST_NULL);
-				access = GET_STATIC_FAIL;
+				// Class was probably not found.
+				// We need to use fallback path
+				// because the may be defined right in the code
+				// we are JITting.
+				getStaticSlow(node);
+				return;
 			}
 		}
 		loadCtx();
 		access.emit(jit);
+	}
+
+	private void getStaticSlow(FieldInsnNode node) {
+		pushField(node);
+		loadCtx();
+		GET_STATIC_SLOW.emit(jit);
 	}
 
 	private void invokeStatic(MethodInsnNode node) {
@@ -1403,12 +1411,21 @@ public final class JitCompiler {
 				access = INVOKE_STATIC_INTRINSIC;
 			}
 		} catch (VMException ex) {
-			jit.visitLdcInsn(node.owner);
-			jit.visitInsn(ACONST_NULL);
-			access = INVOKE_FAIL;
+			// Class was probably not found.
+			// We need to use fallback path
+			// because the may be defined right in the code
+			// we are JITting.
+			invokeStaticSlow(node);
+			return;
 		}
 		loadCtx();
 		access.emit(jit);
+	}
+
+	private void invokeStaticSlow(MethodInsnNode node) {
+		pushMethod(node);
+		loadCtx();
+		INVOKE_STATIC_SLOW.emit(jit);
 	}
 
 	private void invokeSpecial(MethodInsnNode node) {
@@ -1435,12 +1452,30 @@ public final class JitCompiler {
 				access = INVOKE_SPECIAL_INTRINSIC;
 			}
 		} catch (VMException ex) {
-			jit.visitLdcInsn(node.owner);
-			jit.visitInsn(ACONST_NULL);
-			access = INVOKE_FAIL;
+			// Class was probably not found.
+			// We need to use fallback path
+			// because the may be defined right in the code
+			// we are JITting.
+			invokeSpecialSlow(node);
+			return;
 		}
 		loadCtx();
 		access.emit(jit);
+	}
+
+	private void invokeSpecialSlow(MethodInsnNode node) {
+		pushMethod(node);
+		loadCtx();
+		INVOKE_SPECIAL_SLOW.emit(jit);
+	}
+
+	private void invokeVirtual(MethodInsnNode node) {
+		loadCompilerConstant(node.name);
+		val desc = node.desc;
+		loadCompilerConstant(desc);
+		loadCompilerConstant(Type.getArgumentTypes(desc));
+		loadCtx();
+		INVOKE_VIRTUAL_INTRINSIC.emit(jit);
 	}
 
 	private static boolean isWide(Object cst) {

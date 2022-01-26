@@ -5,6 +5,7 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.util.VMSymbols;
+import dev.xdark.ssvm.value.TopValue;
 import dev.xdark.ssvm.value.Value;
 import dev.xdark.ssvm.value.VoidValue;
 
@@ -156,6 +157,9 @@ public final class ExecutionContext {
 	 * 		Value to set.
 	 */
 	public void setResult(Value result) {
+		if (result == TopValue.INSTANCE) {
+			throw new IllegalStateException("Cannot set TOP as the resulting value");
+		}
 		this.result = result;
 	}
 }

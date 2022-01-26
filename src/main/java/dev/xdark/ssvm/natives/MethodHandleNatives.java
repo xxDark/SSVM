@@ -198,7 +198,9 @@ public class MethodHandleNatives {
 				} else {
 					result = helper.invokeStatic(jm.getOwner(), jm, new Value[0], lvt).getResult();
 				}
-				ctx.setResult(voidAsNull(result, ctx.getMethod()));
+				val m = ctx.getMethod();
+				result = Util.convertInvokeDynamicArgument(helper, m.getReturnType(), result);
+				ctx.setResult(voidAsNull(result, m));
 			} else {
 				throw new PanicException("TODO: " + vmtarget);
 			}
@@ -227,13 +229,16 @@ public class MethodHandleNatives {
 			} else {
 				result = helper.invokeStatic(vmtarget.getOwner(), vmtarget, new Value[0], args).getResult();
 			}
-			ctx.setResult(voidAsNull(result, ctx.getMethod()));
+			val m = ctx.getMethod();
+			result = Util.convertInvokeDynamicArgument(helper, m.getReturnType(), result);
+			ctx.setResult(voidAsNull(result, m));
 			return Result.ABORT;
 		};
 
 		vmi.setInvoker(mh, "linkToStatic", "([Ljava/lang/Object;)Ljava/lang/Object;", linkToXX);
 		vmi.setInvoker(mh, "linkToVirtual", "([Ljava/lang/Object;)Ljava/lang/Object;", linkToXX);
 		vmi.setInvoker(mh, "linkToInterface", "([Ljava/lang/Object;)Ljava/lang/Object;", linkToXX);
+		vmi.setInvoker(mh, "linkToSpecial", "([Ljava/lang/Object;)Ljava/lang/Object;", linkToXX);
 
 		val lookup = symbols.java_lang_invoke_MethodHandles$Lookup;
 		vmi.setInvoker(lookup, "checkAccess", "(BLjava/lang/Class;Ljava/lang/invoke/MemberName;)V", MethodInvoker.noop());

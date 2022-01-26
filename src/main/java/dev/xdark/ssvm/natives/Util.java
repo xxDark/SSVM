@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.*;
 import lombok.experimental.UtilityClass;
 import lombok.val;
@@ -71,22 +72,61 @@ final class Util {
 		// either I'm dumb, or there is some magic in the JVM.
 		val helper = vm.getHelper();
 		for (int i = 0, j = Math.min(args.length, types.length); i < j; i++) {
-			val t = types[i];
-			val arg = args[i];
-			if (LONG.equals(t)) args[i] = helper.boxLong(arg);
-			else if (DOUBLE.equals(t)) args[i] = helper.boxDouble(arg);
-			else if (INT.equals(t)) args[i] = helper.boxInt(arg);
-			else if (FLOAT.equals(t)) args[i] = helper.boxFloat(arg);
-			else if (CHAR.equals(t)) args[i] = helper.boxChar(arg);
-			else if (SHORT.equals(t)) args[i] = helper.boxShort(arg);
-			else if (BYTE.equals(t)) args[i] = helper.boxByte(arg);
-			else if (BOOLEAN.equals(t)) args[i] = helper.boxBoolean(arg);
-			else if (t.getSort() == Type.OBJECT) {
-				if (arg instanceof DoubleValue) args[i] = helper.boxDouble(arg);
-				else if (arg instanceof LongValue) args[i] = helper.boxLong(arg);
-				else if (arg instanceof IntValue) args[i] = helper.boxInt(arg);
-				else if (arg instanceof FloatValue) args[i] = helper.boxFloat(arg);
+			args[i] = convertInvokeDynamicArgument(helper, types[i], args[i]);
+		}
+	}
+
+	/**
+	 * Performs argument conversion to its
+	 * wrapper/primitive type if needed.
+	 *
+	 * @param helper
+	 * 		VM helper.
+	 * @param type
+	 * 		Argument type.
+	 * @param arg
+	 * 		Argument.
+	 *
+	 * @return boxed/unboxed argument or itself,
+	 * if conversion is not needed.
+	 */
+	Value convertInvokeDynamicArgument(VMHelper helper, Type type, Value arg) {
+		if (!(arg instanceof ObjectValue)) {
+			if (LONG.equals(type)) return helper.boxLong(arg);
+			else if (DOUBLE.equals(type)) return helper.boxDouble(arg);
+			else if (INT.equals(type)) return helper.boxInt(arg);
+			else if (FLOAT.equals(type)) return helper.boxFloat(arg);
+			else if (CHAR.equals(type)) return helper.boxChar(arg);
+			else if (SHORT.equals(type)) return helper.boxShort(arg);
+			else if (BYTE.equals(type)) return helper.boxByte(arg);
+			else if (BOOLEAN.equals(type)) return helper.boxBoolean(arg);
+			if (type.getSort() == Type.OBJECT) {
+				if (arg instanceof DoubleValue) return helper.boxDouble(arg);
+				else if (arg instanceof LongValue) return helper.boxLong(arg);
+				else if (arg instanceof IntValue) return helper.boxInt(arg);
+				else if (arg instanceof FloatValue) return helper.boxFloat(arg);
+			}
+		} else if (arg instanceof InstanceValue) {
+			val obj = (InstanceValue) arg;
+			switch (type.getSort()) {
+				case Type.LONG:
+					return helper.unboxLong(obj);
+				case Type.DOUBLE:
+					return helper.unboxDouble(obj);
+				case Type.INT:
+					return helper.unboxInt(obj);
+				case Type.FLOAT:
+					return helper.unboxFloat(obj);
+				case Type.CHAR:
+					return helper.unboxChar(obj);
+				case Type.SHORT:
+					return helper.unboxShort(obj);
+				case Type.BYTE:
+					return helper.unboxByte(obj);
+				case Type.BOOLEAN:
+					return helper.unboxBoolean(obj);
 			}
 		}
+		return arg;
 	}
 }

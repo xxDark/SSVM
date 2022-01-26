@@ -494,6 +494,26 @@ public class UnsafeNatives {
 			vm.getMemoryManager().writeBoolean(o, locals.load(2).asLong(), locals.load(4).asBoolean());
 			return Result.ABORT;
 		});
+		vmi.setInvoker(unsafe, "getBoolean", "(Ljava/lang/Object;J)Z", ctx -> {
+			val locals = ctx.getLocals();
+			val value = locals.load(1);
+			if (value.isNull()) {
+				throw new PanicException("Segfault");
+			}
+			val offset = locals.load(2).asInt();
+			val memoryManager = vm.getMemoryManager();
+			ctx.setResult(memoryManager.readBoolean((ObjectValue) value, offset) ? IntValue.ONE : IntValue.ZERO);
+			return Result.ABORT;
+		});
+		vmi.setInvoker(unsafe, "putLong", "(Ljava/lang/Object;JJ)V", ctx -> {
+			val locals = ctx.getLocals();
+			val o = locals.<ObjectValue>load(1);
+			if (o.isNull()) {
+				throw new PanicException("Segfault");
+			}
+			vm.getMemoryManager().writeLong(o, locals.load(2).asLong(), locals.load(4).asLong());
+			return Result.ABORT;
+		});
 	}
 
 	private static boolean canAllocateInstance(JavaClass jc) {

@@ -708,8 +708,14 @@ public final class VMHelper {
 		if (jc != vm.getSymbols().java_lang_String) {
 			throw new IllegalStateException("Not a string: " + value + " (" + jc + ')');
 		}
-		val array = invokeExact(jc, "toCharArray", "()[C", new Value[0], new Value[]{value}).getResult();
-		return new String(toJavaChars((ArrayValue) array));
+		long off = value.getFieldOffset("value", "[C");
+		ArrayValue array;
+		if (off != -1L) {
+			array = (ArrayValue) vm.getMemoryManager().readValue(value, off);
+		} else {
+			array = (ArrayValue) invokeExact(jc, "toCharArray", "()[C", new Value[0], new Value[]{value}).getResult();
+		}
+		return new String(toJavaChars(array));
 	}
 
 	/**
@@ -779,6 +785,31 @@ public final class VMHelper {
 	 */
 	public ObjectValue newUtf8(String str) {
 		return newUtf8(str, false);
+	}
+
+	/**
+	 * Allocates VM string.
+	 *
+	 * @param chars
+	 * 		String chars.
+	 *
+	 * @return VM string.
+	 */
+	public ObjectValue newUtf8(ArrayValue chars) {
+		val vm = this.vm;
+		val jc = vm.getSymbols().java_lang_String;
+		jc.initialize();
+		val memoryManager = vm.getMemoryManager();
+		val wrapper = memoryManager.newInstance(jc);
+		long off = wrapper.getFieldOffset("value", "[C");
+		val jdk8 = off != -1L;
+		if (jdk8) {
+			memoryManager.writeValue(wrapper, off, chars);
+			wrapper.initialize();
+		} else {
+			invokeExact(jc, "<init>", "([C)V", new Value[0], new Value[]{wrapper, chars});
+		}
+		return wrapper;
 	}
 
 	/**

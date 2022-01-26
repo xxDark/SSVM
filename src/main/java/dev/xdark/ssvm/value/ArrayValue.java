@@ -243,7 +243,7 @@ public final class ArrayValue extends ObjectValue {
 
 	private long dataOffset(long offset) {
 		if (offset == -1L) return offset;
-		return getMemoryManager().arrayBaseOffset(getJavaClass()) + offset;
+		return getMemoryManager().arrayBaseOffset(this) + offset;
 	}
 
 	private int validate(int index) {

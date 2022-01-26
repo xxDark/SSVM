@@ -5,6 +5,7 @@ import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.value.*;
 import lombok.experimental.UtilityClass;
 import lombok.val;
@@ -536,7 +537,53 @@ public class JitHelper {
 		while (localsLength-- != 0) {
 			locals[localsLength] = stack.popGeneric();
 		}
-		val result = ctx.getHelper().invokeStatic(klass, mn, new Value[0], locals);
+		val result = helper.invokeStatic(klass, mn, new Value[0], locals);
+		val v = result.getResult();
+		if (!v.isVoid()) {
+			stack.pushGeneric(v);
+		}
+	}
+
+	// special intrinsic version.
+	public void invokeFail(Object owner, Object method, ExecutionContext ctx) {
+		val helper = ctx.getHelper();
+		val symbols = ctx.getSymbols();
+		if (owner instanceof String) {
+			// Class was not found
+			helper.throwException(symbols.java_lang_NoClassDefFoundError, (String) owner);
+		}
+		ctx.getHelper().throwException(symbols.java_lang_NoSuchMethodError, (String) method);
+	}
+
+	public void invokeStaticIntrinsic(Object owner, Object method, ExecutionContext ctx) {
+		val helper = ctx.getHelper();
+		val mn = (JavaMethod) method;
+		val stack = ctx.getStack();
+		val args = mn.getArgumentTypes();
+		int localsLength = args.length;
+		val locals = new Value[localsLength];
+		while (localsLength-- != 0) {
+			locals[localsLength] = stack.popGeneric();
+		}
+		val result = helper.invokeStatic((InstanceJavaClass) owner, mn, new Value[0], locals);
+		val v = result.getResult();
+		if (!v.isVoid()) {
+			stack.pushGeneric(v);
+		}
+	}
+
+	public void invokeSpecialIntrinsic(Object owner, Object method, ExecutionContext ctx) {
+		val vm = ctx.getVM();
+		val helper = vm.getHelper();
+		val stack = ctx.getStack();
+		val mn = (JavaMethod) method;
+		val args = mn.getArgumentTypes();
+		int localsLength = args.length + 1;
+		val locals = new Value[localsLength];
+		while (localsLength-- != 0) {
+			locals[localsLength] = stack.popGeneric();
+		}
+		val result = helper.invokeExact((InstanceJavaClass) owner, mn, new Value[0], locals);
 		val v = result.getResult();
 		if (!v.isVoid()) {
 			stack.pushGeneric(v);

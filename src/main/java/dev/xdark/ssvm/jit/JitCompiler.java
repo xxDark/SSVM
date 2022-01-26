@@ -159,13 +159,11 @@ public final class JitCompiler {
 	private static final Access COMPARE_LONG = staticCall(JIT_HELPER, "compareLong", VALUE, VALUE, VALUE);
 	private static final Access COMPARE_FLOAT = staticCall(JIT_HELPER, "compareFloat", VALUE, VALUE, VALUE, J_INT);
 	private static final Access COMPARE_DOUBLE = staticCall(JIT_HELPER, "compareDouble", VALUE, VALUE, VALUE, J_INT);
-	private static final Access GET_STATIC = staticCall(JIT_HELPER, "getStatic", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
 	private static final Access PUT_STATIC = staticCall(JIT_HELPER, "putStatic", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
 	private static final Access GET_FIELD = staticCall(JIT_HELPER, "getField", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
 	private static final Access PUT_FIELD = staticCall(JIT_HELPER, "putField", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
 	private static final Access INVOKE_VIRTUAL = staticCall(JIT_HELPER, "invokeVirtual", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
 	private static final Access INVOKE_SPECIAL = staticCall(JIT_HELPER, "invokeSpecial", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access INVOKE_STATIC = staticCall(JIT_HELPER, "invokeStatic", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
 	private static final Access INVOKE_INTERFACE = staticCall(JIT_HELPER, "invokeInterface", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
 	private static final Access NEW_INSTANCE = staticCall(JIT_HELPER, "allocateInstance", J_VOID, J_STRING, CTX);
 	private static final Access NEW_PRIMITIVE_ARRAY = staticCall(JIT_HELPER, "allocatePrimitiveArray", J_VOID, J_INT, CTX);
@@ -192,6 +190,10 @@ public final class JitCompiler {
 	private static final Access GET_STATIC_BYTE = staticCall(JIT_HELPER, "getStaticIntrinsicB", J_VOID, J_OBJECT, J_LONG, CTX);
 	private static final Access GET_STATIC_VALUE = staticCall(JIT_HELPER, "getStaticIntrinsicA", J_VOID, J_OBJECT, J_LONG, CTX);
 	private static final Access GET_STATIC_FAIL = staticCall(JIT_HELPER, "getStaticIntrinsicFail", J_VOID, J_OBJECT, J_OBJECT, CTX);
+
+	private static final Access INVOKE_FAIL = staticCall(JIT_HELPER, "invokeFail", J_VOID, J_OBJECT, J_OBJECT, CTX);
+	private static final Access INVOKE_STATIC_INTRINSIC = staticCall(JIT_HELPER, "invokeStaticIntrinsic", J_VOID, J_OBJECT, J_OBJECT, CTX);
+	private static final Access INVOKE_SPECIAL_INTRINSIC = staticCall(JIT_HELPER, "invokeSpecialIntrinsic", J_VOID, J_OBJECT, J_OBJECT, CTX);
 
 	private static final int CTX_SLOT = 1;
 	private static final int LOCALS_SLOT = 2;
@@ -266,7 +268,7 @@ public final class JitCompiler {
 		}
 
 		val bc = writer.toByteArray();
-		return new JitClass(className, bc, constants.isEmpty() ? Collections.emptyList()Collections.unmodifiableList(new ArrayList<>(constants)));
+		return new JitClass(className, bc, constants.isEmpty() ? Collections.emptyList() : Collections.unmodifiableList(new ArrayList<>(constants)));
 	}
 
 	private void compileInner() {
@@ -978,14 +980,10 @@ public final class JitCompiler {
 					INVOKE_VIRTUAL.emit(jit);
 					break;
 				case INVOKESPECIAL:
-					pushMethod((MethodInsnNode) insn);
-					loadCtx();
-					INVOKE_SPECIAL.emit(jit);
+					invokeSpecial((MethodInsnNode) insn);
 					break;
 				case INVOKESTATIC:
-					pushMethod((MethodInsnNode) insn);
-					loadCtx();
-					INVOKE_STATIC.emit(jit);
+					invokeStatic((MethodInsnNode) insn);
 					break;
 				case INVOKEINTERFACE:
 					pushMethod((MethodInsnNode) insn);
@@ -1379,6 +1377,67 @@ public final class JitCompiler {
 				jit.visitInsn(ACONST_NULL);
 				access = GET_STATIC_FAIL;
 			}
+		}
+		loadCtx();
+		access.emit(jit);
+	}
+
+	private void invokeStatic(MethodInsnNode node) {
+		val jit = this.jit;
+		Access access;
+		try {
+			val target = this.target;
+			val owner = target.getOwner();
+			val vm = owner.getVM();
+			val jc = (InstanceJavaClass) vm.getHelper().findClass(owner.getClassLoader(), node.owner, false);
+			val name = node.name;
+			val desc = node.desc;
+			val mn = jc.getStaticMethodRecursively(name, desc);
+			if (mn == null) {
+				jit.visitInsn(ACONST_NULL);
+				jit.visitLdcInsn(node.owner + name + desc);
+				access = INVOKE_FAIL;
+			} else {
+				loadCompilerConstant(jc);
+				loadCompilerConstant(mn);
+				access = INVOKE_STATIC_INTRINSIC;
+			}
+		} catch (VMException ex) {
+			jit.visitLdcInsn(node.owner);
+			jit.visitInsn(ACONST_NULL);
+			access = INVOKE_FAIL;
+		}
+		loadCtx();
+		access.emit(jit);
+	}
+
+	private void invokeSpecial(MethodInsnNode node) {
+		val jit = this.jit;
+		Access access;
+		try {
+			val target = this.target;
+			val owner = target.getOwner();
+			val vm = owner.getVM();
+			val jc = (InstanceJavaClass) vm.getHelper().findClass(owner.getClassLoader(), node.owner, false);
+			val name = node.name;
+			val desc = node.desc;
+			JavaMethod mn = jc.getVirtualMethodRecursively(name, desc);
+			if (mn == null && jc.isInterface()) {
+				mn = jc.getInterfaceMethodRecursively(name, desc);
+			}
+			if (mn == null) {
+				jit.visitInsn(ACONST_NULL);
+				jit.visitLdcInsn(node.owner + name + desc);
+				access = INVOKE_FAIL;
+			} else {
+				loadCompilerConstant(jc);
+				loadCompilerConstant(mn);
+				access = INVOKE_SPECIAL_INTRINSIC;
+			}
+		} catch (VMException ex) {
+			jit.visitLdcInsn(node.owner);
+			jit.visitInsn(ACONST_NULL);
+			access = INVOKE_FAIL;
 		}
 		loadCtx();
 		access.emit(jit);

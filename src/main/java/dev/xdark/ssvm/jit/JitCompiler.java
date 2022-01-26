@@ -1374,7 +1374,7 @@ public final class JitCompiler {
 			} catch (VMException ex) {
 				// Class was probably not found.
 				// We need to use fallback path
-				// because the may be defined right in the code
+				// because the class may be defined right in the code
 				// we are JITting.
 				getStaticSlow(node);
 				return;
@@ -1413,7 +1413,7 @@ public final class JitCompiler {
 		} catch (VMException ex) {
 			// Class was probably not found.
 			// We need to use fallback path
-			// because the may be defined right in the code
+			// because the class may be defined right in the code
 			// we are JITting.
 			invokeStaticSlow(node);
 			return;
@@ -1454,7 +1454,7 @@ public final class JitCompiler {
 		} catch (VMException ex) {
 			// Class was probably not found.
 			// We need to use fallback path
-			// because the may be defined right in the code
+			// because the class may be defined right in the code
 			// we are JITting.
 			invokeSpecialSlow(node);
 			return;

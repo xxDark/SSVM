@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.*;
@@ -117,20 +118,26 @@ public class IntrinsicsNatives {
 		val jc = vm.getSymbols().java_lang_String;
 		// This will only work on JDK 8, sadly.
 		if (jc.hasVirtualField("value", "[C")) {
+			val memoryManager = vm.getMemoryManager();
+			val offset = memoryManager.valueBaseOffset(jc);
+			val lengthOffset = offset + jc.getFieldOffset("value", "[C");
 			vmi.setInvoker(jc, "length", "()I", ctx -> {
-				ctx.setResult(IntValue.of(((ArrayValue)ctx.getLocals().<InstanceValue>load(0).getValue("value", "[C")).getLength()));
+				val chars = (ArrayValue) memoryManager.readValue(ctx.getLocals().<InstanceValue>load(0), lengthOffset);
+				ctx.setResult(IntValue.of(chars.getLength()));
 				return Result.ABORT;
 			});
+			val hashOffset = offset + jc.getFieldOffset("hash", "I");
+			val valueOffset = offset + jc.getFieldOffset("value", "[C");
 			vmi.setInvoker(jc, "hashCode", "()I", ctx -> {
 				printIntrinsic("String_hashCode");
 				val _this = ctx.getLocals().<InstanceValue>load(0);
-				int hc = _this.getInt("hash");
+				int hc = memoryManager.readInt(_this, hashOffset);
 				if (hc == 0) {
-					val value = (ArrayValue) _this.getValue("value", "[C");
+					val value = (ArrayValue) memoryManager.readValue(_this, valueOffset);
 					for (int i = 0, j = value.getLength(); i < j; i++) {
 						hc = 31 * hc + value.getChar(i);
 					}
-					_this.setInt("hash", hc);
+					memoryManager.writeInt(_this, hashOffset, hc);
 				}
 				ctx.setResult(IntValue.of(hc));
 				return Result.ABORT;
@@ -138,7 +145,7 @@ public class IntrinsicsNatives {
 			vmi.setInvoker(jc, "lastIndexOf", "(II)I", ctx -> {
 				val locals = ctx.getLocals();
 				val _this = locals.<InstanceValue>load(0);
-				val chars = (ArrayValue) _this.getValue("value", "[C");
+				val chars = (ArrayValue) memoryManager.readValue(_this, valueOffset);
 				int ch = locals.load(1).asInt();
 				int fromIndex = locals.load(2).asInt();
 				ctx.setResult(IntValue.of(lastIndexOf(chars, ch, fromIndex)));
@@ -159,7 +166,7 @@ public class IntrinsicsNatives {
 			vmi.setInvoker(jc, "indexOf", "(II)I", ctx -> {
 				val locals = ctx.getLocals();
 				val _this = locals.<InstanceValue>load(0);
-				val chars = (ArrayValue) _this.getValue("value", "[C");
+				val chars = (ArrayValue) memoryManager.readValue(_this, valueOffset);
 				int ch = locals.load(1).asInt();
 				int fromIndex = locals.load(2).asInt();
 				ctx.setResult(IntValue.of(indexOf(chars, ch, fromIndex)));
@@ -174,8 +181,8 @@ public class IntrinsicsNatives {
 						ctx.setResult(IntValue.ZERO);
 					} else {
 						val _this = locals.<InstanceValue>load(0);
-						val chars = (ArrayValue) _this.getValue("value", "[C");
-						val chars2 = (ArrayValue) ((InstanceValue)other).getValue("value", "[C");
+						val chars = (ArrayValue) memoryManager.readValue(_this, valueOffset);
+						val chars2 = (ArrayValue) memoryManager.readValue(other, valueOffset);
 						int len = chars.getLength();
 						if (len != chars2.getLength()) {
 							ctx.setResult(IntValue.ZERO);
@@ -190,6 +197,15 @@ public class IntrinsicsNatives {
 						}
 					}
 				}
+				return Result.ABORT;
+			});
+			vmi.setInvoker(jc, "startsWith", "(Ljava/lang/String;I)Z", ctx -> {
+				val locals = ctx.getLocals();
+				val helper = vm.getHelper();
+				val prefix = (ArrayValue) memoryManager.readValue(helper.<InstanceValue>checkNotNull(locals.load(1)), valueOffset);
+				val _this = (ArrayValue) memoryManager.readValue(locals.<InstanceValue>load(0), valueOffset);
+				int toOffset = locals.load(2).asInt();
+				ctx.setResult(startsWith(_this, prefix, toOffset) ? IntValue.ONE : IntValue.ZERO);
 				return Result.ABORT;
 			});
 		}
@@ -293,17 +309,36 @@ public class IntrinsicsNatives {
 		return -1;
 	}
 
+	private boolean startsWith(ArrayValue value, ArrayValue pa, int toffset) {
+		int to = toffset;
+		int po = 0;
+		int pc = pa.getLength();
+		if ((toffset < 0) || (toffset > value.getLength() - pc)) {
+			return false;
+		}
+		while (--pc >= 0) {
+			if (value.getChar(to++) != pa.getChar(po++)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	private void characterIntrinsics(VirtualMachine vm) {
 		val vmi = vm.getInterface();
 		val jc = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Character");
-		vmi.setInvoker(jc, "toLowerCase", "(I)I", ctx -> {
+		val toLowerCase = (MethodInvoker) ctx -> {
 			ctx.setResult(IntValue.of(Character.toLowerCase(ctx.getLocals().load(0).asInt())));
 			return Result.ABORT;
-		});
-		vmi.setInvoker(jc, "toUpperCase", "(I)I", ctx -> {
+		};
+		vmi.setInvoker(jc, "toLowerCase", "(I)I", toLowerCase);
+		vmi.setInvoker(jc, "toLowerCase", "(C)C", toLowerCase);
+		val toUpperCase = (MethodInvoker) ctx -> {
 			ctx.setResult(IntValue.of(Character.toUpperCase(ctx.getLocals().load(0).asInt())));
 			return Result.ABORT;
-		});
+		};
+		vmi.setInvoker(jc, "toUpperCase", "(I)I", toUpperCase);
+		vmi.setInvoker(jc, "toUpperCase", "(C)C", toUpperCase);
 	}
 
 	private void printIntrinsic(String name) {

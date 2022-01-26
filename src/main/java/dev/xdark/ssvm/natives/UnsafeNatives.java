@@ -14,6 +14,7 @@ import lombok.val;
 import me.coley.cafedude.constant.ConstPoolEntry;
 import me.coley.cafedude.constant.CpString;
 import me.coley.cafedude.constant.CpUtf8;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.LdcInsnNode;
 
 import java.nio.ByteOrder;
@@ -437,7 +438,6 @@ public class UnsafeNatives {
 					}
 				}
 			}
-
 			ctx.setResult(generated.getOop());
 			return Result.ABORT;
 		});
@@ -461,6 +461,46 @@ public class UnsafeNatives {
 			vm.getMemoryManager().writeValue(o, locals.load(2).asLong(), locals.load(4));
 			return Result.ABORT;
 		});
+		vmi.setInvoker(unsafe, "getLong", "(Ljava/lang/Object;J)J", ctx -> {
+			val locals = ctx.getLocals();
+			val value = locals.load(1);
+			if (value.isNull()) {
+				throw new PanicException("Segfault");
+			}
+			val offset = locals.load(2).asInt();
+			val memoryManager = vm.getMemoryManager();
+			ctx.setResult(LongValue.of(memoryManager.readLong((ObjectValue) value, offset)));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(unsafe, "allocateInstance", "(Ljava/lang/Class;)Ljava/lang/Object;", ctx -> {
+			val locals = ctx.getLocals();
+			val helper = vm.getHelper();
+			val klass = helper.<JavaValue<JavaClass>>checkNotNull(locals.load(1)).getValue();
+			if (!canAllocateInstance(klass)) {
+				helper.throwException(vm.getSymbols().java_lang_InstantiationException, "Cannot instantiate " + klass.getName());
+			}
+			klass.initialize();
+			val instance = vm.getMemoryManager().newInstance((InstanceJavaClass) klass);
+			helper.initializeDefaultValues(instance);
+			ctx.setResult(instance);
+			return Result.ABORT;
+		});
+		vmi.setInvoker(unsafe, "putBoolean", "(Ljava/lang/Object;JZ)V", ctx -> {
+			val locals = ctx.getLocals();
+			val o = locals.<ObjectValue>load(1);
+			if (o.isNull()) {
+				throw new PanicException("Segfault");
+			}
+			vm.getMemoryManager().writeBoolean(o, locals.load(2).asLong(), locals.load(4).asBoolean());
+			return Result.ABORT;
+		});
+	}
+
+	private static boolean canAllocateInstance(JavaClass jc) {
+		if (!(jc instanceof InstanceJavaClass) || jc == ((InstanceJavaClass) jc).getVM().getSymbols().java_lang_Class)
+			return false;
+		int acc = jc.getModifiers();
+		return (acc & Opcodes.ACC_ABSTRACT) == 0;
 	}
 
 	private interface UnsafeHelper {

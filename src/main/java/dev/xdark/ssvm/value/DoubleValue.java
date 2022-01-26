@@ -52,4 +52,9 @@ public final class DoubleValue extends NumericValue implements WideValue {
 	public String toString() {
 		return "double(" + value + ")";
 	}
+
+	@Override
+	public boolean equals(Object other) {
+		return other instanceof DoubleValue && value == ((DoubleValue) other).value;
+	}
 }

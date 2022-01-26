@@ -4,6 +4,8 @@ import dev.xdark.ssvm.asm.DelegatingInsnNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Stack;
+import dev.xdark.ssvm.execution.VMException;
+import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.*;
@@ -11,13 +13,10 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.val;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -29,172 +28,184 @@ import static org.objectweb.asm.Opcodes.*;
  *
  * @author xDark
  */
-@RequiredArgsConstructor
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public final class JitCompiler {
 
 	private static final AtomicInteger CLASS_ID = new AtomicInteger();
-	private static final Type J_VOID = Type.of(void.class);
-	private static final Type J_LONG = Type.of(long.class);
-	private static final Type J_INT = Type.of(int.class);
-	private static final Type J_DOUBLE = Type.of(double.class);
-	private static final Type J_FLOAT = Type.of(float.class);
-	private static final Type J_CHAR = Type.of(char.class);
-	private static final Type J_SHORT = Type.of(short.class);
-	private static final Type J_BYTE = Type.of(byte.class);
-	private static final Type J_BOOLEAN = Type.of(boolean.class);
-	private static final Type J_OBJECT = Type.of(Object.class);
-	private static final Type J_STRING = Type.of(String.class);
+	private static final ClassType J_VOID = ClassType.of(void.class);
+	private static final ClassType J_LONG = ClassType.of(long.class);
+	private static final ClassType J_INT = ClassType.of(int.class);
+	private static final ClassType J_DOUBLE = ClassType.of(double.class);
+	private static final ClassType J_FLOAT = ClassType.of(float.class);
+	private static final ClassType J_BOOLEAN = ClassType.of(boolean.class);
+	private static final ClassType J_OBJECT = ClassType.of(Object.class);
+	private static final ClassType J_STRING = ClassType.of(String.class);
 
-	private static final Type CTX = Type.of(ExecutionContext.class);
-	private static final Type LOCALS = Type.of(Locals.class);
-	private static final Type STACK = Type.of(Stack.class);
-	private static final Type VALUE = Type.of(Value.class);
-	private static final Type NULL = Type.of(NullValue.class);
-	private static final Type INT = Type.of(IntValue.class);
-	private static final Type LONG = Type.of(LongValue.class);
-	private static final Type FLOAT = Type.of(FloatValue.class);
-	private static final Type DOUBLE = Type.of(DoubleValue.class);
-	private static final Type VM_HELPER = Type.of(VMHelper.class);
-	private static final Type JIT_HELPER = Type.of(JitHelper.class);
+	private static final ClassType CTX = ClassType.of(ExecutionContext.class);
+	private static final ClassType LOCALS = ClassType.of(Locals.class);
+	private static final ClassType STACK = ClassType.of(Stack.class);
+	private static final ClassType VALUE = ClassType.of(Value.class);
+	private static final ClassType NULL = ClassType.of(NullValue.class);
+	private static final ClassType INT = ClassType.of(IntValue.class);
+	private static final ClassType LONG = ClassType.of(LongValue.class);
+	private static final ClassType FLOAT = ClassType.of(FloatValue.class);
+	private static final ClassType DOUBLE = ClassType.of(DoubleValue.class);
+	private static final ClassType VM_HELPER = ClassType.of(VMHelper.class);
+	private static final ClassType JIT_HELPER = ClassType.of(JitHelper.class);
 
 	// ctx methods
-	private static final Access GET_LOCALS = Access.virtualCall(CTX, "getLocals", LOCALS);
-	private static final Access GET_STACK = Access.virtualCall(CTX, "getStack", STACK);
-	private static final Access GET_HELPER = Access.virtualCall(CTX, "getHelper", VM_HELPER);
-	private static final Access SET_RESULT = Access.virtualCall(CTX, "setResult", J_VOID, VALUE);
+	private static final Access GET_LOCALS = virtualCall(CTX, "getLocals", LOCALS);
+	private static final Access GET_STACK = virtualCall(CTX, "getStack", STACK);
+	private static final Access GET_HELPER = virtualCall(CTX, "getHelper", VM_HELPER);
+	private static final Access SET_RESULT = virtualCall(CTX, "setResult", J_VOID, VALUE);
+	private static final Access SET_LINE = virtualCall(CTX, "setLineNumber", J_VOID, J_INT);
 
 	// stack methods
-	private static final Access PUSH = Access.virtualCall(STACK, "push", J_VOID, VALUE);
-	private static final Access PUSH_WIDE = Access.virtualCall(STACK, "pushWide", J_VOID, VALUE);
-	private static final Access PUSH_GENERIC = Access.virtualCall(STACK, "pushGeneric", J_VOID, VALUE);
-	private static final Access POP = Access.virtualCall(STACK, "pop", VALUE);
-	private static final Access POP_WIDE = Access.virtualCall(STACK, "popWide", VALUE);
-	private static final Access DUP = Access.virtualCall(STACK, "dup", J_VOID);
-	private static final Access DUP_X1 = Access.virtualCall(STACK, "dupx1", J_VOID);
-	private static final Access DUP_X2 = Access.virtualCall(STACK, "dupx2", J_VOID);
-	private static final Access DUP2 = Access.virtualCall(STACK, "dup2", J_VOID);
-	private static final Access DUP2_X1 = Access.virtualCall(STACK, "dup2x1", J_VOID);
-	private static final Access DUP2_X2 = Access.virtualCall(STACK, "dup2x2", J_VOID);
-	private static final Access SWAP = Access.virtualCall(STACK, "swap", J_VOID);
+	private static final Access PUSH = virtualCall(STACK, "push", J_VOID, VALUE);
+	private static final Access PUSH_WIDE = virtualCall(STACK, "pushWide", J_VOID, VALUE);
+	private static final Access PUSH_GENERIC = virtualCall(STACK, "pushGeneric", J_VOID, VALUE);
+	private static final Access POP = virtualCall(STACK, "pop", VALUE);
+	private static final Access POP_WIDE = virtualCall(STACK, "popWide", VALUE);
+	private static final Access DUP = virtualCall(STACK, "dup", J_VOID);
+	private static final Access DUP_X1 = virtualCall(STACK, "dupx1", J_VOID);
+	private static final Access DUP_X2 = virtualCall(STACK, "dupx2", J_VOID);
+	private static final Access DUP2 = virtualCall(STACK, "dup2", J_VOID);
+	private static final Access DUP2_X1 = virtualCall(STACK, "dup2x1", J_VOID);
+	private static final Access DUP2_X2 = virtualCall(STACK, "dup2x2", J_VOID);
+	private static final Access SWAP = virtualCall(STACK, "swap", J_VOID);
 
 	// locals methods
-	private static final Access LOAD = Access.virtualCall(LOCALS, "load", VALUE, J_INT);
-	private static final Access STORE = Access.virtualCall(LOCALS, "set", J_VOID, J_INT, VALUE);
+	private static final Access LOAD = virtualCall(LOCALS, "load", VALUE, J_INT);
+	private static final Access STORE = virtualCall(LOCALS, "set", J_VOID, J_INT, VALUE);
 
 	// value static methods
-	private static final Access GET_NULL = Access.getStatic(NULL, "INSTANCE", NULL);
-	private static final Access INT_OF = Access.staticCall(INT, "of", INT, J_INT);
-	private static final Access LONG_OF = Access.staticCall(LONG, "of", LONG, J_LONG);
-	private static final Access FLOAT_OF = Access.specialCall(FLOAT, "<init>", J_VOID, J_FLOAT);
-	private static final Access DOUBLE_OF = Access.specialCall(DOUBLE, "<init>", J_VOID, J_DOUBLE);
+	private static final Access GET_NULL = getStatic(NULL, "INSTANCE", NULL);
+	private static final Access INT_OF = staticCall(INT, "of", INT, J_INT);
+	private static final Access LONG_OF = staticCall(LONG, "of", LONG, J_LONG);
+	private static final Access FLOAT_OF = specialCall(FLOAT, "<init>", J_VOID, J_FLOAT);
+	private static final Access DOUBLE_OF = specialCall(DOUBLE, "<init>", J_VOID, J_DOUBLE);
 
 	// value methods
-	private static final Access AS_LONG = Access.interfaceCall(VALUE, "asLong", J_LONG);
-	private static final Access AS_DOUBLE = Access.interfaceCall(VALUE, "asDouble", J_DOUBLE);
-	private static final Access AS_INT = Access.interfaceCall(VALUE, "asInt", J_INT);
-	private static final Access AS_FLOAT = Access.interfaceCall(VALUE, "asFloat", J_FLOAT);
-	private static final Access AS_CHAR = Access.interfaceCall(VALUE, "asChar", J_CHAR);
-	private static final Access AS_SHORT = Access.interfaceCall(VALUE, "asShort", J_SHORT);
-	private static final Access AS_BYTE = Access.interfaceCall(VALUE, "asByte", J_BYTE);
-	private static final Access IS_NULL = Access.interfaceCall(VALUE, "isNull", J_BOOLEAN);
+	private static final Access AS_LONG = interfaceCall(VALUE, "asLong", J_LONG);
+	private static final Access AS_DOUBLE = interfaceCall(VALUE, "asDouble", J_DOUBLE);
+	private static final Access AS_INT = interfaceCall(VALUE, "asInt", J_INT);
+	private static final Access AS_FLOAT = interfaceCall(VALUE, "asFloat", J_FLOAT);
+	private static final Access IS_NULL = interfaceCall(VALUE, "isNull", J_BOOLEAN);
 
 	// helper methods
-	private static final Access VALUE_FROM_LDC = Access.virtualCall(VM_HELPER, "valueFromLdc", VALUE, J_OBJECT);
+	private static final Access VALUE_FROM_LDC = virtualCall(VM_HELPER, "valueFromLdc", VALUE, J_OBJECT);
 
 	// jit methods
-	private static final Access ARR_LOAD_LONG = Access.staticCall(JIT_HELPER, "arrayLoadLong", VALUE, VALUE, VALUE, CTX);
-	private static final Access ARR_LOAD_DOUBLE = Access.staticCall(JIT_HELPER, "arrayLoadDouble", VALUE, VALUE, VALUE, CTX);
-	private static final Access ARR_LOAD_INT = Access.staticCall(JIT_HELPER, "arrayLoadInt", VALUE, VALUE, VALUE, CTX);
-	private static final Access ARR_LOAD_FLOAT = Access.staticCall(JIT_HELPER, "arrayLoadFloat", VALUE, VALUE, VALUE, CTX);
-	private static final Access ARR_LOAD_CHAR = Access.staticCall(JIT_HELPER, "arrayLoadChar", VALUE, VALUE, VALUE, CTX);
-	private static final Access ARR_LOAD_SHORT = Access.staticCall(JIT_HELPER, "arrayLoadShort", VALUE, VALUE, VALUE, CTX);
-	private static final Access ARR_LOAD_BYTE = Access.staticCall(JIT_HELPER, "arrayLoadByte", VALUE, VALUE, VALUE, CTX);
-	private static final Access ARR_LOAD_VALUE = Access.staticCall(JIT_HELPER, "arrayLoadValue", VALUE, VALUE, VALUE, CTX);
+	private static final Access ARR_LOAD_LONG = staticCall(JIT_HELPER, "arrayLoadLong", VALUE, VALUE, VALUE, CTX);
+	private static final Access ARR_LOAD_DOUBLE = staticCall(JIT_HELPER, "arrayLoadDouble", VALUE, VALUE, VALUE, CTX);
+	private static final Access ARR_LOAD_INT = staticCall(JIT_HELPER, "arrayLoadInt", VALUE, VALUE, VALUE, CTX);
+	private static final Access ARR_LOAD_FLOAT = staticCall(JIT_HELPER, "arrayLoadFloat", VALUE, VALUE, VALUE, CTX);
+	private static final Access ARR_LOAD_CHAR = staticCall(JIT_HELPER, "arrayLoadChar", VALUE, VALUE, VALUE, CTX);
+	private static final Access ARR_LOAD_SHORT = staticCall(JIT_HELPER, "arrayLoadShort", VALUE, VALUE, VALUE, CTX);
+	private static final Access ARR_LOAD_BYTE = staticCall(JIT_HELPER, "arrayLoadByte", VALUE, VALUE, VALUE, CTX);
+	private static final Access ARR_LOAD_VALUE = staticCall(JIT_HELPER, "arrayLoadValue", VALUE, VALUE, VALUE, CTX);
 
-	private static final Access ARR_STORE_LONG = Access.staticCall(JIT_HELPER, "arrayStoreLong", J_VOID, VALUE, VALUE, VALUE, CTX);
-	private static final Access ARR_STORE_DOUBLE = Access.staticCall(JIT_HELPER, "arrayStoreDouble", J_VOID, VALUE, VALUE, VALUE, CTX);
-	private static final Access ARR_STORE_INT = Access.staticCall(JIT_HELPER, "arrayStoreInt", J_VOID, VALUE, VALUE, VALUE, CTX);
-	private static final Access ARR_STORE_FLOAT = Access.staticCall(JIT_HELPER, "arrayStoreFloat", J_VOID, VALUE, VALUE, VALUE, CTX);
-	private static final Access ARR_STORE_CHAR = Access.staticCall(JIT_HELPER, "arrayStoreChar", J_VOID, VALUE, VALUE, VALUE, CTX);
-	private static final Access ARR_STORE_SHORT = Access.staticCall(JIT_HELPER, "arrayStoreShort", J_VOID, VALUE, VALUE, VALUE, CTX);
-	private static final Access ARR_STORE_BYTE = Access.staticCall(JIT_HELPER, "arrayStoreByte", J_VOID, VALUE, VALUE, VALUE, CTX);
-	private static final Access ARR_STORE_VALUE = Access.staticCall(JIT_HELPER, "arrayStoreValue", J_VOID, VALUE, VALUE, VALUE, CTX);
+	private static final Access ARR_STORE_LONG = staticCall(JIT_HELPER, "arrayStoreLong", J_VOID, VALUE, VALUE, VALUE, CTX);
+	private static final Access ARR_STORE_DOUBLE = staticCall(JIT_HELPER, "arrayStoreDouble", J_VOID, VALUE, VALUE, VALUE, CTX);
+	private static final Access ARR_STORE_INT = staticCall(JIT_HELPER, "arrayStoreInt", J_VOID, VALUE, VALUE, VALUE, CTX);
+	private static final Access ARR_STORE_FLOAT = staticCall(JIT_HELPER, "arrayStoreFloat", J_VOID, VALUE, VALUE, VALUE, CTX);
+	private static final Access ARR_STORE_CHAR = staticCall(JIT_HELPER, "arrayStoreChar", J_VOID, VALUE, VALUE, VALUE, CTX);
+	private static final Access ARR_STORE_SHORT = staticCall(JIT_HELPER, "arrayStoreShort", J_VOID, VALUE, VALUE, VALUE, CTX);
+	private static final Access ARR_STORE_BYTE = staticCall(JIT_HELPER, "arrayStoreByte", J_VOID, VALUE, VALUE, VALUE, CTX);
+	private static final Access ARR_STORE_VALUE = staticCall(JIT_HELPER, "arrayStoreValue", J_VOID, VALUE, VALUE, VALUE, CTX);
 
-	private static final Access ADD_INT = Access.staticCall(JIT_HELPER, "addInt", VALUE, VALUE, VALUE);
-	private static final Access ADD_LONG = Access.staticCall(JIT_HELPER, "addLong", VALUE, VALUE, VALUE);
-	private static final Access ADD_FLOAT = Access.staticCall(JIT_HELPER, "addFloat", VALUE, VALUE, VALUE);
-	private static final Access ADD_DOUBLE = Access.staticCall(JIT_HELPER, "addDouble", VALUE, VALUE, VALUE);
+	private static final Access ADD_INT = staticCall(JIT_HELPER, "addInt", VALUE, VALUE, VALUE);
+	private static final Access ADD_LONG = staticCall(JIT_HELPER, "addLong", VALUE, VALUE, VALUE);
+	private static final Access ADD_FLOAT = staticCall(JIT_HELPER, "addFloat", VALUE, VALUE, VALUE);
+	private static final Access ADD_DOUBLE = staticCall(JIT_HELPER, "addDouble", VALUE, VALUE, VALUE);
 
-	private static final Access SUB_INT = Access.staticCall(JIT_HELPER, "subInt", VALUE, VALUE, VALUE);
-	private static final Access SUB_LONG = Access.staticCall(JIT_HELPER, "subLong", VALUE, VALUE, VALUE);
-	private static final Access SUB_FLOAT = Access.staticCall(JIT_HELPER, "subFloat", VALUE, VALUE, VALUE);
-	private static final Access SUB_DOUBLE = Access.staticCall(JIT_HELPER, "subDouble", VALUE, VALUE, VALUE);
+	private static final Access SUB_INT = staticCall(JIT_HELPER, "subInt", VALUE, VALUE, VALUE);
+	private static final Access SUB_LONG = staticCall(JIT_HELPER, "subLong", VALUE, VALUE, VALUE);
+	private static final Access SUB_FLOAT = staticCall(JIT_HELPER, "subFloat", VALUE, VALUE, VALUE);
+	private static final Access SUB_DOUBLE = staticCall(JIT_HELPER, "subDouble", VALUE, VALUE, VALUE);
 
-	private static final Access MUL_INT = Access.staticCall(JIT_HELPER, "mulInt", VALUE, VALUE, VALUE);
-	private static final Access MUL_LONG = Access.staticCall(JIT_HELPER, "mulLong", VALUE, VALUE, VALUE);
-	private static final Access MUL_FLOAT = Access.staticCall(JIT_HELPER, "mulFloat", VALUE, VALUE, VALUE);
-	private static final Access MUL_DOUBLE = Access.staticCall(JIT_HELPER, "mulDouble", VALUE, VALUE, VALUE);
+	private static final Access MUL_INT = staticCall(JIT_HELPER, "mulInt", VALUE, VALUE, VALUE);
+	private static final Access MUL_LONG = staticCall(JIT_HELPER, "mulLong", VALUE, VALUE, VALUE);
+	private static final Access MUL_FLOAT = staticCall(JIT_HELPER, "mulFloat", VALUE, VALUE, VALUE);
+	private static final Access MUL_DOUBLE = staticCall(JIT_HELPER, "mulDouble", VALUE, VALUE, VALUE);
 
-	private static final Access DIV_INT = Access.staticCall(JIT_HELPER, "divInt", VALUE, VALUE, VALUE);
-	private static final Access DIV_LONG = Access.staticCall(JIT_HELPER, "divLong", VALUE, VALUE, VALUE);
-	private static final Access DIV_FLOAT = Access.staticCall(JIT_HELPER, "divFloat", VALUE, VALUE, VALUE);
-	private static final Access DIV_DOUBLE = Access.staticCall(JIT_HELPER, "divDouble", VALUE, VALUE, VALUE);
+	private static final Access DIV_INT = staticCall(JIT_HELPER, "divInt", VALUE, VALUE, VALUE);
+	private static final Access DIV_LONG = staticCall(JIT_HELPER, "divLong", VALUE, VALUE, VALUE);
+	private static final Access DIV_FLOAT = staticCall(JIT_HELPER, "divFloat", VALUE, VALUE, VALUE);
+	private static final Access DIV_DOUBLE = staticCall(JIT_HELPER, "divDouble", VALUE, VALUE, VALUE);
 
-	private static final Access REM_INT = Access.staticCall(JIT_HELPER, "remInt", VALUE, VALUE, VALUE);
-	private static final Access REM_LONG = Access.staticCall(JIT_HELPER, "remLong", VALUE, VALUE, VALUE);
-	private static final Access REM_FLOAT = Access.staticCall(JIT_HELPER, "remFloat", VALUE, VALUE, VALUE);
-	private static final Access REM_DOUBLE = Access.staticCall(JIT_HELPER, "remDouble", VALUE, VALUE, VALUE);
+	private static final Access REM_INT = staticCall(JIT_HELPER, "remInt", VALUE, VALUE, VALUE);
+	private static final Access REM_LONG = staticCall(JIT_HELPER, "remLong", VALUE, VALUE, VALUE);
+	private static final Access REM_FLOAT = staticCall(JIT_HELPER, "remFloat", VALUE, VALUE, VALUE);
+	private static final Access REM_DOUBLE = staticCall(JIT_HELPER, "remDouble", VALUE, VALUE, VALUE);
 
-	private static final Access SHL_INT = Access.staticCall(JIT_HELPER, "shlInt", VALUE, VALUE, VALUE);
-	private static final Access SHL_LONG = Access.staticCall(JIT_HELPER, "shlLong", VALUE, VALUE, VALUE);
-	private static final Access SHR_INT = Access.staticCall(JIT_HELPER, "shrInt", VALUE, VALUE, VALUE);
-	private static final Access SHR_LONG = Access.staticCall(JIT_HELPER, "shrLong", VALUE, VALUE, VALUE);
-	private static final Access USHR_INT = Access.staticCall(JIT_HELPER, "ushrInt", VALUE, VALUE, VALUE);
-	private static final Access USHR_LONG = Access.staticCall(JIT_HELPER, "ushrLong", VALUE, VALUE, VALUE);
-	private static final Access AND_INT = Access.staticCall(JIT_HELPER, "andInt", VALUE, VALUE, VALUE);
-	private static final Access AND_LONG = Access.staticCall(JIT_HELPER, "andLong", VALUE, VALUE, VALUE);
-	private static final Access OR_INT = Access.staticCall(JIT_HELPER, "orInt", VALUE, VALUE, VALUE);
-	private static final Access OR_LONG = Access.staticCall(JIT_HELPER, "orLong", VALUE, VALUE, VALUE);
-	private static final Access XOR_INT = Access.staticCall(JIT_HELPER, "xorInt", VALUE, VALUE, VALUE);
-	private static final Access XOR_LONG = Access.staticCall(JIT_HELPER, "xorLong", VALUE, VALUE, VALUE);
-	private static final Access LOCAL_INCREMENT = Access.staticCall(JIT_HELPER, "localIncrement", J_VOID, LOCALS, J_INT, J_INT);
-	private static final Access COMPARE_LONG = Access.staticCall(JIT_HELPER, "compareLong", VALUE, VALUE, VALUE);
-	private static final Access COMPARE_FLOAT = Access.staticCall(JIT_HELPER, "compareFloat", VALUE, VALUE, VALUE, J_INT);
-	private static final Access COMPARE_DOUBLE = Access.staticCall(JIT_HELPER, "compareDouble", VALUE, VALUE, VALUE, J_INT);
-	private static final Access GET_STATIC = Access.staticCall(JIT_HELPER, "getStatic", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access PUT_STATIC = Access.staticCall(JIT_HELPER, "putStatic", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access GET_FIELD = Access.staticCall(JIT_HELPER, "getField", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access PUT_FIELD = Access.staticCall(JIT_HELPER, "putField", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access INVOKE_VIRTUAL = Access.staticCall(JIT_HELPER, "invokeVirtual", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access INVOKE_SPECIAL = Access.staticCall(JIT_HELPER, "invokeSpecial", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access INVOKE_STATIC = Access.staticCall(JIT_HELPER, "invokeStatic", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access INVOKE_INTERFACE = Access.staticCall(JIT_HELPER, "invokeInterface", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access NEW_INSTANCE = Access.staticCall(JIT_HELPER, "allocateInstance", J_VOID, J_STRING, CTX);
-	private static final Access NEW_PRIMITIVE_ARRAY = Access.staticCall(JIT_HELPER, "allocatePrimitiveArray", J_VOID, J_INT, CTX);
-	private static final Access NEW_INSTANCE_ARRAY = Access.staticCall(JIT_HELPER, "allocateValueArray", J_VOID, J_STRING, CTX);
-	private static final Access GET_LENGTH = Access.staticCall(JIT_HELPER, "getArrayLength", J_VOID, CTX);
-	private static final Access THROW_EXCEPTION = Access.staticCall(JIT_HELPER, "throwException", J_VOID, CTX);
-	private static final Access CHECK_CAST = Access.staticCall(JIT_HELPER, "checkCast", J_VOID, J_STRING, CTX);
-	private static final Access INSTANCEOF_RES = Access.staticCall(JIT_HELPER, "instanceofResult", J_VOID, J_STRING, CTX);
-	private static final Access MONITOR_LOCK = Access.staticCall(JIT_HELPER, "monitorEnter", J_VOID, CTX);
-	private static final Access MONITOR_UNLOCK = Access.staticCall(JIT_HELPER, "monitorExit", J_VOID, CTX);
-	private static final Access NEW_MULTI_ARRAY = Access.staticCall(JIT_HELPER, "multiNewArray", J_VOID, J_STRING, J_INT, CTX);
+	private static final Access SHL_INT = staticCall(JIT_HELPER, "shlInt", VALUE, VALUE, VALUE);
+	private static final Access SHL_LONG = staticCall(JIT_HELPER, "shlLong", VALUE, VALUE, VALUE);
+	private static final Access SHR_INT = staticCall(JIT_HELPER, "shrInt", VALUE, VALUE, VALUE);
+	private static final Access SHR_LONG = staticCall(JIT_HELPER, "shrLong", VALUE, VALUE, VALUE);
+	private static final Access USHR_INT = staticCall(JIT_HELPER, "ushrInt", VALUE, VALUE, VALUE);
+	private static final Access USHR_LONG = staticCall(JIT_HELPER, "ushrLong", VALUE, VALUE, VALUE);
+	private static final Access AND_INT = staticCall(JIT_HELPER, "andInt", VALUE, VALUE, VALUE);
+	private static final Access AND_LONG = staticCall(JIT_HELPER, "andLong", VALUE, VALUE, VALUE);
+	private static final Access OR_INT = staticCall(JIT_HELPER, "orInt", VALUE, VALUE, VALUE);
+	private static final Access OR_LONG = staticCall(JIT_HELPER, "orLong", VALUE, VALUE, VALUE);
+	private static final Access XOR_INT = staticCall(JIT_HELPER, "xorInt", VALUE, VALUE, VALUE);
+	private static final Access XOR_LONG = staticCall(JIT_HELPER, "xorLong", VALUE, VALUE, VALUE);
+	private static final Access LOCAL_INCREMENT = staticCall(JIT_HELPER, "localIncrement", J_VOID, LOCALS, J_INT, J_INT);
+	private static final Access COMPARE_LONG = staticCall(JIT_HELPER, "compareLong", VALUE, VALUE, VALUE);
+	private static final Access COMPARE_FLOAT = staticCall(JIT_HELPER, "compareFloat", VALUE, VALUE, VALUE, J_INT);
+	private static final Access COMPARE_DOUBLE = staticCall(JIT_HELPER, "compareDouble", VALUE, VALUE, VALUE, J_INT);
+	private static final Access GET_STATIC = staticCall(JIT_HELPER, "getStatic", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
+	private static final Access PUT_STATIC = staticCall(JIT_HELPER, "putStatic", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
+	private static final Access GET_FIELD = staticCall(JIT_HELPER, "getField", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
+	private static final Access PUT_FIELD = staticCall(JIT_HELPER, "putField", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
+	private static final Access INVOKE_VIRTUAL = staticCall(JIT_HELPER, "invokeVirtual", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
+	private static final Access INVOKE_SPECIAL = staticCall(JIT_HELPER, "invokeSpecial", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
+	private static final Access INVOKE_STATIC = staticCall(JIT_HELPER, "invokeStatic", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
+	private static final Access INVOKE_INTERFACE = staticCall(JIT_HELPER, "invokeInterface", J_VOID, J_STRING, J_STRING, J_STRING, CTX);
+	private static final Access NEW_INSTANCE = staticCall(JIT_HELPER, "allocateInstance", J_VOID, J_STRING, CTX);
+	private static final Access NEW_PRIMITIVE_ARRAY = staticCall(JIT_HELPER, "allocatePrimitiveArray", J_VOID, J_INT, CTX);
+	private static final Access NEW_INSTANCE_ARRAY = staticCall(JIT_HELPER, "allocateValueArray", J_VOID, J_STRING, CTX);
+	private static final Access GET_LENGTH = staticCall(JIT_HELPER, "getArrayLength", J_VOID, CTX);
+	private static final Access THROW_EXCEPTION = staticCall(JIT_HELPER, "throwException", J_VOID, CTX);
+	private static final Access CHECK_CAST = staticCall(JIT_HELPER, "checkCast", J_VOID, J_STRING, CTX);
+	private static final Access INSTANCEOF_RES = staticCall(JIT_HELPER, "instanceofResult", J_VOID, J_STRING, CTX);
+	private static final Access MONITOR_LOCK = staticCall(JIT_HELPER, "monitorEnter", J_VOID, CTX);
+	private static final Access MONITOR_UNLOCK = staticCall(JIT_HELPER, "monitorExit", J_VOID, CTX);
+	private static final Access NEW_MULTI_ARRAY = staticCall(JIT_HELPER, "multiNewArray", J_VOID, J_STRING, J_INT, CTX);
+	private static final Access CLASS_LDC = staticCall(JIT_HELPER, "classLdc", VALUE, J_STRING, CTX);
+	private static final Access METHOD_LDC = staticCall(JIT_HELPER, "methodLdc", VALUE, J_STRING, CTX);
+	private static final Access INT_TO_BYTE = staticCall(JIT_HELPER, "intToByte", J_VOID, CTX);
+	private static final Access INT_TO_CHAR = staticCall(JIT_HELPER, "intToChar", J_VOID, CTX);
+	private static final Access INT_TO_SHORT = staticCall(JIT_HELPER, "intToShort", J_VOID, CTX);
+
+	private static final Access GET_STATIC_LONG = staticCall(JIT_HELPER, "getStaticIntrinsicJ", J_VOID, J_OBJECT, J_LONG, CTX);
+	private static final Access GET_STATIC_DOUBLE = staticCall(JIT_HELPER, "getStaticIntrinsicD", J_VOID, J_OBJECT, J_LONG, CTX);
+	private static final Access GET_STATIC_INT = staticCall(JIT_HELPER, "getStaticIntrinsicI", J_VOID, J_OBJECT, J_LONG, CTX);
+	private static final Access GET_STATIC_FLOAT = staticCall(JIT_HELPER, "getStaticIntrinsicF", J_VOID, J_OBJECT, J_LONG, CTX);
+	private static final Access GET_STATIC_CHAR = staticCall(JIT_HELPER, "getStaticIntrinsicC", J_VOID, J_OBJECT, J_LONG, CTX);
+	private static final Access GET_STATIC_SHORT = staticCall(JIT_HELPER, "getStaticIntrinsicS", J_VOID, J_OBJECT, J_LONG, CTX);
+	private static final Access GET_STATIC_BYTE = staticCall(JIT_HELPER, "getStaticIntrinsicB", J_VOID, J_OBJECT, J_LONG, CTX);
+	private static final Access GET_STATIC_VALUE = staticCall(JIT_HELPER, "getStaticIntrinsicA", J_VOID, J_OBJECT, J_LONG, CTX);
+	private static final Access GET_STATIC_FAIL = staticCall(JIT_HELPER, "getStaticIntrinsicFail", J_VOID, J_OBJECT, J_OBJECT, CTX);
 
 	private static final int CTX_SLOT = 1;
 	private static final int LOCALS_SLOT = 2;
 	private static final int STACK_SLOT = 3;
 	private static final int HELPER_SLOT = 4;
 
-	private final MethodNode target;
+	private final String className;
+	private final JavaMethod target;
 	private final MethodVisitor jit;
+	private final Map<Object, Integer> constants = new LinkedHashMap<>();
 
 	/**
 	 * @param jm
 	 * 		Method to check.
 	 *
 	 * @return {@code true} if method is compilable,
-	 * {@code false otherwise}.
+	 * {@code false} otherwise.
 	 */
 	public static boolean isCompilable(JavaMethod jm) {
 		val node = jm.getNode();
@@ -216,7 +227,7 @@ public final class JitCompiler {
 	 * @param jm
 	 * 		Method for compilation.
 	 *
-	 * @return class bytecode.
+	 * @return jit class info.
 	 */
 	public static JitClass compile(JavaMethod jm) {
 		val target = jm.getNode();
@@ -235,7 +246,8 @@ public final class JitCompiler {
 		init.visitMaxs(1, 1);
 		val jit = writer.visitMethod(ACC_PUBLIC, "accept", "(Ljava/lang/Object;)V", null, null);
 		jit.visitCode();
-		new JitCompiler(target, jit).compileInner();
+		val compiler = new JitCompiler(className, jm, jit);
+		compiler.compileInner();
 		jit.visitEnd();
 		jit.visitMaxs(-1, -1);
 		// Leave some debug info.
@@ -244,13 +256,14 @@ public final class JitCompiler {
 		writer.visitField(infoAcc, "CLASS", "Ljava/lang/String;", null, owner.getInternalName());
 		writer.visitField(infoAcc, "METHOD_NAME", "Ljava/lang/String;", null, jm.getName());
 		writer.visitField(infoAcc, "METHOD_DESC", "Ljava/lang/String;", null, jm.getDesc());
-		val clNode = owner.getNode();
-		String sourceFile = clNode.sourceFile;
-		if (sourceFile == null) sourceFile = clNode.name;
-		writer.visitSource(sourceFile, clNode.sourceDebug);
+		writer.visitSource(jm.toString(), null);
+		val constants = new ArrayList<>(compiler.constants.keySet());
+		if (!constants.isEmpty()) {
+			writer.visitField(ACC_PRIVATE | ACC_STATIC, "constants", "[Ljava/lang/Object;", null, null);
+		}
 
 		val bc = writer.toByteArray();
-		return new JitClass(className, bc);
+		return new JitClass(className, bc, Collections.unmodifiableList(new ArrayList<>(constants)));
 	}
 
 	private void compileInner() {
@@ -272,7 +285,9 @@ public final class JitCompiler {
 		GET_HELPER.emit(jit);
 		jit.visitVarInsn(ASTORE, HELPER_SLOT);
 
-		val instructions = target.instructions;
+		val target = this.target;
+		val node = target.getNode();
+		val instructions = node.instructions;
 		val copy = StreamSupport.stream(instructions.spliterator(), false)
 				.filter(x -> x instanceof LabelNode)
 				.collect(Collectors.toMap(x -> (LabelNode) x, __ -> new LabelNode()));
@@ -293,8 +308,9 @@ public final class JitCompiler {
 					if (insn instanceof LabelNode) {
 						jit.visitLabel(last = labels.get((LabelNode) insn));
 					} else if (insn instanceof LineNumberNode) {
-						val ln = (LineNumberNode) insn;
-						jit.visitLineNumber(ln.line, labels.get(ln.start));
+						loadCtx();
+						jit.visitLdcInsn(((LineNumberNode) insn).line);
+						SET_LINE.emit(jit);
 					}
 					break;
 				case NOP:
@@ -840,22 +856,16 @@ public final class JitCompiler {
 					pushWide();
 					break;
 				case I2B:
-					pop();
-					AS_BYTE.emit(jit);
-					intOf();
-					push();
+					loadCtx();
+					INT_TO_BYTE.emit(jit);
 					break;
 				case I2C:
-					pop();
-					AS_CHAR.emit(jit);
-					intOf();
-					push();
+					loadCtx();
+					INT_TO_CHAR.emit(jit);
 					break;
 				case I2S:
-					pop();
-					AS_SHORT.emit(jit);
-					intOf();
-					push();
+					loadCtx();
+					INT_TO_SHORT.emit(jit);
 					break;
 				case LCMP:
 					popWide();
@@ -942,9 +952,7 @@ public final class JitCompiler {
 					jit.visitInsn(RETURN);
 					break;
 				case GETSTATIC:
-					pushField((FieldInsnNode) insn);
-					loadCtx();
-					GET_STATIC.emit(jit);
+					getStatic((FieldInsnNode) insn);
 					break;
 				case PUTSTATIC:
 					pushField((FieldInsnNode) insn);
@@ -1062,11 +1070,11 @@ public final class JitCompiler {
 		jit.visitVarInsn(ALOAD, HELPER_SLOT);
 	}
 
-	private void cast(Type type) {
+	private void cast(ClassType type) {
 		jit.visitTypeInsn(CHECKCAST, type.internalName);
 	}
 
-	private void newObj(Type type) {
+	private void newObj(ClassType type) {
 		jit.visitTypeInsn(NEW, type.internalName);
 	}
 
@@ -1219,16 +1227,32 @@ public final class JitCompiler {
 
 	private void ldcOf(Object value) {
 		if (value instanceof Long) {
-			longOf((Long) value);
+			loadCompilerConstant(LongValue.of((Long) value));
+			cast(VALUE);
 		} else if (value instanceof Double) {
-			doubleOf((Double) value);
+			loadCompilerConstant(new DoubleValue((Double) value));
+			cast(VALUE);
 		} else if (value instanceof Integer || value instanceof Short || value instanceof Byte) {
-			intOf(((Number) value).intValue());
+			loadCompilerConstant(IntValue.of(((Number) value).intValue()));
+			cast(VALUE);
 		} else if (value instanceof Character) {
-			intOf((Character) value);
-			jit.visitInsn(I2C);
+			loadCompilerConstant(IntValue.of((Character) value));
+			cast(VALUE);
 		} else if (value instanceof Float) {
-			floatOf((Float) value);
+			loadCompilerConstant(new FloatValue((Float) value));
+			cast(VALUE);
+		} else if (value instanceof Type) {
+			val jit = this.jit;
+			val type = (Type) value;
+			if (type.getSort() == Type.METHOD) {
+				jit.visitLdcInsn(type.getDescriptor());
+				loadCtx();
+				METHOD_LDC.emit(jit);
+			} else {
+				jit.visitLdcInsn(type.getInternalName());
+				loadCtx();
+				CLASS_LDC.emit(jit);
+			}
 		} else {
 			val jit = this.jit;
 			loadHelper();
@@ -1281,6 +1305,82 @@ public final class JitCompiler {
 		jit.visitInsn(Opcodes.SWAP);
 	}
 
+	private void loadCompilerConstant(Object value) {
+		val constants = this.constants;
+		Integer constant = constants.get(value);
+		if (constant == null) {
+			constant = constants.size();
+			constants.put(value, constant);
+		}
+		val jit = this.jit;
+		jit.visitFieldInsn(GETSTATIC, className, "constants", "[Ljava/lang/Object;");
+		jit.visitLdcInsn(constant);
+		jit.visitInsn(AALOAD);
+	}
+
+	private void getStatic(FieldInsnNode node) {
+		val jit = this.jit;
+		Access access;
+		lookup:
+		{
+			try {
+				val target = this.target;
+				val owner = target.getOwner();
+				val vm = owner.getVM();
+				InstanceJavaClass jc = (InstanceJavaClass) vm.getHelper().findClass(owner.getClassLoader(), node.owner, false);
+				val name = node.name;
+				val desc = node.desc;
+				while (jc != null) {
+					val field = jc.getStaticField(name, desc);
+					if (field != null) {
+						long offset = vm.getMemoryManager().getStaticOffset(jc) + field.getOffset();
+						loadCompilerConstant(jc);
+						jit.visitLdcInsn(offset);
+						switch (field.getType().getSort()) {
+							case Type.LONG:
+								access = GET_STATIC_LONG;
+								break;
+							case Type.DOUBLE:
+								access = GET_STATIC_DOUBLE;
+								break;
+							case Type.INT:
+								access = GET_STATIC_INT;
+								break;
+							case Type.FLOAT:
+								access = GET_STATIC_FLOAT;
+								break;
+							case Type.CHAR:
+								access = GET_STATIC_CHAR;
+								break;
+							case Type.SHORT:
+								access = GET_STATIC_SHORT;
+								break;
+							case Type.BYTE:
+							case Type.BOOLEAN:
+								access = GET_STATIC_BYTE;
+								break;
+							default:
+								access = GET_STATIC_VALUE;
+								break;
+						}
+						break lookup;
+					}
+					jc = jc.getSuperclassWithoutResolving();
+				}
+				// Field was not found.
+				jit.visitInsn(ACONST_NULL);
+				jit.visitLdcInsn(node.name);
+				access = GET_STATIC_FAIL;
+			} catch (VMException ex) {
+				jit.visitLdcInsn(node.owner);
+				jit.visitInsn(ACONST_NULL);
+				access = GET_STATIC_FAIL;
+			}
+		}
+		loadCtx();
+		access.emit(jit);
+	}
+
 	private static boolean isWide(Object cst) {
 		return cst instanceof Long || cst instanceof Double;
 	}
@@ -1292,18 +1392,38 @@ public final class JitCompiler {
 		return insnNode;
 	}
 
-	private static final class Type {
+	private static Access staticCall(ClassType owner, String name, ClassType rt, ClassType... args) {
+		return new Access(INVOKESTATIC, owner, name, rt, args);
+	}
+
+	private static Access specialCall(ClassType owner, String name, ClassType rt, ClassType... args) {
+		return new Access(INVOKESPECIAL, owner, name, rt, args);
+	}
+
+	private static Access virtualCall(ClassType owner, String name, ClassType rt, ClassType... args) {
+		return new Access(INVOKEVIRTUAL, owner, name, rt, args);
+	}
+
+	private static Access interfaceCall(ClassType owner, String name, ClassType rt, ClassType... args) {
+		return new Access(INVOKEINTERFACE, owner, name, rt, args);
+	}
+
+	private static Access getStatic(ClassType owner, String name, ClassType rt) {
+		return new Access(GETSTATIC, owner, name, rt);
+	}
+
+	private static final class ClassType {
 
 		final String internalName;
 		final String desc;
 
-		private Type(Class<?> klass) {
-			internalName = org.objectweb.asm.Type.getInternalName(klass);
-			desc = org.objectweb.asm.Type.getDescriptor(klass);
+		private ClassType(Class<?> klass) {
+			internalName = Type.getInternalName(klass);
+			desc = Type.getDescriptor(klass);
 		}
 
-		static Type of(Class<?> klass) {
-			return new Type(klass);
+		static ClassType of(Class<?> klass) {
+			return new ClassType(klass);
 		}
 	}
 
@@ -1316,7 +1436,7 @@ public final class JitCompiler {
 		String name;
 		String desc;
 
-		Access(int opcode, JitCompiler.Type owner, String name, Type rt, Type... args) {
+		Access(int opcode, ClassType owner, String name, ClassType rt, ClassType... args) {
 			this(opcode, owner.internalName, name, toDescriptor(opcode >= GETSTATIC && opcode <= PUTFIELD, rt, args));
 		}
 
@@ -1329,27 +1449,7 @@ public final class JitCompiler {
 			}
 		}
 
-		static Access staticCall(Type owner, String name, Type rt, Type... args) {
-			return new Access(INVOKESTATIC, owner, name, rt, args);
-		}
-
-		static Access specialCall(Type owner, String name, Type rt, Type... args) {
-			return new Access(INVOKESPECIAL, owner, name, rt, args);
-		}
-
-		static Access virtualCall(Type owner, String name, Type rt, Type... args) {
-			return new Access(INVOKEVIRTUAL, owner, name, rt, args);
-		}
-
-		static Access interfaceCall(Type owner, String name, Type rt, Type... args) {
-			return new Access(INVOKEINTERFACE, owner, name, rt, args);
-		}
-
-		static Access getStatic(Type owner, String name, Type rt) {
-			return new Access(GETSTATIC, owner, name, rt);
-		}
-
-		private static String toDescriptor(boolean field, Type rt, Type[] args) {
+		private static String toDescriptor(boolean field, ClassType rt, ClassType[] args) {
 			if (field) {
 				// assert args.length == 0;
 				return rt.desc;

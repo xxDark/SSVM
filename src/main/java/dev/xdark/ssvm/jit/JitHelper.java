@@ -21,6 +21,9 @@ import static org.objectweb.asm.Opcodes.*;
 @UtilityClass
 public class JitHelper {
 
+	final long MEMBER_NOT_FOUND = -1L;
+	final long CLASS_NOT_FOUND = -2L;
+
 	public Value arrayLoadInt(Value array, Value index, ExecutionContext ctx) {
 		val helper = ctx.getHelper();
 		val arr = helper.checkNotNullArray((ObjectValue) array);
@@ -320,9 +323,6 @@ public class JitHelper {
 		val vm = ctx.getVM();
 		val helper = vm.getHelper();
 		InstanceJavaClass klass = (InstanceJavaClass) helper.findClass(ctx.getOwner().getClassLoader(), owner, true);
-		if (klass == null) {
-			helper.throwException(vm.getSymbols().java_lang_ClassNotFoundException, owner);
-		}
 		while (klass != null) {
 			val value = klass.getStaticValue(name, desc);
 			if (value != null) {
@@ -332,6 +332,58 @@ public class JitHelper {
 			klass = klass.getSuperClass();
 		}
 		helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, name);
+	}
+
+	// special intrinsic versions.
+	public void getStaticIntrinsicFail(Object owner, Object field, long offset, ExecutionContext ctx) {
+		if (owner instanceof String) {
+			// Class was not found
+			ctx.getHelper().throwException(ctx.getSymbols().java_lang_NoClassDefFoundError, (String) owner);
+		}
+		if (offset == -1L) {
+			// Field was not found.
+			ctx.getHelper().throwException(ctx.getSymbols().java_lang_NoSuchFieldError, (String) field);
+		}
+	}
+
+	public void getStaticIntrinsicJ(Object owner, long offset, ExecutionContext ctx) {
+		val memoryManager = ctx.getVM().getMemoryManager();
+		ctx.getStack().pushWide(LongValue.of(memoryManager.readLong(((InstanceJavaClass) owner).getOop(), offset)));
+	}
+
+	public void getStaticIntrinsicD(Object owner, long offset, ExecutionContext ctx) {
+		val memoryManager = ctx.getVM().getMemoryManager();
+		ctx.getStack().pushWide(new DoubleValue(memoryManager.readDouble(((InstanceJavaClass) owner).getOop(), offset)));
+	}
+
+	public void getStaticIntrinsicI(Object owner, long offset, ExecutionContext ctx) {
+		val memoryManager = ctx.getVM().getMemoryManager();
+		ctx.getStack().push(IntValue.of(memoryManager.readInt(((InstanceJavaClass) owner).getOop(), offset)));
+	}
+
+	public void getStaticIntrinsicF(Object owner, long offset, ExecutionContext ctx) {
+		val memoryManager = ctx.getVM().getMemoryManager();
+		ctx.getStack().push(new FloatValue(memoryManager.readFloat(((InstanceJavaClass) owner).getOop(), offset)));
+	}
+
+	public void getStaticIntrinsicC(Object owner, long offset, ExecutionContext ctx) {
+		val memoryManager = ctx.getVM().getMemoryManager();
+		ctx.getStack().push(IntValue.of(memoryManager.readChar(((InstanceJavaClass) owner).getOop(), offset)));
+	}
+
+	public void getStaticIntrinsicS(Object owner, long offset, ExecutionContext ctx) {
+		val memoryManager = ctx.getVM().getMemoryManager();
+		ctx.getStack().push(IntValue.of(memoryManager.readShort(((InstanceJavaClass) owner).getOop(), offset)));
+	}
+
+	public void getStaticIntrinsicB(Object owner, long offset, ExecutionContext ctx) {
+		val memoryManager = ctx.getVM().getMemoryManager();
+		ctx.getStack().push(IntValue.of(memoryManager.readByte(((InstanceJavaClass) owner).getOop(), offset)));
+	}
+
+	public void getStaticIntrinsicA(Object owner, long offset, ExecutionContext ctx) {
+		val memoryManager = ctx.getVM().getMemoryManager();
+		ctx.getStack().push(memoryManager.readValue(((InstanceJavaClass) owner).getOop(), offset));
 	}
 
 	public void putStatic(String owner, String name, String desc, ExecutionContext ctx) {
@@ -516,6 +568,7 @@ public class JitHelper {
 		val vm = ctx.getVM();
 		val helper = vm.getHelper();
 		val type = helper.findClass(ctx.getOwner().getClassLoader(), desc, true);
+		// TODO checks like in UnsafeNatives
 		val instance = vm.getMemoryManager().newInstance((InstanceJavaClass) type);
 		helper.initializeDefaultValues(instance);
 		ctx.getStack().push(instance);
@@ -635,6 +688,44 @@ public class JitHelper {
 		while (dimensions-- != 0) lengths[dimensions] = stack.pop().asInt();
 		val array = helper.newMultiArray((ArrayJavaClass) type, lengths);
 		stack.push(array);
+	}
+
+	public Value classLdc(String desc, ExecutionContext ctx) {
+		return ctx.getHelper().valueFromLdc(Type.getObjectType(desc));
+	}
+
+	public Value methodLdc(String desc, ExecutionContext ctx) {
+		return ctx.getHelper().valueFromLdc(Type.getMethodType(desc));
+	}
+
+	public void intToByte(ExecutionContext ctx) {
+		val stack = ctx.getStack();
+		val v = stack.peek();
+		val b = v.asByte();
+		if (v.asInt() != b) {
+			stack.pop();
+			stack.push(IntValue.of(b));
+		}
+	}
+
+	public void intToChar(ExecutionContext ctx) {
+		val stack = ctx.getStack();
+		val v = stack.peek();
+		val c = v.asChar();
+		if (v.asInt() != c) {
+			stack.pop();
+			stack.push(IntValue.of(c));
+		}
+	}
+
+	public void intToShort(ExecutionContext ctx) {
+		val stack = ctx.getStack();
+		val v = stack.peek();
+		val s = v.asShort();
+		if (v.asInt() != s) {
+			stack.pop();
+			stack.push(IntValue.of(s));
+		}
 	}
 
 	public void exceptionCaught(String type, Value ex, ExecutionContext ctx) {

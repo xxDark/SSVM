@@ -57,4 +57,9 @@ public final class FloatValue extends NumericValue {
 	public String toString() {
 		return "float(" + value + ")";
 	}
+
+	@Override
+	public boolean equals(Object other) {
+		return other instanceof FloatValue && value == ((FloatValue) other).value;
+	}
 }

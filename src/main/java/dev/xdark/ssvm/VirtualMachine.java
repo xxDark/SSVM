@@ -35,6 +35,8 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.LineNumberNode;
 
 import java.nio.ByteOrder;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 public class VirtualMachine {
@@ -53,6 +55,7 @@ public class VirtualMachine {
 	private final ManagementInterface managementInterface;
 	private final TimeZoneManager timeZoneManager;
 	private final Properties properties;
+	private final Map<String, String> env;
 
 	public VirtualMachine() {
 		bootClassLoader = new BootClassLoaderHolder(this, createBootClassLoader());
@@ -83,6 +86,7 @@ public class VirtualMachine {
 		NativeJava.init(this);
 
 		(properties = new Properties()).putAll(System.getProperties());
+		(env = new HashMap<>()).putAll(System.getenv());
 		val groupClass = symbols.java_lang_ThreadGroup;
 		groupClass.initialize();
 
@@ -154,6 +158,16 @@ public class VirtualMachine {
 	 */
 	public Properties getProperties() {
 		return properties;
+	}
+
+	/**
+	 * Returns process environment variables that will be used
+	 * for initialization.
+	 *
+	 * @return environment variables.
+	 */
+	public Map<String, String> getenv() {
+		return env;
 	}
 
 	/**
@@ -426,6 +440,19 @@ public class VirtualMachine {
 			vmi.getInvocationHooks(jm, false)
 					.forEach(invocation -> invocation.handle(ctx));
 			backtrace.pop();
+		}
+	}
+
+	/**
+	 * Causes the tasks of current thread to execute.
+	 *
+	 * @see VMThread#getTaskQueue()
+	 */
+	public void drainTaskQueue() {
+		val queue = currentThread().getTaskQueue();
+		Runnable r;
+		while ((r = queue.poll()) != null) {
+			r.run();
 		}
 	}
 

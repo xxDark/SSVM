@@ -1055,7 +1055,10 @@ public final class InstanceJavaClass implements JavaClass {
 		return count;
 	}
 
-	private InstanceJavaClass getSuperclassWithoutResolving() {
+	/**
+	 * @return super class without calling initialization.
+	 */
+	public InstanceJavaClass getSuperclassWithoutResolving() {
 		val superName = node.superName;
 		if (superName == null) return null;
 		val vm = this.vm;

@@ -79,6 +79,7 @@ public final class NativeJava {
 		SeedGeneratorNatives.init(vm);
 		ProxyNatives.init(vm);
 		InflaterNatives.init(vm);
+		ProcessEnvironmentNatives.init(vm);
 	}
 
 	/**

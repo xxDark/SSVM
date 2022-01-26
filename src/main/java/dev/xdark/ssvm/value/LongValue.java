@@ -69,6 +69,11 @@ public final class LongValue extends NumericValue implements WideValue {
 		return "long(" + value + ")";
 	}
 
+	@Override
+	public boolean equals(Object other) {
+		return other instanceof LongValue && value == ((LongValue) other).value;
+	}
+
 	/**
 	 * @param value
 	 * 		InLongt value.

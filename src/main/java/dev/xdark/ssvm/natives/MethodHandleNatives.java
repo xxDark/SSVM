@@ -17,7 +17,6 @@ import org.objectweb.asm.Type;
 import java.util.Arrays;
 
 import static org.objectweb.asm.Opcodes.*;
-import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
 /**
  * Initializes JSR 292 related components.
@@ -192,6 +191,7 @@ public class MethodHandleNatives {
 					}
 				}
 
+				lvt = compactForExecution(lvt);
 				Value result;
 				if ((jm.getAccess() & ACC_STATIC) == 0) {
 					result = helper.invokeVirtual(name, jm.getDesc(), new Value[0], lvt).getResult();
@@ -217,7 +217,9 @@ public class MethodHandleNatives {
 			val resolved = (InstanceValue) memberName.getValue("method", symbols.java_lang_invoke_ResolvedMethodName.getDescriptor());
 			val vmtarget = ((JavaValue<JavaMethod>) resolved.getValue(VM_TARGET, "Ljava/lang/Object;")).getValue();
 
-			val args = Arrays.copyOfRange(locals.getTable(), 0, length - 1);
+			val types = vmtarget.getArgumentTypes();
+			Value[] args = compactForExecution(Arrays.copyOfRange(locals.getTable(), 0, length - 1));
+			Util.convertInvokeDynamicArgs(vm, types, args);
 
 			Value result;
 			if ((vmtarget.getAccess() & ACC_STATIC) == 0) {
@@ -235,6 +237,25 @@ public class MethodHandleNatives {
 
 		val lookup = symbols.java_lang_invoke_MethodHandles$Lookup;
 		vmi.setInvoker(lookup, "checkAccess", "(BLjava/lang/Class;Ljava/lang/invoke/MemberName;)V", MethodInvoker.noop());
+	}
+
+	private static Value[] compactForExecution(Value[] arr) {
+		for (int i = 0, j = arr.length; i < j; i++) {
+			if (arr[i] == null) {
+				int len = j - 1;
+				val copy = new Value[len];
+				System.arraycopy(arr, 0, copy, 0, i);
+				int k = i;
+				while (i < j) {
+					val v = arr[i++];
+					if (v != null) {
+						copy[k++] = v;
+					}
+				}
+				return k == len ? copy : Arrays.copyOfRange(copy, 0, k);
+			}
+		}
+		return arr;
 	}
 
 	private void initMemberNameMethod(VirtualMachine vm, InstanceValue memberName, InstanceValue obj) {

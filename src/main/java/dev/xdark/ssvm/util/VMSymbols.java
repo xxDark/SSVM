@@ -90,6 +90,8 @@ public final class VMSymbols {
 	public final InstanceJavaClass java_lang_reflect_Proxy;
 	public final InstanceJavaClass java_util_zip_Inflater;
 	public final InstanceJavaClass java_lang_invoke_CallSite;
+	public final InstanceJavaClass java_lang_ProcessEnvironment;
+	public final InstanceJavaClass java_lang_InstantiationException;
 
 	/**
 	 * @param vm
@@ -184,6 +186,8 @@ public final class VMSymbols {
 		java_lang_reflect_Proxy = (InstanceJavaClass) vm.findBootstrapClass("java/lang/reflect/Proxy");
 		java_util_zip_Inflater = (InstanceJavaClass) vm.findBootstrapClass("java/util/zip/Inflater");
 		java_lang_invoke_CallSite = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/CallSite");
+		java_lang_ProcessEnvironment = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ProcessEnvironment");
+		java_lang_InstantiationException = (InstanceJavaClass) vm.findBootstrapClass("java/lang/InstantiationException");
 	}
 
 	private static InstanceJavaClass resolvedMemberName(VirtualMachine vm) {

@@ -2,6 +2,8 @@ package dev.xdark.ssvm.thread;
 
 import dev.xdark.ssvm.value.InstanceValue;
 
+import java.util.Queue;
+
 /**
  * Represents attached native Java thread.
  *
@@ -77,4 +79,13 @@ public interface VMThread {
 	 * {@code false} otherwise.
 	 */
 	boolean isInterrupted(boolean clear);
+
+	/**
+	 * Returns task queue of the current thread.
+	 * VM will periodically drain this queue and execute
+	 * every runnable from it.
+	 *
+	 * @return task queue of the current thread.
+	 */
+	Queue<Runnable> getTaskQueue();
 }

@@ -79,6 +79,11 @@ public final class IntValue extends NumericValue {
 		return "int(" + value + ")";
 	}
 
+	@Override
+	public boolean equals(Object other) {
+		return other instanceof IntValue && value == ((IntValue) other).value;
+	}
+
 	/**
 	 * @param value
 	 * 		Int value.

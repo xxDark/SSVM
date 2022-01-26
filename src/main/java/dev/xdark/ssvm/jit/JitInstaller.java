@@ -1,6 +1,5 @@
 package dev.xdark.ssvm.jit;
 
-import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.JavaMethod;
@@ -32,10 +31,14 @@ public class JitInstaller {
 	 */
 	public void install(JavaMethod method, ClassDefiner definer, JitClass jitClass) throws ReflectiveOperationException {
 		val c = definer.define(jitClass);
+		val constants = jitClass.getConstants();
+		if (!constants.isEmpty()) {
+			val field = c.getDeclaredField("constants");
+			field.setAccessible(true);
+			field.set(null, constants.toArray());
+		}
 		val cons = (Consumer<ExecutionContext>) c.getConstructor().newInstance();
 		val vm = method.getOwner().getVM();
-		val node = method.getNode();
-		node.access |= Modifier.ACC_JIT;
 		vm.getInterface().setInvoker(method, ctx -> {
 			cons.accept(ctx);
 			return Result.ABORT;

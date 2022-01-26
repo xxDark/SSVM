@@ -60,7 +60,7 @@ public final class VMHelper {
 		}
 		javaClass.initialize();
 		val ctx = createContext(javaClass, method, locals);
-		contextPrepare(ctx, stack, locals, 0);
+		contextPrepare(ctx, stack, locals);
 		vm.execute(ctx, true);
 		return ctx;
 	}
@@ -171,7 +171,7 @@ public final class VMHelper {
 		}
 		javaClass.initialize();
 		val ctx = createContext(javaClass, method, locals);
-		contextPrepare(ctx, stack, locals, 0);
+		contextPrepare(ctx, stack, locals);
 		vm.execute(ctx, true);
 		return ctx;
 	}
@@ -241,7 +241,7 @@ public final class VMHelper {
 			return linkMethodHandleConstant(ctx.getDeclaringClass(), (Handle) cst);
 		}
 
-		throw new UnsupportedOperationException("TODO: " + cst);
+		throw new UnsupportedOperationException("TODO: " + cst + " (" + cst.getClass() + ')');
 	}
 
 	/**
@@ -1913,6 +1913,28 @@ public final class VMHelper {
 					}
 				}
 			}
+		} else {
+			val loader = jc.getClassLoader();
+			if (loader.isNull()) {
+				if (jc.getInternalName().startsWith("java/lang/invoke/")) {
+					for (val jm : jc.getVirtualMethodLayout().getMethods().values()) {
+						hideLambdaForm(jm);
+					}
+					for (val jm : jc.getStaticMethodLayout().getMethods().values()) {
+						hideLambdaForm(jm);
+					}
+				}
+				if (jc == vm.getSymbols().java_lang_invoke_MethodHandle) {
+					makeHiddenMethod(jc, "invoke", "([Ljava/lang/Object;)Ljava/lang/Object;");
+					makeHiddenMethod(jc, "invokeExact", "([Ljava/lang/Object;)Ljava/lang/Object;");
+					makeHiddenMethod(jc, "invokeBasic", "([Ljava/lang/Object;)Ljava/lang/Object;");
+					makeHiddenMethod(jc, "invokeWithArguments", "([Ljava/lang/Object;)Ljava/lang/Object;");
+					makeHiddenMethod(jc, "linkToStatic", "([Ljava/lang/Object;)Ljava/lang/Object;");
+					makeHiddenMethod(jc, "linkToVirtual", "([Ljava/lang/Object;)Ljava/lang/Object;");
+					makeHiddenMethod(jc, "linkToInterface", "([Ljava/lang/Object;)Ljava/lang/Object;");
+					makeHiddenMethod(jc, "linkToSpecial", "([Ljava/lang/Object;)Ljava/lang/Object;");
+				}
+			}
 		}
 	}
 
@@ -2035,17 +2057,16 @@ public final class VMHelper {
 		return array;
 	}
 
-	private static void contextPrepare(ExecutionContext ctx, Value[] stack, Value[] locals, int localIndex) {
+	private static void contextPrepare(ExecutionContext ctx, Value[] stack, Value[] locals) {
 		val lvt = ctx.getLocals();
-		for (val local : locals) {
-			if (local == null) {
-				localIndex++;
+		int x = 0;
+		for (val arg : locals) {
+			if (arg == null) {
+				x++;
 				continue;
 			}
-			lvt.set(localIndex++, local);
-			if (local.isWide()) {
-				localIndex++;
-			}
+			lvt.set(x++, arg);
+			if (arg.isWide()) x++;
 		}
 		val $stack = ctx.getStack();
 		for (val value : stack) {
@@ -2072,5 +2093,29 @@ public final class VMHelper {
 			x++;
 		}
 		return Math.max(max, x);
+	}
+
+	private static void makeHiddenMethod(InstanceJavaClass jc, String name, String desc) {
+		JavaMethod mn = jc.getVirtualMethod(name, desc);
+		if (mn == null) {
+			mn = jc.getStaticMethod(name, desc);
+		}
+		if (mn != null) {
+			val node = mn.getNode();
+			node.access |= Modifier.ACC_HIDDEN_FRAME;
+		}
+	}
+
+	private static void hideLambdaForm(JavaMethod jm) {
+		val node = jm.getNode();
+		val annotations = node.visibleAnnotations;
+		if (annotations != null) {
+			for (int i = 0; i < annotations.size(); i++) {
+				if ("Ljava/lang/invoke/LambdaForm$Hidden;".equals(annotations.get(i).desc)) {
+					node.access |= Modifier.ACC_HIDDEN_FRAME;
+					break;
+				}
+			}
+		}
 	}
 }

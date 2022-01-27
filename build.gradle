@@ -6,7 +6,6 @@ group 'dev.xdark'
 version '1.0'
 
 repositories {
-    mavenLocal()
     mavenCentral()
     repositories {
         maven { url 'https://jitpack.io' }
@@ -16,8 +15,7 @@ repositories {
 dependencies {
     implementation 'org.ow2.asm:asm:9.2'
     implementation 'org.ow2.asm:asm-tree:9.2'
-    //implementation 'com.github.Col-E:CAFED00D:1.8.0'
-    implementation 'me.coley:cafedude:1.8.0'
+    implementation 'com.github.Col-E:CAFED00D:1.8.0'
     implementation 'org.slf4j:slf4j-api:1.7.33'
 
     def junitVersion = '5.8.2'

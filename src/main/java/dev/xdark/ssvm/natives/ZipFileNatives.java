@@ -3,18 +3,16 @@ package dev.xdark.ssvm.natives;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.fs.ZipFile;
 import dev.xdark.ssvm.value.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.UtilityClass;
 import lombok.val;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 /**
  * Initializes java/util/zip/ZipFile.
@@ -56,13 +54,17 @@ public class ZipFileNatives {
 			vmi.setInvoker(zf, "getTotal", "(J)I", ctx -> {
 				val zip = vm.getFileDescriptorManager().getZipFile(ctx.getLocals().load(0).asLong());
 				if (zip == null) {
-					vm.getHelper().throwException(symbols.java_io_IOException, "zip closed");
+					vm.getHelper().throwException(symbols.java_lang_IllegalStateException, "zip closed");
 				}
-				ctx.setResult(IntValue.of((int) zip.stream().count()));
+				ctx.setResult(IntValue.of(zip.getTotal()));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "startsWithLOC", "(J)Z", ctx -> {
-				ctx.setResult(IntValue.ONE);
+				val zip = vm.getFileDescriptorManager().getZipFile(ctx.getLocals().load(0).asLong());
+				if (zip == null) {
+					vm.getHelper().throwException(symbols.java_lang_IllegalStateException, "zip closed");
+				}
+				ctx.setResult(zip.startsWithLOC() ? IntValue.ONE :  IntValue.ZERO);
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntry", "(J[BZ)J", ctx -> {
@@ -71,7 +73,7 @@ public class ZipFileNatives {
 				val zip = vm.getFileDescriptorManager().getZipFile(handle);
 				val helper = vm.getHelper();
 				if (zip == null) {
-					helper.throwException(symbols.java_io_IOException, "zip closed");
+					helper.throwException(symbols.java_lang_IllegalStateException, "zip closed");
 				}
 				String entryName = new String(helper.toJavaBytes(locals.load(2)), StandardCharsets.UTF_8);
 				ZipEntry entry = zip.getEntry(entryName);
@@ -89,7 +91,7 @@ public class ZipFileNatives {
 			vmi.setInvoker(zf, "getEntryBytes", "(JI)[B", ctx -> {
 				val locals = ctx.getLocals();
 				val helper = vm.getHelper();
-				val value = locals.<JavaValue<ZipEntryHolder>>load(0).getValue().entry;
+				val value = locals.<JavaValue<ZipEntryHolder>>load(0).getValue().handle;
 				int type = locals.load(2).asInt();
 				switch (type) {
 					case 0:
@@ -110,25 +112,25 @@ public class ZipFileNatives {
 			});
 			vmi.setInvoker(zf, "getEntryTime", "(J)J", ctx -> {
 				val locals = ctx.getLocals();
-				val value = locals.<JavaValue<ZipEntryHolder>>load(0).getValue().entry;
+				val value = locals.<JavaValue<ZipEntryHolder>>load(0).getValue().handle;
 				ctx.setResult(LongValue.of(value.getTime()));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntryCrc", "(J)J", ctx -> {
 				val locals = ctx.getLocals();
-				val value = locals.<JavaValue<ZipEntryHolder>>load(0).getValue().entry;
+				val value = locals.<JavaValue<ZipEntryHolder>>load(0).getValue().handle;
 				ctx.setResult(LongValue.of(value.getCrc()));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntrySize", "(J)J", ctx -> {
 				val locals = ctx.getLocals();
-				val value = locals.<JavaValue<ZipEntryHolder>>load(0).getValue().entry;
+				val value = locals.<JavaValue<ZipEntryHolder>>load(0).getValue().handle;
 				ctx.setResult(LongValue.of(value.getSize()));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntryCSize", "(J)J", ctx -> {
 				val locals = ctx.getLocals();
-				val value = locals.<JavaValue<ZipEntryHolder>>load(0).getValue().entry;
+				val value = locals.<JavaValue<ZipEntryHolder>>load(0).getValue().handle;
 				ctx.setResult(LongValue.of(value.getSize())); // TODO change?
 				return Result.ABORT;
 			});
@@ -151,7 +153,7 @@ public class ZipFileNatives {
 				val entry = ((JavaValue<ZipEntryHolder>) vm.getMemoryManager().getValue(locals.load(2).asLong())).getValue();
 				val pos = locals.load(4).asLong();
 				if (pos > Integer.MAX_VALUE) {
-					vm.getHelper().throwException(vm.getSymbols().java_io_IOException, "Entry too large");
+					vm.getHelper().throwException(vm.getSymbols().java_util_zip_ZipException, "Entry too large");
 				}
 				val bytes = locals.<ArrayValue>load(6);
 				int off = locals.load(7).asInt();
@@ -160,7 +162,7 @@ public class ZipFileNatives {
 				try {
 					read = entry.readEntry();
 				} catch (IOException ex) {
-					vm.getHelper().throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+					vm.getHelper().throwException(vm.getSymbols().java_util_zip_ZipException, ex.getMessage());
 					return Result.ABORT;
 				}
 				int start = (int) pos;
@@ -188,14 +190,13 @@ public class ZipFileNatives {
 				val zip = vm.getFileDescriptorManager().getZipFile(handle);
 				val helper = vm.getHelper();
 				if (zip == null) {
-					helper.throwException(symbols.java_io_IOException, "zip closed");
+					helper.throwException(symbols.java_lang_IllegalStateException, "zip closed");
 				}
 				int idx = locals.load(2).asInt();
-				val opt = zip.stream().skip(idx).findFirst();
-				if (!opt.isPresent()) {
+				val entry = zip.getEntry(idx);
+				if (entry == null) {
 					ctx.setResult(LongValue.ZERO);
 				} else {
-					val entry = opt.get();
 					val value = vm.getMemoryManager().newJavaInstance(symbols.java_lang_Object, new ZipEntryHolder(zip, entry));
 					value.setWide(true);
 					ctx.setResult(value);
@@ -206,7 +207,7 @@ public class ZipFileNatives {
 				try {
 					vm.getFileDescriptorManager().close(ctx.getLocals().load(0).asLong());
 				} catch (IOException ex) {
-					vm.getHelper().throwException(symbols.java_io_IOException, ex.getMessage());
+					vm.getHelper().throwException(symbols.java_util_zip_ZipException, ex.getMessage());
 				}
 				return Result.ABORT;
 			});
@@ -217,23 +218,10 @@ public class ZipFileNatives {
 	private static final class ZipEntryHolder {
 
 		final ZipFile zf;
-		final ZipEntry entry;
-		private byte[] bytes;
+		final ZipEntry handle;
 
 		byte[] readEntry() throws IOException {
-			byte[] bytes = this.bytes;
-			if (bytes == null) {
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				byte[] buf = new byte[1024];
-				try (InputStream in = zf.getInputStream(entry)) {
-					int r;
-					while ((r = in.read(buf)) >= 0) {
-						baos.write(buf, 0, r);
-					}
-				}
-				return this.bytes = baos.toByteArray();
-			}
-			return bytes;
+			return zf.readEntry(handle);
 		}
 	}
 }

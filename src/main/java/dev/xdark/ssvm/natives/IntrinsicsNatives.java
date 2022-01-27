@@ -591,7 +591,7 @@ public class IntrinsicsNatives {
 			val helper = vm.getHelper();
 			val arr = helper.checkNotNullArray(locals.load(0));
 			val v = locals.load(1).asLong();
-			for (int j = arr.getLength(); j != 0;) {
+			for (int j = arr.getLength(); j != 0; ) {
 				arr.setLong(--j, v);
 			}
 			return Result.ABORT;
@@ -601,7 +601,7 @@ public class IntrinsicsNatives {
 			val helper = vm.getHelper();
 			val arr = helper.checkNotNullArray(locals.load(0));
 			val v = locals.load(1).asDouble();
-			for (int j = arr.getLength(); j != 0;) {
+			for (int j = arr.getLength(); j != 0; ) {
 				arr.setDouble(--j, v);
 			}
 			return Result.ABORT;
@@ -611,7 +611,7 @@ public class IntrinsicsNatives {
 			val helper = vm.getHelper();
 			val arr = helper.checkNotNullArray(locals.load(0));
 			val v = locals.load(1).asInt();
-			for (int j = arr.getLength(); j != 0;) {
+			for (int j = arr.getLength(); j != 0; ) {
 				arr.setInt(--j, v);
 			}
 			return Result.ABORT;
@@ -621,7 +621,7 @@ public class IntrinsicsNatives {
 			val helper = vm.getHelper();
 			val arr = helper.checkNotNullArray(locals.load(0));
 			val v = locals.load(1).asFloat();
-			for (int j = arr.getLength(); j != 0;) {
+			for (int j = arr.getLength(); j != 0; ) {
 				arr.setFloat(--j, v);
 			}
 			return Result.ABORT;
@@ -631,7 +631,7 @@ public class IntrinsicsNatives {
 			val helper = vm.getHelper();
 			val arr = helper.checkNotNullArray(locals.load(0));
 			val v = locals.load(1).asChar();
-			for (int j = arr.getLength(); j != 0;) {
+			for (int j = arr.getLength(); j != 0; ) {
 				arr.setChar(--j, v);
 			}
 			return Result.ABORT;
@@ -641,7 +641,7 @@ public class IntrinsicsNatives {
 			val helper = vm.getHelper();
 			val arr = helper.checkNotNullArray(locals.load(0));
 			val v = locals.load(1).asShort();
-			for (int j = arr.getLength(); j != 0;) {
+			for (int j = arr.getLength(); j != 0; ) {
 				arr.setShort(--j, v);
 			}
 			return Result.ABORT;
@@ -651,7 +651,7 @@ public class IntrinsicsNatives {
 			val helper = vm.getHelper();
 			val arr = helper.checkNotNullArray(locals.load(0));
 			val v = locals.load(1).asByte();
-			for (int j = arr.getLength(); j != 0;) {
+			for (int j = arr.getLength(); j != 0; ) {
 				arr.setByte(--j, v);
 			}
 			return Result.ABORT;
@@ -661,8 +661,224 @@ public class IntrinsicsNatives {
 			val helper = vm.getHelper();
 			val arr = helper.checkNotNullArray(locals.load(0));
 			val v = locals.load(1).asBoolean();
-			for (int j = arr.getLength(); j != 0;) {
+			for (int j = arr.getLength(); j != 0; ) {
 				arr.setBoolean(--j, v);
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "equals", "([J[J)Z", ctx -> {
+			val locals = ctx.getLocals();
+			val $a = locals.load(0);
+			val $a2 = locals.load(1);
+			done:
+			if ($a == $a2) {
+				ctx.setResult(IntValue.ONE);
+			} else if ($a.isNull() || $a2.isNull()) {
+				ctx.setResult(IntValue.ZERO);
+			} else {
+				val a = (ArrayValue) $a;
+				val a2 = (ArrayValue) $a2;
+				int j = a.getLength();
+				if (j != a2.getLength()) {
+					ctx.setResult(IntValue.ZERO);
+				} else {
+					while (j-- != 0) {
+						if (a.getLong(j) != a2.getLong(j)) {
+							ctx.setResult(IntValue.ZERO);
+							break done;
+						}
+					}
+					ctx.setResult(IntValue.ONE);
+				}
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "equals", "([D[D)Z", ctx -> {
+			val locals = ctx.getLocals();
+			val $a = locals.load(0);
+			val $a2 = locals.load(1);
+			done:
+			if ($a == $a2) {
+				ctx.setResult(IntValue.ONE);
+			} else if ($a.isNull() || $a2.isNull()) {
+				ctx.setResult(IntValue.ZERO);
+			} else {
+				val a = (ArrayValue) $a;
+				val a2 = (ArrayValue) $a2;
+				int j = a.getLength();
+				if (j != a2.getLength()) {
+					ctx.setResult(IntValue.ZERO);
+				} else {
+					while (j-- != 0) {
+						if (a.getDouble(j) != a2.getDouble(j)) {
+							ctx.setResult(IntValue.ZERO);
+							break done;
+						}
+					}
+					ctx.setResult(IntValue.ONE);
+				}
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "equals", "([I[I)Z", ctx -> {
+			val locals = ctx.getLocals();
+			val $a = locals.load(0);
+			val $a2 = locals.load(1);
+			done:
+			if ($a == $a2) {
+				ctx.setResult(IntValue.ONE);
+			} else if ($a.isNull() || $a2.isNull()) {
+				ctx.setResult(IntValue.ZERO);
+			} else {
+				val a = (ArrayValue) $a;
+				val a2 = (ArrayValue) $a2;
+				int j = a.getLength();
+				if (j != a2.getLength()) {
+					ctx.setResult(IntValue.ZERO);
+				} else {
+					while (j-- != 0) {
+						if (a.getInt(j) != a2.getInt(j)) {
+							ctx.setResult(IntValue.ZERO);
+							break done;
+						}
+					}
+					ctx.setResult(IntValue.ONE);
+				}
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "equals", "([F[F)Z", ctx -> {
+			val locals = ctx.getLocals();
+			val $a = locals.load(0);
+			val $a2 = locals.load(1);
+			done:
+			if ($a == $a2) {
+				ctx.setResult(IntValue.ONE);
+			} else if ($a.isNull() || $a2.isNull()) {
+				ctx.setResult(IntValue.ZERO);
+			} else {
+				val a = (ArrayValue) $a;
+				val a2 = (ArrayValue) $a2;
+				int j = a.getLength();
+				if (j != a2.getLength()) {
+					ctx.setResult(IntValue.ZERO);
+				} else {
+					while (j-- != 0) {
+						if (a.getFloat(j) != a2.getFloat(j)) {
+							ctx.setResult(IntValue.ZERO);
+							break done;
+						}
+					}
+					ctx.setResult(IntValue.ONE);
+				}
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "equals", "([C[C)Z", ctx -> {
+			val locals = ctx.getLocals();
+			val $a = locals.load(0);
+			val $a2 = locals.load(1);
+			done:
+			if ($a == $a2) {
+				ctx.setResult(IntValue.ONE);
+			} else if ($a.isNull() || $a2.isNull()) {
+				ctx.setResult(IntValue.ZERO);
+			} else {
+				val a = (ArrayValue) $a;
+				val a2 = (ArrayValue) $a2;
+				int j = a.getLength();
+				if (j != a2.getLength()) {
+					ctx.setResult(IntValue.ZERO);
+				} else {
+					while (j-- != 0) {
+						if (a.getChar(j) != a2.getChar(j)) {
+							ctx.setResult(IntValue.ZERO);
+							break done;
+						}
+					}
+					ctx.setResult(IntValue.ONE);
+				}
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "equals", "([S[S)Z", ctx -> {
+			val locals = ctx.getLocals();
+			val $a = locals.load(0);
+			val $a2 = locals.load(1);
+			done:
+			if ($a == $a2) {
+				ctx.setResult(IntValue.ONE);
+			} else if ($a.isNull() || $a2.isNull()) {
+				ctx.setResult(IntValue.ZERO);
+			} else {
+				val a = (ArrayValue) $a;
+				val a2 = (ArrayValue) $a2;
+				int j = a.getLength();
+				if (j != a2.getLength()) {
+					ctx.setResult(IntValue.ZERO);
+				} else {
+					while (j-- != 0) {
+						if (a.getShort(j) != a2.getShort(j)) {
+							ctx.setResult(IntValue.ZERO);
+							break done;
+						}
+					}
+					ctx.setResult(IntValue.ONE);
+				}
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "equals", "([B[B)Z", ctx -> {
+			val locals = ctx.getLocals();
+			val $a = locals.load(0);
+			val $a2 = locals.load(1);
+			done:
+			if ($a == $a2) {
+				ctx.setResult(IntValue.ONE);
+			} else if ($a.isNull() || $a2.isNull()) {
+				ctx.setResult(IntValue.ZERO);
+			} else {
+				val a = (ArrayValue) $a;
+				val a2 = (ArrayValue) $a2;
+				int j = a.getLength();
+				if (j != a2.getLength()) {
+					ctx.setResult(IntValue.ZERO);
+				} else {
+					while (j-- != 0) {
+						if (a.getByte(j) != a2.getByte(j)) {
+							ctx.setResult(IntValue.ZERO);
+							break done;
+						}
+					}
+					ctx.setResult(IntValue.ONE);
+				}
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "equals", "([Z[Z)Z", ctx -> {
+			val locals = ctx.getLocals();
+			val $a = locals.load(0);
+			val $a2 = locals.load(1);
+			done:
+			if ($a == $a2) {
+				ctx.setResult(IntValue.ONE);
+			} else if ($a.isNull() || $a2.isNull()) {
+				ctx.setResult(IntValue.ZERO);
+			} else {
+				val a = (ArrayValue) $a;
+				val a2 = (ArrayValue) $a2;
+				int j = a.getLength();
+				if (j != a2.getLength()) {
+					ctx.setResult(IntValue.ZERO);
+				} else {
+					while (j-- != 0) {
+						if (a.getBoolean(j) != a2.getBoolean(j)) {
+							ctx.setResult(IntValue.ZERO);
+							break done;
+						}
+					}
+					ctx.setResult(IntValue.ONE);
+				}
 			}
 			return Result.ABORT;
 		});

@@ -45,7 +45,7 @@ public class ReflectionNatives {
 				while (true) {
 					val frame = backtrace.get(count - offset);
 					val method = frame.getExecutionContext().getMethod();
-					if ((method.getAccess() & Modifier.ACC_CALLER_SENSITIVE) != 0) {
+					if (Modifier.isCallerSensitive(method.getAccess())) {
 						offset++;
 					} else {
 						break;

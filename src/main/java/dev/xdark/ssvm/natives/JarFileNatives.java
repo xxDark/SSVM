@@ -31,7 +31,7 @@ public class JarFileNatives {
 			val zip = vm.getFileDescriptorManager().getZipFile(handle);
 			val helper = vm.getHelper();
 			if (zip == null) {
-				helper.throwException(symbols.java_io_IOException, "zip closed");
+				helper.throwException(symbols.java_lang_IllegalStateException, "zip closed");
 			}
 			val paths = zip.stream()
 					.map(ZipEntry::getName)

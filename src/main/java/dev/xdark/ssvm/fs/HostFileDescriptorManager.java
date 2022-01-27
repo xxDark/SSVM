@@ -10,7 +10,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.zip.ZipFile;
 
 /**
  * File descriptor manager that uses host machine
@@ -163,7 +162,7 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 	@Override
 	public long openZipFile(String path, int mode) throws IOException {
 		val fd = newFD();
-		val zf = new ZipFile(new File(path), mode);
+		val zf = new SimpleZipFile(new java.util.zip.ZipFile(new File(path), mode));
 		zipFiles.put(fd, zf);
 		return fd;
 	}

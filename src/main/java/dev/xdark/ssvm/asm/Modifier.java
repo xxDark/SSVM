@@ -22,7 +22,7 @@ public class Modifier {
 	 * 		Modifiers to drop from.
 	 */
 	public int erase(int modifiers) {
-		return modifiers & ~(ACC_VM_HIDDEN | ACC_HIDDEN_FRAME);
+		return modifiers & ~(ACC_VM_HIDDEN | ACC_HIDDEN_FRAME | ACC_JIT | ACC_CALLER_SENSITIVE);
 	}
 
 	/**

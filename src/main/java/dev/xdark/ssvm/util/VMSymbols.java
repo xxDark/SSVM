@@ -93,6 +93,7 @@ public final class VMSymbols {
 	public final InstanceJavaClass java_lang_ProcessEnvironment;
 	public final InstanceJavaClass java_lang_InstantiationException;
 	public final InstanceJavaClass reflect_MethodAccessorImpl;
+	public final InstanceJavaClass java_util_zip_ZipException;
 
 	/**
 	 * @param vm
@@ -194,6 +195,7 @@ public final class VMSymbols {
 			reflect_MethodAccessorImpl = (InstanceJavaClass) vm.findBootstrapClass("sun/reflect/MethodAccessorImpl");
 		}
 		this.reflect_MethodAccessorImpl = reflect_MethodAccessorImpl;
+		java_util_zip_ZipException = (InstanceJavaClass) vm.findBootstrapClass("java/util/zip/ZipException");
 	}
 
 	private static InstanceJavaClass resolvedMemberName(VirtualMachine vm) {

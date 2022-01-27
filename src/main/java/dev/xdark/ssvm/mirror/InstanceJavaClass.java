@@ -551,7 +551,7 @@ public final class InstanceJavaClass implements JavaClass {
 	public Value getStaticValue(MemberKey field) {
 		initialize();
 
-		val offset = (int) staticFieldLayout.getFieldOffset(field);
+		val offset = staticFieldLayout.getFieldOffset(field);
 		if (offset == -1L) return null;
 		val oop = this.oop;
 		val memoryManager = vm.getMemoryManager();
@@ -606,7 +606,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 */
 	public boolean setFieldValue(MemberKey field, Value value) {
 		initialize();
-		val offset = (int) staticFieldLayout.getFieldOffset(field);
+		val offset = staticFieldLayout.getFieldOffset(field);
 		if (offset == -1L) return false;
 		val oop = this.oop;
 		val memoryManager = vm.getMemoryManager();

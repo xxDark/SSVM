@@ -11,7 +11,7 @@ import lombok.val;
 import org.objectweb.asm.tree.FieldNode;
 
 import static dev.xdark.ssvm.asm.Modifier.ACC_VM_HIDDEN;
-import static dev.xdark.ssvm.asm.VMOpcodes.METHOD_HANDLE;
+import static dev.xdark.ssvm.asm.VMOpcodes.DYNAMIC_CALL;
 import static org.objectweb.asm.Opcodes.*;
 
 /**
@@ -393,7 +393,7 @@ public final class NativeJava {
 		vmi.setProcessor(IFNULL, new ValueJumpProcessor(Value::isNull));
 
 		// VM opcodes
-		vmi.setProcessor(METHOD_HANDLE, new DynamicCallProcessor());
+		vmi.setProcessor(DYNAMIC_CALL, new DynamicCallProcessor());
 		vmi.setProcessor(VMOpcodes.LDC, new VMLdcProcessor());
 	}
 }

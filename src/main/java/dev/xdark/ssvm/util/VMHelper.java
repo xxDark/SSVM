@@ -19,7 +19,6 @@ import org.objectweb.asm.tree.ClassNode;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 /**
@@ -877,59 +876,7 @@ public final class VMHelper {
 		val vm = this.vm;
 		val memoryManager = vm.getMemoryManager();
 		val baseOffset = memoryManager.valueBaseOffset(value);
-		for (val entry : value.getJavaClass().getVirtualFieldLayout().getFields().values()) {
-			val field = entry.getNode().desc;
-			val offset = baseOffset + entry.getOffset();
-			switch (field) {
-				case "J":
-					memoryManager.writeLong(value, offset, 0L);
-					break;
-				case "D":
-					memoryManager.writeDouble(value, offset, 0.0D);
-					break;
-				case "I":
-					memoryManager.writeInt(value, offset, 0);
-					break;
-				case "F":
-					memoryManager.writeFloat(value, offset, 0.0F);
-					break;
-				case "C":
-					memoryManager.writeChar(value, offset, '\0');
-					break;
-				case "S":
-					memoryManager.writeShort(value, offset, (short) 0);
-					break;
-				case "B":
-					memoryManager.writeByte(value, offset, (byte) 0);
-					break;
-				case "Z":
-					memoryManager.writeBoolean(value, offset, false);
-					break;
-				default:
-					memoryManager.writeValue(value, offset, NullValue.INSTANCE);
-			}
-		}
-	}
-
-	/**
-	 * Initializes default values of the class.
-	 *
-	 * @param value
-	 * 		Value to set fields for.
-	 * @param javaClass
-	 * 		Class to get fields from.
-	 */
-	public void initializeDefaultValues(InstanceValue value, InstanceJavaClass javaClass) {
-		val vm = this.vm;
-		val memoryManager = vm.getMemoryManager();
-		val fields = value.getJavaClass().getVirtualFieldLayout()
-				.getFields()
-				.values()
-				.stream()
-				.filter(x -> javaClass == x.getOwner())
-				.collect(Collectors.toList());
-		val baseOffset = memoryManager.valueBaseOffset(value);
-		for (val entry : fields) {
+		for (val entry : value.getJavaClass().getVirtualFieldLayout().getAll()) {
 			val field = entry.getNode().desc;
 			val offset = baseOffset + entry.getOffset();
 			switch (field) {
@@ -1929,9 +1876,10 @@ public final class VMHelper {
 	 * 		Class to setup.
 	 */
 	public void setupHiddenFrames(InstanceJavaClass jc) {
-		val throwable = vm.getSymbols().java_lang_Throwable;
+		val symbols = vm.getSymbols();
+		val throwable = symbols.java_lang_Throwable;
 		if (throwable.isAssignableFrom(jc)) {
-			for (val jm : jc.getVirtualMethodLayout().getMethods().values()) {
+			for (val jm : jc.getVirtualMethodLayout().getAll()) {
 				val name = jm.getName();
 				if ("<init>".equals(name)) {
 					makeHiddenMethod(jm);
@@ -1948,14 +1896,14 @@ public final class VMHelper {
 			val loader = jc.getClassLoader();
 			if (loader.isNull()) {
 				if (jc.getInternalName().startsWith("java/lang/invoke/")) {
-					for (val jm : jc.getVirtualMethodLayout().getMethods().values()) {
+					for (val jm : jc.getVirtualMethodLayout().getAll()) {
 						hideLambdaForm(jm);
 					}
-					for (val jm : jc.getStaticMethodLayout().getMethods().values()) {
+					for (val jm : jc.getStaticMethodLayout().getAll()) {
 						hideLambdaForm(jm);
 					}
 				}
-				if (jc == vm.getSymbols().java_lang_invoke_MethodHandle) {
+				if (jc == symbols.java_lang_invoke_MethodHandle) {
 					makeHiddenMethod(jc, "invoke", "([Ljava/lang/Object;)Ljava/lang/Object;");
 					makeHiddenMethod(jc, "invokeExact", "([Ljava/lang/Object;)Ljava/lang/Object;");
 					makeHiddenMethod(jc, "invokeBasic", "([Ljava/lang/Object;)Ljava/lang/Object;");
@@ -1964,6 +1912,18 @@ public final class VMHelper {
 					makeHiddenMethod(jc, "linkToVirtual", "([Ljava/lang/Object;)Ljava/lang/Object;");
 					makeHiddenMethod(jc, "linkToInterface", "([Ljava/lang/Object;)Ljava/lang/Object;");
 					makeHiddenMethod(jc, "linkToSpecial", "([Ljava/lang/Object;)Ljava/lang/Object;");
+					makeCallerSensitive(jc, "invokeWithArguments", "(Ljava/util/List;)Ljava/lang/Object;");
+				} else if (jc == symbols.java_lang_reflect_Method) {
+					makeCallerSensitive(jc, "invoke", "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;");
+				} else if (symbols.reflect_MethodAccessorImpl.isAssignableFrom(jc)) {
+					for (val jm : jc.getVirtualMethodLayout().getAll()) {
+						val node = jm.getNode();
+						node.access |= Modifier.ACC_CALLER_SENSITIVE;
+					}
+					for (val jm : jc.getStaticMethodLayout().getAll()) {
+						val node = jm.getNode();
+						node.access |= Modifier.ACC_CALLER_SENSITIVE;
+					}
 				}
 			}
 		}
@@ -1981,10 +1941,10 @@ public final class VMHelper {
 	 * if not found.
 	 */
 	public JavaMethod getMethodBySlot(InstanceJavaClass jc, int slot) {
-		for (val m : jc.getVirtualMethodLayout().getMethods().values()) {
+		for (val m : jc.getVirtualMethodLayout().getAll()) {
 			if (slot == m.getSlot()) return m;
 		}
-		for (val m : jc.getStaticMethodLayout().getMethods().values()) {
+		for (val m : jc.getStaticMethodLayout().getAll()) {
 			if (slot == m.getSlot()) return m;
 		}
 		return null;
@@ -2002,10 +1962,10 @@ public final class VMHelper {
 	 * if not found.
 	 */
 	public JavaField getFieldBySlot(InstanceJavaClass jc, int slot) {
-		for (val f : jc.getVirtualFieldLayout().getFields().values()) {
+		for (val f : jc.getVirtualFieldLayout().getAll()) {
 			if (slot == f.getSlot()) return f;
 		}
-		for (val f : jc.getStaticFieldLayout().getFields().values()) {
+		for (val f : jc.getStaticFieldLayout().getAll()) {
 			if (slot == f.getSlot()) return f;
 		}
 		return null;
@@ -2133,7 +2093,7 @@ public final class VMHelper {
 		}
 		if (mn != null) {
 			val node = mn.getNode();
-			node.access |= Modifier.ACC_HIDDEN_FRAME;
+			node.access |= Modifier.ACC_HIDDEN_FRAME | Modifier.ACC_CALLER_SENSITIVE;
 		}
 	}
 
@@ -2143,10 +2103,19 @@ public final class VMHelper {
 		if (annotations != null) {
 			for (int i = 0; i < annotations.size(); i++) {
 				if ("Ljava/lang/invoke/LambdaForm$Hidden;".equals(annotations.get(i).desc)) {
-					node.access |= Modifier.ACC_HIDDEN_FRAME;
+					node.access |= Modifier.ACC_HIDDEN_FRAME | Modifier.ACC_CALLER_SENSITIVE;
 					break;
 				}
 			}
 		}
+	}
+
+	private static void makeCallerSensitive(InstanceJavaClass jc, String name, String desc) {
+		JavaMethod jm = jc.getVirtualMethod(name, desc);
+		if (jm == null) {
+			jm = jc.getStaticMethod(name, desc);
+		}
+		val node = jm.getNode();
+		node.access |= Modifier.ACC_CALLER_SENSITIVE;
 	}
 }

@@ -91,6 +91,7 @@ public class MethodHandleNatives {
 			val memberName = helper.<InstanceValue>checkNotNull(ctx.getLocals().load(0));
 			val classWrapper = (JavaValue<InstanceJavaClass>) memberName.getValue("clazz", "Ljava/lang/Class;");
 			val clazz = classWrapper.getValue();
+			clazz.initialize();
 			val name = helper.readUtf8(memberName.getValue("name", "Ljava/lang/String;"));
 			val mt = memberName.getValue("type", "Ljava/lang/Object;");
 			int flags = memberName.getInt("flags");
@@ -131,8 +132,10 @@ public class MethodHandleNatives {
 				initMemberNameMethod(vm, memberName, obj);
 			} else if (objClass == symbols.java_lang_reflect_Field) {
 				initMemberNameField(vm, memberName, obj);
+			} else if (objClass == symbols.java_lang_reflect_Constructor) {
+				initMemberNameConstructor(vm, memberName, obj);
 			} else {
-				helper.throwException(symbols.java_lang_InternalError, "Not implemented");
+				helper.throwException(symbols.java_lang_InternalError, "Unsupported class: " + objClass.getName());
 			}
 			return Result.ABORT;
 		});
@@ -177,26 +180,21 @@ public class MethodHandleNatives {
 					throw new PanicException("TODO");
 				}
 				Value[] lvt = locals.getTable();
-				if (jm.getMaxArgs() > lvt.length) {
-					// TODO figure uot what the ... is going on?
-					val last = lvt[lvt.length - 1];
-					if (last instanceof ArrayValue) {
-						val arr = (ArrayValue) last;
-						int length = arr.getLength();
-						int x = lvt.length;
-						lvt = Arrays.copyOf(lvt, x + length - 1);
-						for (int i = 0, k = x + length; x < k; x++) {
-							lvt[x - 1] = arr.getValue(i++);
-						}
-					}
-				}
 
+				val owner = jm.getOwner();
 				lvt = compactForExecution(lvt);
+				Util.convertInvokeDynamicArgs(vm, jm.getArgumentTypes(), lvt);
 				Value result;
 				if ((jm.getAccess() & ACC_STATIC) == 0) {
-					result = helper.invokeVirtual(name, jm.getDesc(), new Value[0], lvt).getResult();
+					int flags = vmentry.getInt("flags");
+					int refKind = (flags >> MN_REFERENCE_KIND_SHIFT) & MN_REFERENCE_KIND_MASK;
+					if (refKind == REF_invokeSpecial || refKind == REF_newInvokeSpecial) {
+						result = helper.invokeExact(owner, jm, new Value[0], lvt).getResult();
+					} else {
+						result = helper.invokeVirtual(name, jm.getDesc(), new Value[0], lvt).getResult();
+					}
 				} else {
-					result = helper.invokeStatic(jm.getOwner(), jm, new Value[0], lvt).getResult();
+					result = helper.invokeStatic(owner, jm, new Value[0], lvt).getResult();
 				}
 				val m = ctx.getMethod();
 				result = Util.convertInvokeDynamicArgument(helper, m.getReturnType(), result);
@@ -219,13 +217,17 @@ public class MethodHandleNatives {
 			val resolved = (InstanceValue) memberName.getValue("method", symbols.java_lang_invoke_ResolvedMethodName.getDescriptor());
 			val vmtarget = ((JavaValue<JavaMethod>) resolved.getValue(VM_TARGET, "Ljava/lang/Object;")).getValue();
 
-			val types = vmtarget.getArgumentTypes();
 			Value[] args = compactForExecution(Arrays.copyOfRange(locals.getTable(), 0, length - 1));
-			Util.convertInvokeDynamicArgs(vm, types, args);
 
 			Value result;
 			if ((vmtarget.getAccess() & ACC_STATIC) == 0) {
-				result = helper.invokeVirtual(vmtarget.getName(), vmtarget.getDesc(), new Value[0], args).getResult();
+				int flags = memberName.getInt("flags");
+				int refKind = (flags >> MN_REFERENCE_KIND_SHIFT) & MN_REFERENCE_KIND_MASK;
+				if (refKind == REF_invokeSpecial) {
+					result = helper.invokeExact(vmtarget.getOwner(), vmtarget, new Value[0], args).getResult();
+				} else {
+					result = helper.invokeVirtual(vmtarget.getName(), vmtarget.getDesc(), new Value[0], args).getResult();
+				}
 			} else {
 				result = helper.invokeStatic(vmtarget.getOwner(), vmtarget, new Value[0], args).getResult();
 			}
@@ -242,6 +244,13 @@ public class MethodHandleNatives {
 
 		val lookup = symbols.java_lang_invoke_MethodHandles$Lookup;
 		vmi.setInvoker(lookup, "checkAccess", "(BLjava/lang/Class;Ljava/lang/invoke/MemberName;)V", MethodInvoker.noop());
+
+		// TODO impl getMemberVMInfo
+		val memberName = symbols.java_lang_invoke_MemberName;
+		vmi.setInvoker(memberName, "vminfoIsConsistent", "()Z", ctx -> {
+			ctx.setResult(IntValue.ONE);
+			return Result.ABORT;
+		});
 	}
 
 	private static Value[] compactForExecution(Value[] arr) {
@@ -281,6 +290,20 @@ public class MethodHandleNatives {
 			refKind = REF_invokeStatic;
 		}
 		initMethodMember(refKind, vm, memberName, method, IS_METHOD);
+	}
+
+	private void initMemberNameConstructor(VirtualMachine vm, InstanceValue memberName, InstanceValue obj) {
+		val helper = vm.getHelper();
+		// Copy over clazz, name, type & invoke expand
+		val clazz = ((JavaValue<InstanceJavaClass>) obj.getValue("clazz", "Ljava/lang/Class;")).getValue();
+		val slot = obj.getInt("slot");
+		val method = helper.getMethodBySlot(clazz, slot);
+
+		memberName.setValue("clazz", "Ljava/lang/Class;", clazz.getOop());
+		memberName.setValue("name", "Ljava/lang/String;", vm.getStringPool().intern(method.getName()));
+		val mt = helper.methodType(clazz.getClassLoader(), method.getType());
+		memberName.setValue("type", "Ljava/lang/Object;", mt);
+		initMethodMember(REF_newInvokeSpecial, vm, memberName, method, IS_CONSTRUCTOR);
 	}
 
 	private void initMemberNameField(VirtualMachine vm, InstanceValue memberName, InstanceValue obj) {
@@ -358,11 +381,16 @@ public class MethodHandleNatives {
 			case REF_invokeStatic:
 				handle = clazz.getStaticMethod(name, desc);
 				break;
-			case REF_invokeVirtual:
 			case REF_invokeSpecial:
 			case REF_newInvokeSpecial:
+				handle = clazz.getVirtualMethod(name, desc);
+				break;
+			case REF_invokeVirtual:
 			case REF_invokeInterface:
 				handle = clazz.getVirtualMethod(name, desc);
+				if (handle == null) {
+					handle = clazz.getInterfaceMethodRecursively(name, desc);
+				}
 				break;
 			default:
 				throw new PanicException("TODO ? " + refKind);
@@ -377,15 +405,16 @@ public class MethodHandleNatives {
 		val helper = vm.getHelper();
 		val symbols = vm.getSymbols();
 		val desc = ((JavaValue<JavaClass>) type).getValue().getDescriptor();
+
 		JavaField handle;
 		switch (refKind) {
 			case REF_getStatic:
 			case REF_putStatic:
-				handle = clazz.getStaticField(name, desc);
+				handle = clazz.getStaticFieldRecursively(name, desc);
 				break;
 			case REF_getField:
 			case REF_putField:
-				handle = clazz.getVirtualField(name, desc);
+				handle = clazz.getVirtualFieldRecursively(name, desc);
 				break;
 			default:
 				throw new PanicException("TODO ?");
@@ -397,11 +426,12 @@ public class MethodHandleNatives {
 	}
 
 	private Value voidAsNull(Value v, JavaMethod jm) {
+		val rt = jm.getReturnType();
+		val isVoid = rt == Type.VOID_TYPE;
+		if (isVoid) return VoidValue.INSTANCE;
 		if (v.isVoid()) {
 			// Return null if return type is non-void
-			if (jm.getReturnType() != Type.VOID_TYPE) {
-				return NullValue.INSTANCE;
-			}
+			return NullValue.INSTANCE;
 		}
 		return v;
 	}

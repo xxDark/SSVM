@@ -40,5 +40,6 @@ public final class NopThread extends Thread {
 
 	@Override
 	public synchronized void start() {
+
 	}
 }

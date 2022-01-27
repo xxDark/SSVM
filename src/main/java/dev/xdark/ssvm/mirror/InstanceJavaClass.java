@@ -393,6 +393,8 @@ public final class InstanceJavaClass implements JavaClass {
 		if (method == null) {
 			search:
 			while ((jc = deque.poll()) != null) {
+				method = jc.getVirtualMethod(name, desc);
+				if (method != null) break;
 				for (val iface : jc.getInterfaces()) {
 					method = iface.getVirtualMethod(name, desc);
 					if (method != null) break search;
@@ -432,6 +434,26 @@ public final class InstanceJavaClass implements JavaClass {
 	}
 
 	/**
+	 * Searches for virtual field by it's name and descriptor
+	 * recursively.
+	 *
+	 * @param name
+	 * 		Name of the field.
+	 * @param desc
+	 * 		Descriptor of the field.
+	 *
+	 * @return static class field or {@code null}, if not found.
+	 */
+	public JavaField getVirtualFieldRecursively(String name, String desc) {
+		InstanceJavaClass jc = this;
+		JavaField field;
+		do {
+			field = jc.getVirtualField(name, desc);
+		} while (field == null && (jc = jc.getSuperclassWithoutResolving()) != null);
+		return field;
+	}
+
+	/**
 	 * Searches for a static field by it's name and descriptor.
 	 *
 	 * @param name
@@ -445,6 +467,26 @@ public final class InstanceJavaClass implements JavaClass {
 		return getStaticFieldLayout().getFields().get(new MemberKey(this, name, desc));
 	}
 
+	/**
+	 * Searches for a static field by it's name and descriptor
+	 * recursively.
+	 *
+	 * @param name
+	 * 		Name of the field.
+	 * @param desc
+	 * 		Descriptor of the field.
+	 *
+	 * @return static class field or {@code null}, if not found.
+	 */
+	public JavaField getStaticFieldRecursively(String name, String desc) {
+		InstanceJavaClass jc = this;
+		JavaField field;
+		do {
+			field = jc.getStaticField(name, desc);
+		} while (field == null && (jc = jc.getSuperclassWithoutResolving()) != null);
+		return field;
+	}
+	
 	/**
 	 * Searches for a static method by it's name and descriptor recursively.
 	 *
@@ -904,8 +946,7 @@ public final class InstanceJavaClass implements JavaClass {
 	private List<JavaMethod> getDeclaredMethods0(boolean publicOnly, boolean constructors) {
 		val staticMethods = constructors ? Stream.<JavaMethod>empty() : getStaticMethods0(publicOnly);
 		return Stream.concat(staticMethods, getVirtualMethodLayout()
-						.getMethods()
-						.values()
+						.getAll()
 						.stream()
 						.filter(x -> constructors == "<init>".equals(x.getName()))
 						.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0))
@@ -915,8 +956,7 @@ public final class InstanceJavaClass implements JavaClass {
 
 	private Stream<JavaMethod> getStaticMethods0(boolean publicOnly) {
 		return getStaticMethodLayout()
-				.getMethods()
-				.values()
+				.getAll()
 				.stream()
 				.filter(x -> !"<clinit>".equals(x.getName()))
 				.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0);
@@ -925,8 +965,7 @@ public final class InstanceJavaClass implements JavaClass {
 	private List<JavaField> getDeclaredFields0(boolean publicOnly) {
 		val staticFields = getDeclaredStaticFields0(publicOnly);
 		return Stream.concat(staticFields, getVirtualFieldLayout()
-						.getFields()
-						.values()
+						.getAll()
 						.stream()
 						.filter(x -> this == x.getOwner())
 						.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0))
@@ -936,8 +975,7 @@ public final class InstanceJavaClass implements JavaClass {
 
 	private Stream<JavaField> getDeclaredStaticFields0(boolean publicOnly) {
 		return getStaticFieldLayout()
-				.getFields()
-				.values()
+				.getAll()
 				.stream()
 				.filter(x -> this == x.getOwner())
 				.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0);

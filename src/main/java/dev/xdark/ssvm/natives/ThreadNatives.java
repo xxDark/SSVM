@@ -5,6 +5,7 @@ import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
+import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 import lombok.val;
 
@@ -54,6 +55,11 @@ public class ThreadNatives {
 			val locals = ctx.getLocals();
 			val th = vm.getThreadManager().getVmThread(locals.<InstanceValue>load(0));
 			ctx.setResult(th.isInterrupted(locals.load(1).asBoolean()) ? IntValue.ONE : IntValue.ZERO);
+			return Result.ABORT;
+		});
+		vmi.setInvoker(thread, "holdsLock", "(Ljava/lang/Object;)Z", ctx -> {
+			val arg = vm.getHelper().<ObjectValue>checkNotNull(ctx.getLocals().load(0));
+			ctx.setResult(arg.isHeldByCurrentThread() ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
 	}

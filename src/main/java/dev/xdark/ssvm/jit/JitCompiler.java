@@ -1251,6 +1251,8 @@ public final class JitCompiler {
 				loadCtx();
 				CLASS_LDC.emit(jit);
 			}
+		} else if (value instanceof Value) {
+			loadCompilerConstant(value);
 		} else {
 			val jit = this.jit;
 			loadHelper();

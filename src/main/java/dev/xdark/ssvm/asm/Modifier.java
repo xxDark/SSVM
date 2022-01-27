@@ -13,6 +13,7 @@ public class Modifier {
 	public static final int ACC_VM_HIDDEN = 1 << 16;
 	public static final int ACC_HIDDEN_FRAME = 1 << 17;
 	public static final int ACC_JIT = 1 << 18;
+	public static final int ACC_CALLER_SENSITIVE = 1 << 19;
 
 	/**
 	 * Drops all VM related modifiers.
@@ -67,5 +68,20 @@ public class Modifier {
 	 */
 	public boolean isCompiledMethod(int modifiers) {
 		return (modifiers & ACC_JIT) != 0;
+	}
+
+	/**
+	 * Returns true if the integer argument
+	 * includes {@link Modifier#ACC_CALLER_SENSITIVE} modifier.
+	 *
+	 * @param modifiers
+	 * 		A set of modifiers.
+	 *
+	 * @return true if the integer argument
+	 * includes {@link Modifier#ACC_CALLER_SENSITIVE} modifier,
+	 * {@code false} otherwise.
+	 */
+	public boolean isCallerSensitive(int modifiers) {
+		return (modifiers & ACC_CALLER_SENSITIVE) != 0;
 	}
 }

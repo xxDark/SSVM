@@ -6,7 +6,6 @@ import dev.xdark.ssvm.mirror.JavaClass;
 import lombok.val;
 
 import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -16,7 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class ObjectValue implements Value {
 
-	private final Lock lock;
+	private final ReentrantLock lock;
 	private final Condition signal;
 	private final Memory memory;
 
@@ -80,14 +79,14 @@ public class ObjectValue implements Value {
 	}
 
 	/**
-	 * Locks monitor
+	 * Locks monitor.
 	 */
 	public void monitorEnter() {
 		lock.lock();
 	}
 
 	/**
-	 * Unlocks monitor
+	 * Unlocks monitor.
 	 */
 	public void monitorExit() {
 		lock.unlock();
@@ -121,6 +120,13 @@ public class ObjectValue implements Value {
 	 */
 	public void vmNotifyAll() {
 		signal.signalAll();
+	}
+
+	/**
+	 * @return {@code true} if current thread holds this lock.
+	 */
+	public boolean isHeldByCurrentThread() {
+		return lock.isHeldByCurrentThread();
 	}
 
 	protected MemoryManager getMemoryManager() {

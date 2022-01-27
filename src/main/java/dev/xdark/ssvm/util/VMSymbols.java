@@ -92,6 +92,7 @@ public final class VMSymbols {
 	public final InstanceJavaClass java_lang_invoke_CallSite;
 	public final InstanceJavaClass java_lang_ProcessEnvironment;
 	public final InstanceJavaClass java_lang_InstantiationException;
+	public final InstanceJavaClass reflect_MethodAccessorImpl;
 
 	/**
 	 * @param vm
@@ -188,6 +189,11 @@ public final class VMSymbols {
 		java_lang_invoke_CallSite = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/CallSite");
 		java_lang_ProcessEnvironment = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ProcessEnvironment");
 		java_lang_InstantiationException = (InstanceJavaClass) vm.findBootstrapClass("java/lang/InstantiationException");
+		InstanceJavaClass reflect_MethodAccessorImpl = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/MethodAccessorImpl");
+		if (reflect_MethodAccessorImpl == null) {
+			reflect_MethodAccessorImpl = (InstanceJavaClass) vm.findBootstrapClass("sun/reflect/MethodAccessorImpl");
+		}
+		this.reflect_MethodAccessorImpl = reflect_MethodAccessorImpl;
 	}
 
 	private static InstanceJavaClass resolvedMemberName(VirtualMachine vm) {

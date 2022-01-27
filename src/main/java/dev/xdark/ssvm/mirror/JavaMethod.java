@@ -22,6 +22,7 @@ public final class JavaMethod {
 	private Boolean polymorphic;
 	private int maxArgs = -1;
 	private int invocationCount;
+	private Boolean callerSensitive;
 
 	/**
 	 * @param owner
@@ -196,6 +197,20 @@ public final class JavaMethod {
 	 */
 	public void increaseInvocation() {
 		invocationCount++;
+	}
+
+	/**
+	 * @return {@code  true} if this method is caller sensitive,
+	 * {@code false} otherwise.
+	 */
+	public boolean isCallerSensitive() {
+		Boolean callerSensitive = this.callerSensitive;
+		if (callerSensitive == null) {
+			val visibleAnnotations = node.visibleAnnotations;
+			return this.callerSensitive = visibleAnnotations != null
+					&& visibleAnnotations.stream().anyMatch(x -> "Lsun/reflect/CallerSensitive;".equals(x.desc));
+		}
+		return callerSensitive;
 	}
 
 	@Override

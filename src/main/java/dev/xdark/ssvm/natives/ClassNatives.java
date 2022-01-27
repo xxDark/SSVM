@@ -7,17 +7,18 @@ import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.mirror.JavaField;
+import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.value.*;
 import lombok.experimental.UtilityClass;
 import lombok.val;
+import me.coley.cafedude.ClassMember;
+import me.coley.cafedude.ConstPool;
+import me.coley.cafedude.Constants;
 import me.coley.cafedude.attribute.AnnotationsAttribute;
 import me.coley.cafedude.attribute.Attribute;
-import me.coley.cafedude.constant.CpUtf8;
-import me.coley.cafedude.io.AnnotationWriter;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.util.List;
 
 /**
  * Initializes java/lang/Class.
@@ -79,7 +80,7 @@ public class ClassNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "desiredAssertionStatus0", "(Ljava/lang/Class;)Z", ctx -> {
-			ctx.setResult(IntValue.ZERO);
+			ctx.setResult(IntValue.ONE);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "forName0", "(Ljava/lang/String;ZLjava/lang/ClassLoader;Ljava/lang/Class;)Ljava/lang/Class;", ctx -> {
@@ -171,7 +172,7 @@ public class ClassNatives {
 							IntValue.of(Modifier.erase(mn.getAccess())),
 							IntValue.of(mn.getSlot()),
 							pool.intern(mn.getSignature()),
-							NullValue.INSTANCE,
+							readMethodAnnotations(mn),
 							NullValue.INSTANCE
 					}).getResult();
 					result.setValue(j, (ObjectValue) c);
@@ -214,7 +215,7 @@ public class ClassNatives {
 						IntValue.of(Modifier.erase(mn.getAccess())),
 						IntValue.of(mn.getSlot()),
 						pool.intern(mn.getSignature()),
-						NullValue.INSTANCE,
+						readMethodAnnotations(mn),
 						NullValue.INSTANCE,
 						NullValue.INSTANCE
 				}).getResult();
@@ -251,7 +252,7 @@ public class ClassNatives {
 							IntValue.of(Modifier.erase(fn.getAccess())),
 							IntValue.of(fn.getSlot()),
 							pool.intern(fn.getSignature()),
-							NullValue.INSTANCE
+							readFieldAnnotations(fn)
 					}).getResult();
 					result.setValue(j, (ObjectValue) c);
 				}
@@ -351,25 +352,24 @@ public class ClassNatives {
 				return Result.ABORT;
 			}
 			val classFile = ((InstanceJavaClass) _this).getRawClassFile();
-			Attribute attribute = null;
-			for (val candidate : classFile.getAttributes()) {
-				if ("RuntimeVisibleAnnotations".equals(((CpUtf8) classFile.getCp(candidate.getNameIndex())).getText())) {
-					attribute = candidate;
-					break;
+			val cp = classFile.getPool();
+			ctx.setResult(getAnnotationsIn(vm, cp, classFile.getAttributes()));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jlc, "getDeclaredClasses0", "()[Ljava/lang/Class;", ctx -> {
+			val _this = ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue();
+			val helper = vm.getHelper();
+			if (!(_this instanceof InstanceJavaClass)) {
+				ctx.setResult(helper.emptyArray(jlc));
+			} else {
+				val declaredClasses = ((InstanceJavaClass) _this).getNode().innerClasses;
+				val loader = _this.getClassLoader();
+				val array = helper.newArray(jlc, declaredClasses.size());
+				for (int i = 0; i < declaredClasses.size(); i++) {
+					array.setValue(i, helper.findClass(loader, declaredClasses.get(i).name, false).getOop());
 				}
+				ctx.setResult(array);
 			}
-			if (!(attribute instanceof AnnotationsAttribute)) {
-				ctx.setResult(NullValue.INSTANCE);
-				return Result.ABORT;
-			}
-			val baos = new ByteArrayOutputStream();
-			val writer = new AnnotationWriter(new DataOutputStream(baos));
-			try {
-				writer.writeAnnotations((AnnotationsAttribute) attribute);
-			} catch (IOException ex) {
-				throw new RuntimeException(ex); // Should never happen.
-			}
-			ctx.setResult(vm.getHelper().toVMBytes(baos.toByteArray()));
 			return Result.ABORT;
 		});
 
@@ -388,5 +388,44 @@ public class ClassNatives {
 			ctx.setResult(cp);
 			return Result.ABORT;
 		});
+	}
+
+	private ObjectValue readFieldAnnotations(JavaField field) {
+		val owner = field.getOwner();
+		val cf = owner.getRawClassFile();
+		return getAnnotationsOf(owner.getVM(), cf.getFields(), cf.getPool(), field.getName(), field.getDesc());
+	}
+
+	private ObjectValue readMethodAnnotations(JavaMethod method) {
+		val owner = method.getOwner();
+		val cf = owner.getRawClassFile();
+		return getAnnotationsOf(owner.getVM(), cf.getMethods(), cf.getPool(), method.getName(), method.getDesc());
+	}
+
+	private ObjectValue getAnnotationsOf(VirtualMachine vm, List<? extends ClassMember> members, ConstPool cp, String name, String desc) {
+		for (val candidate : members) {
+			val cname = cp.getUtf(candidate.getNameIndex());
+			if (!name.equals(cname)) continue;
+			val cdesc = cp.getUtf(candidate.getTypeIndex());
+			if (desc.equals(cdesc)) {
+				return getAnnotationsIn(vm, cp, candidate.getAttributes());
+			}
+		}
+		return NullValue.INSTANCE;
+	}
+
+	private ObjectValue getAnnotationsIn(VirtualMachine vm, ConstPool cp, List<Attribute> attributes) {
+		val opt = attributes.stream()
+				.filter(x -> Constants.Attributes.RUNTIME_VISIBLE_ANNOTATIONS.equals(cp.getUtf(x.getNameIndex())))
+				.findFirst();
+		if (opt.isPresent()) {
+			val attr = opt.get();
+			val helper = vm.getHelper();
+			if (!(attr instanceof AnnotationsAttribute)) {
+				helper.throwException(vm.getSymbols().java_lang_IllegalStateException, "Invalid annotation");
+			}
+			return helper.toVMBytes(Util.toBytes((AnnotationsAttribute) attr));
+		}
+		return NullValue.INSTANCE;
 	}
 }

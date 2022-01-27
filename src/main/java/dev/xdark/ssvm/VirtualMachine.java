@@ -376,9 +376,18 @@ public class VirtualMachine {
 		backtrace.push(StackFrame.ofContext(ctx));
 		val vmi = vmInterface;
 		jm.increaseInvocation();
-		vmi.getInvocationHooks(jm, true)
-				.forEach(invocation -> invocation.handle(ctx));
+		ObjectValue lock = null;
+		if ((access & Opcodes.ACC_SYNCHRONIZED) != 0) {
+			if (((access & Opcodes.ACC_STATIC)) == 0) {
+				lock = ctx.getLocals().load(0);
+			} else {
+				lock = jm.getOwner().getOop();
+			}
+			lock.monitorEnter();
+		}
 		try {
+			vmi.getInvocationHooks(jm, true)
+					.forEach(invocation -> invocation.handle(ctx));
 			if (useInvokers) {
 				val invoker = vmi.getInvoker(jm);
 				if (invoker != null) {
@@ -411,6 +420,16 @@ public class VirtualMachine {
 					}
 					if (processor.execute(insn, ctx) == Result.ABORT) break;
 				} catch (VMException ex) {
+					val stack = ctx.getStack();
+					Value value;
+					while ((value = stack.poll()) != null) {
+						if (value instanceof ObjectValue) {
+							val obj = (ObjectValue) value;
+							if (obj.isHeldByCurrentThread()) {
+								obj.monitorExit();
+							}
+						}
+					}
 					val oop = ex.getOop();
 					val exceptionType = oop.getJavaClass();
 					val tryCatchBlocks = mn.tryCatchBlocks;
@@ -422,7 +441,6 @@ public class VirtualMachine {
 						if (type == null) type = "java/lang/Throwable";
 						val candidate = findClass(ctx.getOwner().getClassLoader(), type, false);
 						if (candidate.isAssignableFrom(exceptionType)) {
-							val stack = ctx.getStack();
 							stack.clear();
 							stack.push(oop);
 							ctx.setInsnPosition(AsmUtil.getIndex(block.handler));
@@ -437,9 +455,18 @@ public class VirtualMachine {
 		} catch (Exception ex) {
 			throw new IllegalStateException("Uncaught VM error at: " + ctx.getOwner().getInternalName() + '.' + jm.getName() + jm.getDesc(), ex);
 		} finally {
-			vmi.getInvocationHooks(jm, false)
-					.forEach(invocation -> invocation.handle(ctx));
-			backtrace.pop();
+			try {
+				vmi.getInvocationHooks(jm, false)
+						.forEach(invocation -> invocation.handle(ctx));
+			} finally {
+				try {
+					if (lock != null) {
+						lock.monitorExit();
+					}
+				} finally {
+					backtrace.pop();
+				}
+			}
 		}
 	}
 

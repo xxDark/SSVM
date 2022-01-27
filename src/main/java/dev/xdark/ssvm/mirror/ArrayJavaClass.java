@@ -50,7 +50,7 @@ public final class ArrayJavaClass implements JavaClass {
 
 	@Override
 	public String getDescriptor() {
-		return name;
+		return internalName;
 	}
 
 	@Override

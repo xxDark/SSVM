@@ -31,6 +31,7 @@ public final class NopVMThread extends BaseVMThread {
 
 	@Override
 	public void start() {
+
 	}
 
 	@Override

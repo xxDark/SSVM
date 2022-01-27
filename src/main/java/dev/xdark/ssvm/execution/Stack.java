@@ -126,6 +126,18 @@ public final class Stack {
 	}
 
 	/**
+	 * Polls value from the stack.
+	 * @param <V>
+	 *     		Value tpye.
+	 * @return tail value of the stack or {@code null},
+	 * if stack is empty.
+	 */
+	public <V extends Value> V poll() {
+		if (cursor == 0) return null;
+		return (V) stack[--cursor];
+	}
+
+	/**
 	 * Duplicates value on the stack.
 	 */
 	public void dup() {

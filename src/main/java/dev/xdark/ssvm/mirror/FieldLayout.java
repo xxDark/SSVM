@@ -2,6 +2,7 @@ package dev.xdark.ssvm.mirror;
 
 import lombok.val;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
@@ -76,5 +77,14 @@ public final class FieldLayout {
 	 */
 	public long getSize() {
 		return size;
+	}
+
+	/**
+	 * Shortcut for {@code getMethods().values()}.
+	 *
+	 * @return all methods.
+	 */
+	public Collection<JavaField> getAll() {
+		return fields.values();
 	}
 }

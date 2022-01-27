@@ -269,4 +269,9 @@ public class InstanceValue extends ObjectValue {
 		long offset = getJavaClass().getFieldOffsetRecursively(name, desc);
 		return offset == -1L ? -1L : getMemoryManager().valueBaseOffset(this) + offset;
 	}
+
+	@Override
+	public String toString() {
+		return getJavaClass().getInternalName();
+	}
 }

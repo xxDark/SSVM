@@ -1,6 +1,6 @@
 package dev.xdark.ssvm.execution.asm;
 
-import dev.xdark.ssvm.asm.MethodHandleInsnNode;
+import dev.xdark.ssvm.asm.LinkedDynamicCallNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
@@ -49,7 +49,7 @@ public final class InvokeDynamicLinkerProcessor implements InstructionProcessor<
 					linker,
 					stringPool.intern(insn.name),
 					helper.methodType(caller.getClassLoader(), Type.getMethodType(insn.desc)),
-					helper.toVMValues(new ObjectValue[]{args}),
+					args,
 					appendix
 			};
 
@@ -60,7 +60,7 @@ public final class InvokeDynamicLinkerProcessor implements InstructionProcessor<
 
 			// Rewrite instruction
 			val list = ctx.getMethod().getNode().instructions;
-			list.set(insn, new MethodHandleInsnNode(insn, linked));
+			list.set(insn, new LinkedDynamicCallNode(insn, linked));
 			// Move insn position backwards so that VM visits
 			// us yet again.
 			ctx.setInsnPosition(ctx.getInsnPosition() - 1);

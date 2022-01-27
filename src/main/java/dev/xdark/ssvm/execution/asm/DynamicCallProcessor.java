@@ -1,6 +1,6 @@
 package dev.xdark.ssvm.execution.asm;
 
-import dev.xdark.ssvm.asm.MethodHandleInsnNode;
+import dev.xdark.ssvm.asm.LinkedDynamicCallNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
@@ -14,10 +14,10 @@ import org.objectweb.asm.Type;
  *
  * @author xDark
  */
-public final class DynamicCallProcessor implements InstructionProcessor<MethodHandleInsnNode> {
+public final class DynamicCallProcessor implements InstructionProcessor<LinkedDynamicCallNode> {
 
 	@Override
-	public Result execute(MethodHandleInsnNode insn, ExecutionContext ctx) {
+	public Result execute(LinkedDynamicCallNode insn, ExecutionContext ctx) {
 		val delegate = insn.getDelegate();
 		val desc = delegate.desc;
 		val args = Type.getArgumentTypes(desc);

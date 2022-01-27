@@ -5,7 +5,13 @@ import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.*;
 import lombok.experimental.UtilityClass;
 import lombok.val;
+import me.coley.cafedude.attribute.AnnotationsAttribute;
+import me.coley.cafedude.io.AnnotationWriter;
 import org.objectweb.asm.Type;
+
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 
 /**
  * Package-private util for native implementations.
@@ -71,7 +77,7 @@ final class Util {
 		// TODO figure out why this is even needed
 		// either I'm dumb, or there is some magic in the JVM.
 		val helper = vm.getHelper();
-		for (int i = 0, j = Math.min(args.length, types.length); i < j; i++) {
+		for (int i = 0, j = args.length; i < j; i++) {
 			args[i] = convertInvokeDynamicArgument(helper, types[i], args[i]);
 		}
 	}
@@ -128,5 +134,25 @@ final class Util {
 			}
 		}
 		return arg;
+	}
+
+	/**
+	 * Converts {@link AnnotationsAttribute} back
+	 * to it's raw form.
+	 *
+	 * @param attribute
+	 * 		Attribute to convert.
+	 *
+	 * @return raw bytes.
+	 */
+	byte[] toBytes(AnnotationsAttribute attribute) {
+		val baos = new ByteArrayOutputStream();
+		val writer = new AnnotationWriter(new DataOutputStream(baos));
+		try {
+			writer.writeAnnotations( attribute);
+		} catch (IOException ex) {
+			throw new RuntimeException(ex); // Should never happen.
+		}
+		return baos.toByteArray();
 	}
 }

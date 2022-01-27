@@ -11,6 +11,6 @@ import org.objectweb.asm.Opcodes;
 @UtilityClass
 public class VMOpcodes {
 
-	public static final int METHOD_HANDLE = Opcodes.IFNONNULL + 1;
-	public static final int LDC = METHOD_HANDLE + 1;
+	public static final int DYNAMIC_CALL = Opcodes.IFNONNULL + 1;
+	public static final int LDC = DYNAMIC_CALL + 1;
 }

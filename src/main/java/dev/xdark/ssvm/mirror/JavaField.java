@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.mirror;
 
+import lombok.val;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.FieldNode;
 
@@ -121,5 +122,11 @@ public final class JavaField {
 	@Override
 	public int hashCode() {
 		return node.hashCode();
+	}
+
+	@Override
+	public String toString() {
+		val node = this.node;
+		return getOwner().getInternalName() + '.' + node.name + node.desc;
 	}
 }

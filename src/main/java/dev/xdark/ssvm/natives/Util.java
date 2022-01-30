@@ -5,7 +5,9 @@ import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.*;
 import lombok.experimental.UtilityClass;
 import lombok.val;
+import me.coley.cafedude.attribute.AnnotationDefaultAttribute;
 import me.coley.cafedude.attribute.AnnotationsAttribute;
+import me.coley.cafedude.attribute.ParameterAnnotationsAttribute;
 import me.coley.cafedude.io.AnnotationWriter;
 import org.objectweb.asm.Type;
 
@@ -149,7 +151,47 @@ final class Util {
 		val baos = new ByteArrayOutputStream();
 		val writer = new AnnotationWriter(new DataOutputStream(baos));
 		try {
-			writer.writeAnnotations( attribute);
+			writer.writeAnnotations(attribute);
+		} catch (IOException ex) {
+			throw new RuntimeException(ex); // Should never happen.
+		}
+		return baos.toByteArray();
+	}
+
+	/**
+	 * Converts {@link ParameterAnnotationsAttribute} back
+	 * to it's raw form.
+	 *
+	 * @param attribute
+	 * 		Attribute to convert.
+	 *
+	 * @return raw bytes.
+	 */
+	byte[] toBytes(ParameterAnnotationsAttribute attribute) {
+		val baos = new ByteArrayOutputStream();
+		val writer = new AnnotationWriter(new DataOutputStream(baos));
+		try {
+			writer.writeParameterAnnotations(attribute);
+		} catch (IOException ex) {
+			throw new RuntimeException(ex); // Should never happen.
+		}
+		return baos.toByteArray();
+	}
+
+	/**
+	 * Converts {@link AnnotationDefaultAttribute} back
+	 * to it's raw form.
+	 *
+	 * @param attribute
+	 * 		Attribute to convert.
+	 *
+	 * @return raw bytes.
+	 */
+	byte[] toBytes(AnnotationDefaultAttribute attribute) {
+		val baos = new ByteArrayOutputStream();
+		val writer = new AnnotationWriter(new DataOutputStream(baos));
+		try {
+			writer.writeAnnotationDefault(attribute);
 		} catch (IOException ex) {
 			throw new RuntimeException(ex); // Should never happen.
 		}

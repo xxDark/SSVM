@@ -34,7 +34,7 @@ public class BiObjectComparisonTest {
 
 	private static boolean doValueOp(Object a, Object b, int opcode) {
 		val node = new ClassNode();
-		node.visit(V11, ACC_PUBLIC, "Test", null, null, null);
+		node.visit(V11, ACC_PUBLIC, "dev.Test", null, null, null);
 		val mv = node.visitMethod(ACC_STATIC, "test", "()Z", null, null);
 		val label = new Label();
 		TestUtil.visitLdc(mv, a);

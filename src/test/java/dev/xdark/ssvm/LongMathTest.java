@@ -105,7 +105,7 @@ public class LongMathTest {
 
 	private static long doLongOp(long a, long b, int opcode) {
 		val node = new ClassNode();
-		node.visit(V11, ACC_PUBLIC, "Test", null, null, null);
+		node.visit(V11, ACC_PUBLIC, "dev.Test", null, null, null);
 		val mv = node.visitMethod(ACC_STATIC, "test", "()J", null, null);
 		mv.visitLdcInsn(a);
 		mv.visitLdcInsn(b);
@@ -119,7 +119,7 @@ public class LongMathTest {
 
 	private static long doLongOp(long a, int b, int opcode) {
 		val node = new ClassNode();
-		node.visit(V11, ACC_PUBLIC, "Test", null, null, null);
+		node.visit(V11, ACC_PUBLIC, "dev.Test", null, null, null);
 		val mv = node.visitMethod(ACC_STATIC, "test", "()J", null, null);
 		mv.visitLdcInsn(a);
 		mv.visitLdcInsn(b);
@@ -133,7 +133,7 @@ public class LongMathTest {
 
 	private static long doLongOp(long v, int opcode) {
 		val node = new ClassNode();
-		node.visit(V11, ACC_PUBLIC, "Test", null, null, null);
+		node.visit(V11, ACC_PUBLIC, "dev.Test", null, null, null);
 		val mv = node.visitMethod(ACC_STATIC, "test", "()J", null, null);
 		mv.visitLdcInsn(v);
 		mv.visitInsn(opcode);

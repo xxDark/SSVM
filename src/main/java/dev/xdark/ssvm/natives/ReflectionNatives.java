@@ -7,13 +7,8 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.JavaValue;
-import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
 import lombok.val;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.stream.StreamSupport;
 
 /**
  * Initializes reflect/Reflection class.
@@ -44,7 +39,9 @@ public class ReflectionNatives {
 			if (caller.isCallerSensitive()) {
 				while (true) {
 					val frame = backtrace.get(count - offset);
-					val method = frame.getExecutionContext().getMethod();
+					val frameCtx = frame.getExecutionContext();
+					if (frameCtx == null) break;
+					val method = frameCtx.getMethod();
 					if (Modifier.isCallerSensitive(method.getAccess())) {
 						offset++;
 					} else {
@@ -58,11 +55,6 @@ public class ReflectionNatives {
 		vmi.setInvoker(reflection, "getClassAccessFlags", "(Ljava/lang/Class;)I", ctx -> {
 			val klass = ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue();
 			ctx.setResult(IntValue.of(Modifier.erase(klass.getModifiers())));
-			return Result.ABORT;
-		});
-		// TODO FIXME
-		vmi.setInvoker(reflection, "isCallerSensitive", "(Ljava/lang/reflect/Method;)Z", ctx -> {
-			ctx.setResult(IntValue.ZERO);
 			return Result.ABORT;
 		});
 	}

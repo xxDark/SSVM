@@ -2031,6 +2031,13 @@ public final class VMHelper {
 		return wrapper;
 	}
 
+	/**
+	 * @return VM instance.
+	 */
+	public VirtualMachine getVM() {
+		return vm;
+	}
+
 	private ArrayValue newMultiArrayInner(ArrayJavaClass type, int[] lengths, int depth) {
 		val newType = type.getComponentType();
 		val memoryManager = vm.getMemoryManager();

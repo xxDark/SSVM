@@ -15,7 +15,7 @@ public final class GetFieldProcessor implements InstructionProcessor<FieldInsnNo
 
 	@Override
 	public Result execute(FieldInsnNode insn, ExecutionContext ctx) {
-		JitHelper.getField(insn.owner, insn.name, insn.desc, ctx);
+		ctx.getStack().pushGeneric(JitHelper.getField(insn.owner, insn.name, insn.desc, ctx));
 		return Result.CONTINUE;
 	}
 }

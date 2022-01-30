@@ -15,7 +15,7 @@ public final class NewProcessor implements InstructionProcessor<TypeInsnNode> {
 
 	@Override
 	public Result execute(TypeInsnNode insn, ExecutionContext ctx) {
-		JitHelper.allocateInstance(insn.desc, ctx);
+		ctx.getStack().push(JitHelper.allocateInstance(insn.desc, ctx));
 		return Result.CONTINUE;
 	}
 }

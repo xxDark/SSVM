@@ -15,7 +15,7 @@ public final class MultiNewArrayProcessor implements InstructionProcessor<MultiA
 
 	@Override
 	public Result execute(MultiANewArrayInsnNode insn, ExecutionContext ctx) {
-		JitHelper.multiNewArray(insn.desc, insn.dims, ctx);
+		ctx.getStack().push(JitHelper.multiNewArray(insn.desc, insn.dims, ctx));
 		return Result.CONTINUE;
 	}
 }

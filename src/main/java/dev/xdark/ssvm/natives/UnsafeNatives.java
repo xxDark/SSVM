@@ -421,8 +421,8 @@ public class UnsafeNatives {
 						.stream()
 						.map(x -> x.instructions)
 						.flatMap(x -> StreamSupport.stream(x.spliterator(), false))
-						.filter(x -> x instanceof LdcInsnNode)
-						.map(x -> (LdcInsnNode) x)
+						.filter(LdcInsnNode.class::isInstance)
+						.map(LdcInsnNode.class::cast)
 						.filter(x -> x.cst instanceof String)
 						.collect(Collectors.groupingBy(x -> (String) x.cst, Collectors.mapping(Function.identity(), Collectors.toList())));
 				for (int i = 1; i < values.length; i++) {

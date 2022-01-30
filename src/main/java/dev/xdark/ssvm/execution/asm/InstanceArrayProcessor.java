@@ -15,7 +15,7 @@ public final class InstanceArrayProcessor implements InstructionProcessor<TypeIn
 
 	@Override
 	public Result execute(TypeInsnNode insn, ExecutionContext ctx) {
-		JitHelper.allocateValueArray(insn.desc, ctx);
+		ctx.getStack().push(JitHelper.allocateValueArray(insn.desc, ctx));
 		return Result.CONTINUE;
 	}
 }

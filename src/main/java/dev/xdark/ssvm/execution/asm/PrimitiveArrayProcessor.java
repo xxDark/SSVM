@@ -15,7 +15,7 @@ public final class PrimitiveArrayProcessor implements InstructionProcessor<IntIn
 
 	@Override
 	public Result execute(IntInsnNode insn, ExecutionContext ctx) {
-		JitHelper.allocatePrimitiveArray(insn.operand, ctx);
+		ctx.getStack().push(JitHelper.allocatePrimitiveArray(insn.operand, ctx));
 		return Result.CONTINUE;
 	}
 }

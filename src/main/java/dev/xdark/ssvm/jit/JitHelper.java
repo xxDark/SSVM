@@ -1,7 +1,6 @@
 package dev.xdark.ssvm.jit;
 
 import dev.xdark.ssvm.execution.ExecutionContext;
-import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
@@ -22,131 +21,175 @@ import static org.objectweb.asm.Opcodes.*;
 @UtilityClass
 public class JitHelper {
 
-	public Value arrayLoadInt(Value array, Value index, ExecutionContext ctx) {
+	public int arrayLoadInt(Value array, int index, ExecutionContext ctx) {
 		val helper = ctx.getHelper();
 		val arr = helper.checkNotNullArray((ObjectValue) array);
-		int idx = index.asInt();
-		helper.rangeCheck(arr, idx);
-		return IntValue.of(arr.getInt(idx));
+		helper.rangeCheck(arr, index);
+		return arr.getInt(index);
+	}
+
+	public Value arrayLoadInt(Value array, Value index, ExecutionContext ctx) {
+		return IntValue.of(arrayLoadInt(array, index.asInt(), ctx));
+	}
+
+	public long arrayLoadLong(Value array, int index, ExecutionContext ctx) {
+		val helper = ctx.getHelper();
+		val arr = helper.checkNotNullArray((ObjectValue) array);
+		helper.rangeCheck(arr, index);
+		return arr.getLong(index);
 	}
 
 	public Value arrayLoadLong(Value array, Value index, ExecutionContext ctx) {
+		return LongValue.of(arrayLoadLong(array, index.asInt(), ctx));
+	}
+
+	public float arrayLoadFloat(Value array, int index, ExecutionContext ctx) {
 		val helper = ctx.getHelper();
 		val arr = helper.checkNotNullArray((ObjectValue) array);
-		int idx = index.asInt();
-		helper.rangeCheck(arr, idx);
-		return LongValue.of(arr.getLong(idx));
+		helper.rangeCheck(arr, index);
+		return arr.getFloat(index);
 	}
 
 	public Value arrayLoadFloat(Value array, Value index, ExecutionContext ctx) {
+		return new FloatValue(arrayLoadFloat(array, index.asInt(), ctx));
+	}
+
+	public double arrayLoadDouble(Value array, int index, ExecutionContext ctx) {
 		val helper = ctx.getHelper();
 		val arr = helper.checkNotNullArray((ObjectValue) array);
-		int idx = index.asInt();
-		helper.rangeCheck(arr, idx);
-		return new FloatValue(arr.getFloat(idx));
+		helper.rangeCheck(arr, index);
+		return arr.getDouble(index);
 	}
 
 	public Value arrayLoadDouble(Value array, Value index, ExecutionContext ctx) {
+		return new DoubleValue(arrayLoadDouble(array, index.asInt(), ctx));
+	}
+
+	public char arrayLoadChar(Value array, int index, ExecutionContext ctx) {
 		val helper = ctx.getHelper();
 		val arr = helper.checkNotNullArray((ObjectValue) array);
-		int idx = index.asInt();
-		helper.rangeCheck(arr, idx);
-		return new DoubleValue(arr.getDouble(idx));
+		helper.rangeCheck(arr, index);
+		return arr.getChar(index);
 	}
 
 	public Value arrayLoadChar(Value array, Value index, ExecutionContext ctx) {
+		return IntValue.of(arrayLoadChar(array, index.asInt(), ctx));
+	}
+
+	public short arrayLoadShort(Value array, int index, ExecutionContext ctx) {
 		val helper = ctx.getHelper();
 		val arr = helper.checkNotNullArray((ObjectValue) array);
-		int idx = index.asInt();
-		helper.rangeCheck(arr, idx);
-		return IntValue.of(arr.getChar(idx));
+		helper.rangeCheck(arr, index);
+		return arr.getShort(index);
 	}
 
 	public Value arrayLoadShort(Value array, Value index, ExecutionContext ctx) {
+		return IntValue.of(arrayLoadShort(array, index.asInt(), ctx));
+	}
+
+	public byte arrayLoadByte(Value array, int index, ExecutionContext ctx) {
 		val helper = ctx.getHelper();
 		val arr = helper.checkNotNullArray((ObjectValue) array);
-		int idx = index.asInt();
-		helper.rangeCheck(arr, idx);
-		return IntValue.of(arr.getShort(idx));
+		helper.rangeCheck(arr, index);
+		return arr.getByte(index);
 	}
 
 	public Value arrayLoadByte(Value array, Value index, ExecutionContext ctx) {
+		return IntValue.of(arrayLoadByte(array, index.asInt(), ctx));
+	}
+
+	public Value arrayLoadValue(Value array, int index, ExecutionContext ctx) {
 		val helper = ctx.getHelper();
 		val arr = helper.checkNotNullArray((ObjectValue) array);
-		int idx = index.asInt();
-		helper.rangeCheck(arr, idx);
-		return IntValue.of(arr.getByte(idx));
+		helper.rangeCheck(arr, index);
+		return arr.getValue(index);
 	}
 
 	public Value arrayLoadValue(Value array, Value index, ExecutionContext ctx) {
+		return arrayLoadValue(array, index.asInt(), ctx);
+	}
+
+	public void arrayStoreLong(Value array, int index, long value, ExecutionContext ctx) {
 		val helper = ctx.getHelper();
 		val arr = helper.checkNotNullArray((ObjectValue) array);
-		int idx = index.asInt();
-		helper.rangeCheck(arr, idx);
-		return arr.getValue(idx);
+		helper.rangeCheck(arr, index);
+		arr.setLong(index, value);
 	}
 
 	public void arrayStoreLong(Value array, Value index, Value value, ExecutionContext ctx) {
+		arrayStoreLong(array, index.asInt(), value.asLong(), ctx);
+	}
+
+	public void arrayStoreDouble(Value array, int index, double value, ExecutionContext ctx) {
 		val helper = ctx.getHelper();
 		val arr = helper.checkNotNullArray((ObjectValue) array);
-		int idx = index.asInt();
-		helper.rangeCheck(arr, idx);
-		arr.setLong(idx, value.asLong());
+		helper.rangeCheck(arr, index);
+		arr.setDouble(index, value);
 	}
 
 	public void arrayStoreDouble(Value array, Value index, Value value, ExecutionContext ctx) {
+		arrayStoreDouble(array, index.asInt(), value.asDouble(), ctx);
+	}
+
+	public void arrayStoreFloat(Value array, int index, float value, ExecutionContext ctx) {
 		val helper = ctx.getHelper();
 		val arr = helper.checkNotNullArray((ObjectValue) array);
-		int idx = index.asInt();
-		helper.rangeCheck(arr, idx);
-		arr.setDouble(idx, value.asDouble());
+		helper.rangeCheck(arr, index);
+		arr.setFloat(index, value);
 	}
 
 	public void arrayStoreFloat(Value array, Value index, Value value, ExecutionContext ctx) {
+		arrayStoreFloat(array, index.asInt(), value.asFloat(), ctx);
+	}
+
+	public void arrayStoreInt(Value array, int index, int value, ExecutionContext ctx) {
 		val helper = ctx.getHelper();
 		val arr = helper.checkNotNullArray((ObjectValue) array);
-		int idx = index.asInt();
-		helper.rangeCheck(arr, idx);
-		arr.setFloat(idx, value.asFloat());
+		helper.rangeCheck(arr, index);
+		arr.setInt(index, value);
 	}
 
 	public void arrayStoreInt(Value array, Value index, Value value, ExecutionContext ctx) {
+		arrayStoreInt(array, index.asInt(), value.asInt(), ctx);
+	}
+
+	public void arrayStoreChar(Value array, int index, char value, ExecutionContext ctx) {
 		val helper = ctx.getHelper();
 		val arr = helper.checkNotNullArray((ObjectValue) array);
-		int idx = index.asInt();
-		helper.rangeCheck(arr, idx);
-		arr.setInt(idx, value.asInt());
+		helper.rangeCheck(arr, index);
+		arr.setChar(index, value);
 	}
 
 	public void arrayStoreChar(Value array, Value index, Value value, ExecutionContext ctx) {
+		arrayStoreChar(array, index.asInt(), value.asChar(), ctx);
+	}
+
+	public void arrayStoreShort(Value array, int index, short value, ExecutionContext ctx) {
 		val helper = ctx.getHelper();
 		val arr = helper.checkNotNullArray((ObjectValue) array);
-		int idx = index.asInt();
-		helper.rangeCheck(arr, idx);
-		arr.setChar(idx, value.asChar());
+		helper.rangeCheck(arr, index);
+		arr.setShort(index, value);
 	}
 
 	public void arrayStoreShort(Value array, Value index, Value value, ExecutionContext ctx) {
+		arrayStoreShort(array, index.asInt(), value.asShort(), ctx);
+	}
+
+	public void arrayStoreByte(Value array, int index, byte value, ExecutionContext ctx) {
 		val helper = ctx.getHelper();
 		val arr = helper.checkNotNullArray((ObjectValue) array);
-		int idx = index.asInt();
-		helper.rangeCheck(arr, idx);
-		arr.setShort(idx, value.asShort());
+		helper.rangeCheck(arr, index);
+		arr.setByte(index, value);
 	}
 
 	public void arrayStoreByte(Value array, Value index, Value value, ExecutionContext ctx) {
-		val helper = ctx.getHelper();
-		val arr = helper.checkNotNullArray((ObjectValue) array);
-		int idx = index.asInt();
-		helper.rangeCheck(arr, idx);
-		arr.setByte(idx, value.asByte());
+		arrayStoreByte(array, index.asInt(), value.asByte(), ctx);
 	}
 
-	public void arrayStoreValue(Value array, Value index, Value value, ExecutionContext ctx) {
+	public void arrayStoreValue(Value array, int index, Value value, ExecutionContext ctx) {
 		val helper = ctx.getHelper();
 		val arr = helper.checkNotNullArray((ObjectValue) array);
-		int idx = index.asInt();
-		helper.rangeCheck(arr, idx);
+		helper.rangeCheck(arr, index);
 
 		val o = (ObjectValue) value;
 		if (!value.isNull()) {
@@ -158,143 +201,11 @@ public class JitHelper {
 			}
 		}
 
-		arr.setValue(idx, (ObjectValue) value);
+		arr.setValue(index, (ObjectValue) value);
 	}
 
-	public Value addInt(Value a, Value b) {
-		return IntValue.of(a.asInt() + b.asInt());
-	}
-
-	public Value addLong(Value a, Value b) {
-		return LongValue.of(a.asLong() + b.asLong());
-	}
-
-	public Value addFloat(Value a, Value b) {
-		return new FloatValue(a.asFloat() + b.asFloat());
-	}
-
-	public Value addDouble(Value a, Value b) {
-		return new DoubleValue(a.asDouble() + b.asDouble());
-	}
-
-	public Value subInt(Value a, Value b) {
-		return IntValue.of(a.asInt() - b.asInt());
-	}
-
-	public Value subLong(Value a, Value b) {
-		return LongValue.of(a.asLong() - b.asLong());
-	}
-
-	public Value subFloat(Value a, Value b) {
-		return new FloatValue(a.asFloat() - b.asFloat());
-	}
-
-	public Value subDouble(Value a, Value b) {
-		return new DoubleValue(a.asDouble() - b.asDouble());
-	}
-
-	public Value mulInt(Value a, Value b) {
-		return IntValue.of(a.asInt() * b.asInt());
-	}
-
-	public Value mulLong(Value a, Value b) {
-		return LongValue.of(a.asLong() * b.asLong());
-	}
-
-	public Value mulFloat(Value a, Value b) {
-		return new FloatValue(a.asFloat() * b.asFloat());
-	}
-
-	public Value mulDouble(Value a, Value b) {
-		return new DoubleValue(a.asDouble() * b.asDouble());
-	}
-
-	public Value divInt(Value a, Value b) {
-		return IntValue.of(a.asInt() / b.asInt());
-	}
-
-	public Value divLong(Value a, Value b) {
-		return LongValue.of(a.asLong() / b.asLong());
-	}
-
-	public Value divFloat(Value a, Value b) {
-		return new FloatValue(a.asFloat() / b.asFloat());
-	}
-
-	public Value divDouble(Value a, Value b) {
-		return new DoubleValue(a.asDouble() / b.asDouble());
-	}
-
-	public Value remInt(Value a, Value b) {
-		return IntValue.of(a.asInt() % b.asInt());
-	}
-
-	public Value remLong(Value a, Value b) {
-		return LongValue.of(a.asLong() % b.asLong());
-	}
-
-	public Value remFloat(Value a, Value b) {
-		return new FloatValue(a.asFloat() % b.asFloat());
-	}
-
-	public Value remDouble(Value a, Value b) {
-		return new DoubleValue(a.asDouble() % b.asDouble());
-	}
-
-	public Value shlInt(Value a, Value b) {
-		return IntValue.of(a.asInt() << b.asInt());
-	}
-
-	public Value shlLong(Value a, Value b) {
-		return LongValue.of(a.asLong() << b.asInt());
-	}
-
-	public Value shrInt(Value a, Value b) {
-		return IntValue.of(a.asInt() >> b.asInt());
-	}
-
-	public Value shrLong(Value a, Value b) {
-		return LongValue.of(a.asLong() >> b.asInt());
-	}
-
-	public Value ushrInt(Value a, Value b) {
-		return IntValue.of(a.asInt() >>> b.asInt());
-	}
-
-	public Value ushrLong(Value a, Value b) {
-		return LongValue.of(a.asLong() >>> b.asInt());
-	}
-
-	public Value andInt(Value a, Value b) {
-		return IntValue.of(a.asInt() & b.asInt());
-	}
-
-	public Value andLong(Value a, Value b) {
-		return LongValue.of(a.asLong() & b.asLong());
-	}
-
-	public Value orInt(Value a, Value b) {
-		return IntValue.of(a.asInt() | b.asInt());
-	}
-
-	public Value orLong(Value a, Value b) {
-		return LongValue.of(a.asLong() | b.asLong());
-	}
-
-	public Value xorInt(Value a, Value b) {
-		return IntValue.of(a.asInt() ^ b.asInt());
-	}
-
-	public Value xorLong(Value a, Value b) {
-		return LongValue.of(a.asLong() ^ b.asLong());
-	}
-
-	public void localIncrement(Locals locals, int idx, int value) {
-		locals.set(idx, IntValue.of(locals.load(idx).asInt() + value));
-	}
-
-	public Value compareLong(Value a, Value b) {
-		return IntValue.of(Long.compare(a.asLong(), b.asLong()));
+	public void arrayStoreValue(Value array, Value index, Value value, ExecutionContext ctx) {
+		arrayStoreValue(array, index.asInt(), value, ctx);
 	}
 
 	public Value compareFloat(Value a, Value b, int nan) {
@@ -333,7 +244,7 @@ public class JitHelper {
 	}
 
 	// special intrinsic versions.
-	public void getStaticIntrinsicFail(Object owner, Object field, long offset, ExecutionContext ctx) {
+	public void getStaticFail(Object owner, Object field, long offset, ExecutionContext ctx) {
 		if (owner instanceof String) {
 			// Class was not found
 			ctx.getHelper().throwException(ctx.getSymbols().java_lang_NoClassDefFoundError, (String) owner);
@@ -344,65 +255,93 @@ public class JitHelper {
 		}
 	}
 
-	public void getStaticIntrinsicJ(Object owner, long offset, ExecutionContext ctx) {
+	public long getStaticJ(Object owner, long offset, ExecutionContext ctx) {
 		val memoryManager = ctx.getVM().getMemoryManager();
-		ctx.getStack().pushWide(LongValue.of(memoryManager.readLong(((InstanceJavaClass) owner).getOop(), offset)));
+		return memoryManager.readLong(((InstanceJavaClass) owner).getOop(), offset);
 	}
 
-	public void getStaticIntrinsicD(Object owner, long offset, ExecutionContext ctx) {
+	public double getStaticD(Object owner, long offset, ExecutionContext ctx) {
 		val memoryManager = ctx.getVM().getMemoryManager();
-		ctx.getStack().pushWide(new DoubleValue(memoryManager.readDouble(((InstanceJavaClass) owner).getOop(), offset)));
+		return memoryManager.readDouble(((InstanceJavaClass) owner).getOop(), offset);
 	}
 
-	public void getStaticIntrinsicI(Object owner, long offset, ExecutionContext ctx) {
+	public int getStaticI(Object owner, long offset, ExecutionContext ctx) {
 		val memoryManager = ctx.getVM().getMemoryManager();
-		ctx.getStack().push(IntValue.of(memoryManager.readInt(((InstanceJavaClass) owner).getOop(), offset)));
+		return memoryManager.readInt(((InstanceJavaClass) owner).getOop(), offset);
 	}
 
-	public void getStaticIntrinsicF(Object owner, long offset, ExecutionContext ctx) {
+	public float getStaticF(Object owner, long offset, ExecutionContext ctx) {
 		val memoryManager = ctx.getVM().getMemoryManager();
-		ctx.getStack().push(new FloatValue(memoryManager.readFloat(((InstanceJavaClass) owner).getOop(), offset)));
+		return memoryManager.readFloat(((InstanceJavaClass) owner).getOop(), offset);
 	}
 
-	public void getStaticIntrinsicC(Object owner, long offset, ExecutionContext ctx) {
+	public char getStaticC(Object owner, long offset, ExecutionContext ctx) {
 		val memoryManager = ctx.getVM().getMemoryManager();
-		ctx.getStack().push(IntValue.of(memoryManager.readChar(((InstanceJavaClass) owner).getOop(), offset)));
+		return memoryManager.readChar(((InstanceJavaClass) owner).getOop(), offset);
 	}
 
-	public void getStaticIntrinsicS(Object owner, long offset, ExecutionContext ctx) {
+	public short getStaticS(Object owner, long offset, ExecutionContext ctx) {
 		val memoryManager = ctx.getVM().getMemoryManager();
-		ctx.getStack().push(IntValue.of(memoryManager.readShort(((InstanceJavaClass) owner).getOop(), offset)));
+		return memoryManager.readShort(((InstanceJavaClass) owner).getOop(), offset);
 	}
 
-	public void getStaticIntrinsicB(Object owner, long offset, ExecutionContext ctx) {
+	public byte getStaticB(Object owner, long offset, ExecutionContext ctx) {
 		val memoryManager = ctx.getVM().getMemoryManager();
-		ctx.getStack().push(IntValue.of(memoryManager.readByte(((InstanceJavaClass) owner).getOop(), offset)));
+		return memoryManager.readByte(((InstanceJavaClass) owner).getOop(), offset);
 	}
 
-	public void getStaticIntrinsicA(Object owner, long offset, ExecutionContext ctx) {
+	public Value getStaticA(Object owner, long offset, ExecutionContext ctx) {
 		val memoryManager = ctx.getVM().getMemoryManager();
-		ctx.getStack().push(memoryManager.readValue(((InstanceJavaClass) owner).getOop(), offset));
+		return memoryManager.readValue(((InstanceJavaClass) owner).getOop(), offset);
 	}
 
-	public void putStatic(String owner, String name, String desc, ExecutionContext ctx) {
+	public void putStaticA(Value value, String owner, String name, String desc, ExecutionContext ctx) {
 		val vm = ctx.getVM();
 		val helper = vm.getHelper();
 		val klass = (InstanceJavaClass) helper.findClass(ctx.getOwner().getClassLoader(), owner, true);
-		val value = ctx.getStack().popGeneric();
 		if (!klass.setFieldValue(name, desc, value)) {
 			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, name);
 		}
 	}
 
-	public void getField(String owner, String name, String desc, ExecutionContext ctx) {
+	public void putStaticJ(long value, String owner, String name, String desc, ExecutionContext ctx) {
+		putStaticA(LongValue.of(value), owner, name, desc, ctx);
+	}
+
+	public void putStaticD(double value, String owner, String name, String desc, ExecutionContext ctx) {
+		putStaticA(new DoubleValue(value), owner, name, desc, ctx);
+	}
+
+	public void putStaticI(int value, String owner, String name, String desc, ExecutionContext ctx) {
+		putStaticA(IntValue.of(value), owner, name, desc, ctx);
+	}
+
+	public void putStaticF(float value, String owner, String name, String desc, ExecutionContext ctx) {
+		putStaticA(new FloatValue(value), owner, name, desc, ctx);
+	}
+
+	public void putStaticF(char value, String owner, String name, String desc, ExecutionContext ctx) {
+		putStaticA(IntValue.of(value), owner, name, desc, ctx);
+	}
+
+	public void putStaticS(short value, String owner, String name, String desc, ExecutionContext ctx) {
+		putStaticA(IntValue.of(value), owner, name, desc, ctx);
+	}
+
+	public void putStaticB(byte value, String owner, String name, String desc, ExecutionContext ctx) {
+		putStaticA(IntValue.of(value), owner, name, desc, ctx);
+	}
+
+	public void putStatic(String owner, String name, String desc, ExecutionContext ctx) {
+		putStaticA(ctx.getStack().popGeneric(), owner, name, desc, ctx);
+	}
+
+	public Value getFieldA(Value $instance, String owner, String name, String desc, ExecutionContext ctx) {
 		val vm = ctx.getVM();
 		val helper = vm.getHelper();
 		val klass = helper.findClass(ctx.getOwner().getClassLoader(), owner, true);
-		if (klass == null) {
-			helper.throwException(vm.getSymbols().java_lang_NoClassDefFoundError, owner);
-		}
 		val stack = ctx.getStack();
-		val instance = helper.<InstanceValue>checkNotNull(stack.pop());
+		val instance = helper.<InstanceValue>checkNotNull($instance);
 		long offset = helper.getFieldOffset((InstanceJavaClass) klass, instance.getJavaClass(), name, desc);
 		if (offset == -1L) {
 			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, name);
@@ -438,25 +377,52 @@ public class JitHelper {
 			default:
 				value = manager.readValue(instance, offset);
 		}
-		stack.pushGeneric(value);
+		return value;
 	}
 
-	public void putField(String owner, String name, String desc, ExecutionContext ctx) {
+	public long getFieldJ(Value value, String owner, String name, String desc, ExecutionContext ctx) {
+		return getFieldA(value, owner, name, desc, ctx).asLong();
+	}
+
+	public double getFieldD(Value value, String owner, String name, String desc, ExecutionContext ctx) {
+		return getFieldA(value, owner, name, desc, ctx).asDouble();
+	}
+
+	public int getFieldI(Value value, String owner, String name, String desc, ExecutionContext ctx) {
+		return getFieldA(value, owner, name, desc, ctx).asInt();
+	}
+
+	public float getFieldF(Value value, String owner, String name, String desc, ExecutionContext ctx) {
+		return getFieldA(value, owner, name, desc, ctx).asFloat();
+	}
+
+	public char getFieldC(Value value, String owner, String name, String desc, ExecutionContext ctx) {
+		return getFieldA(value, owner, name, desc, ctx).asChar();
+	}
+
+	public short getFieldS(Value value, String owner, String name, String desc, ExecutionContext ctx) {
+		return getFieldA(value, owner, name, desc, ctx).asShort();
+	}
+
+	public byte getFieldB(Value value, String owner, String name, String desc, ExecutionContext ctx) {
+		return getFieldA(value, owner, name, desc, ctx).asByte();
+	}
+
+	public Value getField(String owner, String name, String desc, ExecutionContext ctx) {
+		return getFieldA(ctx.getStack().pop(), owner, name, desc, ctx);
+	}
+
+	public void putFieldA(Value $instance, Value value, String owner, String name, String desc, ExecutionContext ctx) {
 		val vm = ctx.getVM();
 		val helper = vm.getHelper();
 		val klass = helper.findClass(ctx.getOwner().getClassLoader(), owner, true);
-		if (klass == null) {
-			helper.throwException(vm.getSymbols().java_lang_NoClassDefFoundError, owner);
-		}
-		val stack = ctx.getStack();
-		val value = stack.popGeneric();
-		val instance = helper.<InstanceValue>checkNotNull(stack.pop());
+		val instance = helper.<InstanceValue>checkNotNull($instance);
 		long offset = helper.getFieldOffset((InstanceJavaClass) klass, instance.getJavaClass(), name, desc);
 		if (offset == -1L) {
 			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, name);
 		}
-		offset += vm.getMemoryManager().valueBaseOffset(instance);
 		val manager = vm.getMemoryManager();
+		offset += manager.valueBaseOffset(instance);
 		switch (desc.charAt(0)) {
 			case 'J':
 				manager.writeLong(instance, offset, value.asLong());
@@ -484,8 +450,42 @@ public class JitHelper {
 				break;
 			default:
 				manager.writeValue(instance, offset, (ObjectValue) value);
-				break;
 		}
+	}
+
+	public void putFieldJ(Value instance, long value, String owner, String name, String desc, ExecutionContext ctx) {
+		putFieldA(instance, LongValue.of(value), owner, name, desc, ctx);
+	}
+
+	public void putFieldD(Value instance, double value, String owner, String name, String desc, ExecutionContext ctx) {
+		putFieldA(instance, new DoubleValue(value), owner, name, desc, ctx);
+	}
+
+	public void putFieldI(Value instance, int value, String owner, String name, String desc, ExecutionContext ctx) {
+		putFieldA(instance, IntValue.of(value), owner, name, desc, ctx);
+	}
+
+	public void putFieldF(Value instance, float value, String owner, String name, String desc, ExecutionContext ctx) {
+		putFieldA(instance, new FloatValue(value), owner, name, desc, ctx);
+	}
+
+	public void putFieldC(Value instance, char value, String owner, String name, String desc, ExecutionContext ctx) {
+		putFieldA(instance, IntValue.of(value), owner, name, desc, ctx);
+	}
+
+	public void putFieldS(Value instance, short value, String owner, String name, String desc, ExecutionContext ctx) {
+		putFieldA(instance, IntValue.of(value), owner, name, desc, ctx);
+	}
+
+	public void putFieldB(Value instance, byte value, String owner, String name, String desc, ExecutionContext ctx) {
+		putFieldA(instance, IntValue.of(value), owner, name, desc, ctx);
+	}
+
+	public void putField(String owner, String name, String desc, ExecutionContext ctx) {
+		val stack = ctx.getStack();
+		val value = stack.popGeneric();
+		val instance = stack.pop();
+		putFieldA(instance, value, owner, name, desc, ctx);
 	}
 
 	public void invokeVirtual(String owner, String name, String desc, ExecutionContext ctx) {
@@ -502,6 +502,14 @@ public class JitHelper {
 		if (!v.isVoid()) {
 			stack.pushGeneric(v);
 		}
+	}
+
+	public Value invokeSpecial(Value[] locals, String owner, String name, String desc, ExecutionContext ctx) {
+		val vm = ctx.getVM();
+		val helper = vm.getHelper();
+		val klass = (InstanceJavaClass) helper.findClass(ctx.getOwner().getClassLoader(), owner, true);
+		val result = helper.invokeExact(klass, name, desc, new Value[0], locals);
+		return result.getResult();
 	}
 
 	public void invokeSpecial(String owner, String name, String desc, ExecutionContext ctx) {
@@ -545,7 +553,7 @@ public class JitHelper {
 	}
 
 	// special intrinsic version.
-	public void invokeFail(Object owner, Object method, ExecutionContext ctx) {
+	public Value invokeFail(Object owner, Object method, ExecutionContext ctx) {
 		val helper = ctx.getHelper();
 		val symbols = ctx.getSymbols();
 		if (owner instanceof String) {
@@ -553,57 +561,39 @@ public class JitHelper {
 			helper.throwException(symbols.java_lang_NoClassDefFoundError, (String) owner);
 		}
 		ctx.getHelper().throwException(symbols.java_lang_NoSuchMethodError, (String) method);
+		return null;
 	}
 
-	public void invokeStaticIntrinsic(Object owner, Object method, ExecutionContext ctx) {
+	public Value invokeStatic(Value[] locals, Object owner, Object method, ExecutionContext ctx) {
 		val helper = ctx.getHelper();
 		val mn = (JavaMethod) method;
 		val stack = ctx.getStack();
-		val args = mn.getArgumentTypes();
-		int localsLength = args.length;
-		val locals = new Value[localsLength];
-		while (localsLength-- != 0) {
-			locals[localsLength] = stack.popGeneric();
-		}
 		val result = helper.invokeStatic((InstanceJavaClass) owner, mn, new Value[0], locals);
-		val v = result.getResult();
-		if (!v.isVoid()) {
-			stack.pushGeneric(v);
-		}
+		return result.getResult();
 	}
 
-	public void invokeSpecialIntrinsic(Object owner, Object method, ExecutionContext ctx) {
+	public Value invokeSpecial(Value[] locals, Object owner, Object method, ExecutionContext ctx) {
 		val vm = ctx.getVM();
 		val helper = vm.getHelper();
 		val stack = ctx.getStack();
 		val mn = (JavaMethod) method;
-		val args = mn.getArgumentTypes();
-		int localsLength = args.length + 1;
-		val locals = new Value[localsLength];
-		while (localsLength-- != 0) {
-			locals[localsLength] = stack.popGeneric();
-		}
 		val result = helper.invokeExact((InstanceJavaClass) owner, mn, new Value[0], locals);
-		val v = result.getResult();
-		if (!v.isVoid()) {
-			stack.pushGeneric(v);
-		}
+		return result.getResult();
 	}
 
-	public void invokeVirtualIntrinsic(Object name, Object desc, Object args, ExecutionContext ctx) {
+	public Value invokeVirtual(Value[] locals, Object name, Object desc, ExecutionContext ctx) {
 		val vm = ctx.getVM();
 		val stack = ctx.getStack();
-		val arr = (Type[]) args;
-		int localsLength = arr.length + 1;
-		val locals = new Value[localsLength];
-		while (localsLength-- != 0) {
-			locals[localsLength] = stack.popGeneric();
-		}
 		val result = vm.getHelper().invokeVirtual((String) name, (String) desc, new Value[0], locals);
-		val v = result.getResult();
-		if (!v.isVoid()) {
-			stack.pushGeneric(v);
-		}
+		return result.getResult();
+	}
+
+	public Value invokeInterface(Value[] locals, String owner, String name, String desc, ExecutionContext ctx) {
+		val vm = ctx.getVM();
+		val helper = vm.getHelper();
+		val klass = (InstanceJavaClass) helper.findClass(ctx.getOwner().getClassLoader(), owner, true);
+		val result = helper.invokeInterface(klass, name, desc, new Value[0], locals);
+		return result.getResult();
 	}
 
 	public void invokeInterface(String owner, String name, String desc, ExecutionContext ctx) {
@@ -624,19 +614,18 @@ public class JitHelper {
 		}
 	}
 
-	public void allocateInstance(String desc, ExecutionContext ctx) {
+	public Value allocateInstance(String desc, ExecutionContext ctx) {
 		val vm = ctx.getVM();
 		val helper = vm.getHelper();
 		val type = helper.findClass(ctx.getOwner().getClassLoader(), desc, true);
 		// TODO checks like in UnsafeNatives
 		val instance = vm.getMemoryManager().newInstance((InstanceJavaClass) type);
 		helper.initializeDefaultValues(instance);
-		ctx.getStack().push(instance);
+		return instance;
 	}
 
-	public void allocatePrimitiveArray(int operand, ExecutionContext ctx) {
+	public Value allocatePrimitiveArray(int length, int operand, ExecutionContext ctx) {
 		val stack = ctx.getStack();
-		int length = stack.pop().asInt();
 		val vm = ctx.getVM();
 		vm.getHelper().checkArrayLength(length);
 		val primitives = vm.getPrimitives();
@@ -670,27 +659,36 @@ public class JitHelper {
 			default:
 				throw new IllegalStateException("Illegal array type: " + operand);
 		}
-		stack.push(array);
+		return array;
 	}
 
-	public void allocateValueArray(String desc, ExecutionContext ctx) {
+	public Value allocatePrimitiveArray(int operand, ExecutionContext ctx) {
+		return allocatePrimitiveArray(ctx.getStack().pop().asInt(), operand, ctx);
+	}
+
+	public Value allocateValueArray(int length, String desc, ExecutionContext ctx) {
 		val stack = ctx.getStack();
-		val length = stack.pop().asInt();
 		val vm = ctx.getVM();
 		val helper = vm.getHelper();
 		val klass = helper.findClass(ctx.getOwner().getClassLoader(), desc, false);
 		helper.checkArrayLength(length);
-		stack.push(helper.newArray(klass, length));
+		return helper.newArray(klass, length);
 	}
 
-	public void getArrayLength(ExecutionContext ctx) {
-		val stack = ctx.getStack();
-		val array = ctx.getHelper().checkNotNullArray(stack.pop());
-		stack.push(IntValue.of(array.getLength()));
+	public Value allocateValueArray(String desc, ExecutionContext ctx) {
+		return allocateValueArray(ctx.getStack().pop().asInt(), desc, ctx);
 	}
 
-	public void throwException(ExecutionContext ctx) {
-		ObjectValue exception = ctx.getStack().pop();
+	public int getArrayLength(Value value, ExecutionContext ctx) {
+		val array = ctx.getHelper().checkNotNullArray((ObjectValue) value);
+		return array.getLength();
+	}
+
+	public int getArrayLength(ExecutionContext ctx) {
+		return getArrayLength(ctx.getStack().pop(), ctx);
+	}
+
+	public void throwException(Value exception, ExecutionContext ctx) {
 		if (exception.isNull()) {
 			// NPE it is then.
 			val vm = ctx.getVM();
@@ -702,52 +700,80 @@ public class JitHelper {
 		throw new VMException((InstanceValue) exception);
 	}
 
-	public void checkCast(String desc, ExecutionContext ctx) {
+	public void throwException(ExecutionContext ctx) {
+		throwException(ctx.getStack().pop(), ctx);
+	}
+
+	public Value checkCast(Value value, String desc, ExecutionContext ctx) {
 		val vm = ctx.getVM();
 		val type = vm.getHelper().findClass(ctx.getOwner().getClassLoader(), desc, true);
-		val value = ctx.getStack().<ObjectValue>peek();
 		if (!value.isNull()) {
-			val against = value.getJavaClass();
+			val against = ((ObjectValue) value).getJavaClass();
 			if (!type.isAssignableFrom(against)) {
 				vm.getHelper().throwException(vm.getSymbols().java_lang_ClassCastException, against.getName() + " cannot be cast to " + type.getName());
 			}
+		}
+		return value;
+	}
+
+	public void checkCast(String desc, ExecutionContext ctx) {
+		checkCast(ctx.getStack().peek(), desc, ctx);
+	}
+
+	public boolean instanceofResult(Value value, String desc, ExecutionContext ctx) {
+		val vm = ctx.getVM();
+		val javaClass = vm.getHelper().findClass(ctx.getOwner().getClassLoader(), desc, false);
+		if (javaClass instanceof InstanceJavaClass) ((InstanceJavaClass) javaClass).loadClassesWithoutMarkingResolved();
+		val stack = ctx.getStack();
+		if (value.isNull()) {
+			return false;
+		} else {
+			return javaClass.isAssignableFrom(((ObjectValue) value).getJavaClass());
 		}
 	}
 
 	public void instanceofResult(String desc, ExecutionContext ctx) {
 		val vm = ctx.getVM();
-		val javaClass = vm.getHelper().findClass(ctx.getOwner().getClassLoader(), desc, false);
-		if (javaClass instanceof InstanceJavaClass) ((InstanceJavaClass) javaClass).loadClassesWithoutMarkingResolved();
 		val stack = ctx.getStack();
 		val value = stack.<ObjectValue>pop();
+		stack.push(instanceofResult(value, desc, ctx) ? IntValue.ONE : IntValue.ZERO);
+	}
+
+	public void monitorEnter(Value value, ExecutionContext ctx) {
 		if (value.isNull()) {
-			stack.push(IntValue.ZERO);
+			ctx.getHelper().throwException(ctx.getSymbols().java_lang_NullPointerException);
 		} else {
-			stack.push(javaClass.isAssignableFrom(value.getJavaClass()) ? IntValue.ONE : IntValue.ZERO);
+			((ObjectValue) value).monitorEnter();
 		}
 	}
 
 	public void monitorEnter(ExecutionContext ctx) {
-		ctx.getStack().<ObjectValue>pop().monitorEnter();
+		monitorEnter(ctx.getStack().pop(), ctx);
 	}
 
-	public void monitorExit(ExecutionContext ctx) {
+	public void monitorExit(Value value, ExecutionContext ctx) {
+		if (value.isNull()) {
+			ctx.getHelper().throwException(ctx.getSymbols().java_lang_NullPointerException);
+		}
 		try {
-			ctx.getStack().<ObjectValue>pop().monitorExit();
+			((ObjectValue) value).monitorExit();
 		} catch (IllegalMonitorStateException ex) {
 			val vm = ctx.getVM();
 			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalMonitorStateException);
 		}
 	}
 
-	public void multiNewArray(String desc, int dimensions, ExecutionContext ctx) {
+	public void monitorExit(ExecutionContext ctx) {
+		monitorExit(ctx.getStack().pop(), ctx);
+	}
+
+	public Value multiNewArray(String desc, int dimensions, ExecutionContext ctx) {
 		val helper = ctx.getHelper();
 		val type = helper.findClass(ctx.getOwner().getClassLoader(), desc, true);
 		val stack = ctx.getStack();
 		val lengths = new int[dimensions];
 		while (dimensions-- != 0) lengths[dimensions] = stack.pop().asInt();
-		val array = helper.newMultiArray((ArrayJavaClass) type, lengths);
-		stack.push(array);
+		return helper.newMultiArray((ArrayJavaClass) type, lengths);
 	}
 
 	public Value classLdc(String desc, ExecutionContext ctx) {

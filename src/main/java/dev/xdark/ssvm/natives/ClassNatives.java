@@ -9,14 +9,17 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaField;
 import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.*;
 import lombok.experimental.UtilityClass;
 import lombok.val;
 import me.coley.cafedude.ClassMember;
 import me.coley.cafedude.ConstPool;
 import me.coley.cafedude.Constants;
+import me.coley.cafedude.attribute.AnnotationDefaultAttribute;
 import me.coley.cafedude.attribute.AnnotationsAttribute;
 import me.coley.cafedude.attribute.Attribute;
+import me.coley.cafedude.attribute.ParameterAnnotationsAttribute;
 
 import java.util.List;
 
@@ -80,7 +83,7 @@ public class ClassNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "desiredAssertionStatus0", "(Ljava/lang/Class;)Z", ctx -> {
-			ctx.setResult(IntValue.ONE);
+			ctx.setResult(IntValue.ZERO);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "forName0", "(Ljava/lang/String;ZLjava/lang/ClassLoader;Ljava/lang/Class;)Ljava/lang/Class;", ctx -> {
@@ -158,22 +161,23 @@ public class ClassNatives {
 				val refFactory = symbols.reflect_ReflectionFactory;
 				val reflectionFactory = (InstanceValue) helper.invokeStatic(refFactory, "getReflectionFactory", "()" + refFactory.getDescriptor(), new Value[0], new Value[0]).getResult();
 				val result = helper.newArray(symbols.java_lang_reflect_Constructor, methods.size());
-				val classArray = helper.emptyArray(symbols.java_lang_Class);
 				val callerOop = klass.getOop();
 				for (int j = 0; j < methods.size(); j++) {
 					val mn = methods.get(j);
 					val types = mn.getArgumentTypes();
 					val parameters = helper.convertClasses(helper.convertTypes(loader, types, false));
+					val exceptions = convertExceptions(helper, loader, mn.getNode().exceptions);
+					val data = getMethodRawData(mn, false);
 					val c = helper.invokeVirtual("newConstructor", "(Ljava/lang/Class;[Ljava/lang/Class;[Ljava/lang/Class;IILjava/lang/String;[B[B)Ljava/lang/reflect/Constructor;", new Value[0], new Value[]{
 							reflectionFactory,
 							callerOop,
 							parameters,
-							classArray,
+							exceptions,
 							IntValue.of(Modifier.erase(mn.getAccess())),
 							IntValue.of(mn.getSlot()),
 							pool.intern(mn.getSignature()),
-							readMethodAnnotations(mn),
-							NullValue.INSTANCE
+							data.annotations,
+							data.parameterAnnotations
 					}).getResult();
 					result.setValue(j, (ObjectValue) c);
 				}
@@ -198,26 +202,27 @@ public class ClassNatives {
 			val refFactory = symbols.reflect_ReflectionFactory;
 			val reflectionFactory = (InstanceValue) helper.invokeStatic(refFactory, "getReflectionFactory", "()" + refFactory.getDescriptor(), new Value[0], new Value[0]).getResult();
 			val result = helper.newArray(symbols.java_lang_reflect_Method, methods.size());
-			val classArray = helper.emptyArray(symbols.java_lang_Class);
 			val callerOop = klass.getOop();
 			for (int j = 0; j < methods.size(); j++) {
 				val mn = methods.get(j);
 				val types = mn.getArgumentTypes();
 				val rt = helper.findClass(loader, mn.getReturnType().getInternalName(), false);
 				val parameters = helper.convertClasses(helper.convertTypes(loader, types, false));
+				val exceptions = convertExceptions(helper, loader, mn.getNode().exceptions);
+				val data = getMethodRawData(mn, true);
 				val c = helper.invokeVirtual("newMethod", "(Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Class;Ljava/lang/Class;[Ljava/lang/Class;IILjava/lang/String;[B[B[B)Ljava/lang/reflect/Method;", new Value[0], new Value[]{
 						reflectionFactory,
 						callerOop,
 						pool.intern(mn.getName()),
 						parameters,
 						rt.getOop(),
-						classArray,
+						exceptions,
 						IntValue.of(Modifier.erase(mn.getAccess())),
 						IntValue.of(mn.getSlot()),
 						pool.intern(mn.getSignature()),
-						readMethodAnnotations(mn),
-						NullValue.INSTANCE,
-						NullValue.INSTANCE
+						data.annotations,
+						data.parameterAnnotations,
+						data.annotationDefault
 				}).getResult();
 				result.setValue(j, (ObjectValue) c);
 			}
@@ -396,12 +401,6 @@ public class ClassNatives {
 		return getAnnotationsOf(owner.getVM(), cf.getFields(), cf.getPool(), field.getName(), field.getDesc());
 	}
 
-	private ObjectValue readMethodAnnotations(JavaMethod method) {
-		val owner = method.getOwner();
-		val cf = owner.getRawClassFile();
-		return getAnnotationsOf(owner.getVM(), cf.getMethods(), cf.getPool(), method.getName(), method.getDesc());
-	}
-
 	private ObjectValue getAnnotationsOf(VirtualMachine vm, List<? extends ClassMember> members, ConstPool cp, String name, String desc) {
 		for (val candidate : members) {
 			val cname = cp.getUtf(candidate.getNameIndex());
@@ -415,17 +414,86 @@ public class ClassNatives {
 	}
 
 	private ObjectValue getAnnotationsIn(VirtualMachine vm, ConstPool cp, List<Attribute> attributes) {
-		val opt = attributes.stream()
+		return attributes.stream()
 				.filter(x -> Constants.Attributes.RUNTIME_VISIBLE_ANNOTATIONS.equals(cp.getUtf(x.getNameIndex())))
-				.findFirst();
-		if (opt.isPresent()) {
-			val attr = opt.get();
-			val helper = vm.getHelper();
-			if (!(attr instanceof AnnotationsAttribute)) {
-				helper.throwException(vm.getSymbols().java_lang_IllegalStateException, "Invalid annotation");
-			}
-			return helper.toVMBytes(Util.toBytes((AnnotationsAttribute) attr));
+				.findFirst()
+				.map(x -> readAnnotation(x, vm))
+				.orElse(NullValue.INSTANCE);
+	}
+
+	private ObjectValue readAnnotation(Attribute attr, VirtualMachine vm) {
+		val helper = vm.getHelper();
+		if (!(attr instanceof AnnotationsAttribute)) {
+			helper.throwException(vm.getSymbols().java_lang_IllegalStateException, "Invalid annotation");
 		}
-		return NullValue.INSTANCE;
+		return helper.toVMBytes(Util.toBytes((AnnotationsAttribute) attr));
+	}
+
+	private ObjectValue readParameterAnnotations(Attribute attr, VirtualMachine vm) {
+		val helper = vm.getHelper();
+		if (!(attr instanceof ParameterAnnotationsAttribute)) {
+			helper.throwException(vm.getSymbols().java_lang_IllegalStateException, "Invalid annotation");
+		}
+		return helper.toVMBytes(Util.toBytes((ParameterAnnotationsAttribute) attr));
+	}
+
+	private ObjectValue readAnnotationDefault(Attribute attr, VirtualMachine vm) {
+		val helper = vm.getHelper();
+		if (!(attr instanceof AnnotationDefaultAttribute)) {
+			helper.throwException(vm.getSymbols().java_lang_IllegalStateException, "Invalid annotation");
+		}
+		return helper.toVMBytes(Util.toBytes((AnnotationDefaultAttribute) attr));
+	}
+
+	private MethodRawData getMethodRawData(JavaMethod jm, boolean includeDefault) {
+		val name = jm.getName();
+		val desc = jm.getDesc();
+		val data = new MethodRawData();
+		val owner = jm.getOwner();
+		val cf = owner.getRawClassFile();
+		val methods = cf.getMethods();
+		val cp = cf.getPool();
+		val vm = owner.getVM();
+		search:
+		for (val candidate : methods) {
+			if (!name.equals(cp.getUtf(candidate.getNameIndex()))) continue;
+			if (!desc.equals(cp.getUtf(candidate.getTypeIndex()))) continue;
+			for (val attr : candidate.getAttributes()) {
+				val attrName = cp.getUtf(attr.getNameIndex());
+				if (Constants.Attributes.RUNTIME_VISIBLE_ANNOTATIONS.equals(attrName)) {
+					data.annotations = readAnnotation(attr, vm);
+				} else if (Constants.Attributes.RUNTIME_VISIBLE_PARAMETER_ANNOTATIONS.equals(attrName)) {
+					data.parameterAnnotations = readParameterAnnotations(attr, vm);
+				} else if (includeDefault && Constants.Attributes.ANNOTATION_DEFAULT.equals(attrName)) {
+					data.annotationDefault = readAnnotationDefault(attr, vm);
+				}
+				if (data.isComplete(includeDefault)) break search;
+			}
+		}
+		return data;
+	}
+
+	private ArrayValue convertExceptions(VMHelper helper, Value loader, List<String> exceptions) {
+		val jlc = helper.getVM().getSymbols().java_lang_Class;
+		if (exceptions == null || exceptions.isEmpty()) {
+			return helper.emptyArray(jlc);
+		}
+		val array = helper.newArray(jlc, exceptions.size());
+		for (int i = 0; i < exceptions.size(); i++) {
+			array.setValue(i, helper.findClass(loader, exceptions.get(i), false).getOop());
+		}
+		return array;
+	}
+
+	private static final class MethodRawData {
+
+		ObjectValue annotations = NullValue.INSTANCE;
+		ObjectValue parameterAnnotations = NullValue.INSTANCE;
+		ObjectValue annotationDefault = NullValue.INSTANCE;
+
+		boolean isComplete(boolean includeDefault) {
+			return !annotations.isNull() && !parameterAnnotations.isNull()
+					&& (!includeDefault || !annotationDefault.isNull());
+		}
 	}
 }

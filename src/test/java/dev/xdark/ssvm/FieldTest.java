@@ -30,7 +30,7 @@ public class FieldTest {
 		val doubleCst = rng.nextDouble();
 		val intCst = rng.nextInt();
 		val floatCst = rng.nextFloat();
-		node.visit(V11, ACC_PUBLIC, "dev.Test", null, null, null);
+		node.visit(V11, ACC_PUBLIC, "Test", null, null, null);
 		node.visitField(ACC_STATIC, "string", "Ljava/lang/String;", null, stringCst);
 		node.visitField(ACC_STATIC, "long", "J", null, longCst);
 		node.visitField(ACC_STATIC, "double", "D", null, doubleCst);
@@ -54,7 +54,7 @@ public class FieldTest {
 		val doubleCst = rng.nextDouble();
 		val intCst = rng.nextInt();
 		val floatCst = rng.nextFloat();
-		node.visit(V11, ACC_PUBLIC, "dev.Test", null, "java/lang/Object", null);
+		node.visit(V11, ACC_PUBLIC, "Test", null, "java/lang/Object", null);
 		node.visitField(ACC_PRIVATE, "string", "Ljava/lang/String;", null, null);
 		node.visitField(ACC_PRIVATE, "long", "J", null, null);
 		node.visitField(ACC_PRIVATE, "double", "D", null, null);
@@ -66,19 +66,19 @@ public class FieldTest {
 		mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
 		mv.visitVarInsn(ALOAD, 0);
 		mv.visitLdcInsn(stringCst);
-		mv.visitFieldInsn(PUTFIELD, "dev.Test", "string", "Ljava/lang/String;");
+		mv.visitFieldInsn(PUTFIELD, "Test", "string", "Ljava/lang/String;");
 		mv.visitVarInsn(ALOAD, 0);
 		mv.visitLdcInsn(longCst);
-		mv.visitFieldInsn(PUTFIELD, "dev.Test", "long", "J");
+		mv.visitFieldInsn(PUTFIELD, "Test", "long", "J");
 		mv.visitVarInsn(ALOAD, 0);
 		mv.visitLdcInsn(doubleCst);
-		mv.visitFieldInsn(PUTFIELD, "dev.Test", "double", "D");
+		mv.visitFieldInsn(PUTFIELD, "Test", "double", "D");
 		mv.visitVarInsn(ALOAD, 0);
 		mv.visitLdcInsn(intCst);
-		mv.visitFieldInsn(PUTFIELD, "dev.Test", "int", "I");
+		mv.visitFieldInsn(PUTFIELD, "Test", "int", "I");
 		mv.visitVarInsn(ALOAD, 0);
 		mv.visitLdcInsn(floatCst);
-		mv.visitFieldInsn(PUTFIELD, "dev.Test", "float", "F");
+		mv.visitFieldInsn(PUTFIELD, "Test", "float", "F");
 		mv.visitInsn(RETURN);
 		mv.visitMaxs(3, 1);
 
@@ -101,16 +101,16 @@ public class FieldTest {
 		val virtualStringCst = "Yet another Hello World!";
 		val staticDouble = rng.nextDouble();
 		val virtualFloat = rng.nextFloat();
-		node.visit(V11, ACC_PUBLIC, "dev.Test", null, "java/lang/Object", null);
+		node.visit(V11, ACC_PUBLIC, "Test", null, "java/lang/Object", null);
 		node.visitField(ACC_STATIC, "string", "Ljava/lang/String;", null, null);
 		node.visitField(ACC_STATIC, "double", "D", null, null);
 		node.visitField(ACC_PRIVATE, "string1", "Ljava/lang/String;", null, null);
 		node.visitField(ACC_PRIVATE, "float", "F", null, null);
 		MethodVisitor mv = node.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
 		mv.visitLdcInsn(staticStringCst);
-		mv.visitFieldInsn(PUTSTATIC, "dev.Test", "string", "Ljava/lang/String;");
+		mv.visitFieldInsn(PUTSTATIC, "Test", "string", "Ljava/lang/String;");
 		mv.visitLdcInsn(staticDouble);
-		mv.visitFieldInsn(PUTSTATIC, "dev.Test", "double", "D");
+		mv.visitFieldInsn(PUTSTATIC, "Test", "double", "D");
 		mv.visitInsn(RETURN);
 		mv.visitMaxs(3, 0);
 
@@ -119,10 +119,10 @@ public class FieldTest {
 		mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
 		mv.visitVarInsn(ALOAD, 0);
 		mv.visitLdcInsn(virtualStringCst);
-		mv.visitFieldInsn(PUTFIELD, "dev.Test", "string1", "Ljava/lang/String;");
+		mv.visitFieldInsn(PUTFIELD, "Test", "string1", "Ljava/lang/String;");
 		mv.visitVarInsn(ALOAD, 0);
 		mv.visitLdcInsn(virtualFloat);
-		mv.visitFieldInsn(PUTFIELD, "dev.Test", "float", "F");
+		mv.visitFieldInsn(PUTFIELD, "Test", "float", "F");
 		mv.visitInsn(RETURN);
 		mv.visitMaxs(2, 1);
 

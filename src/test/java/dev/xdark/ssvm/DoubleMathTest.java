@@ -57,7 +57,7 @@ public class DoubleMathTest {
 
 	private static double doDoubleOp(double a, double b, int opcode) {
 		val node = new ClassNode();
-		node.visit(V11, ACC_PUBLIC, "dev.Test", null, null, null);
+		node.visit(V11, ACC_PUBLIC, "Test", null, null, null);
 		val mv = node.visitMethod(ACC_STATIC, "test", "()D", null, null);
 		mv.visitLdcInsn(a);
 		mv.visitLdcInsn(b);

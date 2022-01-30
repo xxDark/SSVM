@@ -705,7 +705,9 @@ public final class JitCompiler {
 
 	private void ldcOf(Object value) {
 		val jit = this.jit;
-		if (value instanceof Long) {
+		if (value instanceof String) {
+			loadCompilerConstant(target.getOwner().getVM().getStringPool().intern((String) value));
+		} else if (value instanceof Long) {
 			jit.visitLdcInsn(value);
 		} else if (value instanceof Double) {
 			jit.visitLdcInsn(value);

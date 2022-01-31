@@ -53,7 +53,7 @@ public class SimpleMemoryManager implements MemoryManager {
 			throw new PanicException("Segfault");
 		}
 		if (bytes == 0L) {
-			return new Memory(this, null, 0L, true);
+			return new SimpleMemory(this, null, 0L, true);
 		}
 		val buffer = memory.getData();
 		val capacity = buffer.capacity();
@@ -65,7 +65,7 @@ public class SimpleMemoryManager implements MemoryManager {
 		val newBuffer = alloc((int) bytes);
 		newBuffer.put(buffer);
 		newBuffer.position(0);
-		memory = new Memory(this, newBuffer, address, true);
+		memory = new SimpleMemory(this, newBuffer, address, true);
 		memoryBlocks.put(address, memory);
 		return memory;
 	}
@@ -97,7 +97,7 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public Value getValue(long address) {
-		return objects.get(new Memory(null, null, address, true));
+		return objects.get(new SimpleMemory(null, null, address, true));
 	}
 
 	@Override
@@ -186,12 +186,12 @@ public class SimpleMemoryManager implements MemoryManager {
 	@Override
 	public ObjectValue readValue(ObjectValue object, long offset) {
 		val address = object.getMemory().getData().getLong((int) (validate(offset)));
-		return objects.get(new Memory(null, null, address, false));
+		return objects.get(new SimpleMemory(null, null, address, false));
 	}
 
 	@Override
 	public JavaClass readClass(ObjectValue object) {
-		val value = objects.get(new Memory(null, null, object.getMemory().getData().getLong(0), false));
+		val value = objects.get(new SimpleMemory(null, null, object.getMemory().getData().getLong(0), false));
 		if (!(value instanceof JavaValue)) {
 			throw new PanicException("Segfault");
 		}
@@ -255,106 +255,6 @@ public class SimpleMemoryManager implements MemoryManager {
 	@Override
 	public void writeValue(ObjectValue object, long offset, ObjectValue value) {
 		object.getMemory().getData().putLong((int) (validate(offset)), value.getMemory().getAddress());
-	}
-
-	@Override
-	public long readLong(ArrayValue array, long offset) {
-		return readLong((ObjectValue) array, offset);
-	}
-
-	@Override
-	public double readDouble(ArrayValue array, long offset) {
-		return readDouble((ObjectValue) array, offset);
-	}
-
-	@Override
-	public int readInt(ArrayValue array, long offset) {
-		return readInt((ObjectValue) array, offset);
-	}
-
-	@Override
-	public float readFloat(ArrayValue array, long offset) {
-		return readFloat((ObjectValue) array, offset);
-	}
-
-	@Override
-	public char readChar(ArrayValue array, long offset) {
-		return readChar((ObjectValue) array, offset);
-	}
-
-	@Override
-	public short readShort(ArrayValue array, long offset) {
-		return readShort((ObjectValue) array, offset);
-	}
-
-	@Override
-	public byte readByte(ArrayValue array, long offset) {
-		return readByte((ObjectValue) array, offset);
-	}
-
-	@Override
-	public boolean readBoolean(ArrayValue array, long offset) {
-		return readBoolean((ObjectValue) array, offset);
-	}
-
-	@Override
-	public Object readOop(ArrayValue array, long offset) {
-		return readOop((ObjectValue) array, offset);
-	}
-
-	@Override
-	public ObjectValue readValue(ArrayValue array, long offset) {
-		return readValue((ObjectValue) array, offset);
-	}
-
-	@Override
-	public void writeLong(ArrayValue array, long offset, long value) {
-		writeLong((ObjectValue) array, offset, value);
-	}
-
-	@Override
-	public void writeDouble(ArrayValue array, long offset, double value) {
-		writeDouble((ObjectValue) array, offset, value);
-	}
-
-	@Override
-	public void writeInt(ArrayValue array, long offset, int value) {
-		writeInt((ObjectValue) array, offset, value);
-	}
-
-	@Override
-	public void writeFloat(ArrayValue array, long offset, float value) {
-		writeFloat((ObjectValue) array, offset, value);
-	}
-
-	@Override
-	public void writeChar(ArrayValue array, long offset, char value) {
-		writeChar((ObjectValue) array, offset, value);
-	}
-
-	@Override
-	public void writeShort(ArrayValue array, long offset, short value) {
-		writeShort((ObjectValue) array, offset, value);
-	}
-
-	@Override
-	public void writeByte(ArrayValue array, long offset, byte value) {
-		writeByte((ObjectValue) array, offset, value);
-	}
-
-	@Override
-	public void writeBoolean(ArrayValue array, long offset, boolean value) {
-		writeBoolean((ObjectValue) array, offset, value);
-	}
-
-	@Override
-	public void writeOop(ArrayValue array, long offset, Object value) {
-		writeOop((ObjectValue) array, offset, value);
-	}
-
-	@Override
-	public void writeValue(ArrayValue array, long offset, ObjectValue value) {
-		writeValue((ObjectValue) array, offset, value);
 	}
 
 	@Override
@@ -447,7 +347,7 @@ public class SimpleMemoryManager implements MemoryManager {
 		do {
 			address = rng.nextLong() & 0xFFFFFFFFL;
 		} while (memoryBlocks.containsKey(address));
-		val block = new Memory(this, alloc((int) size), address, isDirect);
+		val block = new SimpleMemory(this, alloc((int) size), address, isDirect);
 		memoryBlocks.put(address, block);
 		return block;
 	}

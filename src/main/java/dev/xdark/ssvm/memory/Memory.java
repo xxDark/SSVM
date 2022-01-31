@@ -7,56 +7,28 @@ import java.nio.ByteBuffer;
  *
  * @author xDark
  */
-public final class Memory {
-
-	private final MemoryManager memoryManager;
-	private final ByteBuffer data;
-	private final long address;
-	private final boolean isDirect;
-
-	/**
-	 * @param memoryManager
-	 * 		Manager which allocated this block.
-	 * @param data
-	 * 		Memory data.
-	 * @param address
-	 * 		Memory address.
-	 * @param isDirect
-	 * 		True if memory is direct.
-	 */
-	public Memory(MemoryManager memoryManager, ByteBuffer data, long address, boolean isDirect) {
-		this.memoryManager = memoryManager;
-		this.data = data;
-		this.address = address;
-		this.isDirect = isDirect;
-	}
+public interface Memory {
 
 	/**
 	 * Returns manager which allocated this block.
 	 *
 	 * @return manager which allocated this block.
 	 */
-	public MemoryManager getMemoryManager() {
-		return memoryManager;
-	}
+	MemoryManager getMemoryManager();
 
 	/**
 	 * Returns memory data.
 	 *
 	 * @return memory data.
 	 */
-	public ByteBuffer getData() {
-		return data;
-	}
+	ByteBuffer getData();
 
 	/**
 	 * Returns memory address.
 	 *
 	 * @return memory address.
 	 */
-	public long getAddress() {
-		return address;
-	}
+	long getAddress();
 
 	/**
 	 * Returns whether memory is direct not.
@@ -64,22 +36,5 @@ public final class Memory {
 	 * @return {@code true} if memory is direct, {@code false}
 	 * otherwise.
 	 */
-	public boolean isDirect() {
-		return isDirect;
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (!(o instanceof Memory)) return false;
-
-		Memory memory = (Memory) o;
-
-		return address == memory.address;
-	}
-
-	@Override
-	public int hashCode() {
-		return Long.hashCode(address);
-	}
+	boolean isDirect();
 }

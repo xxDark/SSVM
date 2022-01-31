@@ -4,6 +4,7 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.value.*;
 import lombok.experimental.UtilityClass;
@@ -614,6 +615,14 @@ public class JitHelper {
 		}
 	}
 
+	public Value allocateInstance(Object type, ExecutionContext ctx) {
+		val vm = ctx.getVM();
+		// TODO checks like in UnsafeNatives
+		val instance = vm.getMemoryManager().newInstance((InstanceJavaClass) type);
+		vm.getHelper().initializeDefaultValues(instance);
+		return instance;
+	}
+
 	public Value allocateInstance(String desc, ExecutionContext ctx) {
 		val vm = ctx.getVM();
 		val helper = vm.getHelper();
@@ -704,32 +713,41 @@ public class JitHelper {
 		throwException(ctx.getStack().pop(), ctx);
 	}
 
-	public Value checkCast(Value value, String desc, ExecutionContext ctx) {
+	public Value checkCast(Value value, Object type, ExecutionContext ctx) {
 		val vm = ctx.getVM();
-		val type = vm.getHelper().findClass(ctx.getOwner().getClassLoader(), desc, true);
 		if (!value.isNull()) {
 			val against = ((ObjectValue) value).getJavaClass();
-			if (!type.isAssignableFrom(against)) {
-				vm.getHelper().throwException(vm.getSymbols().java_lang_ClassCastException, against.getName() + " cannot be cast to " + type.getName());
+			val jc = (JavaClass) type;
+			if (!jc.isAssignableFrom(against)) {
+				vm.getHelper().throwException(vm.getSymbols().java_lang_ClassCastException, against.getName() + " cannot be cast to " + jc.getName());
 			}
 		}
 		return value;
+	}
+
+	public Value checkCast(Value value, String desc, ExecutionContext ctx) {
+		val type = ctx.getHelper().findClass(ctx.getOwner().getClassLoader(), desc, true);
+		return checkCast(value, type, ctx);
 	}
 
 	public void checkCast(String desc, ExecutionContext ctx) {
 		checkCast(ctx.getStack().peek(), desc, ctx);
 	}
 
-	public boolean instanceofResult(Value value, String desc, ExecutionContext ctx) {
+	public boolean instanceofResult(Value value, Object javaClass, ExecutionContext ctx) {
 		val vm = ctx.getVM();
-		val javaClass = vm.getHelper().findClass(ctx.getOwner().getClassLoader(), desc, false);
 		if (javaClass instanceof InstanceJavaClass) ((InstanceJavaClass) javaClass).loadClassesWithoutMarkingResolved();
-		val stack = ctx.getStack();
 		if (value.isNull()) {
 			return false;
 		} else {
-			return javaClass.isAssignableFrom(((ObjectValue) value).getJavaClass());
+			return ((JavaClass) javaClass).isAssignableFrom(((ObjectValue) value).getJavaClass());
 		}
+	}
+
+	public boolean instanceofResult(Value value, String desc, ExecutionContext ctx) {
+		val vm = ctx.getVM();
+		val javaClass = vm.getHelper().findClass(ctx.getOwner().getClassLoader(), desc, false);
+		return instanceofResult(value, javaClass, ctx);
 	}
 
 	public void instanceofResult(String desc, ExecutionContext ctx) {

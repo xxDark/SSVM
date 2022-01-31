@@ -5,6 +5,7 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.*;
@@ -14,6 +15,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.val;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
@@ -108,13 +110,20 @@ public final class JitCompiler {
 	private static final Access ARR_STORE_VALUE = staticCall(JIT_HELPER, "arrayStoreValue", J_VOID, VALUE, J_INT, VALUE, CTX);
 
 	private static final Access INVOKE_INTERFACE = staticCall(JIT_HELPER, "invokeInterface", VALUE, VALUES, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access NEW_INSTANCE = staticCall(JIT_HELPER, "allocateInstance", VALUE, J_STRING, CTX);
+
+	private static final Access NEW_INSTANCE = staticCall(JIT_HELPER, "allocateInstance", VALUE, J_OBJECT, CTX);
+	private static final Access NEW_INSTANCE_SLOW = staticCall(JIT_HELPER, "allocateInstance", VALUE, J_STRING, CTX);
+
 	private static final Access NEW_PRIMITIVE_ARRAY = staticCall(JIT_HELPER, "allocatePrimitiveArray", VALUE, J_INT, J_INT, CTX);
 	private static final Access NEW_INSTANCE_ARRAY = staticCall(JIT_HELPER, "allocateValueArray", VALUE, J_INT, J_STRING, CTX);
 	private static final Access GET_LENGTH = staticCall(JIT_HELPER, "getArrayLength", J_INT, VALUE, CTX);
 	private static final Access THROW_EXCEPTION = staticCall(JIT_HELPER, "throwException", J_VOID, VALUE, CTX);
-	private static final Access CHECK_CAST = staticCall(JIT_HELPER, "checkCast", VALUE, VALUE, J_STRING, CTX);
-	private static final Access INSTANCEOF_RES = staticCall(JIT_HELPER, "instanceofResult", J_BOOLEAN, VALUE, J_STRING, CTX);
+	private static final Access CHECK_CAST = staticCall(JIT_HELPER, "checkCast", VALUE, VALUE, J_OBJECT, CTX);
+	private static final Access CHECK_CAST_SLOW = staticCall(JIT_HELPER, "checkCast", VALUE, VALUE, J_STRING, CTX);
+
+	private static final Access INSTANCEOF = staticCall(JIT_HELPER, "instanceofResult", J_BOOLEAN, VALUE, J_OBJECT, CTX);
+	private static final Access INSTANCEOF_SLOW = staticCall(JIT_HELPER, "instanceofResult", J_BOOLEAN, VALUE, J_STRING, CTX);
+
 	private static final Access MONITOR_LOCK = staticCall(JIT_HELPER, "monitorEnter", J_VOID, VALUE, CTX);
 	private static final Access MONITOR_UNLOCK = staticCall(JIT_HELPER, "monitorExit", J_VOID, VALUE, CTX);
 	private static final Access NEW_MULTI_ARRAY = staticCall(JIT_HELPER, "multiNewArray", VALUE, J_STRING, J_INT, CTX);
@@ -584,9 +593,7 @@ public final class JitCompiler {
 					invokeInterface((MethodInsnNode) insn);
 					break;
 				case NEW:
-					jit.visitLdcInsn(((TypeInsnNode) insn).desc);
-					loadCtx();
-					NEW_INSTANCE.emit(jit);
+					newInstance(((TypeInsnNode) insn).desc);
 					break;
 				case NEWARRAY:
 					jit.visitLdcInsn(((IntInsnNode) insn).operand);
@@ -608,14 +615,10 @@ public final class JitCompiler {
 					jit.visitInsn(RETURN);
 					break;
 				case CHECKCAST:
-					jit.visitLdcInsn(((TypeInsnNode) insn).desc);
-					loadCtx();
-					CHECK_CAST.emit(jit);
+					checkCast(((TypeInsnNode) insn).desc);
 					break;
-				case INSTANCEOF:
-					jit.visitLdcInsn(((TypeInsnNode) insn).desc);
-					loadCtx();
-					INSTANCEOF_RES.emit(jit);
+				case Opcodes.INSTANCEOF:
+					instanceofCheck(((TypeInsnNode) insn).desc);
 					break;
 				case MONITORENTER:
 					loadCtx();
@@ -1093,6 +1096,61 @@ public final class JitCompiler {
 		loadCtx();
 		INVOKE_INTERFACE.emit(jit);
 		toJava(Type.getReturnType(node.desc));
+	}
+
+	private void newInstance(String type) {
+		val jc = tryLoadClass(type);
+		val jit = this.jit;
+		if (jc instanceof InstanceJavaClass) {
+			loadCompilerConstant(jc);
+			loadCtx();
+			NEW_INSTANCE.emit(jit);
+		} else {
+			// Slow path.
+			jit.visitLdcInsn(type);
+			loadCtx();
+			NEW_INSTANCE_SLOW.emit(jit);
+		}
+	}
+
+	private void checkCast(String type) {
+		val jc = tryLoadClass(type);
+		val jit = this.jit;
+		if (jc instanceof JavaClass) {
+			loadCompilerConstant(jc);
+			loadCtx();
+			CHECK_CAST.emit(jit);
+		} else {
+			// Slow path.
+			jit.visitLdcInsn(type);
+			loadCtx();
+			CHECK_CAST_SLOW.emit(jit);
+		}
+	}
+
+	private void instanceofCheck(String type) {
+		val jc = tryLoadClass(type);
+		val jit = this.jit;
+		if (jc instanceof JavaClass) {
+			loadCompilerConstant(jc);
+			loadCtx();
+			INSTANCEOF.emit(jit);
+		} else {
+			// Slow path.
+			jit.visitLdcInsn(type);
+			loadCtx();
+			INSTANCEOF_SLOW.emit(jit);
+		}
+	}
+
+	private Object tryLoadClass(String type) {
+		val owner = target.getOwner();
+		val helper = owner.getVM().getHelper();
+		try {
+			return helper.findClass(owner.getClassLoader(), type, false);
+		} catch (VMException ex) {
+			return type;
+		}
 	}
 
 	private void loadArgs(boolean vrt, Type[] args) {

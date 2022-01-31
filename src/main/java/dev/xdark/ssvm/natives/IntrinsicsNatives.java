@@ -3,12 +3,11 @@ package dev.xdark.ssvm.natives;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.*;
 import lombok.experimental.UtilityClass;
 import lombok.val;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * VM intrinsics.
@@ -163,6 +162,14 @@ public class IntrinsicsNatives {
 				int ch = locals.load(1).asInt();
 				int fromIndex = locals.load(2).asInt();
 				ctx.setResult(IntValue.of(indexOf(chars, ch, fromIndex)));
+				return Result.ABORT;
+			});
+			vmi.setInvoker(jc, "indexOf", "(I)I", ctx -> {
+				val locals = ctx.getLocals();
+				val _this = locals.<InstanceValue>load(0);
+				val chars = (ArrayValue) memoryManager.readValue(_this, valueOffset);
+				int ch = locals.load(1).asInt();
+				ctx.setResult(IntValue.of(indexOf(chars, ch, 0)));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(jc, "equals", "(Ljava/lang/Object;)Z", ctx -> {
@@ -586,6 +593,25 @@ public class IntrinsicsNatives {
 			}
 			return Result.ABORT;
 		});
+		vmi.setInvoker(jc, "hashCode", "([Ljava/lang/Object;)I", ctx -> {
+			val arr = ctx.getLocals().<ObjectValue>load(0);
+			if (arr.isNull()) {
+				ctx.setResult(IntValue.ZERO);
+			} else {
+				val array = (ArrayValue) arr;
+				val helper = ctx.getHelper();
+				int result = 1;
+				for (int i = 0, j = array.getLength(); i < j; i++) {
+					Value value = array.getValue(i);
+					result *= 31;
+					if (!value.isNull()) {
+						result += helper.invokeVirtual("hashCode", "()I", new Value[0], new Value[]{value}).getResult().asInt();
+					}
+				}
+				ctx.setResult(IntValue.of(result));
+			}
+			return Result.ABORT;
+		});
 		vmi.setInvoker(jc, "fill", "([JJ)V", ctx -> {
 			val locals = ctx.getLocals();
 			val helper = vm.getHelper();
@@ -670,218 +696,90 @@ public class IntrinsicsNatives {
 			val locals = ctx.getLocals();
 			val $a = locals.load(0);
 			val $a2 = locals.load(1);
-			done:
-			if ($a == $a2) {
-				ctx.setResult(IntValue.ONE);
-			} else if ($a.isNull() || $a2.isNull()) {
-				ctx.setResult(IntValue.ZERO);
-			} else {
-				val a = (ArrayValue) $a;
-				val a2 = (ArrayValue) $a2;
-				int j = a.getLength();
-				if (j != a2.getLength()) {
-					ctx.setResult(IntValue.ZERO);
-				} else {
-					while (j-- != 0) {
-						if (a.getLong(j) != a2.getLong(j)) {
-							ctx.setResult(IntValue.ZERO);
-							break done;
-						}
-					}
-					ctx.setResult(IntValue.ONE);
-				}
-			}
+			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "equals", "([D[D)Z", ctx -> {
 			val locals = ctx.getLocals();
 			val $a = locals.load(0);
 			val $a2 = locals.load(1);
-			done:
-			if ($a == $a2) {
-				ctx.setResult(IntValue.ONE);
-			} else if ($a.isNull() || $a2.isNull()) {
-				ctx.setResult(IntValue.ZERO);
-			} else {
-				val a = (ArrayValue) $a;
-				val a2 = (ArrayValue) $a2;
-				int j = a.getLength();
-				if (j != a2.getLength()) {
-					ctx.setResult(IntValue.ZERO);
-				} else {
-					while (j-- != 0) {
-						if (a.getDouble(j) != a2.getDouble(j)) {
-							ctx.setResult(IntValue.ZERO);
-							break done;
-						}
-					}
-					ctx.setResult(IntValue.ONE);
-				}
-			}
+			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "equals", "([I[I)Z", ctx -> {
 			val locals = ctx.getLocals();
 			val $a = locals.load(0);
 			val $a2 = locals.load(1);
-			done:
-			if ($a == $a2) {
-				ctx.setResult(IntValue.ONE);
-			} else if ($a.isNull() || $a2.isNull()) {
-				ctx.setResult(IntValue.ZERO);
-			} else {
-				val a = (ArrayValue) $a;
-				val a2 = (ArrayValue) $a2;
-				int j = a.getLength();
-				if (j != a2.getLength()) {
-					ctx.setResult(IntValue.ZERO);
-				} else {
-					while (j-- != 0) {
-						if (a.getInt(j) != a2.getInt(j)) {
-							ctx.setResult(IntValue.ZERO);
-							break done;
-						}
-					}
-					ctx.setResult(IntValue.ONE);
-				}
-			}
+			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "equals", "([F[F)Z", ctx -> {
 			val locals = ctx.getLocals();
 			val $a = locals.load(0);
 			val $a2 = locals.load(1);
-			done:
-			if ($a == $a2) {
-				ctx.setResult(IntValue.ONE);
-			} else if ($a.isNull() || $a2.isNull()) {
-				ctx.setResult(IntValue.ZERO);
-			} else {
-				val a = (ArrayValue) $a;
-				val a2 = (ArrayValue) $a2;
-				int j = a.getLength();
-				if (j != a2.getLength()) {
-					ctx.setResult(IntValue.ZERO);
-				} else {
-					while (j-- != 0) {
-						if (a.getFloat(j) != a2.getFloat(j)) {
-							ctx.setResult(IntValue.ZERO);
-							break done;
-						}
-					}
-					ctx.setResult(IntValue.ONE);
-				}
-			}
+			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "equals", "([C[C)Z", ctx -> {
 			val locals = ctx.getLocals();
 			val $a = locals.load(0);
 			val $a2 = locals.load(1);
-			done:
-			if ($a == $a2) {
-				ctx.setResult(IntValue.ONE);
-			} else if ($a.isNull() || $a2.isNull()) {
-				ctx.setResult(IntValue.ZERO);
-			} else {
-				val a = (ArrayValue) $a;
-				val a2 = (ArrayValue) $a2;
-				int j = a.getLength();
-				if (j != a2.getLength()) {
-					ctx.setResult(IntValue.ZERO);
-				} else {
-					while (j-- != 0) {
-						if (a.getChar(j) != a2.getChar(j)) {
-							ctx.setResult(IntValue.ZERO);
-							break done;
-						}
-					}
-					ctx.setResult(IntValue.ONE);
-				}
-			}
+			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "equals", "([S[S)Z", ctx -> {
 			val locals = ctx.getLocals();
 			val $a = locals.load(0);
 			val $a2 = locals.load(1);
-			done:
-			if ($a == $a2) {
-				ctx.setResult(IntValue.ONE);
-			} else if ($a.isNull() || $a2.isNull()) {
-				ctx.setResult(IntValue.ZERO);
-			} else {
-				val a = (ArrayValue) $a;
-				val a2 = (ArrayValue) $a2;
-				int j = a.getLength();
-				if (j != a2.getLength()) {
-					ctx.setResult(IntValue.ZERO);
-				} else {
-					while (j-- != 0) {
-						if (a.getShort(j) != a2.getShort(j)) {
-							ctx.setResult(IntValue.ZERO);
-							break done;
-						}
-					}
-					ctx.setResult(IntValue.ONE);
-				}
-			}
+			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "equals", "([B[B)Z", ctx -> {
 			val locals = ctx.getLocals();
 			val $a = locals.load(0);
 			val $a2 = locals.load(1);
-			done:
-			if ($a == $a2) {
-				ctx.setResult(IntValue.ONE);
-			} else if ($a.isNull() || $a2.isNull()) {
-				ctx.setResult(IntValue.ZERO);
-			} else {
-				val a = (ArrayValue) $a;
-				val a2 = (ArrayValue) $a2;
-				int j = a.getLength();
-				if (j != a2.getLength()) {
-					ctx.setResult(IntValue.ZERO);
-				} else {
-					while (j-- != 0) {
-						if (a.getByte(j) != a2.getByte(j)) {
-							ctx.setResult(IntValue.ZERO);
-							break done;
-						}
-					}
-					ctx.setResult(IntValue.ONE);
-				}
-			}
+			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "equals", "([Z[Z)Z", ctx -> {
 			val locals = ctx.getLocals();
 			val $a = locals.load(0);
 			val $a2 = locals.load(1);
-			done:
-			if ($a == $a2) {
-				ctx.setResult(IntValue.ONE);
-			} else if ($a.isNull() || $a2.isNull()) {
-				ctx.setResult(IntValue.ZERO);
-			} else {
-				val a = (ArrayValue) $a;
-				val a2 = (ArrayValue) $a2;
-				int j = a.getLength();
-				if (j != a2.getLength()) {
-					ctx.setResult(IntValue.ZERO);
-				} else {
-					while (j-- != 0) {
-						if (a.getBoolean(j) != a2.getBoolean(j)) {
-							ctx.setResult(IntValue.ZERO);
-							break done;
-						}
-					}
-					ctx.setResult(IntValue.ONE);
-				}
-			}
+			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
+	}
+
+	private IntValue primitiveArraysEqual(MemoryManager memoryManager, Value $a, Value $b) {
+		if ($a == $b) {
+			return IntValue.ONE;
+		} else if ($a.isNull() || $b.isNull()) {
+			return IntValue.ZERO;
+		}
+		val a = (ArrayValue) $a;
+		val b = (ArrayValue) $b;
+		val v1 = a.getMemory().getData();
+		val v2 = b.getMemory().getData();
+		if (v1.capacity() != v2.capacity()) return IntValue.ZERO;
+		int offset = memoryManager.arrayBaseOffset(a);
+		int total = v1.capacity();
+		while (total != offset) {
+			int diff = total - offset;
+			if (diff >= 8) {
+				if (v1.getLong(offset) != v2.getLong(offset)) return IntValue.ZERO;
+				offset += 8;
+			} else if (diff >= 4) {
+				if (v1.getInt(offset) != v2.getInt(offset)) return IntValue.ZERO;
+				offset += 4;
+			} else if (diff >= 2) {
+				if (v1.getShort(offset) != v2.getShort(offset)) return IntValue.ZERO;
+				offset += 2;
+			} else {
+				if (v1.get(offset) != v2.get(offset)) return IntValue.ZERO;
+				offset++;
+			}
+		}
+		return IntValue.ONE;
 	}
 
 	private boolean nativeFillAvailable(ArrayValue value, int from, int to) {

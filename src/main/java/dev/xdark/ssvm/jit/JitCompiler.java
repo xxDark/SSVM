@@ -185,8 +185,7 @@ public final class JitCompiler {
 	private static final int CTX_SLOT = 1;
 	private static final int LOCALS_SLOT = 2;
 	private static final int HELPER_SLOT = 3;
-	private static final int EX_SLOT = 4;
-	private static final int SLOT_OFFSET = 5;
+	private static final int SLOT_OFFSET = 4;
 
 	private final String className;
 	private final JavaMethod target;
@@ -351,11 +350,9 @@ public final class JitCompiler {
 								if (type == null) type = "java/lang/Throwable";
 								classes[i] = tryLoadClass(type);
 							}
-							jit.visitInsn(DUP);
-							jit.visitVarInsn(ASTORE, EX_SLOT);
 							loadCompilerConstant(classes); // ex infos
 							loadCtx(); // ex infos ctx
-							EXCEPTION_CAUGHT.emit(jit); // exception
+							EXCEPTION_CAUGHT.emit(jit); // ex
 							GET_EXCEPTION_OOP.emit(jit);
 						}
 					} else if (insn instanceof LineNumberNode) {

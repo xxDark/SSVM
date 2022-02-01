@@ -6,10 +6,14 @@ import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.util.InvokeDynamicLinker;
 import dev.xdark.ssvm.value.*;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.UtilityClass;
 import lombok.val;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 
 import static org.objectweb.asm.Opcodes.*;
 
@@ -632,7 +636,9 @@ public class JitHelper {
 	public Value allocateInstance(Object type, ExecutionContext ctx) {
 		val vm = ctx.getVM();
 		// TODO checks like in UnsafeNatives
-		val instance = vm.getMemoryManager().newInstance((InstanceJavaClass) type);
+		val klass = (InstanceJavaClass) type;
+		klass.initialize();
+		val instance = vm.getMemoryManager().newInstance(klass);
 		vm.getHelper().initializeDefaultValues(instance);
 		return instance;
 	}
@@ -868,5 +874,26 @@ public class JitHelper {
 				return ex;
 		}
 		throw ex;
+	}
+
+	public Value invokeDynamic(Value[] args, Object constants, int index, ExecutionContext ctx) {
+		val arr = (Object[]) constants;
+		val operand = arr[index];
+		DynamicLinkResult result;
+		if (operand instanceof InvokeDynamicInsnNode) {
+			val insn = (InvokeDynamicInsnNode) operand;
+			val linked= InvokeDynamicLinker.linkCall(insn, ctx);
+			result = new DynamicLinkResult(linked, insn.desc);
+			arr[index] = result;
+		} else {
+			result = (DynamicLinkResult) operand;
+		}
+		return InvokeDynamicLinker.dynamicCall(args, result.desc, result.handle, ctx);
+	}
+
+	@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+	private static final class DynamicLinkResult {
+		final InstanceValue handle;
+		final String desc;
 	}
 }

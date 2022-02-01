@@ -64,7 +64,7 @@ public class ZipFileNatives {
 				if (zip == null) {
 					vm.getHelper().throwException(symbols.java_lang_IllegalStateException, "zip closed");
 				}
-				ctx.setResult(zip.startsWithLOC() ? IntValue.ONE :  IntValue.ZERO);
+				ctx.setResult(zip.startsWithLOC() ? IntValue.ONE : IntValue.ZERO);
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntry", "(J[BZ)J", ctx -> {
@@ -91,7 +91,7 @@ public class ZipFileNatives {
 			vmi.setInvoker(zf, "getEntryBytes", "(JI)[B", ctx -> {
 				val locals = ctx.getLocals();
 				val helper = vm.getHelper();
-				val value = locals.<JavaValue<ZipEntryHolder>>load(0).getValue().handle;
+				val value = ((JavaValue<ZipEntryHolder>) vm.getMemoryManager().getValue(locals.load(0).asLong())).getValue().handle;
 				int type = locals.load(2).asInt();
 				switch (type) {
 					case 0:
@@ -112,25 +112,25 @@ public class ZipFileNatives {
 			});
 			vmi.setInvoker(zf, "getEntryTime", "(J)J", ctx -> {
 				val locals = ctx.getLocals();
-				val value = locals.<JavaValue<ZipEntryHolder>>load(0).getValue().handle;
+				val value = ((JavaValue<ZipEntryHolder>) vm.getMemoryManager().getValue(locals.load(0).asLong())).getValue().handle;
 				ctx.setResult(LongValue.of(value.getTime()));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntryCrc", "(J)J", ctx -> {
 				val locals = ctx.getLocals();
-				val value = locals.<JavaValue<ZipEntryHolder>>load(0).getValue().handle;
+				val value = ((JavaValue<ZipEntryHolder>) vm.getMemoryManager().getValue(locals.load(0).asLong())).getValue().handle;
 				ctx.setResult(LongValue.of(value.getCrc()));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntrySize", "(J)J", ctx -> {
 				val locals = ctx.getLocals();
-				val value = locals.<JavaValue<ZipEntryHolder>>load(0).getValue().handle;
+				val value = ((JavaValue<ZipEntryHolder>) vm.getMemoryManager().getValue(locals.load(0).asLong())).getValue().handle;
 				ctx.setResult(LongValue.of(value.getSize()));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntryCSize", "(J)J", ctx -> {
 				val locals = ctx.getLocals();
-				val value = locals.<JavaValue<ZipEntryHolder>>load(0).getValue().handle;
+				val value = ((JavaValue<ZipEntryHolder>) vm.getMemoryManager().getValue(locals.load(0).asLong())).getValue().handle;
 				ctx.setResult(LongValue.of(value.getSize())); // TODO change?
 				return Result.ABORT;
 			});

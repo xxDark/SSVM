@@ -182,6 +182,8 @@ public final class JitCompiler {
 	private static final Access EXCEPTION_CAUGHT = staticCall(JIT_HELPER, "exceptionCaught", VM_EXCEPTION, VM_EXCEPTION, J_OBJECT, CTX);
 	private static final Access GET_EXCEPTION_OOP = virtualCall(VM_EXCEPTION, "getOop", INSTANCE);
 
+	private static final Access DYNAMIC_CALL = staticCall(JIT_HELPER, "invokeDynamic", VALUE, VALUES, J_OBJECT, J_INT, CTX);
+
 	private static final int CTX_SLOT = 1;
 	private static final int LOCALS_SLOT = 2;
 	private static final int HELPER_SLOT = 3;
@@ -205,7 +207,6 @@ public final class JitCompiler {
 		if (list.size() == 0) return false;
 		for (AbstractInsnNode insn : list) {
 			insn = unmask(insn);
-			if (insn instanceof InvokeDynamicInsnNode) return false;
 			int opc = insn.getOpcode();
 			if (opc == MONITORENTER || opc == MONITOREXIT) return false;
 		}
@@ -665,7 +666,8 @@ public final class JitCompiler {
 					jit.visitJumpInsn(IFEQ, labels.get(((JumpInsnNode) insn).label));
 					break;
 				case INVOKEDYNAMIC:
-					throw new IllegalStateException("JIT does not support InvokeDynamic");
+					invokeDynamic((InvokeDynamicInsnNode) insn);
+					break;
 			}
 		}
 	}
@@ -822,17 +824,27 @@ public final class JitCompiler {
 		jit.visitVarInsn(opcode, index + SLOT_OFFSET);
 	}
 
-	private void loadCompilerConstant(Object value) {
+	private void loadConstants() {
+		jit.visitFieldInsn(GETSTATIC, className, "constants", "[Ljava/lang/Object;");
+	}
+
+	private Integer makeConstant(Object value) {
 		val constants = this.constants;
 		Integer constant = constants.get(value);
-		val jit = this.jit;
 		if (constant == null) {
 			constant = constants.size();
 			constants.put(value, constant);
 		}
-		jit.visitFieldInsn(GETSTATIC, className, "constants", "[Ljava/lang/Object;");
+		return constant;
+	}
+
+	private int loadCompilerConstant(Object value) {
+		val constant = makeConstant(value);
+		loadConstants();
+		val jit = this.jit;
 		jit.visitLdcInsn(constant);
 		jit.visitInsn(AALOAD);
+		return constant;
 	}
 
 	private void getStatic(FieldInsnNode node) {
@@ -1128,6 +1140,17 @@ public final class JitCompiler {
 		toJava(Type.getReturnType(node.desc));
 	}
 
+	private void invokeDynamic(InvokeDynamicInsnNode node) {
+		val jit = this.jit;
+		val types = Type.getArgumentTypes(node.desc);
+		loadArgs(false, types.length + 1, types); // args
+		loadConstants(); // args constants
+		emitInt(makeConstant(node), jit); // args constants index
+		loadCtx(); // args constants index ctx
+		DYNAMIC_CALL.emit(jit);
+		toJava(Type.getReturnType(node.desc));
+	}
+
 	private void newInstance(String type) {
 		val jc = tryLoadClass(type);
 		val jit = this.jit;
@@ -1208,18 +1231,21 @@ public final class JitCompiler {
 		}
 	}
 
-	private void loadArgs(boolean vrt, Type[] args) {
+	private void loadArgs(boolean vrt, int arrayLength, Type[] args) {
+		int offset = Math.abs(args.length - arrayLength);
 		int idx = vrt ? 1 : 0;
-		int count = idx;
-		count += args.length;
 		val jit = this.jit;
-		jit.visitLdcInsn(count);
+		jit.visitLdcInsn(arrayLength + idx);
 		jit.visitTypeInsn(ANEWARRAY, VALUE.internalName);
 		int i = args.length;
 		while (i-- != 0)
-			loadArgTo(i + idx, args[i]);
+			loadArgTo(i + idx + offset, args[i]);
 		if (vrt)
-			loadArgTo(0, VALUE.type);
+			loadArgTo(offset, VALUE.type);
+	}
+
+	private void loadArgs(boolean vrt, Type[] args) {
+		loadArgs(vrt, args.length, args);
 	}
 
 	private void loadArgs(boolean vrt, String desc) {

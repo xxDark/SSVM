@@ -446,8 +446,6 @@ public final class JitCompiler {
 				case FCMPG:
 				case DCMPL:
 				case DCMPG:
-					jit.visitInsn(opcode);
-					break;
 				case IDIV:
 				case LDIV:
 					jit.visitInsn(opcode);

@@ -134,12 +134,10 @@ public interface MemoryManager {
 	 * 		Array class.
 	 * @param length
 	 * 		Array length.
-	 * @param componentSize
-	 * 		Size of each component.
 	 *
 	 * @return allocated array.
 	 */
-	ArrayValue newArray(ArrayJavaClass javaClass, int length, long componentSize);
+	ArrayValue newArray(ArrayJavaClass javaClass, int length);
 
 	/**
 	 * Reads long from an object.

@@ -129,8 +129,8 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public ArrayValue newArray(ArrayJavaClass javaClass, int length, long componentSize) {
-		val memory = allocateArrayMemory(length, componentSize);
+	public ArrayValue newArray(ArrayJavaClass javaClass, int length) {
+		val memory = allocateArrayMemory(length, arrayIndexScale(javaClass.getComponentType()));
 		setClass(memory, javaClass);
 		memory.getData().putInt((int) ARRAY_LENGTH, length);
 		val value = new ArrayValue(memory);
@@ -279,7 +279,7 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public int pageSize() {
-		return UnsafeUtil.getPageSize();
+		return UnsafeUtil.get().pageSize();
 	}
 
 	@Override

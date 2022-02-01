@@ -476,8 +476,11 @@ public class UnsafeNatives {
 			val locals = ctx.getLocals();
 			val helper = vm.getHelper();
 			val klass = helper.<JavaValue<JavaClass>>checkNotNull(locals.load(1)).getValue();
+			if (klass == vm.getSymbols().java_lang_Class) {
+				helper.throwException(vm.getSymbols().java_lang_IllegalAccessException, klass.getName());
+			}
 			if (!canAllocateInstance(klass)) {
-				helper.throwException(vm.getSymbols().java_lang_InstantiationException, "Cannot instantiate " + klass.getName());
+				helper.throwException(vm.getSymbols().java_lang_InstantiationException, klass.getName());
 			}
 			klass.initialize();
 			val instance = vm.getMemoryManager().newInstance((InstanceJavaClass) klass);
@@ -537,7 +540,7 @@ public class UnsafeNatives {
 	}
 
 	private static boolean canAllocateInstance(JavaClass jc) {
-		if (!(jc instanceof InstanceJavaClass) || jc == ((InstanceJavaClass) jc).getVM().getSymbols().java_lang_Class)
+		if (!(jc instanceof InstanceJavaClass))
 			return false;
 		int acc = jc.getModifiers();
 		return (acc & Opcodes.ACC_ABSTRACT) == 0;

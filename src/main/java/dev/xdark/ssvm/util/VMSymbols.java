@@ -94,6 +94,7 @@ public final class VMSymbols {
 	public final InstanceJavaClass java_lang_InstantiationException;
 	public final InstanceJavaClass reflect_MethodAccessorImpl;
 	public final InstanceJavaClass java_util_zip_ZipException;
+	public final InstanceJavaClass java_lang_IllegalAccessException;
 
 	/**
 	 * @param vm
@@ -196,6 +197,7 @@ public final class VMSymbols {
 		}
 		this.reflect_MethodAccessorImpl = reflect_MethodAccessorImpl;
 		java_util_zip_ZipException = (InstanceJavaClass) vm.findBootstrapClass("java/util/zip/ZipException");
+		java_lang_IllegalAccessException = (InstanceJavaClass) vm.findBootstrapClass("java/lang/IllegalAccessException");
 	}
 
 	private static InstanceJavaClass resolvedMemberName(VirtualMachine vm) {

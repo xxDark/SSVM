@@ -296,40 +296,45 @@ public class JitHelper {
 		return memoryManager.readValue(((InstanceJavaClass) owner).getOop(), offset);
 	}
 
-	public void putStaticA(Value value, String owner, String name, String desc, ExecutionContext ctx) {
+	public void putStaticA(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
 		val vm = ctx.getVM();
 		val helper = vm.getHelper();
-		val klass = (InstanceJavaClass) helper.findClass(ctx.getOwner().getClassLoader(), owner, true);
+		InstanceJavaClass klass;
+		if (owner instanceof InstanceJavaClass) {
+			klass = (InstanceJavaClass) owner;
+		} else {
+			klass = (InstanceJavaClass) helper.findClass(ctx.getOwner().getClassLoader(), (String) owner, true);
+		}
 		if (!klass.setFieldValue(name, desc, value)) {
 			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, name);
 		}
 	}
 
-	public void putStaticJ(long value, String owner, String name, String desc, ExecutionContext ctx) {
+	public void putStaticJ(long value, Object owner, String name, String desc, ExecutionContext ctx) {
 		putStaticA(LongValue.of(value), owner, name, desc, ctx);
 	}
 
-	public void putStaticD(double value, String owner, String name, String desc, ExecutionContext ctx) {
+	public void putStaticD(double value, Object owner, String name, String desc, ExecutionContext ctx) {
 		putStaticA(new DoubleValue(value), owner, name, desc, ctx);
 	}
 
-	public void putStaticI(int value, String owner, String name, String desc, ExecutionContext ctx) {
+	public void putStaticI(int value, Object owner, String name, String desc, ExecutionContext ctx) {
 		putStaticA(IntValue.of(value), owner, name, desc, ctx);
 	}
 
-	public void putStaticF(float value, String owner, String name, String desc, ExecutionContext ctx) {
+	public void putStaticF(float value, Object owner, String name, String desc, ExecutionContext ctx) {
 		putStaticA(new FloatValue(value), owner, name, desc, ctx);
 	}
 
-	public void putStaticF(char value, String owner, String name, String desc, ExecutionContext ctx) {
+	public void putStaticF(char value, Object owner, String name, String desc, ExecutionContext ctx) {
 		putStaticA(IntValue.of(value), owner, name, desc, ctx);
 	}
 
-	public void putStaticS(short value, String owner, String name, String desc, ExecutionContext ctx) {
+	public void putStaticS(short value, Object owner, String name, String desc, ExecutionContext ctx) {
 		putStaticA(IntValue.of(value), owner, name, desc, ctx);
 	}
 
-	public void putStaticB(byte value, String owner, String name, String desc, ExecutionContext ctx) {
+	public void putStaticB(byte value, Object owner, String name, String desc, ExecutionContext ctx) {
 		putStaticA(IntValue.of(value), owner, name, desc, ctx);
 	}
 
@@ -337,13 +342,17 @@ public class JitHelper {
 		putStaticA(ctx.getStack().popGeneric(), owner, name, desc, ctx);
 	}
 
-	public Value getFieldA(Value $instance, String owner, String name, String desc, ExecutionContext ctx) {
+	public Value getFieldA(Value $instance, Object owner, String name, String desc, ExecutionContext ctx) {
 		val vm = ctx.getVM();
 		val helper = vm.getHelper();
-		val klass = helper.findClass(ctx.getOwner().getClassLoader(), owner, true);
-		val stack = ctx.getStack();
+		InstanceJavaClass klass;
+		if (owner instanceof InstanceJavaClass) {
+			klass = (InstanceJavaClass) owner;
+		} else {
+			klass = (InstanceJavaClass) helper.findClass(ctx.getOwner().getClassLoader(), (String) owner, true);
+		}
 		val instance = helper.<InstanceValue>checkNotNull($instance);
-		long offset = helper.getFieldOffset((InstanceJavaClass) klass, instance.getJavaClass(), name, desc);
+		long offset = helper.getFieldOffset(klass, instance.getJavaClass(), name, desc);
 		if (offset == -1L) {
 			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, name);
 		}
@@ -381,31 +390,31 @@ public class JitHelper {
 		return value;
 	}
 
-	public long getFieldJ(Value value, String owner, String name, String desc, ExecutionContext ctx) {
+	public long getFieldJ(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
 		return getFieldA(value, owner, name, desc, ctx).asLong();
 	}
 
-	public double getFieldD(Value value, String owner, String name, String desc, ExecutionContext ctx) {
+	public double getFieldD(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
 		return getFieldA(value, owner, name, desc, ctx).asDouble();
 	}
 
-	public int getFieldI(Value value, String owner, String name, String desc, ExecutionContext ctx) {
+	public int getFieldI(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
 		return getFieldA(value, owner, name, desc, ctx).asInt();
 	}
 
-	public float getFieldF(Value value, String owner, String name, String desc, ExecutionContext ctx) {
+	public float getFieldF(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
 		return getFieldA(value, owner, name, desc, ctx).asFloat();
 	}
 
-	public char getFieldC(Value value, String owner, String name, String desc, ExecutionContext ctx) {
+	public char getFieldC(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
 		return getFieldA(value, owner, name, desc, ctx).asChar();
 	}
 
-	public short getFieldS(Value value, String owner, String name, String desc, ExecutionContext ctx) {
+	public short getFieldS(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
 		return getFieldA(value, owner, name, desc, ctx).asShort();
 	}
 
-	public byte getFieldB(Value value, String owner, String name, String desc, ExecutionContext ctx) {
+	public byte getFieldB(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
 		return getFieldA(value, owner, name, desc, ctx).asByte();
 	}
 
@@ -413,12 +422,17 @@ public class JitHelper {
 		return getFieldA(ctx.getStack().pop(), owner, name, desc, ctx);
 	}
 
-	public void putFieldA(Value $instance, Value value, String owner, String name, String desc, ExecutionContext ctx) {
+	public void putFieldA(Value $instance, Value value, Object owner, String name, String desc, ExecutionContext ctx) {
 		val vm = ctx.getVM();
 		val helper = vm.getHelper();
-		val klass = helper.findClass(ctx.getOwner().getClassLoader(), owner, true);
+		InstanceJavaClass klass;
+		if (owner instanceof InstanceJavaClass) {
+			klass = (InstanceJavaClass) owner;
+		} else {
+			klass = (InstanceJavaClass) helper.findClass(ctx.getOwner().getClassLoader(), (String) owner, true);
+		}
 		val instance = helper.<InstanceValue>checkNotNull($instance);
-		long offset = helper.getFieldOffset((InstanceJavaClass) klass, instance.getJavaClass(), name, desc);
+		long offset = helper.getFieldOffset(klass, instance.getJavaClass(), name, desc);
 		if (offset == -1L) {
 			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, name);
 		}
@@ -454,31 +468,31 @@ public class JitHelper {
 		}
 	}
 
-	public void putFieldJ(Value instance, long value, String owner, String name, String desc, ExecutionContext ctx) {
+	public void putFieldJ(Value instance, long value, Object owner, String name, String desc, ExecutionContext ctx) {
 		putFieldA(instance, LongValue.of(value), owner, name, desc, ctx);
 	}
 
-	public void putFieldD(Value instance, double value, String owner, String name, String desc, ExecutionContext ctx) {
+	public void putFieldD(Value instance, double value, Object owner, String name, String desc, ExecutionContext ctx) {
 		putFieldA(instance, new DoubleValue(value), owner, name, desc, ctx);
 	}
 
-	public void putFieldI(Value instance, int value, String owner, String name, String desc, ExecutionContext ctx) {
+	public void putFieldI(Value instance, int value, Object owner, String name, String desc, ExecutionContext ctx) {
 		putFieldA(instance, IntValue.of(value), owner, name, desc, ctx);
 	}
 
-	public void putFieldF(Value instance, float value, String owner, String name, String desc, ExecutionContext ctx) {
+	public void putFieldF(Value instance, float value, Object owner, String name, String desc, ExecutionContext ctx) {
 		putFieldA(instance, new FloatValue(value), owner, name, desc, ctx);
 	}
 
-	public void putFieldC(Value instance, char value, String owner, String name, String desc, ExecutionContext ctx) {
+	public void putFieldC(Value instance, char value, Object owner, String name, String desc, ExecutionContext ctx) {
 		putFieldA(instance, IntValue.of(value), owner, name, desc, ctx);
 	}
 
-	public void putFieldS(Value instance, short value, String owner, String name, String desc, ExecutionContext ctx) {
+	public void putFieldS(Value instance, short value, Object owner, String name, String desc, ExecutionContext ctx) {
 		putFieldA(instance, IntValue.of(value), owner, name, desc, ctx);
 	}
 
-	public void putFieldB(Value instance, byte value, String owner, String name, String desc, ExecutionContext ctx) {
+	public void putFieldB(Value instance, byte value, Object owner, String name, String desc, ExecutionContext ctx) {
 		putFieldA(instance, IntValue.of(value), owner, name, desc, ctx);
 	}
 
@@ -675,13 +689,17 @@ public class JitHelper {
 		return allocatePrimitiveArray(ctx.getStack().pop().asInt(), operand, ctx);
 	}
 
-	public Value allocateValueArray(int length, String desc, ExecutionContext ctx) {
+	public Value allocateValueArray(int length, Object klass, ExecutionContext ctx) {
 		val stack = ctx.getStack();
 		val vm = ctx.getVM();
 		val helper = vm.getHelper();
-		val klass = helper.findClass(ctx.getOwner().getClassLoader(), desc, false);
 		helper.checkArrayLength(length);
-		return helper.newArray(klass, length);
+		return helper.newArray((JavaClass) klass, length);
+	}
+
+	public Value allocateValueArray(int length, String desc, ExecutionContext ctx) {
+		val helper = ctx.getHelper();
+		return allocateValueArray(length, helper.findClass(ctx.getOwner().getClassLoader(), desc, false), ctx);
 	}
 
 	public Value allocateValueArray(String desc, ExecutionContext ctx) {
@@ -832,7 +850,23 @@ public class JitHelper {
 		}
 	}
 
-	public void exceptionCaught(String type, Value ex, ExecutionContext ctx) {
-
+	public VMException exceptionCaught(VMException ex, Object $classes, ExecutionContext ctx) {
+		val exceptionType = ex.getOop().getJavaClass();
+		val loader = ctx.getOwner().getClassLoader();
+		val helper = ctx.getHelper();
+		val classes = (Object[]) $classes;
+		for (int i = 0, j = classes.length; i < j; i++) {
+			val $type = classes[0];
+			InstanceJavaClass type;
+			if ($type instanceof InstanceJavaClass) {
+				type = (InstanceJavaClass) $type;
+			} else {
+				type = (InstanceJavaClass) helper.findClass(loader, (String) $type, false);
+				classes[i] = type;
+			}
+			if (type.isAssignableFrom(exceptionType))
+				return ex;
+		}
+		throw ex;
 	}
 }

@@ -68,8 +68,7 @@ public class ObjectNatives {
 			ObjectValue clone;
 			if (type instanceof ArrayJavaClass) {
 				val arr = (ArrayValue) _this;
-				clone = memoryManager.newArray((ArrayJavaClass) type, arr.getLength(),
-						memoryManager.arrayIndexScale(type.getComponentType()));
+				clone = memoryManager.newArray((ArrayJavaClass) type, arr.getLength());
 			} else {
 				clone = memoryManager.newInstance((InstanceJavaClass) type);
 			}

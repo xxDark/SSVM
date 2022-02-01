@@ -5,6 +5,7 @@ import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.*;
 import lombok.experimental.UtilityClass;
 import lombok.val;
@@ -748,6 +749,13 @@ public class IntrinsicsNatives {
 			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
+		vmi.setInvoker(jc, "equals", "([Ljava/lang/Object;Ljava/lang/Object;)Z", ctx -> {
+			val locals = ctx.getLocals();
+			val $a = locals.load(0);
+			val $a2 = locals.load(1);
+			ctx.setResult(instanceArraysEqual(vm.getHelper(), $a, $a2));
+			return Result.ABORT;
+		});
 	}
 
 	private IntValue primitiveArraysEqual(MemoryManager memoryManager, Value $a, Value $b) {
@@ -777,6 +785,31 @@ public class IntrinsicsNatives {
 			} else {
 				if (v1.get(offset) != v2.get(offset)) return IntValue.ZERO;
 				offset++;
+			}
+		}
+		return IntValue.ONE;
+	}
+
+	private IntValue instanceArraysEqual(VMHelper helper, Value $a, Value $b) {
+		if ($a == $b) {
+			return IntValue.ONE;
+		} else if ($a.isNull() || $b.isNull()) {
+			return IntValue.ZERO;
+		}
+		val a = (ArrayValue) $a;
+		val b = (ArrayValue) $b;
+		int length = a.getLength();
+		if (length != b.getLength()) return IntValue.ZERO;
+		while (length-- != 0) {
+			val v1 = a.getValue(length);
+			val v2 = b.getValue(length);
+			if (v1 != v2) {
+				if (!v1.isNull()) {
+					val eq =helper.invokeVirtual("equals", "(Ljava/lang/Object;)Z", new Value[0], new Value[]{
+							v1, v2
+					}).getResult().asBoolean();
+					if (!eq) return IntValue.ZERO;
+				}
 			}
 		}
 		return IntValue.ONE;

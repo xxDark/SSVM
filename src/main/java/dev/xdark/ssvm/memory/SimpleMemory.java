@@ -20,11 +20,11 @@ public class SimpleMemory implements Memory {
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
-		if (!(o instanceof SimpleMemory)) return false;
+		if (!(o instanceof Memory)) return false;
 
-		SimpleMemory memory = (SimpleMemory) o;
+		Memory memory = (Memory) o;
 
-		return address == memory.address;
+		return address == memory.getAddress();
 	}
 
 	@Override

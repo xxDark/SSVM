@@ -1697,7 +1697,7 @@ public final class VMHelper {
 	 */
 	public ArrayValue newArray(JavaClass componentType, int length) {
 		val memoryManager = vm.getMemoryManager();
-		return memoryManager.newArray(componentType.newArrayClass(), length, memoryManager.arrayIndexScale(componentType));
+		return memoryManager.newArray(componentType.newArrayClass(), length);
 	}
 
 	/**
@@ -2042,9 +2042,9 @@ public final class VMHelper {
 		val newType = type.getComponentType();
 		val memoryManager = vm.getMemoryManager();
 		if (!newType.isArray()) {
-			return memoryManager.newArray(type, lengths[depth], memoryManager.arrayIndexScale(newType));
+			return memoryManager.newArray(type, lengths[depth]);
 		}
-		val array = memoryManager.newArray(type, lengths[depth], memoryManager.arrayIndexScale(ArrayValue.class));
+		val array = memoryManager.newArray(type, lengths[depth]);
 		if (depth == lengths.length - 1)
 			return array;
 		int length = lengths[depth];

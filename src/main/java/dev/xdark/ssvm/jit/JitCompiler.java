@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -62,6 +63,8 @@ public final class JitCompiler {
 	private static final ClassType VM_HELPER = ClassType.of(VMHelper.class);
 	private static final ClassType JIT_HELPER = ClassType.of(JitHelper.class);
 	private static final ClassType VALUES = ClassType.of(Value[].class);
+	private static final ClassType VM_EXCEPTION = ClassType.of(VMException.class);
+	private static final ClassType INSTANCE = ClassType.of(InstanceValue.class);
 
 	// ctx methods
 	private static final Access GET_LOCALS = virtualCall(CTX, "getLocals", LOCALS);
@@ -115,7 +118,10 @@ public final class JitCompiler {
 	private static final Access NEW_INSTANCE_SLOW = staticCall(JIT_HELPER, "allocateInstance", VALUE, J_STRING, CTX);
 
 	private static final Access NEW_PRIMITIVE_ARRAY = staticCall(JIT_HELPER, "allocatePrimitiveArray", VALUE, J_INT, J_INT, CTX);
-	private static final Access NEW_INSTANCE_ARRAY = staticCall(JIT_HELPER, "allocateValueArray", VALUE, J_INT, J_STRING, CTX);
+
+	private static final Access NEW_INSTANCE_ARRAY = staticCall(JIT_HELPER, "allocateValueArray", VALUE, J_INT, J_OBJECT, CTX);
+	private static final Access NEW_INSTANCE_ARRAY_SLOW = staticCall(JIT_HELPER, "allocateValueArray", VALUE, J_INT, J_STRING, CTX);
+
 	private static final Access GET_LENGTH = staticCall(JIT_HELPER, "getArrayLength", J_INT, VALUE, CTX);
 	private static final Access THROW_EXCEPTION = staticCall(JIT_HELPER, "throwException", J_VOID, VALUE, CTX);
 	private static final Access CHECK_CAST = staticCall(JIT_HELPER, "checkCast", VALUE, VALUE, J_OBJECT, CTX);
@@ -124,20 +130,18 @@ public final class JitCompiler {
 	private static final Access INSTANCEOF = staticCall(JIT_HELPER, "instanceofResult", J_BOOLEAN, VALUE, J_OBJECT, CTX);
 	private static final Access INSTANCEOF_SLOW = staticCall(JIT_HELPER, "instanceofResult", J_BOOLEAN, VALUE, J_STRING, CTX);
 
-	private static final Access MONITOR_LOCK = staticCall(JIT_HELPER, "monitorEnter", J_VOID, VALUE, CTX);
-	private static final Access MONITOR_UNLOCK = staticCall(JIT_HELPER, "monitorExit", J_VOID, VALUE, CTX);
 	private static final Access NEW_MULTI_ARRAY = staticCall(JIT_HELPER, "multiNewArray", VALUE, J_STRING, J_INT, CTX);
 	private static final Access CLASS_LDC = staticCall(JIT_HELPER, "classLdc", VALUE, J_STRING, CTX);
 	private static final Access METHOD_LDC = staticCall(JIT_HELPER, "methodLdc", VALUE, J_STRING, CTX);
 
-	private static final Access PUT_STATIC_LONG = staticCall(JIT_HELPER, "putStaticJ", J_VOID, J_LONG, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access PUT_STATIC_DOUBLE = staticCall(JIT_HELPER, "putStaticD", J_VOID, J_DOUBLE, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access PUT_STATIC_INT = staticCall(JIT_HELPER, "putStaticI", J_VOID, J_INT, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access PUT_STATIC_FLOAT = staticCall(JIT_HELPER, "putStaticF", J_VOID, J_FLOAT, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access PUT_STATIC_CHAR = staticCall(JIT_HELPER, "putStaticC", J_VOID, J_CHAR, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access PUT_STATIC_SHORT = staticCall(JIT_HELPER, "putStaticS", J_VOID, J_SHORT, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access PUT_STATIC_BYTE = staticCall(JIT_HELPER, "putStaticB", J_VOID, J_BYTE, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access PUT_STATIC_VALUE = staticCall(JIT_HELPER, "putStaticA", J_VOID, VALUE, J_STRING, J_STRING, J_STRING, CTX);
+	private static final Access PUT_STATIC_LONG = staticCall(JIT_HELPER, "putStaticJ", J_VOID, J_LONG, J_OBJECT, J_STRING, J_STRING, CTX);
+	private static final Access PUT_STATIC_DOUBLE = staticCall(JIT_HELPER, "putStaticD", J_VOID, J_DOUBLE, J_OBJECT, J_STRING, J_STRING, CTX);
+	private static final Access PUT_STATIC_INT = staticCall(JIT_HELPER, "putStaticI", J_VOID, J_INT, J_OBJECT, J_STRING, J_STRING, CTX);
+	private static final Access PUT_STATIC_FLOAT = staticCall(JIT_HELPER, "putStaticF", J_VOID, J_FLOAT, J_OBJECT, J_STRING, J_STRING, CTX);
+	private static final Access PUT_STATIC_CHAR = staticCall(JIT_HELPER, "putStaticC", J_VOID, J_CHAR, J_OBJECT, J_STRING, J_STRING, CTX);
+	private static final Access PUT_STATIC_SHORT = staticCall(JIT_HELPER, "putStaticS", J_VOID, J_SHORT, J_OBJECT, J_STRING, J_STRING, CTX);
+	private static final Access PUT_STATIC_BYTE = staticCall(JIT_HELPER, "putStaticB", J_VOID, J_BYTE, J_OBJECT, J_STRING, J_STRING, CTX);
+	private static final Access PUT_STATIC_VALUE = staticCall(JIT_HELPER, "putStaticA", J_VOID, VALUE, J_OBJECT, J_STRING, J_STRING, CTX);
 
 	private static final Access GET_STATIC_LONG = staticCall(JIT_HELPER, "getStaticJ", J_LONG, J_OBJECT, J_LONG, CTX);
 	private static final Access GET_STATIC_DOUBLE = staticCall(JIT_HELPER, "getStaticD", J_DOUBLE, J_OBJECT, J_LONG, CTX);
@@ -150,23 +154,23 @@ public final class JitCompiler {
 	private static final Access GET_STATIC_FAIL = staticCall(JIT_HELPER, "getStaticFail", J_VOID, J_OBJECT, J_OBJECT, CTX);
 	private static final Access GET_STATIC_SLOW = staticCall(JIT_HELPER, "getStatic", VALUE, J_STRING, J_STRING, J_STRING, CTX);
 
-	private static final Access GET_FIELD_LONG = staticCall(JIT_HELPER, "getFieldJ", J_LONG, VALUE, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access GET_FIELD_DOUBLE = staticCall(JIT_HELPER, "getFieldD", J_DOUBLE, VALUE, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access GET_FIELD_INT = staticCall(JIT_HELPER, "getFieldI", J_INT, VALUE, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access GET_FIELD_FLOAT = staticCall(JIT_HELPER, "getFieldF", J_FLOAT, VALUE, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access GET_FIELD_CHAR = staticCall(JIT_HELPER, "getFieldC", J_CHAR, VALUE, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access GET_FIELD_SHORT = staticCall(JIT_HELPER, "getFieldS", J_SHORT, VALUE, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access GET_FIELD_BYTE = staticCall(JIT_HELPER, "getFieldB", J_BYTE, VALUE, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access GET_FIELD_VALUE = staticCall(JIT_HELPER, "getFieldA", VALUE, VALUE, J_STRING, J_STRING, J_STRING, CTX);
+	private static final Access GET_FIELD_LONG = staticCall(JIT_HELPER, "getFieldJ", J_LONG, VALUE, J_OBJECT, J_STRING, J_STRING, CTX);
+	private static final Access GET_FIELD_DOUBLE = staticCall(JIT_HELPER, "getFieldD", J_DOUBLE, VALUE, J_OBJECT, J_STRING, J_STRING, CTX);
+	private static final Access GET_FIELD_INT = staticCall(JIT_HELPER, "getFieldI", J_INT, VALUE, J_OBJECT, J_STRING, J_STRING, CTX);
+	private static final Access GET_FIELD_FLOAT = staticCall(JIT_HELPER, "getFieldF", J_FLOAT, VALUE, J_OBJECT, J_STRING, J_STRING, CTX);
+	private static final Access GET_FIELD_CHAR = staticCall(JIT_HELPER, "getFieldC", J_CHAR, VALUE, J_OBJECT, J_STRING, J_STRING, CTX);
+	private static final Access GET_FIELD_SHORT = staticCall(JIT_HELPER, "getFieldS", J_SHORT, VALUE, J_OBJECT, J_STRING, J_STRING, CTX);
+	private static final Access GET_FIELD_BYTE = staticCall(JIT_HELPER, "getFieldB", J_BYTE, VALUE, J_OBJECT, J_STRING, J_STRING, CTX);
+	private static final Access GET_FIELD_VALUE = staticCall(JIT_HELPER, "getFieldA", VALUE, VALUE, J_OBJECT, J_STRING, J_STRING, CTX);
 
-	private static final Access PUT_FIELD_LONG = staticCall(JIT_HELPER, "putFieldJ", J_VOID, VALUE, J_LONG, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access PUT_FIELD_DOUBLE = staticCall(JIT_HELPER, "putFieldD", J_VOID, VALUE, J_DOUBLE, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access PUT_FIELD_INT = staticCall(JIT_HELPER, "putFieldI", J_VOID, VALUE, J_INT, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access PUT_FIELD_FLOAT = staticCall(JIT_HELPER, "putFieldF", J_VOID, VALUE, J_FLOAT, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access PUT_FIELD_CHAR = staticCall(JIT_HELPER, "putFieldC", J_VOID, VALUE, J_CHAR, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access PUT_FIELD_SHORT = staticCall(JIT_HELPER, "putFieldS", J_VOID, VALUE, J_SHORT, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access PUT_FIELD_BYTE = staticCall(JIT_HELPER, "putFieldB", J_VOID, VALUE, J_BYTE, J_STRING, J_STRING, J_STRING, CTX);
-	private static final Access PUT_FIELD_VALUE = staticCall(JIT_HELPER, "putFieldA", J_VOID, VALUE, VALUE, J_STRING, J_STRING, J_STRING, CTX);
+	private static final Access PUT_FIELD_LONG = staticCall(JIT_HELPER, "putFieldJ", J_VOID, VALUE, J_LONG, J_OBJECT, J_STRING, J_STRING, CTX);
+	private static final Access PUT_FIELD_DOUBLE = staticCall(JIT_HELPER, "putFieldD", J_VOID, VALUE, J_DOUBLE, J_OBJECT, J_STRING, J_STRING, CTX);
+	private static final Access PUT_FIELD_INT = staticCall(JIT_HELPER, "putFieldI", J_VOID, VALUE, J_INT, J_OBJECT, J_STRING, J_STRING, CTX);
+	private static final Access PUT_FIELD_FLOAT = staticCall(JIT_HELPER, "putFieldF", J_VOID, VALUE, J_FLOAT, J_OBJECT, J_STRING, J_STRING, CTX);
+	private static final Access PUT_FIELD_CHAR = staticCall(JIT_HELPER, "putFieldC", J_VOID, VALUE, J_CHAR, J_OBJECT, J_STRING, J_STRING, CTX);
+	private static final Access PUT_FIELD_SHORT = staticCall(JIT_HELPER, "putFieldS", J_VOID, VALUE, J_SHORT, J_OBJECT, J_STRING, J_STRING, CTX);
+	private static final Access PUT_FIELD_BYTE = staticCall(JIT_HELPER, "putFieldB", J_VOID, VALUE, J_BYTE, J_OBJECT, J_STRING, J_STRING, CTX);
+	private static final Access PUT_FIELD_VALUE = staticCall(JIT_HELPER, "putFieldA", J_VOID, VALUE, VALUE, J_OBJECT, J_STRING, J_STRING, CTX);
 
 	private static final Access INVOKE_FAIL = staticCall(JIT_HELPER, "invokeFail", VALUE, J_OBJECT, J_OBJECT, CTX);
 	private static final Access INVOKE_STATIC_INTRINSIC = staticCall(JIT_HELPER, "invokeStatic", VALUE, VALUES, J_OBJECT, J_OBJECT, CTX);
@@ -175,10 +179,14 @@ public final class JitCompiler {
 	private static final Access INVOKE_STATIC_SLOW = staticCall(JIT_HELPER, "invokeStatic", VALUE, VALUES, J_STRING, J_STRING, J_STRING, CTX);
 	private static final Access INVOKE_SPECIAL_SLOW = staticCall(JIT_HELPER, "invokeSpecial", VALUE, VALUES, J_STRING, J_STRING, J_STRING, CTX);
 
+	private static final Access EXCEPTION_CAUGHT = staticCall(JIT_HELPER, "exceptionCaught", VM_EXCEPTION, VM_EXCEPTION, J_OBJECT, CTX);
+	private static final Access GET_EXCEPTION_OOP = virtualCall(VM_EXCEPTION, "getOop", INSTANCE);
+
 	private static final int CTX_SLOT = 1;
 	private static final int LOCALS_SLOT = 2;
 	private static final int HELPER_SLOT = 3;
-	private static final int SLOT_OFFSET = 4;
+	private static final int EX_SLOT = 4;
+	private static final int SLOT_OFFSET = 5;
 
 	private final String className;
 	private final JavaMethod target;
@@ -194,14 +202,13 @@ public final class JitCompiler {
 	 */
 	public static boolean isCompilable(JavaMethod jm) {
 		val node = jm.getNode();
-		if (!node.tryCatchBlocks.isEmpty()) return false;
 		val list = node.instructions;
 		if (list.size() == 0) return false;
 		for (AbstractInsnNode insn : list) {
 			insn = unmask(insn);
 			if (insn instanceof InvokeDynamicInsnNode) return false;
 			int opc = insn.getOpcode();
-			if (opc == JSR || opc == RET) return false;
+			if (opc == MONITORENTER || opc == MONITOREXIT) return false;
 		}
 		return true;
 	}
@@ -217,10 +224,6 @@ public final class JitCompiler {
 	 * @return jit class info.
 	 */
 	public static JitClass compile(JavaMethod jm, int flags) {
-		val target = jm.getNode();
-		if (!target.tryCatchBlocks.isEmpty()) {
-			throw new IllegalStateException("JIT does not support try/catch blocks yet");
-		}
 		val writer = new ClassWriter(flags);
 		val className = "dev/xdark/ssvm/jit/JitCode" + CLASS_ID.getAndIncrement();
 		writer.visit(V1_8, ACC_PUBLIC | ACC_FINAL, className, null, "java/lang/Object", new String[]{"java/util/function/Consumer"});
@@ -269,7 +272,7 @@ public final class JitCompiler {
 		jit.visitVarInsn(ASTORE, HELPER_SLOT);
 
 		val target = this.target;
-
+		val node = target.getNode();
 		// Load method locals.
 		val args = target.getArgumentTypes();
 		int local = 0;
@@ -309,7 +312,6 @@ public final class JitCompiler {
 			}
 		}
 
-		val node = target.getNode();
 		val instructions = node.instructions;
 		val copy = StreamSupport.stream(instructions.spliterator(), false)
 				.filter(x -> x instanceof LabelNode)
@@ -317,15 +319,45 @@ public final class JitCompiler {
 		val labels = copy.entrySet()
 				.stream()
 				.collect(Collectors.toMap(Map.Entry::getKey, x -> x.getValue().getLabel()));
-
+		val tryCatchBlocks = node.tryCatchBlocks;
+		val handlers = tryCatchBlocks.stream()
+				.collect(Collectors.groupingBy(x -> labels.get(x.handler),
+						Collectors.mapping(Function.identity(), Collectors.toList())));
+		for (val block : tryCatchBlocks) {
+			jit.visitTryCatchBlock(
+					labels.get(block.start),
+					labels.get(block.end),
+					labels.get(block.handler),
+					VM_EXCEPTION.internalName
+			);
+		}
 		// Process instructions.
 		for (AbstractInsnNode insn : instructions) {
 			insn = unmask(insn);
 			int opcode = insn.getOpcode();
+
 			switch (opcode) {
 				case -1:
 					if (insn instanceof LabelNode) {
-						jit.visitLabel(labels.get((LabelNode) insn));
+						val label = labels.get(insn);
+						jit.visitLabel(label);
+						val blocks = handlers.get(label);
+						if (blocks != null) {
+							int count = blocks.size();
+							val classes = new Object[count];
+							for (int i = 0; i < count; i++) {
+								val block = blocks.get(i);
+								String type = block.type;
+								if (type == null) type = "java/lang/Throwable";
+								classes[i] = tryLoadClass(type);
+							}
+							jit.visitInsn(DUP);
+							jit.visitVarInsn(ASTORE, EX_SLOT);
+							loadCompilerConstant(classes); // ex infos
+							loadCtx(); // ex infos ctx
+							EXCEPTION_CAUGHT.emit(jit); // exception
+							GET_EXCEPTION_OOP.emit(jit);
+						}
 					} else if (insn instanceof LineNumberNode) {
 						loadCtx();
 						jit.visitLdcInsn(((LineNumberNode) insn).line);
@@ -373,8 +405,6 @@ public final class JitCompiler {
 				case LMUL:
 				case FMUL:
 				case DMUL:
-				case IDIV:
-				case LDIV:
 				case FDIV:
 				case DDIV:
 				case IREM:
@@ -416,6 +446,10 @@ public final class JitCompiler {
 				case FCMPG:
 				case DCMPL:
 				case DCMPG:
+					jit.visitInsn(opcode);
+					break;
+				case IDIV:
+				case LDIV:
 					jit.visitInsn(opcode);
 					break;
 				case BIPUSH:
@@ -526,7 +560,6 @@ public final class JitCompiler {
 					break;
 				case JSR:
 				case RET:
-					throw new IllegalStateException("TODO");
 				case TABLESWITCH:
 				case LOOKUPSWITCH:
 					insn.clone(copy).accept(jit);
@@ -601,9 +634,7 @@ public final class JitCompiler {
 					NEW_PRIMITIVE_ARRAY.emit(jit);
 					break;
 				case ANEWARRAY:
-					jit.visitLdcInsn(((TypeInsnNode) insn).desc);
-					loadCtx();
-					NEW_INSTANCE_ARRAY.emit(jit);
+					newArray(((TypeInsnNode) insn).desc);
 					break;
 				case ARRAYLENGTH:
 					loadCtx();
@@ -621,13 +652,8 @@ public final class JitCompiler {
 					instanceofCheck(((TypeInsnNode) insn).desc);
 					break;
 				case MONITORENTER:
-					loadCtx();
-					MONITOR_LOCK.emit(jit);
-					break;
 				case MONITOREXIT:
-					loadCtx();
-					MONITOR_UNLOCK.emit(jit);
-					break;
+					throw new IllegalStateException("JIT does not support MonitorEnter/MonitorExit");
 				case MULTIANEWARRAY:
 					val array = (MultiANewArrayInsnNode) insn;
 					jit.visitLdcInsn(array.desc);
@@ -710,39 +736,52 @@ public final class JitCompiler {
 		val jit = this.jit;
 		if (value instanceof String) {
 			loadCompilerConstant(target.getOwner().getVM().getStringPool().intern((String) value));
-		} else if (value instanceof Long) {
-			jit.visitLdcInsn(value);
-		} else if (value instanceof Double) {
-			jit.visitLdcInsn(value);
-		} else if (value instanceof Integer || value instanceof Short || value instanceof Byte) {
-			jit.visitLdcInsn(value);
-		} else if (value instanceof Character) {
-			jit.visitLdcInsn(value);
-		} else if (value instanceof Float) {
+		} else if (value instanceof Long
+				|| value instanceof Double
+				|| value instanceof Integer
+				|| value instanceof Short
+				|| value instanceof Byte
+				|| value instanceof Character
+				|| value instanceof Float) {
 			jit.visitLdcInsn(value);
 		} else if (value instanceof Type) {
 			val type = (Type) value;
 			if (type.getSort() == Type.METHOD) {
-				jit.visitLdcInsn(type.getDescriptor());
-				loadCtx();
-				METHOD_LDC.emit(jit);
+				val mt = tryMethodType(type);
+				if (mt instanceof Type) {
+					jit.visitLdcInsn(type.getDescriptor());
+					loadCtx();
+					METHOD_LDC.emit(jit);
+				} else {
+					loadCompilerConstant(mt);
+				}
 			} else {
-				jit.visitLdcInsn(type.getInternalName());
-				loadCtx();
-				CLASS_LDC.emit(jit);
+				val klass = tryLoadClass(type.getInternalName());
+				if (klass instanceof JavaClass) {
+					loadCompilerConstant(((JavaClass) klass).getOop());
+				} else {
+					jit.visitLdcInsn(type.getInternalName());
+					loadCtx();
+					CLASS_LDC.emit(jit);
+				}
 			}
 		} else if (value instanceof Value) {
 			loadCompilerConstant(value);
 		} else {
 			loadHelper();
-			jit.visitLdcInsn(value);
+			loadCompilerConstant(value);
 			VALUE_FROM_LDC.emit(jit);
 		}
 	}
 
 	private void pushField(FieldInsnNode field) {
 		val jit = this.jit;
-		jit.visitLdcInsn(field.owner);
+		val owner = tryLoadClass(field.owner);
+		if (owner instanceof InstanceJavaClass) {
+			loadCompilerConstant(owner);
+		} else {
+			jit.visitLdcInsn(owner);
+		}
 		jit.visitLdcInsn(field.name);
 		jit.visitLdcInsn(field.desc);
 	}
@@ -795,10 +834,6 @@ public final class JitCompiler {
 		if (constant == null) {
 			constant = constants.size();
 			constants.put(value, constant);
-			/*
-			jit.visitLdcInsn("const " + constant + " = " + (value instanceof Object[] ? Arrays.toString((Object[]) value) : value));
-			jit.visitInsn(POP);
-			 */
 		}
 		jit.visitFieldInsn(GETSTATIC, className, "constants", "[Ljava/lang/Object;");
 		jit.visitLdcInsn(constant);
@@ -1113,6 +1148,21 @@ public final class JitCompiler {
 		}
 	}
 
+	private void newArray(String type) {
+		val jc = tryLoadClass(type);
+		val jit = this.jit;
+		if (jc instanceof JavaClass) {
+			loadCompilerConstant(jc);
+			loadCtx();
+			NEW_INSTANCE_ARRAY.emit(jit);
+		} else {
+			// Slow path.
+			jit.visitLdcInsn(type);
+			loadCtx();
+			NEW_INSTANCE_ARRAY_SLOW.emit(jit);
+		}
+	}
+
 	private void checkCast(String type) {
 		val jc = tryLoadClass(type);
 		val jit = this.jit;
@@ -1148,6 +1198,16 @@ public final class JitCompiler {
 		val helper = owner.getVM().getHelper();
 		try {
 			return helper.findClass(owner.getClassLoader(), type, false);
+		} catch (VMException ex) {
+			return type;
+		}
+	}
+
+	private Object tryMethodType(Type type) {
+		val owner = target.getOwner();
+		val helper = owner.getVM().getHelper();
+		try {
+			return helper.methodType(owner.getClassLoader(), type);
 		} catch (VMException ex) {
 			return type;
 		}
@@ -1270,6 +1330,18 @@ public final class JitCompiler {
 
 	private void dropArgs(boolean vrt, String desc) {
 		dropArgs(vrt, Type.getArgumentTypes(desc));
+	}
+
+	private static void emitInt(int v, MethodVisitor visitor) {
+		if (v >= -1 && v <= 5) {
+			visitor.visitInsn(ICONST_0 + v);
+		} else if (v >= Byte.MIN_VALUE && v <= Byte.MAX_VALUE) {
+			visitor.visitIntInsn(BIPUSH, v);
+		} else if (v >= Short.MIN_VALUE && v <= Short.MAX_VALUE) {
+			visitor.visitIntInsn(SIPUSH, v);
+		} else {
+			visitor.visitLdcInsn(v);
+		}
 	}
 
 	private static AbstractInsnNode unmask(AbstractInsnNode insnNode) {

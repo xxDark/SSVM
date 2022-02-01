@@ -437,11 +437,10 @@ public class VirtualMachine {
 					for (int i = 0, j = tryCatchBlocks.size(); i < j; i++) {
 						val block = tryCatchBlocks.get(i);
 						String type = block.type;
-						if (index < AsmUtil.getIndex(block.start) || index > AsmUtil.getIndex(block.end)) continue;
 						if (type == null) type = "java/lang/Throwable";
 						val candidate = findClass(ctx.getOwner().getClassLoader(), type, false);
+						if (index < AsmUtil.getIndex(block.start) || index > AsmUtil.getIndex(block.end)) continue;
 						if (candidate.isAssignableFrom(exceptionType)) {
-							stack.clear();
 							stack.push(oop);
 							ctx.setInsnPosition(AsmUtil.getIndex(block.handler));
 							continue exec;

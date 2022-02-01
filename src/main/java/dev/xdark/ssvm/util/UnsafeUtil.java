@@ -16,12 +16,10 @@ public class UnsafeUtil {
 	private final int ADDRESS_SIZE = Unsafe.ADDRESS_SIZE >> 2;
 
 	/**
-	 * Returns page size.
-	 *
-	 * @return page size.
+	 * @return unsafe instance.
 	 */
-	public int getPageSize() {
-		return UNSAFE.pageSize();
+	public Unsafe get() {
+		return UNSAFE;
 	}
 
 	/**

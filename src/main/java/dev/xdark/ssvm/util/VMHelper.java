@@ -1369,7 +1369,7 @@ public final class VMHelper {
 					klass = primitives.voidPrimitive;
 					break;
 				default:
-					throw new IllegalStateException(name);
+					klass = vm.findClass(loader, name, initialize);
 			}
 		} else {
 			if (dimensions != 0) {

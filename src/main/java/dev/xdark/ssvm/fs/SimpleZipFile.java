@@ -44,8 +44,11 @@ public class SimpleZipFile implements ZipFile {
 	public ZipEntry getEntry(String name) {
 		Map<String, ZipEntry> names = this.names;
 		if (names == null) {
-			this.names = names = getEntries().stream()
-					.collect(Collectors.toMap(ZipEntry::getName, Function.identity()));;
+			names = new HashMap<>();
+			for (val entry : getEntries()) {
+				names.putIfAbsent(entry.getName(), entry);
+			}
+			this.names = names;
 		}
 		ZipEntry entry = names.get(name);
 		if (entry == null) entry = names.get(name + '/');

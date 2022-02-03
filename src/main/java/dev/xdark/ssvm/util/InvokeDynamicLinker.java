@@ -1,7 +1,9 @@
 package dev.xdark.ssvm.util;
 
+import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.VMException;
+import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
@@ -24,13 +26,14 @@ public class InvokeDynamicLinker {
 	 *
 	 * @param insn
 	 * 		Node to link.
-	 * @param ctx
-	 * 		Execution context.
+	 * @param caller
+	 * 		Method caller.
+	 * @param vm
+	 * 		VM instance.
 	 *
 	 * @return Linked method handle or call site.
 	 */
-	public InstanceValue linkCall(InvokeDynamicInsnNode insn, ExecutionContext ctx) {
-		val vm = ctx.getVM();
+	public InstanceValue linkCall(InvokeDynamicInsnNode insn, InstanceJavaClass caller, VirtualMachine vm) {
 		val helper = vm.getHelper();
 		val symbols = vm.getSymbols();
 		val bootstrap = insn.bsm;
@@ -39,8 +42,6 @@ public class InvokeDynamicLinker {
 			if (bootstrap.getTag() != Opcodes.H_INVOKESTATIC) {
 				helper.throwException(symbols.java_lang_IllegalStateException, "Bootstrap tag is not static");
 			}
-			val caller = ctx.getOwner();
-
 			val linker = helper.linkMethodHandleConstant(caller, bootstrap);
 
 			val $bsmArgs = insn.bsmArgs;
@@ -72,6 +73,20 @@ public class InvokeDynamicLinker {
 	}
 
 	/**
+	 * Links {@link InvokeDynamicInsnNode}.
+	 *
+	 * @param insn
+	 * 		Node to link.
+	 * @param ctx
+	 * 		Execution context.
+	 *
+	 * @return Linked method handle or call site.
+	 */
+	public InstanceValue linkCall(InvokeDynamicInsnNode insn, ExecutionContext ctx) {
+		return linkCall(insn, ctx.getOwner(), ctx.getVM());
+	}
+
+	/**
 	 * Invokes linked dynamic call.
 	 *
 	 * @param args
@@ -80,13 +95,12 @@ public class InvokeDynamicLinker {
 	 * 		Call descriptor.
 	 * @param handle
 	 * 		Call site or method handle.
-	 * @param ctx
-	 * 		Execution context.
+	 * @param vm
+	 * 		VM instance.
 	 *
 	 * @return invocation result.
 	 */
-	public Value dynamicCall(Value[] args, String desc, InstanceValue handle, ExecutionContext ctx) {
-		val vm = ctx.getVM();
+	public Value dynamicCall(Value[] args, String desc, InstanceValue handle, VirtualMachine vm) {
 		val helper = vm.getHelper();
 		if (vm.getSymbols().java_lang_invoke_CallSite.isAssignableFrom(handle.getJavaClass())) {
 			handle = helper.checkNotNull(helper.invokeVirtual("getTarget", "()Ljava/lang/invoke/MethodHandle;", new Value[0], new Value[]{handle}).getResult());
@@ -102,5 +116,23 @@ public class InvokeDynamicLinker {
 			args = copy;
 		}
 		return helper.invokeVirtual("invokeExact", desc, new Value[0], args).getResult();
+	}
+
+	/**
+	 * Invokes linked dynamic call.
+	 *
+	 * @param args
+	 * 		Call arguments.
+	 * @param desc
+	 * 		Call descriptor.
+	 * @param handle
+	 * 		Call site or method handle.
+	 * @param ctx
+	 * 		Execution context.
+	 *
+	 * @return invocation result.
+	 */
+	public Value dynamicCall(Value[] args, String desc, InstanceValue handle, ExecutionContext ctx) {
+		return dynamicCall(args, desc, handle, ctx.getVM());
 	}
 }

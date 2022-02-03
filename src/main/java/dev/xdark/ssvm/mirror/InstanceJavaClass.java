@@ -183,8 +183,8 @@ public final class InstanceJavaClass implements JavaClass {
 		initializer = Thread.currentThread();
 		val vm = this.vm;
 		val helper = vm.getHelper();
-		loadSuperClass(true);
-		loadInterfaces(true);
+		loadSuperClass();
+		loadInterfaces();
 		// Build class layout
 		// VM might've set it already, do not override.
 		if (vrtFieldLayout == null) {
@@ -839,8 +839,8 @@ public final class InstanceJavaClass implements JavaClass {
 			vm.getHelper().throwException(vm.getSymbols().java_lang_ExceptionInInitializerError);
 		}
 		try {
-			loadSuperClass(false);
-			loadInterfaces(false);
+			loadSuperClass();
+			loadInterfaces();
 			for (val ifc : interfaces) {
 				ifc.loadClassesWithoutMarkingResolved();
 			}
@@ -981,21 +981,20 @@ public final class InstanceJavaClass implements JavaClass {
 				.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0);
 	}
 
-	private void loadSuperClass(boolean initialize) {
+	private void loadSuperClass() {
 		InstanceJavaClass superClass = this.superClass;
 		if (superClass == null) {
 			val vm = this.vm;
 			val superName = node.superName;
 			if (superName != null) {
 				// Load parent class.
-				superClass = (InstanceJavaClass) vm.findClass(classLoader, superName, initialize);
+				superClass = (InstanceJavaClass) vm.findClass(classLoader, superName, false);
 				this.superClass = superClass;
 			}
 		}
-		if (initialize && superClass != null) superClass.initialize();
 	}
 
-	private void loadInterfaces(boolean initialize) {
+	private void loadInterfaces() {
 		InstanceJavaClass[] $interfaces = this.interfaces;
 		if ($interfaces == null) {
 			val _interfaces = node.interfaces;
@@ -1003,15 +1002,12 @@ public final class InstanceJavaClass implements JavaClass {
 			val vm = this.vm;
 			val classLoader = this.classLoader;
 			for (int i = 0, j = _interfaces.size(); i < j; i++) {
-				val iface = $interfaces[i] = (InstanceJavaClass) vm.findClass(classLoader, _interfaces.get(i), initialize);
+				val iface = $interfaces[i] = (InstanceJavaClass) vm.findClass(classLoader, _interfaces.get(i), false);
 				if (iface == null) {
 					vm.getHelper().throwException(vm.getSymbols().java_lang_NoClassDefFoundError, _interfaces.get(i));
 				}
 			}
 			this.interfaces = $interfaces;
-		}
-		if (initialize) {
-			for (val ifc : $interfaces) ifc.initialize();
 		}
 	}
 

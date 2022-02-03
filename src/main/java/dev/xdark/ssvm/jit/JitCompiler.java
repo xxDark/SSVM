@@ -13,10 +13,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.val;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
+import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
 import java.util.ArrayList;
@@ -343,6 +340,11 @@ public final class JitCompiler {
 						jit.visitLabel(label);
 						val blocks = handlers.get(label);
 						if (blocks != null) {
+							jit.visitInsn(DUP);
+							jit.visitTypeInsn(Opcodes.INSTANCEOF, VALUE.internalName);
+							val overlap = new Label();
+							jit.visitJumpInsn(IFNE, overlap);
+							cast(VM_EXCEPTION);
 							int count = blocks.size();
 							val classes = new Object[count];
 							for (int i = 0; i < count; i++) {
@@ -355,6 +357,7 @@ public final class JitCompiler {
 							loadCtx(); // ex infos ctx
 							EXCEPTION_CAUGHT.emit(jit); // ex
 							GET_EXCEPTION_OOP.emit(jit);
+							jit.visitLabel(overlap);
 						}
 					} else if (insn instanceof LineNumberNode) {
 						loadCtx();

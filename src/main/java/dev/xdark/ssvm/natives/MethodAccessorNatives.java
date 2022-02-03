@@ -75,7 +75,7 @@ public class MethodAccessorNatives {
 				executed = helper.invokeVirtual(name, desc, new Value[0], args);
 			}
 			Value result = executed.getResult();
-			if (result == null) result = NullValue.INSTANCE; // void
+			if (result.isVoid()) result = NullValue.INSTANCE; // void
 			else {
 				result = helper.boxGeneric(result, executed.getMethod().getReturnType());
 			}

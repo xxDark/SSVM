@@ -749,7 +749,7 @@ public class IntrinsicsNatives {
 			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
-		vmi.setInvoker(jc, "equals", "([Ljava/lang/Object;Ljava/lang/Object;)Z", ctx -> {
+		vmi.setInvoker(jc, "equals", "([Ljava/lang/Object;[Ljava/lang/Object;)Z", ctx -> {
 			val locals = ctx.getLocals();
 			val $a = locals.load(0);
 			val $a2 = locals.load(1);
@@ -805,7 +805,7 @@ public class IntrinsicsNatives {
 			val v2 = b.getValue(length);
 			if (v1 != v2) {
 				if (!v1.isNull()) {
-					val eq =helper.invokeVirtual("equals", "(Ljava/lang/Object;)Z", new Value[0], new Value[]{
+					val eq = helper.invokeVirtual("equals", "(Ljava/lang/Object;)Z", new Value[0], new Value[]{
 							v1, v2
 					}).getResult().asBoolean();
 					if (!eq) return IntValue.ZERO;

@@ -15,11 +15,15 @@ repositories {
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
+tasks.withType(JavaCompile) {
+    options.compilerArgs.addAll(['-parameters', '-g:lines,source,vars'])
+}
+
 dependencies {
     implementation 'org.ow2.asm:asm:9.2'
     implementation 'org.ow2.asm:asm-tree:9.2'
     implementation 'com.github.Col-E:CAFED00D:1.8.1'
-    implementation 'org.slf4j:slf4j-api:1.7.33'
+    implementation 'org.slf4j:slf4j-api:1.7.35'
 
     def junitVersion = '5.8.2'
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"

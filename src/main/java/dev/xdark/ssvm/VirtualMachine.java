@@ -3,6 +3,7 @@ package dev.xdark.ssvm;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.classloading.*;
 import dev.xdark.ssvm.execution.ExecutionContext;
+import dev.xdark.ssvm.execution.Interpreter;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.fs.FileDescriptorManager;
@@ -25,14 +26,12 @@ import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.VMThread;
 import dev.xdark.ssvm.tz.SimpleTimeZoneManager;
 import dev.xdark.ssvm.tz.TimeZoneManager;
-import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.util.VMPrimitives;
 import dev.xdark.ssvm.util.VMSymbols;
 import dev.xdark.ssvm.value.*;
 import lombok.val;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.LineNumberNode;
 
 import java.nio.ByteOrder;
 import java.util.HashMap;
@@ -403,52 +402,7 @@ public class VirtualMachine {
 			if ((access & Opcodes.ACC_ABSTRACT) != 0) {
 				helper.throwException(symbols.java_lang_AbstractMethodError, ctx.getOwner().getInternalName() + '.' + jm.getName() + jm.getDesc());
 			}
-			val mn = jm.getNode();
-			val instructions = mn.instructions;
-			exec:
-			while (true) {
-				try {
-					val pos = ctx.getInsnPosition();
-					ctx.setInsnPosition(pos + 1);
-					val insn = instructions.get(pos);
-					if (insn instanceof LineNumberNode) ctx.setLineNumber(((LineNumberNode) insn).line);
-					if (insn.getOpcode() == -1) continue;
-					val processor = vmi.getProcessor(insn);
-					if (processor == null) {
-						helper.throwException(symbols.java_lang_InternalError, "No implemented processor for " + insn.getOpcode());
-						continue;
-					}
-					if (processor.execute(insn, ctx) == Result.ABORT) break;
-				} catch (VMException ex) {
-					val stack = ctx.getStack();
-					Value value;
-					while ((value = stack.poll()) != null) {
-						if (value instanceof ObjectValue) {
-							val obj = (ObjectValue) value;
-							if (obj.isHeldByCurrentThread()) {
-								obj.monitorExit();
-							}
-						}
-					}
-					val oop = ex.getOop();
-					val exceptionType = oop.getJavaClass();
-					val tryCatchBlocks = mn.tryCatchBlocks;
-					val index = ctx.getInsnPosition() - 1;
-					for (int i = 0, j = tryCatchBlocks.size(); i < j; i++) {
-						val block = tryCatchBlocks.get(i);
-						String type = block.type;
-						if (type == null) type = "java/lang/Throwable";
-						val candidate = findClass(ctx.getOwner().getClassLoader(), type, false);
-						if (index < AsmUtil.getIndex(block.start) || index > AsmUtil.getIndex(block.end)) continue;
-						if (candidate.isAssignableFrom(exceptionType)) {
-							stack.push(oop);
-							ctx.setInsnPosition(AsmUtil.getIndex(block.handler));
-							continue exec;
-						}
-					}
-					throw ex;
-				}
-			}
+			Interpreter.execute(ctx);
 		} catch (VMException ex) {
 			throw ex;
 		} catch (Exception ex) {

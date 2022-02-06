@@ -54,6 +54,11 @@ public final class DoubleValue extends NumericValue implements WideValue {
 	}
 
 	@Override
+	public int hashCode() {
+		return Double.hashCode(value);
+	}
+
+	@Override
 	public boolean equals(Object other) {
 		return other instanceof DoubleValue && value == ((DoubleValue) other).value;
 	}

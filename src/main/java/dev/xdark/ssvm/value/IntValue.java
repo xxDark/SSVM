@@ -80,6 +80,11 @@ public final class IntValue extends NumericValue {
 	}
 
 	@Override
+	public int hashCode() {
+		return Integer.hashCode(value);
+	}
+
+	@Override
 	public boolean equals(Object other) {
 		return other instanceof IntValue && value == ((IntValue) other).value;
 	}
@@ -97,12 +102,26 @@ public final class IntValue extends NumericValue {
 		return new IntValue(value);
 	}
 
-	static {
-		val cache = new IntValue[(HIGH - LOW) + 1];
-		int j = LOW;
+	/**
+	 * Creates new cache.
+	 *
+	 * @param low
+	 * 		Min value.
+	 * @param high
+	 * 		Max value.
+	 *
+	 * @return int cache.
+	 */
+	public static IntValue[] createCache(int low, int high) {
+		val cache = new IntValue[(high - low) + 1];
+		int j = low;
 		for (int k = 0; k < cache.length; k++)
 			cache[k] = new IntValue(j++);
-		CACHE = cache;
+		return cache;
+	}
+
+	static {
+		CACHE = createCache(LOW, HIGH);
 		ONE = of(1);
 		ZERO = of(0);
 		M_ONE = of(-1);

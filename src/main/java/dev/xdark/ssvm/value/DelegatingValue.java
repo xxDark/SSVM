@@ -83,6 +83,17 @@ public final class DelegatingValue implements Value {
 		return delegate.isVoid();
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (o == this) return true;
+		return delegate.equals(o);
+	}
+
+	@Override
+	public int hashCode() {
+		return delegate.hashCode();
+	}
+
 	/**
 	 * Returns delegating value.
 	 *

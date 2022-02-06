@@ -56,6 +56,9 @@ public interface StackFrame {
 	 */
 	ExecutionContext getExecutionContext();
 
+	/**
+	 * @return immutable frame.
+	 */
 	StackFrame freeze();
 
 	/**

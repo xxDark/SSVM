@@ -70,6 +70,11 @@ public final class LongValue extends NumericValue implements WideValue {
 	}
 
 	@Override
+	public int hashCode() {
+		return Long.hashCode(value);
+	}
+
+	@Override
 	public boolean equals(Object other) {
 		return other instanceof LongValue && value == ((LongValue) other).value;
 	}
@@ -87,12 +92,26 @@ public final class LongValue extends NumericValue implements WideValue {
 		return new LongValue(value);
 	}
 
-	static {
-		val cache = new LongValue[(HIGH - LOW) + 1];
-		int j = LOW;
+	/**
+	 * Creates new cache.
+	 *
+	 * @param low
+	 * 		Min value.
+	 * @param high
+	 * 		Max value.
+	 *
+	 * @return int cache.
+	 */
+	public static LongValue[] createCache(int low, int high) {
+		val cache = new LongValue[(high - low) + 1];
+		int j = low;
 		for (int k = 0; k < cache.length; k++)
 			cache[k] = new LongValue(j++);
-		CACHE = cache;
+		return cache;
+	}
+
+	static {
+		CACHE = createCache(LOW, HIGH);
 		ONE = of(1);
 		ZERO = of(0);
 		M_ONE = of(-1);

@@ -59,6 +59,11 @@ public final class FloatValue extends NumericValue {
 	}
 
 	@Override
+	public int hashCode() {
+		return Float.hashCode(value);
+	}
+
+	@Override
 	public boolean equals(Object other) {
 		return other instanceof FloatValue && value == ((FloatValue) other).value;
 	}

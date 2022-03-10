@@ -62,5 +62,14 @@ public class ThreadNatives {
 			ctx.setResult(arg.isHeldByCurrentThread() ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
+		vmi.setInvoker(thread, "getThreads", "()[Ljava/lang/Thread;", ctx -> {
+			val threads = vm.getThreadManager().getThreads();
+			val array = vm.getHelper().newArray(thread, threads.length);
+			for (int i = 0; i < threads.length; i++) {
+				array.setValue(i, threads[i].getOop());
+			}
+			ctx.setResult(array);
+			return Result.ABORT;
+		});
 	}
 }

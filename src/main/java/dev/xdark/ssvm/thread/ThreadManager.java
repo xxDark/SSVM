@@ -36,6 +36,11 @@ public interface ThreadManager {
 	void setVmThread(VMThread thread);
 
 	/**
+	 * @return array of threads
+	 */
+	VMThread[] getThreads();
+
+	/**
 	 * Returns current VM thread.
 	 *
 	 * @return current VM thread.

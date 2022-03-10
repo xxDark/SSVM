@@ -409,16 +409,16 @@ public class VirtualMachine {
 			throw new IllegalStateException("Uncaught VM error at: " + ctx.getOwner().getInternalName() + '.' + jm.getName() + jm.getDesc(), ex);
 		} finally {
 			try {
-				vmi.getInvocationHooks(jm, false)
-						.forEach(invocation -> invocation.handle(ctx));
-			} finally {
 				try {
-					if (lock != null && lock.isHeldByCurrentThread()) {
+					vmi.getInvocationHooks(jm, false)
+						.forEach(invocation -> invocation.handle(ctx));
+				} finally {
+					if (lock != null) {
 						lock.monitorExit();
 					}
-				} finally {
-					backtrace.pop();
 				}
+			} finally {
+				backtrace.pop();
 			}
 		}
 	}

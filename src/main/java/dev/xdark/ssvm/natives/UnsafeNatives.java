@@ -158,7 +158,6 @@ public class UnsafeNatives {
 		vmi.setInvoker(unsafe, "storeFence", "()V", MethodInvoker.noop());
 		vmi.setInvoker(unsafe, "fullFence", "()V", MethodInvoker.noop());
 		vmi.setInvoker(unsafe, uhelper.compareAndSetInt(), "(Ljava/lang/Object;JII)Z", ctx -> {
-			val helper = vm.getHelper();
 			val locals = ctx.getLocals();
 			val obj = locals.load(1);
 			if (obj.isNull()) {
@@ -177,7 +176,6 @@ public class UnsafeNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "getObjectVolatile", "(Ljava/lang/Object;J)Ljava/lang/Object;", ctx -> {
-			val helper = vm.getHelper();
 			val locals = ctx.getLocals();
 			val obj = locals.load(1);
 			if (obj.isNull()) {
@@ -189,7 +187,7 @@ public class UnsafeNatives {
 			ctx.setResult(memoryManager.readValue(value, offset));
 			return Result.ABORT;
 		});
-		vmi.setInvoker(unsafe, uhelper.compareAndSetReference(), "(Ljava/lang/Object;JLjava/lang/Object;Ljava/lang/Object;)Z", ctx -> {
+		val compareAndSetReference = (MethodInvoker) ctx -> {
 			val locals = ctx.getLocals();
 			val obj = locals.load(1);
 			if (obj.isNull()) {
@@ -206,9 +204,13 @@ public class UnsafeNatives {
 			}
 			ctx.setResult(result ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
-		});
+		};
+		vmi.setInvoker(unsafe, uhelper.compareAndSetReference(), "(Ljava/lang/Object;JLjava/lang/Object;Ljava/lang/Object;)Z", compareAndSetReference);
+		val compareAndSetObject = uhelper.compareAndSetObject();
+		if (compareAndSetObject != null) {
+			vmi.setInvoker(unsafe, compareAndSetObject, "(Ljava/lang/Object;JLjava/lang/Object;Ljava/lang/Object;)Z", compareAndSetReference);
+		}
 		vmi.setInvoker(unsafe, uhelper.compareAndSetLong(), "(Ljava/lang/Object;JJJ)Z", ctx -> {
-			val helper = vm.getHelper();
 			val locals = ctx.getLocals();
 			val $value = locals.load(1);
 			if ($value.isNull()) {
@@ -227,7 +229,6 @@ public class UnsafeNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "putObjectVolatile", "(Ljava/lang/Object;JLjava/lang/Object;)V", ctx -> {
-			val helper = vm.getHelper();
 			val locals = ctx.getLocals();
 			val o = locals.load(1);
 			if (o.isNull()) {
@@ -579,6 +580,8 @@ public class UnsafeNatives {
 		String shouldBeInitialized();
 
 		String pageSize();
+
+		String compareAndSetObject();
 	}
 
 	private static class OldUnsafeHelper implements UnsafeHelper {
@@ -662,6 +665,11 @@ public class UnsafeNatives {
 		public String pageSize() {
 			return "pageSize";
 		}
+
+		@Override
+		public String compareAndSetObject() {
+			return null; // No method for JDK 8
+		}
 	}
 
 	private static final class NewUnsafeHelper implements UnsafeHelper {
@@ -744,6 +752,11 @@ public class UnsafeNatives {
 		@Override
 		public String pageSize() {
 			return "pageSize0";
+		}
+
+		@Override
+		public String compareAndSetObject() {
+			return "compareAndSetObject";
 		}
 	}
 }

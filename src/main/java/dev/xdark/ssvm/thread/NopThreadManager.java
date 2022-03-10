@@ -20,8 +20,7 @@ public final class NopThreadManager implements ThreadManager {
 	private final VirtualMachine vm;
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public NopThreadManager(VirtualMachine vm) {
 		this.vm = vm;
@@ -31,7 +30,9 @@ public final class NopThreadManager implements ThreadManager {
 	public VMThread getVmThread(Thread thread) {
 		val threadMap = this.threadMap;
 		val current = threadMap.get(thread);
-		if (current != null) return current;
+		if (current != null) {
+			return current;
+		}
 		val vm = this.vm;
 		val klass = vm.getSymbols().java_lang_Thread;
 		klass.initialize();
@@ -51,5 +52,10 @@ public final class NopThreadManager implements ThreadManager {
 	@Override
 	public void setVmThread(VMThread thread) {
 		threadMap.put(thread.getJavaThread(), thread);
+	}
+
+	@Override
+	public VMThread[] getThreads() {
+		return threadMap.values().toArray(new VMThread[0]);
 	}
 }

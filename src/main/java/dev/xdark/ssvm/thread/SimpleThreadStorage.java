@@ -9,7 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Thread cache for VM
+ * Thread cache for VM.
  *
  * @author xDark
  */
@@ -17,18 +17,15 @@ public class SimpleThreadStorage implements ThreadStorage {
 
 	private static final ThreadLocal<SimpleThreadStorage> THREAD_LOCAL = ThreadLocal.withInitial(SimpleThreadStorage::create);
 	private static final int DEFAULT_STORAGE_SIZE = 65536;
-	private final Thread thread;
 	private final List<Value> storage;
 	private int currentIndex;
 
 	private SimpleThreadStorage(int maxSize) {
-		thread = Thread.currentThread();
 		storage = Arrays.asList(new Value[maxSize]);
 	}
 
 	@Override
 	public ThreadRegion push(int size) {
-		validateAccess();
 		int currentIndex = this.currentIndex;
 		int toIndex = currentIndex + size;
 		val storage = this.storage;
@@ -42,7 +39,6 @@ public class SimpleThreadStorage implements ThreadStorage {
 
 	@Override
 	public void pop(int size) {
-		validateAccess();
 		if ((currentIndex -= size) < 0) {
 			throw new IndexOutOfBoundsException();
 		}
@@ -56,12 +52,6 @@ public class SimpleThreadStorage implements ThreadStorage {
 	@Override
 	public Locals newLocals(int size) {
 		return new Locals(push(size));
-	}
-
-	private void validateAccess() {
-		if (Thread.currentThread() != thread) {
-			throw new IllegalStateException();
-		}
 	}
 
 	/**

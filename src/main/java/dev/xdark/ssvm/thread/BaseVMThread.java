@@ -16,6 +16,9 @@ public abstract class BaseVMThread implements VMThread {
 	private final Backtrace backtrace = new SimpleBacktrace();
 	@Getter
 	private final Queue<Runnable> taskQueue = new ConcurrentLinkedQueue<>();
+	@Getter
+	private final ThreadStorage threadStorage = createThreadStorage();
+
 	private final InstanceValue oop;
 
 	/**
@@ -36,8 +39,12 @@ public abstract class BaseVMThread implements VMThread {
 		return oop;
 	}
 
-	@Override
-	public ThreadStorage getThreadStorage() {
-		return SimpleThreadStorage.get();
+	/**
+	 * Creates thread storage.
+	 *
+	 * @return thread storage.
+	 */
+	protected ThreadStorage createThreadStorage() {
+		return SimpleThreadStorage.create();
 	}
 }

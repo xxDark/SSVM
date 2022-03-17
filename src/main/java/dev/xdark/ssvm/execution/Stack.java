@@ -1,7 +1,10 @@
 package dev.xdark.ssvm.execution;
 
+import dev.xdark.ssvm.thread.ThreadRegion;
+import dev.xdark.ssvm.thread.SimpleThreadStorage;
 import dev.xdark.ssvm.value.TopValue;
 import dev.xdark.ssvm.value.Value;
+import lombok.RequiredArgsConstructor;
 import lombok.val;
 
 import java.util.Arrays;
@@ -13,9 +16,10 @@ import java.util.Objects;
  *
  * @author xDark
  */
-public final class Stack {
+@RequiredArgsConstructor
+public final class Stack implements AutoCloseable {
 
-	private final Value[] stack;
+	private final ThreadRegion stack;
 	private int cursor;
 
 	/**
@@ -23,7 +27,7 @@ public final class Stack {
 	 * 		The maximum size of the stack.
 	 */
 	public Stack(int maxSize) {
-		stack = new Value[maxSize];
+		stack = SimpleThreadStorage.threadPush(maxSize);
 	}
 
 	/**
@@ -33,7 +37,7 @@ public final class Stack {
 	 * 		Value to push.
 	 */
 	public void push(Value value) {
-		stack[cursor++] = checkValue(value);
+		stack.set(cursor++, checkValue(value));
 	}
 
 	/**
@@ -46,8 +50,8 @@ public final class Stack {
 	public void pushWide(Value value) {
 		val stack = this.stack;
 		int cursor = this.cursor;
-		stack[cursor++] = checkValue(value);
-		stack[cursor++] = TopValue.INSTANCE;
+		stack.set(cursor++, checkValue(value));
+		stack.set(cursor++, TopValue.INSTANCE);
 		this.cursor = cursor;
 	}
 
@@ -75,7 +79,7 @@ public final class Stack {
 	 * @return value popped off the stack.
 	 */
 	public <V extends Value> V pop() {
-		return (V) stack[--cursor];
+		return (V) stack.get(--cursor);
 	}
 
 	/**
@@ -122,7 +126,7 @@ public final class Stack {
 	 * @return value peeked from the stack.
 	 */
 	public <V extends Value> V peek() {
-		return (V) stack[cursor - 1];
+		return (V) stack.get(cursor - 1);
 	}
 
 	/**
@@ -134,7 +138,7 @@ public final class Stack {
 	 */
 	public <V extends Value> V poll() {
 		if (cursor == 0) return null;
-		return (V) stack[--cursor];
+		return (V) stack.get(--cursor);
 	}
 
 	/**
@@ -143,7 +147,7 @@ public final class Stack {
 	public void dup() {
 		val stack = this.stack;
 		val cursor = this.cursor;
-		stack[this.cursor++] = stack[cursor - 1];
+		stack.set(this.cursor++, stack.get(cursor - 1));
 	}
 
 	/**
@@ -262,10 +266,10 @@ public final class Stack {
 	public void swap() {
 		val stack = this.stack;
 		val cursor = this.cursor;
-		val v1 = stack[cursor - 1];
-		val v2 = stack[cursor - 2];
-		stack[cursor - 1] = v2;
-		stack[cursor - 2] = v1;
+		val v1 = stack.get(cursor - 1);
+		val v2 = stack.get(cursor - 2);
+		stack.set(cursor - 1, v2);
+		stack.set(cursor - 2, v1);
 	}
 
 	/**
@@ -301,7 +305,7 @@ public final class Stack {
 	 * @return value at the specific position.
 	 */
 	public Value getAt(int index) {
-		return stack[index];
+		return stack.get(index);
 	}
 
 	/**
@@ -310,13 +314,25 @@ public final class Stack {
 	 * @return stack content as a list view.
 	 */
 	public List<Value> view() {
-		return Arrays.asList(Arrays.copyOf(stack, cursor));
+		return Arrays.asList(Arrays.copyOf(stack.unwrap(), cursor));
+	}
+
+	/**
+	 * Deallocates internal stack.
+	 */
+	public void deallocate() {
+		stack.close();
+	}
+
+	@Override
+	public void close() {
+		deallocate();
 	}
 
 	@Override
 	public String toString() {
 		return "Stack{" +
-				"stack=" + Arrays.toString(stack) +
+				"stack=" + Arrays.toString(stack.unwrap()) +
 				", cursor=" + cursor +
 				'}';
 	}

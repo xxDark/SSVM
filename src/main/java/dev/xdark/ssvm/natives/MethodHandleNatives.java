@@ -183,7 +183,11 @@ public class MethodHandleNatives {
 
 				val owner = jm.getOwner();
 				lvt = compactForExecution(lvt);
-				Util.convertInvokeDynamicArgs(vm, jm.getArgumentTypes(), lvt);
+				try {
+					Util.convertInvokeDynamicArgs(vm, jm.getArgumentTypes(), lvt);
+				} catch (ArrayIndexOutOfBoundsException dbg) {
+					int x = 5;
+				}
 				Value result;
 				if ((jm.getAccess() & ACC_STATIC) == 0) {
 					int flags = vmentry.getInt("flags");
@@ -217,7 +221,7 @@ public class MethodHandleNatives {
 			val resolved = (InstanceValue) memberName.getValue("method", symbols.java_lang_invoke_ResolvedMethodName.getDescriptor());
 			val vmtarget = ((JavaValue<JavaMethod>) resolved.getValue(VM_TARGET, "Ljava/lang/Object;")).getValue();
 
-			Value[] args = compactForExecution(Arrays.copyOfRange(locals.getTable(), 0, length - 1));
+			Value[] args = compactForExecution(Arrays.copyOfRange(table, 0, length - 1));
 
 			Value result;
 			if ((vmtarget.getAccess() & ACC_STATIC) == 0) {
@@ -254,6 +258,7 @@ public class MethodHandleNatives {
 	}
 
 	private static Value[] compactForExecution(Value[] arr) {
+		if (true) return arr;
 		for (int i = 0, j = arr.length; i < j; i++) {
 			if (arr[i] == null) {
 				int len = j - 1;

@@ -1,7 +1,11 @@
 package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.api.VMInterface;
-import dev.xdark.ssvm.classloading.*;
+import dev.xdark.ssvm.classloading.BootClassLoader;
+import dev.xdark.ssvm.classloading.ClassDefiner;
+import dev.xdark.ssvm.classloading.ClassLoaderData;
+import dev.xdark.ssvm.classloading.RuntimeBootClassLoader;
+import dev.xdark.ssvm.classloading.SimpleClassDefiner;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Interpreter;
 import dev.xdark.ssvm.execution.Result;
@@ -23,13 +27,19 @@ import dev.xdark.ssvm.nt.SimpleNativeLibraryManager;
 import dev.xdark.ssvm.thread.NopThreadManager;
 import dev.xdark.ssvm.thread.StackFrame;
 import dev.xdark.ssvm.thread.ThreadManager;
+import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.thread.VMThread;
 import dev.xdark.ssvm.tz.SimpleTimeZoneManager;
 import dev.xdark.ssvm.tz.TimeZoneManager;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.util.VMPrimitives;
 import dev.xdark.ssvm.util.VMSymbols;
-import dev.xdark.ssvm.value.*;
+import dev.xdark.ssvm.value.InstanceValue;
+import dev.xdark.ssvm.value.IntValue;
+import dev.xdark.ssvm.value.JavaValue;
+import dev.xdark.ssvm.value.NullValue;
+import dev.xdark.ssvm.value.ObjectValue;
+import dev.xdark.ssvm.value.Value;
 import lombok.val;
 import org.objectweb.asm.Opcodes;
 
@@ -85,7 +95,7 @@ public class VirtualMachine {
 		NativeJava.init(this);
 
 		(properties = new Properties()).putAll(System.getProperties());
-		(env = new HashMap<>()).putAll(System.getenv());
+		env = new HashMap<>(System.getenv());
 		val groupClass = symbols.java_lang_ThreadGroup;
 		groupClass.initialize();
 
@@ -278,6 +288,15 @@ public class VirtualMachine {
 	}
 
 	/**
+	 * Returns thread storage.
+	 *
+	 * @return thread storage.
+	 */
+	public ThreadStorage getThreadStorage() {
+		return currentThread().getThreadStorage();
+	}
+
+	/**
 	 * Returns current VM thread.
 	 *
 	 * @return current VM thread.
@@ -413,6 +432,7 @@ public class VirtualMachine {
 					vmi.getInvocationHooks(jm, false)
 						.forEach(invocation -> invocation.handle(ctx));
 				} finally {
+					ctx.deallocate();
 					if (lock != null) {
 						lock.monitorExit();
 					}

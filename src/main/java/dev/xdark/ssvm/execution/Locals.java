@@ -1,6 +1,9 @@
 package dev.xdark.ssvm.execution;
 
+import dev.xdark.ssvm.thread.ThreadRegion;
+import dev.xdark.ssvm.thread.SimpleThreadStorage;
 import dev.xdark.ssvm.value.Value;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -10,16 +13,17 @@ import java.util.Objects;
  *
  * @author xDark
  */
-public final class Locals {
+@RequiredArgsConstructor
+public final class Locals implements AutoCloseable {
 
-	private final Value[] table;
+	private final ThreadRegion table;
 
 	/**
 	 * @param maxSize
 	 * 		The maximum amount of local variables.
 	 */
 	public Locals(int maxSize) {
-		table = new Value[maxSize];
+		table = SimpleThreadStorage.threadPush(maxSize);
 	}
 
 	/**
@@ -31,7 +35,7 @@ public final class Locals {
 	 * 		Value to set.
 	 */
 	public void set(int index, Value value) {
-		table[index] = Objects.requireNonNull(value, "value");
+		table.set(index, Objects.requireNonNull(value, "value"));
 	}
 
 	/**
@@ -45,27 +49,39 @@ public final class Locals {
 	 * @return value at {@code index}.
 	 */
 	public <V extends Value> V load(int index) {
-		return (V) table[index];
+		return (V) table.get(index);
 	}
 
 	/**
 	 * @return underlying content of the LVT.
 	 */
 	public Value[] getTable() {
-		return table;
+		return table.unwrap();
 	}
 
 	/**
 	 * @return the maximum amount of slots of this LVT.
 	 */
 	public int maxSlots() {
-		return table.length;
+		return table.length();
+	}
+
+	/**
+	 * Deallocates internal table.
+	 */
+	public void deallocate() {
+		table.close();
+	}
+
+	@Override
+	public void close() {
+		deallocate();
 	}
 
 	@Override
 	public String toString() {
 		return "Locals{" +
-				"table=" + Arrays.toString(table) +
+				"table=" + Arrays.toString(table.unwrap()) +
 				'}';
 	}
 }

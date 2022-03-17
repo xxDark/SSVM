@@ -3,7 +3,6 @@ package dev.xdark.ssvm.thread;
 import dev.xdark.ssvm.value.InstanceValue;
 import lombok.Getter;
 
-import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -35,5 +34,10 @@ public abstract class BaseVMThread implements VMThread {
 	@Override
 	public InstanceValue getOop() {
 		return oop;
+	}
+
+	@Override
+	public ThreadStorage getThreadStorage() {
+		return SimpleThreadStorage.get();
 	}
 }

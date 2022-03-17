@@ -88,4 +88,9 @@ public interface VMThread {
 	 * @return task queue of the current thread.
 	 */
 	Queue<Runnable> getTaskQueue();
+
+	/**
+	 * @return thread storage.
+	 */
+	ThreadStorage getThreadStorage();
 }

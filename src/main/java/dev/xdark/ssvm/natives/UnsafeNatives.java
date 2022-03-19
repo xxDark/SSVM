@@ -11,9 +11,9 @@ import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.value.*;
 import lombok.experimental.UtilityClass;
 import lombok.val;
-import me.coley.cafedude.constant.ConstPoolEntry;
-import me.coley.cafedude.constant.CpString;
-import me.coley.cafedude.constant.CpUtf8;
+import me.coley.cafedude.classfile.constant.ConstPoolEntry;
+import me.coley.cafedude.classfile.constant.CpString;
+import me.coley.cafedude.classfile.constant.CpUtf8;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.LdcInsnNode;
 
@@ -422,8 +422,8 @@ public class UnsafeNatives {
 						.stream()
 						.map(x -> x.instructions)
 						.flatMap(x -> StreamSupport.stream(x.spliterator(), false))
-						.filter(LdcInsnNode.class::isInstance)
-						.map(LdcInsnNode.class::cast)
+						.filter(x -> x instanceof LdcInsnNode)
+						.map(x -> (LdcInsnNode) x)
 						.filter(x -> x.cst instanceof String)
 						.collect(Collectors.groupingBy(x -> (String) x.cst, Collectors.mapping(Function.identity(), Collectors.toList())));
 				for (int i = 1; i < values.length; i++) {

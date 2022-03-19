@@ -8,8 +8,8 @@ import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.value.*;
 import lombok.experimental.UtilityClass;
 import lombok.val;
-import me.coley.cafedude.ClassFile;
-import me.coley.cafedude.constant.*;
+import me.coley.cafedude.classfile.ClassFile;
+import me.coley.cafedude.classfile.constant.*;
 
 /**
  * Initializes xx/reflect/ConstantPool

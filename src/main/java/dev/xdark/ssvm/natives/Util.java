@@ -5,9 +5,9 @@ import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.*;
 import lombok.experimental.UtilityClass;
 import lombok.val;
-import me.coley.cafedude.attribute.AnnotationDefaultAttribute;
-import me.coley.cafedude.attribute.AnnotationsAttribute;
-import me.coley.cafedude.attribute.ParameterAnnotationsAttribute;
+import me.coley.cafedude.classfile.attribute.AnnotationDefaultAttribute;
+import me.coley.cafedude.classfile.attribute.AnnotationsAttribute;
+import me.coley.cafedude.classfile.attribute.ParameterAnnotationsAttribute;
 import me.coley.cafedude.io.AnnotationWriter;
 import org.objectweb.asm.Type;
 

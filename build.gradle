@@ -3,7 +3,7 @@ plugins {
 }
 
 group 'dev.xdark'
-version '1.0'
+version '1.2'
 
 repositories {
     mavenCentral()
@@ -22,7 +22,7 @@ tasks.withType(JavaCompile) {
 dependencies {
     implementation 'org.ow2.asm:asm:9.2'
     implementation 'org.ow2.asm:asm-tree:9.2'
-    implementation 'com.github.Col-E:CAFED00D:1.8.1'
+    implementation 'com.github.Col-E:CAFED00D:1.9.6'
     implementation 'org.slf4j:slf4j-api:1.7.35'
 
     def junitVersion = '5.8.2'

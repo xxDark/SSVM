@@ -66,7 +66,8 @@ public class VirtualMachine {
 	private final Properties properties;
 	private final Map<String, String> env;
 
-	public VirtualMachine() {
+	public VirtualMachine(Object... args) {
+		init(args);
 		bootClassLoader = new BootClassLoaderHolder(this, createBootClassLoader());
 		// java/lang/Object & java/lang/Class must be loaded manually,
 		// otherwise some MemoryManager implementations will bottleneck.
@@ -100,6 +101,10 @@ public class VirtualMachine {
 		groupClass.initialize();
 
 		IntrinsicsNatives.init(this);
+	}
+	
+	public VirtualMachine() {
+		this(new Object[0]);
 	}
 
 	/**
@@ -455,6 +460,14 @@ public class VirtualMachine {
 			r.run();
 		}
 	}
+
+	/**
+	 * Called upon VM creation.
+	 * 
+	 * @param args
+	 * 		Extra args.
+	 */
+	protected void init(Object... args) {}
 
 	/**
 	 * Creates a boot class loader.

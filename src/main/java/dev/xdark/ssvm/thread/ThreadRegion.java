@@ -3,8 +3,6 @@ package dev.xdark.ssvm.thread;
 import dev.xdark.ssvm.util.ArraySlice;
 import dev.xdark.ssvm.value.Value;
 
-import java.util.List;
-
 /**
  * @see ArraySlice
  */
@@ -12,14 +10,14 @@ public final class ThreadRegion extends ArraySlice<Value> implements AutoCloseab
 
 	private final ThreadStorage storage;
 
-	ThreadRegion(List<Value> array, ThreadStorage storage) {
-		super(array);
+	public ThreadRegion(Value[] array, int fromIndex, int toIndex, ThreadStorage storage) {
+		super(array, fromIndex, toIndex);
 		this.storage = storage;
 	}
 
 	@Override
 	public ThreadRegion slice(int fromIndex, int toIndex) {
-		return new ThreadRegion(array.subList(fromIndex, toIndex), storage);
+		return new ThreadRegion(array, map(fromIndex), map(toIndex), storage);
 	}
 
 	@Override

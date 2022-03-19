@@ -5,9 +5,6 @@ import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.value.Value;
 import lombok.val;
 
-import java.util.Arrays;
-import java.util.List;
-
 /**
  * Thread cache for VM.
  *
@@ -17,11 +14,11 @@ public class SimpleThreadStorage implements ThreadStorage {
 
 	private static final ThreadLocal<SimpleThreadStorage> THREAD_LOCAL = ThreadLocal.withInitial(SimpleThreadStorage::create);
 	private static final int DEFAULT_STORAGE_SIZE = 65536;
-	private final List<Value> storage;
+	private final Value[] storage;
 	private int currentIndex;
 
 	private SimpleThreadStorage(int maxSize) {
-		storage = Arrays.asList(new Value[maxSize]);
+		storage = new Value[maxSize];
 	}
 
 	@Override
@@ -29,10 +26,11 @@ public class SimpleThreadStorage implements ThreadStorage {
 		int currentIndex = this.currentIndex;
 		int toIndex = currentIndex + size;
 		val storage = this.storage;
-		if (toIndex >= storage.size()) {
+		if (toIndex >= storage.length) {
 			throw new IndexOutOfBoundsException();
 		}
-		val region = new ThreadRegion(storage.subList(currentIndex, toIndex), this);
+
+		val region = new ThreadRegion(storage, currentIndex, toIndex, this);
 		this.currentIndex = toIndex;
 		return region;
 	}

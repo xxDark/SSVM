@@ -183,11 +183,6 @@ public class MethodHandleNatives {
 
 				val owner = jm.getOwner();
 				lvt = compactForExecution(lvt);
-				try {
-					Util.convertInvokeDynamicArgs(vm, jm.getArgumentTypes(), lvt);
-				} catch (ArrayIndexOutOfBoundsException dbg) {
-					int x = 5;
-				}
 				Value result;
 				if ((jm.getAccess() & ACC_STATIC) == 0) {
 					int flags = vmentry.getInt("flags");

@@ -24,6 +24,8 @@ jobs:
     timeout-minutes: 10
     steps:
     - uses: actions/checkout@v2
+      with:
+        persist-credentials: false
     - name: Setup Java JDK
       uses: actions/setup-java@v2.5.0
       with:
@@ -31,6 +33,6 @@ jobs:
         java-version: ${{ matrix.java-version }}
     - run: ./gradlew --info build
     - name: Semantic Release
-      uses: cycjimmy/semantic-release-action@v2
+      uses: cycjimmy/semantic-release-action@v3
       env:
-        GITHUB_TOKEN: ${{ secrets.CI_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

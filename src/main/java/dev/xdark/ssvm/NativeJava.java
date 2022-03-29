@@ -80,6 +80,7 @@ public final class NativeJava {
 		ProxyNatives.init(vm);
 		InflaterNatives.init(vm);
 		ProcessEnvironmentNatives.init(vm);
+		WindowsNativeDispatcherNatives.init(vm);
 	}
 
 	/**

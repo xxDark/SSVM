@@ -41,8 +41,9 @@ public class ThrowableNatives {
 			}
 			val backtrace = vm.getMemoryManager().newJavaInstance(symbols.java_lang_Object, copy);
 			exception.setValue("backtrace", "Ljava/lang/Object;", backtrace);
-			if (throwable.hasVirtualField("depth", "I")) {
-				exception.setInt("depth", copy.count());
+			val depth = exception.getFieldOffset("depth", "I");
+			if (depth != -1L) {
+				vm.getMemoryManager().writeInt(exception, depth, copy.count());
 			}
 			ctx.setResult(exception);
 			return Result.ABORT;

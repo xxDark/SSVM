@@ -6,6 +6,8 @@ import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.classloading.ClassLoaderData;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.memory.MemoryData;
+import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.value.*;
@@ -94,14 +96,11 @@ public class UnsafeNatives {
 		});
 		vmi.setInvoker(unsafe, uhelper.setMemory(), "(Ljava/lang/Object;JJB)V", ctx -> {
 			val locals = ctx.getLocals();
-			val value = locals.<ObjectValue>load(1);
-			val memory = value.getMemory().getData();
-			long offset = locals.load(2).asLong();
+			val offset = locals.load(2).asLong();
+			val data = getData(vm.getMemoryManager(), locals.load(1), offset);
 			val bytes = locals.load(4).asLong();
 			val b = locals.load(6).asByte();
-			for (; offset < bytes; offset++) {
-				memory.put((int) offset, b);
-			}
+			data.set(0L, bytes, b);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, uhelper.arrayBaseOffset(), "(Ljava/lang/Class;)I", ctx -> {
@@ -177,14 +176,10 @@ public class UnsafeNatives {
 		});
 		vmi.setInvoker(unsafe, "getObjectVolatile", "(Ljava/lang/Object;J)Ljava/lang/Object;", ctx -> {
 			val locals = ctx.getLocals();
-			val obj = locals.load(1);
-			if (obj.isNull()) {
-				throw new PanicException("Segfault");
-			}
-			val value = (ObjectValue) obj;
-			val offset = (int) locals.load(2).asLong();
 			val memoryManager = vm.getMemoryManager();
-			ctx.setResult(memoryManager.readValue(value, offset));
+			val offset = locals.load(2).asLong();
+			val data = getData(memoryManager, locals.load(1), offset);
+			ctx.setResult(nonNull(memoryManager.getValue(data.readLongVolatile(0L))));
 			return Result.ABORT;
 		});
 		val compareAndSetReference = (MethodInvoker) ctx -> {
@@ -230,25 +225,18 @@ public class UnsafeNatives {
 		});
 		vmi.setInvoker(unsafe, "putObjectVolatile", "(Ljava/lang/Object;JLjava/lang/Object;)V", ctx -> {
 			val locals = ctx.getLocals();
-			val o = locals.load(1);
-			if (o.isNull()) {
-				throw new PanicException("Segfault");
-			}
-			val offset = (int) locals.load(2).asLong();
-			val value = locals.load(4);
 			val memoryManager = vm.getMemoryManager();
-			memoryManager.writeValue((ObjectValue) o, offset, (ObjectValue) value);
+			val offset = locals.load(2).asLong();
+			val buffer = getDataNonNull(memoryManager, locals.load(1), offset);
+			buffer.writeLongVolatile(0L, locals.<ObjectValue>load(4).getMemory().getAddress());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "getIntVolatile", "(Ljava/lang/Object;J)I", ctx -> {
 			val locals = ctx.getLocals();
-			val value = locals.load(1);
-			if (value.isNull()) {
-				throw new PanicException("Segfault");
-			}
-			val offset = locals.load(2).asInt();
 			val memoryManager = vm.getMemoryManager();
-			ctx.setResult(IntValue.of(memoryManager.readInt((ObjectValue) value, offset)));
+			val offset = locals.load(2).asLong();
+			val data = getData(memoryManager, locals.load(1), offset);
+			ctx.setResult(IntValue.of(data.readIntVolatile(0)));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, uhelper.ensureClassInitialized(), "(Ljava/lang/Class;)V", ctx -> {
@@ -258,13 +246,10 @@ public class UnsafeNatives {
 		});
 		vmi.setInvoker(unsafe, "getObject", "(Ljava/lang/Object;J)Ljava/lang/Object;", ctx -> {
 			val locals = ctx.getLocals();
-			val value = locals.load(1);
-			if (value.isNull()) {
-				throw new PanicException("Segfault");
-			}
-			val offset = locals.load(2).asInt();
 			val memoryManager = vm.getMemoryManager();
-			ctx.setResult(memoryManager.readValue((ObjectValue) value, offset));
+			val offset = locals.load(2).asLong();
+			val data = getData(memoryManager, locals.load(1), offset);
+			ctx.setResult(nonNull(memoryManager.getValue(data.readLong(0L))));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, uhelper.objectFieldOffset(), "(Ljava/lang/reflect/Field;)J", ctx -> {
@@ -300,30 +285,25 @@ public class UnsafeNatives {
 		vmi.setInvoker(unsafe, "putLong", "(JJ)V", ctx -> {
 			val memoryManager = vm.getMemoryManager();
 			val locals = ctx.getLocals();
-			val block = memoryManager.getMemory(locals.load(1).asLong());
-			if (block == null) {
-				throw new PanicException("Segfault");
-			}
-			block.getData().putLong(0, locals.load(3).asLong());
+			val address = locals.load(1).asLong();
+			val block = nonNull(memoryManager.getMemory(address));
+			block.getData().writeLong((int) (address - block.getAddress()), locals.load(3).asLong());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "getByte", "(J)B", ctx -> {
 			val memoryManager = vm.getMemoryManager();
 			val locals = ctx.getLocals();
-			val block = memoryManager.getMemory(locals.load(1).asLong());
-			if (block == null) {
-				throw new PanicException("Segfault");
-			}
-			ctx.setResult(IntValue.of(block.getData().get(0)));
+			val address = locals.load(1).asLong();
+			val block = nonNull(memoryManager.getMemory(address));
+			ctx.setResult(IntValue.of(block.getData().readByte((int) (address - block.getAddress()))));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "putInt", "(Ljava/lang/Object;JI)V", ctx -> {
 			val locals = ctx.getLocals();
-			val o = locals.<ObjectValue>load(1);
-			if (o.isNull()) {
-				throw new PanicException("Segfault");
-			}
-			vm.getMemoryManager().writeInt(o, locals.load(2).asLong(), locals.load(4).asInt());
+			val memoryManager = vm.getMemoryManager();
+			val offset = locals.load(2).asLong();
+			val buffer = getData(memoryManager, locals.load(1), offset);
+			buffer.writeInt(0L, locals.load(4).asInt());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, uhelper.staticFieldBase(), "(Ljava/lang/reflect/Field;)Ljava/lang/Object;", ctx -> {
@@ -357,22 +337,16 @@ public class UnsafeNatives {
 		});
 		vmi.setInvoker(unsafe, "getLongVolatile", "(Ljava/lang/Object;J)J", ctx -> {
 			val locals = ctx.getLocals();
-			val value = locals.load(1);
-			if (value.isNull()) {
-				throw new PanicException("Segfault");
-			}
-			val offset = locals.load(2).asInt();
 			val memoryManager = vm.getMemoryManager();
-			ctx.setResult(LongValue.of(memoryManager.readLong((ObjectValue) value, offset)));
+			val offset = locals.load(2).asLong();
+			val data = getData(memoryManager, locals.load(1), offset);
+			ctx.setResult(LongValue.of(data.readLongVolatile(0L)));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "getLong", "(J)J", ctx -> {
 			val address = ctx.getLocals().load(1).asLong();
-			val block = vm.getMemoryManager().getMemory(address);
-			if (block == null) {
-				throw new PanicException("Segfault");
-			}
-			ctx.setResult(LongValue.of(block.getData().getLong((int) (address - block.getAddress()))));
+			val block = nonNull(vm.getMemoryManager().getMemory(address));
+			ctx.setResult(LongValue.of(block.getData().readLong((int) (address - block.getAddress()))));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "defineAnonymousClass", "(Ljava/lang/Class;[B[Ljava/lang/Object;)Ljava/lang/Class;", ctx -> {
@@ -444,33 +418,26 @@ public class UnsafeNatives {
 		});
 		vmi.setInvoker(unsafe, "getInt", "(Ljava/lang/Object;J)I", ctx -> {
 			val locals = ctx.getLocals();
-			val value = locals.load(1);
-			if (value.isNull()) {
-				throw new PanicException("Segfault");
-			}
-			val offset = locals.load(2).asInt();
 			val memoryManager = vm.getMemoryManager();
-			ctx.setResult(IntValue.of(memoryManager.readInt((ObjectValue) value, offset)));
+			val offset = locals.load(2).asLong();
+			val data = getData(memoryManager, locals.load(1), offset);
+			ctx.setResult(IntValue.of(data.readInt(0L)));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "putObject", "(Ljava/lang/Object;JLjava/lang/Object;)V", ctx -> {
 			val locals = ctx.getLocals();
-			val o = locals.<ObjectValue>load(1);
-			if (o.isNull()) {
-				throw new PanicException("Segfault");
-			}
-			vm.getMemoryManager().writeValue(o, locals.load(2).asLong(), locals.load(4));
+			val memoryManager = vm.getMemoryManager();
+			val offset = locals.load(2).asLong();
+			val data = getDataNonNull(memoryManager, locals.load(1), offset);
+			data.writeLong(0L, locals.<ObjectValue>load(4).getMemory().getAddress());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "getLong", "(Ljava/lang/Object;J)J", ctx -> {
 			val locals = ctx.getLocals();
-			val value = locals.load(1);
-			if (value.isNull()) {
-				throw new PanicException("Segfault");
-			}
-			val offset = locals.load(2).asInt();
 			val memoryManager = vm.getMemoryManager();
-			ctx.setResult(LongValue.of(memoryManager.readLong((ObjectValue) value, offset)));
+			val offset = locals.load(2).asLong();
+			val data = getData(memoryManager, locals.load(1), offset);
+			ctx.setResult(LongValue.of(data.readLong(0L)));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "allocateInstance", "(Ljava/lang/Class;)Ljava/lang/Object;", ctx -> {
@@ -491,51 +458,55 @@ public class UnsafeNatives {
 		});
 		vmi.setInvoker(unsafe, "putBoolean", "(Ljava/lang/Object;JZ)V", ctx -> {
 			val locals = ctx.getLocals();
-			val o = locals.<ObjectValue>load(1);
-			if (o.isNull()) {
-				throw new PanicException("Segfault");
-			}
-			vm.getMemoryManager().writeBoolean(o, locals.load(2).asLong(), locals.load(4).asBoolean());
+			val memoryManager = vm.getMemoryManager();
+			val offset = locals.load(2).asLong();
+			val buffer = getData(memoryManager, locals.load(1), offset);
+			buffer.writeByte(0L, (byte) (locals.load(4).asBoolean() ? 1 : 0));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "getBoolean", "(Ljava/lang/Object;J)Z", ctx -> {
 			val locals = ctx.getLocals();
-			val value = locals.load(1);
-			if (value.isNull()) {
-				throw new PanicException("Segfault");
-			}
-			val offset = locals.load(2).asInt();
 			val memoryManager = vm.getMemoryManager();
-			ctx.setResult(memoryManager.readBoolean((ObjectValue) value, offset) ? IntValue.ONE : IntValue.ZERO);
+			val offset = locals.load(2).asLong();
+			val buffer = getData(memoryManager, locals.load(1), offset);
+			ctx.setResult(buffer.readByte(0L) != 0 ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "putLong", "(Ljava/lang/Object;JJ)V", ctx -> {
 			val locals = ctx.getLocals();
-			val o = locals.<ObjectValue>load(1);
-			if (o.isNull()) {
-				throw new PanicException("Segfault");
-			}
-			vm.getMemoryManager().writeLong(o, locals.load(2).asLong(), locals.load(4).asLong());
+			val memoryManager = vm.getMemoryManager();
+			val offset = locals.load(2).asLong();
+			val data = getData(memoryManager, locals.load(1), offset);
+			data.writeLong(0L, locals.load(4).asLong());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "getChar", "(Ljava/lang/Object;J)C", ctx -> {
 			val locals = ctx.getLocals();
-			val value = locals.load(1);
-			if (value.isNull()) {
-				throw new PanicException("Segfault");
-			}
-			val offset = locals.load(2).asInt();
 			val memoryManager = vm.getMemoryManager();
-			ctx.setResult(IntValue.of(memoryManager.readChar((ObjectValue) value, offset)));
+			val offset = locals.load(2).asLong();
+			val buffer = getData(memoryManager, locals.load(1), offset);
+			ctx.setResult(IntValue.of(buffer.readChar(0L)));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "putChar", "(Ljava/lang/Object;JC)V", ctx -> {
 			val locals = ctx.getLocals();
-			val o = locals.<ObjectValue>load(1);
-			if (o.isNull()) {
-				throw new PanicException("Segfault");
-			}
-			vm.getMemoryManager().writeChar(o, locals.load(2).asLong(), locals.load(4).asChar());
+			val memoryManager = vm.getMemoryManager();
+			val offset = locals.load(2).asLong();
+			val data = getData(memoryManager, locals.load(1), offset);
+			data.writeChar(0L, locals.load(4).asChar());
+			return Result.ABORT;
+		});
+		vmi.setInvoker(unsafe, uhelper.copyMemory(), "(Ljava/lang/Object;JLjava/lang/Object;JJ)V", ctx -> {
+			val locals = ctx.getLocals();
+			val memoryManager = vm.getMemoryManager();
+			val src = locals.load(1);
+			val srcOffset = locals.load(2).asLong();
+			val dst = locals.load(4);
+			val dstOffset = locals.load(5).asLong();
+			val bytes = locals.load(7).asLong();
+			val srcData = getData(memoryManager, src, srcOffset);
+			val dstData = getData(memoryManager, dst, dstOffset);
+			srcData.copy(0L, dstData, 0L, bytes);
 			return Result.ABORT;
 		});
 	}
@@ -545,6 +516,33 @@ public class UnsafeNatives {
 			return false;
 		int acc = jc.getModifiers();
 		return (acc & Opcodes.ACC_ABSTRACT) == 0;
+	}
+
+	public static MemoryData getDataNonNull(MemoryManager manager, Value instance, long offset) {
+		if (instance.isNull()) {
+			throw new PanicException("Segfault");
+		}
+		val data = ((ObjectValue) instance).getMemory().getData();
+		return data.slice(offset, data.length() - offset);
+	}
+
+	public static MemoryData getData(MemoryManager manager, Value instance, long offset) {
+		MemoryData data;
+		if (instance.isNull()) {
+			val memory = nonNull(manager.getMemory(offset));
+			data = memory.getData();
+			offset -= memory.getAddress();
+		} else {
+			data = ((ObjectValue) instance).getMemory().getData();
+		}
+		return data.slice(offset, data.length() - offset);
+	}
+	
+	private static <T> T nonNull(T v) {
+		if (v == null) {
+			throw new PanicException("Segfault");
+		}
+		return v;
 	}
 
 	private interface UnsafeHelper {
@@ -582,6 +580,8 @@ public class UnsafeNatives {
 		String pageSize();
 
 		String compareAndSetObject();
+
+		String copyMemory();
 	}
 
 	private static class OldUnsafeHelper implements UnsafeHelper {
@@ -670,6 +670,11 @@ public class UnsafeNatives {
 		public String compareAndSetObject() {
 			return null; // No method for JDK 8
 		}
+
+		@Override
+		public String copyMemory() {
+			return "copyMemory";
+		}
 	}
 
 	private static final class NewUnsafeHelper implements UnsafeHelper {
@@ -757,6 +762,11 @@ public class UnsafeNatives {
 		@Override
 		public String compareAndSetObject() {
 			return "compareAndSetObject";
+		}
+
+		@Override
+		public String copyMemory() {
+			return "copyMemory0";
 		}
 	}
 }

@@ -51,13 +51,10 @@ public class SystemNatives {
 			int start = memoryManager.arrayBaseOffset(srcComponent);
 			helper.checkEquals(start, memoryManager.arrayBaseOffset(dstComponent));
 
-			val srcData = src.getMemory().getData().slice();
-			int dataStartPos = start + srcPos * scale;
-			srcData.position(dataStartPos).limit(dataStartPos + length * scale);
-			val dstData = dst.getMemory().getData().slice();
-			dstData.position(start + dstPos * scale);
-			dstData.put(srcData);
-
+			val srcData = src.getMemory().getData();
+			val dataStartPos = start + srcPos * scale;
+			val dstData = dst.getMemory().getData();
+			srcData.copy(dataStartPos, dstData, start + (long) dstPos * scale, (long) length * scale);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "identityHashCode", "(Ljava/lang/Object;)I", ctx -> {

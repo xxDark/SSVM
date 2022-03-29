@@ -70,19 +70,6 @@ public interface MemoryManager {
 	Memory getMemory(long address);
 
 	/**
-	 * Returns true if the address is valid.
-	 * This method is usually used by Unsafe,
-	 * if method returns {@code false}, VM will panic.
-	 *
-	 * @param address
-	 * 		Address to check.
-	 *
-	 * @return {@code true} if address is valid,
-	 * {@code false} otherwise.
-	 */
-	boolean isValidAddress(long address);
-
-	/**
 	 * Returns object at the specific address.
 	 *
 	 * @param address

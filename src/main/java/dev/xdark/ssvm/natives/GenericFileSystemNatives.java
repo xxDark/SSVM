@@ -150,9 +150,8 @@ public class GenericFileSystemNatives {
 						val vmBuffer = locals.<ArrayValue>load(1);
 						val memoryManager = vm.getMemoryManager();
 						val start = memoryManager.arrayBaseOffset(byte.class) + off;
-						val data = vmBuffer.getMemory().getData().slice();
-						data.position(start);
-						data.put(bytes, 0, read);
+						val data = vmBuffer.getMemory().getData();
+						data.write(start, bytes, 0, read);
 					}
 					ctx.setResult(IntValue.of(read));
 				} catch (IOException ex) {

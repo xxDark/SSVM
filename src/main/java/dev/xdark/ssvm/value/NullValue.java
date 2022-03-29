@@ -1,6 +1,6 @@
 package dev.xdark.ssvm.value;
 
-import dev.xdark.ssvm.memory.Memory;
+import dev.xdark.ssvm.memory.MemoryData;
 import dev.xdark.ssvm.memory.SimpleMemory;
 import dev.xdark.ssvm.mirror.JavaClass;
 
@@ -16,7 +16,7 @@ public final class NullValue extends ObjectValue {
 	public static final NullValue INSTANCE = new NullValue();
 
 	private NullValue() {
-		super(new SimpleMemory(null, ByteBuffer.allocate(0), 0L, false));
+		super(new SimpleMemory(null, MemoryData.buffer(ByteBuffer.allocate(0)), 0L, false));
 	}
 
 	@Override

@@ -17,4 +17,33 @@ public interface NativeLibraryManager {
 	 * @return mapped library name.
 	 */
 	String mapLibraryName(String name);
+
+	/**
+	 * Loads native library.
+	 *
+	 * @param name
+	 * 		Library name.
+	 * @param isBuiltin
+	 * 		Whether the library is builtin.
+	 *
+	 * @return native library handle or {@code 0L}, if failed.
+	 */
+	long load(String name, boolean isBuiltin);
+
+	/**
+	 * Unloads native library.
+	 *
+	 * @param name
+	 * 		Library name.
+	 * @param isBuiltin
+	 * 		Whether the library is builtin.
+	 * @param handle
+	 * 		Library handle.
+	 */
+	void unload(String name, boolean isBuiltin, long handle);
+
+	/**
+	 * @return JNI version constant.
+	 */
+	int getJniVersion();
 }

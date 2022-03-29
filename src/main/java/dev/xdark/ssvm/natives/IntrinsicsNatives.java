@@ -768,22 +768,22 @@ public class IntrinsicsNatives {
 		val b = (ArrayValue) $b;
 		val v1 = a.getMemory().getData();
 		val v2 = b.getMemory().getData();
-		if (v1.capacity() != v2.capacity()) return IntValue.ZERO;
+		if (v1.length() != v2.length()) return IntValue.ZERO;
 		int offset = memoryManager.arrayBaseOffset(a);
-		int total = v1.capacity();
+		val total = v1.length();
 		while (total != offset) {
-			int diff = total - offset;
+			val diff = total - offset;
 			if (diff >= 8) {
-				if (v1.getLong(offset) != v2.getLong(offset)) return IntValue.ZERO;
+				if (v1.readLong(offset) != v2.readLong(offset)) return IntValue.ZERO;
 				offset += 8;
 			} else if (diff >= 4) {
-				if (v1.getInt(offset) != v2.getInt(offset)) return IntValue.ZERO;
+				if (v1.readInt(offset) != v2.readInt(offset)) return IntValue.ZERO;
 				offset += 4;
 			} else if (diff >= 2) {
-				if (v1.getShort(offset) != v2.getShort(offset)) return IntValue.ZERO;
+				if (v1.readShort(offset) != v2.readShort(offset)) return IntValue.ZERO;
 				offset += 2;
 			} else {
-				if (v1.get(offset) != v2.get(offset)) return IntValue.ZERO;
+				if (v1.readByte(offset) != v2.readByte(offset)) return IntValue.ZERO;
 				offset++;
 			}
 		}

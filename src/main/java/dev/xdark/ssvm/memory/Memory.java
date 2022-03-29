@@ -21,7 +21,7 @@ public interface Memory {
 	 *
 	 * @return memory data.
 	 */
-	ByteBuffer getData();
+	MemoryData getData();
 
 	/**
 	 * Returns memory address.

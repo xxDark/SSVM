@@ -75,9 +75,14 @@ public class ObjectNatives {
 			val originalOffset = memoryManager.valueBaseOffset(_this);
 			val offset = memoryManager.valueBaseOffset(clone);
 			helper.checkEquals(originalOffset, offset);
-			val copyTo = (ByteBuffer) clone.getMemory().getData().slice().position(offset);
-			val copyFrom = (ByteBuffer) _this.getMemory().getData().slice().position(offset);
-			copyTo.put(copyFrom);
+			val copyTo = clone.getMemory().getData();
+			val copyFrom = _this.getMemory().getData();
+			copyFrom.copy(
+					offset,
+					copyTo,
+					offset,
+					copyFrom.length() - offset
+			);
 			ctx.setResult(clone);
 			return Result.ABORT;
 		});

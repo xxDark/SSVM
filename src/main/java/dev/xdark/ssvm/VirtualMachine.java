@@ -438,7 +438,7 @@ public class VirtualMachine {
 						.forEach(invocation -> invocation.handle(ctx));
 				} finally {
 					ctx.deallocate();
-					if (lock != null) {
+					if (lock != null && lock.isHeldByCurrentThread()) {
 						lock.monitorExit();
 					}
 				}

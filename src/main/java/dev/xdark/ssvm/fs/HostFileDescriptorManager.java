@@ -83,7 +83,7 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 		long handle;
 		Long wrapper;
 		do {
-			handle = rng.nextLong() & 0xFFFFFFFFL;
+			handle = rng.nextLong();
 		} while (inputs.containsKey(wrapper = handle) || outputs.containsKey(wrapper) || zipFiles.containsKey(wrapper));
 		return handle;
 	}

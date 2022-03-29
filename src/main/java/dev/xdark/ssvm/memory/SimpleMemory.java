@@ -13,7 +13,7 @@ import java.nio.ByteBuffer;
 public class SimpleMemory implements Memory {
 
 	private final MemoryManager memoryManager;
-	private final ByteBuffer data;
+	private final MemoryData data;
 	private final long address;
 	private final boolean isDirect;
 

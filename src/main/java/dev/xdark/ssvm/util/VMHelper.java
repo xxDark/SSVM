@@ -212,27 +212,15 @@ public final class VMHelper {
 	 */
 	public Value valueFromLdc(Object cst) {
 		val vm = this.vm;
-		if (cst instanceof Long) {
-			return LongValue.of((Long) cst);
-		}
-		if (cst instanceof Double) {
-			return new DoubleValue((Double) cst);
-		}
+		if (cst instanceof Long) return LongValue.of((Long) cst);
+		if (cst instanceof Double) return new DoubleValue((Double) cst);
 		if (cst instanceof Integer || cst instanceof Short || cst instanceof Byte) {
 			return IntValue.of(((Number) cst).intValue());
 		}
-		if (cst instanceof Character) {
-			return IntValue.of((Character) cst);
-		}
-		if (cst instanceof Float) {
-			return new FloatValue((Float) cst);
-		}
-		if (cst instanceof Boolean) {
-			return (Boolean) cst ? IntValue.ONE : IntValue.ZERO;
-		}
-		if (cst instanceof String) {
-			return vm.getStringPool().intern((String) cst);
-		}
+		if (cst instanceof Character) return IntValue.of((Character) cst);
+		if (cst instanceof Float) return new FloatValue((Float) cst);
+		if (cst instanceof Boolean) return (Boolean) cst ? IntValue.ONE : IntValue.ZERO;
+		if (cst instanceof String) return vm.getStringPool().intern((String) cst);
 		if (cst instanceof Type) {
 			val type = (Type) cst;
 			val ctx = vm.currentThread().getBacktrace().last();
@@ -1191,7 +1179,7 @@ public final class VMHelper {
 	}
 
 	/**
-	 * Definec class.
+	 * Defines class.
 	 *
 	 * @param classLoader
 	 * 		Class loader to define class in.
@@ -1280,9 +1268,10 @@ public final class VMHelper {
 	 * 		Type of the component.
 	 */
 	public void setComponentType(ArrayJavaClass javaClass, JavaClass componentType) {
-		val oop = (InstanceValue) javaClass.getOop();
-		if (oop.getJavaClass().hasVirtualField("componentType", "Ljava/lang/Class;")) {
-			oop.setValue("componentType", "Ljava/lang/Class;", componentType.getOop());
+		val oop = javaClass.getOop();
+		val offset = oop.getFieldOffset("componentType", "Ljava/lang/Class;");
+		if (offset != -1L) {
+			vm.getMemoryManager().writeValue(oop, offset, componentType.getOop());
 		}
 	}
 
@@ -1322,7 +1311,7 @@ public final class VMHelper {
 			val list = (InstanceJavaClass) vm.findBootstrapClass("java/util/List");
 			val size = invokeInterface(list, "size", "()I", new Value[0], new Value[]{suppressedExceptions}).getResult().asInt();
 			for (int i = 0; i < size; i++) {
-				val ex = invokeInterface(list, "get", "(I)Ljava/lang/Object;", new Value[]{IntValue.of(i)}, new Value[]{suppressedExceptions}).getResult();
+				val ex = invokeInterface(list, "get", "(I)Ljava/lang/Object;", new Value[0], new Value[]{suppressedExceptions, IntValue.of(i)}).getResult();
 				exception.addSuppressed(toJavaException((InstanceValue) ex));
 			}
 		}
@@ -1348,7 +1337,8 @@ public final class VMHelper {
 		val vm = this.vm;
 		val jc = vm.getSymbols().java_lang_StackTraceElement;
 		jc.initialize();
-		val element = vm.getMemoryManager().newInstance(jc);
+		val memoryManager = vm.getMemoryManager();
+		val element = memoryManager.newInstance(jc);
 		invokeExact(jc, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V", new Value[0], new Value[]{
 				element,
 				newUtf8(className),
@@ -1356,8 +1346,9 @@ public final class VMHelper {
 				newUtf8(sourceFile),
 				IntValue.of(lineNumber)
 		});
-		if (injectDeclaringClass && jc.hasVirtualField("declaringClassObject", "Ljava/lang/Class;")) {
-			element.setValue("declaringClassObject", "Ljava/lang/Class;", owner.getOop());
+		long offset;
+		if (injectDeclaringClass && (offset = element.getFieldOffset("declaringClassObject", "Ljava/lang/Class;")) != -1L) {
+			memoryManager.writeValue(element, offset, owner.getOop());
 		}
 		return element;
 	}
@@ -2079,24 +2070,14 @@ public final class VMHelper {
 	 * 		If constant value cannot be created.
 	 */
 	public ObjectValue forInvokeDynamicCall(Object cst) {
-		if (cst instanceof Long) {
-			return boxLong(LongValue.of((Long) cst));
-		}
-		if (cst instanceof Double) {
-			return boxDouble(new DoubleValue((Double) cst));
-		}
+		if (cst instanceof Long) return boxLong(LongValue.of((Long) cst));
+		if (cst instanceof Double) return boxDouble(new DoubleValue((Double) cst));
 		if (cst instanceof Integer || cst instanceof Short || cst instanceof Byte) {
 			return boxInt(IntValue.of(((Number) cst).intValue()));
 		}
-		if (cst instanceof Character) {
-			return boxInt(IntValue.of((Character) cst));
-		}
-		if (cst instanceof Float) {
-			return boxFloat(new FloatValue((Float) cst));
-		}
-		if (cst instanceof Boolean) {
-			return boxBoolean((Boolean) cst ? IntValue.ONE : IntValue.ZERO);
-		}
+		if (cst instanceof Character) return boxInt(IntValue.of((Character) cst));
+		if (cst instanceof Float) return boxFloat(new FloatValue((Float) cst));
+		if (cst instanceof Boolean) return boxBoolean((Boolean) cst ? IntValue.ONE : IntValue.ZERO);
 		return (ObjectValue) valueFromLdc(cst);
 	}
 

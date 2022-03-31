@@ -2,7 +2,6 @@ package dev.xdark.ssvm.mirror;
 
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
 
 /**
  * VM representation of Java class.

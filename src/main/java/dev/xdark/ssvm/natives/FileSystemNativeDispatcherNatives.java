@@ -14,7 +14,6 @@ import lombok.val;
 @UtilityClass
 public class FileSystemNativeDispatcherNatives {
 
-
 	/**
 	 * @param vm
 	 * 		VM instance.

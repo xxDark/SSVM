@@ -11,7 +11,7 @@ import java.nio.ByteBuffer;
  *
  * @author xDark
  */
-public final class NullValue extends ObjectValue {
+public final class NullValue extends SimpleObjectValue {
 
 	public static final NullValue INSTANCE = new NullValue();
 

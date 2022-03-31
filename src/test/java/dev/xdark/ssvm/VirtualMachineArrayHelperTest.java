@@ -2,7 +2,6 @@ package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
 import lombok.val;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

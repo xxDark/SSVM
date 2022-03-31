@@ -1,16 +1,11 @@
 package dev.xdark.ssvm.value;
 
-import dev.xdark.ssvm.memory.Memory;
-
-public final class ArrayValue extends ObjectValue {
-
-	/**
-	 * @param memory
-	 * 		Object data.
-	 */
-	public ArrayValue(Memory memory) {
-		super(memory);
-	}
+/**
+ * VM array value.
+ * 
+ * @author xDark
+ */
+public interface ArrayValue extends ObjectValue {
 
 	/**
 	 * Returns long value at specific index.
@@ -20,9 +15,7 @@ public final class ArrayValue extends ObjectValue {
 	 *
 	 * @return long value.
 	 */
-	public long getLong(int index) {
-		return getMemoryManager().readLong(this, dataOffset(validate(index) * sizeof(long.class)));
-	}
+	long getLong(int index);
 
 	/**
 	 * Returns double value at specific index.
@@ -32,9 +25,7 @@ public final class ArrayValue extends ObjectValue {
 	 *
 	 * @return double value.
 	 */
-	public double getDouble(int index) {
-		return getMemoryManager().readDouble(this, dataOffset(validate(index) * sizeof(double.class)));
-	}
+	double getDouble(int index);
 
 	/**
 	 * Returns int value at specific index.
@@ -44,9 +35,7 @@ public final class ArrayValue extends ObjectValue {
 	 *
 	 * @return double value.
 	 */
-	public int getInt(int index) {
-		return getMemoryManager().readInt(this, dataOffset(validate(index) * sizeof(int.class)));
-	}
+	int getInt(int index);
 
 	/**
 	 * Returns float value at specific index.
@@ -56,9 +45,7 @@ public final class ArrayValue extends ObjectValue {
 	 *
 	 * @return float value.
 	 */
-	public float getFloat(int index) {
-		return getMemoryManager().readFloat(this, dataOffset(validate(index) * sizeof(float.class)));
-	}
+	float getFloat(int index);
 
 	/**
 	 * Returns char value at specific index.
@@ -68,9 +55,7 @@ public final class ArrayValue extends ObjectValue {
 	 *
 	 * @return char value.
 	 */
-	public char getChar(int index) {
-		return getMemoryManager().readChar(this, dataOffset(validate(index) * sizeof(char.class)));
-	}
+	char getChar(int index);
 
 	/**
 	 * Returns short value at specific index.
@@ -80,9 +65,7 @@ public final class ArrayValue extends ObjectValue {
 	 *
 	 * @return short value.
 	 */
-	public short getShort(int index) {
-		return getMemoryManager().readShort(this, dataOffset(validate(index) * sizeof(short.class)));
-	}
+	short getShort(int index);
 
 	/**
 	 * Returns byte value at specific index.
@@ -92,9 +75,7 @@ public final class ArrayValue extends ObjectValue {
 	 *
 	 * @return byte value.
 	 */
-	public byte getByte(int index) {
-		return getMemoryManager().readByte(this, dataOffset(validate(index) * sizeof(byte.class)));
-	}
+	byte getByte(int index);
 
 	/**
 	 * Returns boolean value at specific index.
@@ -104,9 +85,7 @@ public final class ArrayValue extends ObjectValue {
 	 *
 	 * @return boolean value.
 	 */
-	public boolean getBoolean(int index) {
-		return getMemoryManager().readBoolean(this, dataOffset(validate(index) * sizeof(boolean.class)));
-	}
+	boolean getBoolean(int index);
 
 	/**
 	 * Returns VM value at specific index.
@@ -116,9 +95,7 @@ public final class ArrayValue extends ObjectValue {
 	 *
 	 * @return VM value.
 	 */
-	public Value getValue(int index) {
-		return getMemoryManager().readValue(this, dataOffset(validate(index) * sizeof(Value.class)));
-	}
+	Value getValue(int index);
 
 	/**
 	 * Sets long value of an array.
@@ -128,9 +105,7 @@ public final class ArrayValue extends ObjectValue {
 	 * @param value
 	 * 		Value to set.
 	 */
-	public void setLong(int index, long value) {
-		getMemoryManager().writeLong(this, dataOffset(validate(index) * sizeof(long.class)), value);
-	}
+	void setLong(int index, long value);
 
 	/**
 	 * Sets double value of an array.
@@ -140,9 +115,7 @@ public final class ArrayValue extends ObjectValue {
 	 * @param value
 	 * 		Value to set.
 	 */
-	public void setDouble(int index, double value) {
-		getMemoryManager().writeDouble(this, dataOffset(validate(index) * sizeof(double.class)), value);
-	}
+	public void setDouble(int index, double value);
 
 	/**
 	 * Sets int value of an array.
@@ -152,9 +125,7 @@ public final class ArrayValue extends ObjectValue {
 	 * @param value
 	 * 		Value to set.
 	 */
-	public void setInt(int index, int value) {
-		getMemoryManager().writeInt(this, dataOffset(validate(index) * sizeof(int.class)), value);
-	}
+	void setInt(int index, int value);
 
 	/**
 	 * Sets float value of an array.
@@ -164,9 +135,7 @@ public final class ArrayValue extends ObjectValue {
 	 * @param value
 	 * 		Value to set.
 	 */
-	public void setFloat(int index, float value) {
-		getMemoryManager().writeFloat(this, dataOffset(validate(index) * sizeof(float.class)), value);
-	}
+	void setFloat(int index, float value);
 
 	/**
 	 * Sets char value of an array.
@@ -176,9 +145,7 @@ public final class ArrayValue extends ObjectValue {
 	 * @param value
 	 * 		Value to set.
 	 */
-	public void setChar(int index, char value) {
-		getMemoryManager().writeChar(this, dataOffset(validate(index) * sizeof(char.class)), value);
-	}
+	void setChar(int index, char value);
 
 	/**
 	 * Sets short value of an array.
@@ -188,9 +155,7 @@ public final class ArrayValue extends ObjectValue {
 	 * @param value
 	 * 		Value to set.
 	 */
-	public void setShort(int index, short value) {
-		getMemoryManager().writeShort(this, dataOffset(validate(index) * sizeof(short.class)), value);
-	}
+	void setShort(int index, short value);
 
 	/**
 	 * Sets byte value of an array.
@@ -200,9 +165,7 @@ public final class ArrayValue extends ObjectValue {
 	 * @param value
 	 * 		Value to set.
 	 */
-	public void setByte(int index, byte value) {
-		getMemoryManager().writeByte(this, dataOffset(validate(index) * sizeof(byte.class)), value);
-	}
+	void setByte(int index, byte value);
 
 	/**
 	 * Sets boolean value of an array.
@@ -212,9 +175,7 @@ public final class ArrayValue extends ObjectValue {
 	 * @param value
 	 * 		Value to set.
 	 */
-	public void setBoolean(int index, boolean value) {
-		getMemoryManager().writeBoolean(this, dataOffset(validate(index) * sizeof(boolean.class)), value);
-	}
+	void setBoolean(int index, boolean value);
 
 	/**
 	 * Sets VM value of an array.
@@ -224,32 +185,12 @@ public final class ArrayValue extends ObjectValue {
 	 * @param value
 	 * 		Value to set.
 	 */
-	public void setValue(int index, ObjectValue value) {
-		getMemoryManager().writeValue(this, dataOffset(validate(index) * sizeof(Value.class)), value);
-	}
+	void setValue(int index, ObjectValue value);
 
 	/**
 	 * Returns array length.
 	 *
 	 * @return array length.
 	 */
-	public int getLength() {
-		return getMemoryManager().readArrayLength(this);
-	}
-
-	private long sizeof(Class<?> c) {
-		return getMemoryManager().arrayIndexScale(c);
-	}
-
-	private long dataOffset(long offset) {
-		if (offset == -1L) return offset;
-		return getMemoryManager().arrayBaseOffset(this) + offset;
-	}
-
-	private int validate(int index) {
-		if (index < 0 || index >= getLength()) {
-			throw new ArrayIndexOutOfBoundsException(Integer.toString(index));
-		}
-		return index;
-	}
+	 int getLength();
 }

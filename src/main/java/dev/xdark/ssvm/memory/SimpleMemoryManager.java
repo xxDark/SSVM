@@ -11,7 +11,6 @@ import lombok.val;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.WeakHashMap;
@@ -108,7 +107,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	public InstanceValue newInstance(InstanceJavaClass javaClass) {
 		val memory = allocateObjectMemory(javaClass);
 		setClass(memory, javaClass);
-		val value = new InstanceValue(memory);
+		val value = new SimpleInstanceValue(memory);
 		objects.put(memory, value);
 		return value;
 	}
@@ -117,7 +116,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	public <V> JavaValue<V> newJavaInstance(InstanceJavaClass javaClass, V value) {
 		val memory = allocateObjectMemory(javaClass);
 		setClass(memory, javaClass);
-		val wrapper = new JavaValue<>(memory, value);
+		val wrapper = new SimpleJavaValue<>(memory, value);
 		objects.put(memory, wrapper);
 		return wrapper;
 	}
@@ -125,7 +124,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	@Override
 	public JavaValue<InstanceJavaClass> newJavaLangClass(InstanceJavaClass javaClass) {
 		val memory = allocateClassMemory(javaClass, javaClass);
-		val wrapper = new JavaValue<>(memory, javaClass);
+		val wrapper = new SimpleJavaValue<>(memory, javaClass);
 		javaClass.setOop(wrapper);
 		setClass(memory, javaClass);
 		objects.put(memory, wrapper);
@@ -137,7 +136,7 @@ public class SimpleMemoryManager implements MemoryManager {
 		val memory = allocateArrayMemory(length, arrayIndexScale(javaClass.getComponentType()));
 		setClass(memory, javaClass);
 		memory.getData().writeInt(ARRAY_LENGTH, length);
-		val value = new ArrayValue(memory);
+		val value = new SimpleArrayValue(memory);
 		objects.put(memory, value);
 		return value;
 	}
@@ -266,7 +265,7 @@ public class SimpleMemoryManager implements MemoryManager {
 		val jlc = vm.findBootstrapClass("java/lang/Class");
 		val memory = allocateClassMemory(jlc, javaClass);
 		setClass(memory, jlc);
-		val wrapper = new JavaValue<>(memory, javaClass);
+		val wrapper = new SimpleJavaValue<>(memory, javaClass);
 		objects.put(memory, wrapper);
 		return wrapper;
 	}

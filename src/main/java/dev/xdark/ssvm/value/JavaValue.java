@@ -1,7 +1,5 @@
 package dev.xdark.ssvm.value;
 
-import dev.xdark.ssvm.memory.Memory;
-
 /**
  * Java value wrapper.
  *
@@ -10,35 +8,14 @@ import dev.xdark.ssvm.memory.Memory;
  *
  * @author xDark
  */
-public final class JavaValue<V> extends InstanceValue {
-
-	private final V value;
-	private boolean wide;
-
-	/**
-	 * @param memory
-	 * 		Object data.
-	 * @param value
-	 * 		Java value.
-	 */
-	public JavaValue(Memory memory, V value) {
-		super(memory);
-		this.value = value;
-	}
+public interface JavaValue<V> extends InstanceValue {
 
 	/**
 	 * Returns Java value.
 	 *
 	 * @return Java value.
 	 */
-	public V getValue() {
-		return value;
-	}
-
-	@Override
-	public boolean isWide() {
-		return wide;
-	}
+	V getValue();
 
 	/**
 	 * Sets whether this value should be wide.
@@ -46,7 +23,5 @@ public final class JavaValue<V> extends InstanceValue {
 	 * @param wide
 	 * 		Wide flag.
 	 */
-	public void setWide(boolean wide) {
-		this.wide = wide;
-	}
+	void setWide(boolean wide);
 }

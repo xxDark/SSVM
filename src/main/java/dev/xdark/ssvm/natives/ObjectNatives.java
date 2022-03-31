@@ -12,8 +12,6 @@ import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 import lombok.val;
 
-import java.nio.ByteBuffer;
-
 /**
  * Initializes java/lang/Object.
  *

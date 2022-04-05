@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.execution;
 
+import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
@@ -55,20 +56,34 @@ public class Interpreter {
 				val oop = ex.getOop();
 				val exceptionType = oop.getJavaClass();
 				val tryCatchBlocks = mn.tryCatchBlocks;
-				val index = ctx.getInsnPosition() - 1;
+				int index = ctx.getInsnPosition() - 1;
 				val vm = ctx.getVM();
-				for (int i = 0, j = tryCatchBlocks.size(); i < j; i++) {
-					val block = tryCatchBlocks.get(i);
-					String type = block.type;
-					if (type == null) type = "java/lang/Throwable";
-					val candidate = vm.findClass(ctx.getOwner().getClassLoader(), type, false);
-					if (index < AsmUtil.getIndex(block.start) || index > AsmUtil.getIndex(block.end)) continue;
-					if (candidate.isAssignableFrom(exceptionType)) {
-						stack.push(oop);
-						ctx.setInsnPosition(AsmUtil.getIndex(block.handler));
-						continue exec;
+				boolean shouldRepeat;
+				search:
+				do {
+					shouldRepeat = false;
+					for (int i = 0, j = tryCatchBlocks.size(); i < j; i++) {
+						val block = tryCatchBlocks.get(i);
+						if (index < AsmUtil.getIndex(block.start) || index > AsmUtil.getIndex(block.end)) continue;
+						String type = block.type;
+						boolean handle = type == null;
+						if (!handle) {
+							try {
+								val candidate = vm.findClass(ctx.getOwner().getClassLoader(), type, false);
+								handle = candidate.isAssignableFrom(exceptionType);
+							} catch (VMException hex) {
+								index = AsmUtil.getIndex(block.handler);
+								shouldRepeat = true;
+								continue search;
+							}
+						}
+						if (handle) {
+							stack.push(oop);
+							ctx.setInsnPosition(AsmUtil.getIndex(block.handler));
+							continue exec;
+						}
 					}
-				}
+				} while (shouldRepeat);
 				throw ex;
 			}
 		}

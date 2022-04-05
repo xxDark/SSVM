@@ -552,7 +552,17 @@ public class JitHelper {
 	public void invokeStatic(String owner, String name, String desc, ExecutionContext ctx) {
 		val vm = ctx.getVM();
 		val helper = vm.getHelper();
-		val klass = (InstanceJavaClass) helper.findClass(ctx.getOwner().getClassLoader(), owner, true);
+		InstanceJavaClass klass;
+		try {
+			klass = (InstanceJavaClass) helper.findClass(ctx.getOwner().getClassLoader(), owner, true);
+		} catch (VMException ex) {
+			val oop = ex.getOop();
+			if (oop.isNull() || !vm.getSymbols().java_lang_Error.isAssignableFrom(oop.getJavaClass())) {
+				val cnfe = helper.newException(vm.getSymbols().java_lang_NoClassDefFoundError, owner, oop);
+				throw new VMException(cnfe);
+			}
+			throw ex;
+		}
 		val mn = klass.getStaticMethodRecursively(name, desc);
 		if (mn == null) {
 			helper.throwException(vm.getSymbols().java_lang_NoSuchMethodError, owner + '.' + name + desc);

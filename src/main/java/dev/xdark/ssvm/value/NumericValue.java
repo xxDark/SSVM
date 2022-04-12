@@ -12,21 +12,6 @@ public abstract class NumericValue implements Value {
 	public static final int LOW = Short.MIN_VALUE, HIGH = Short.MAX_VALUE;
 
 	@Override
-	public <T> T as(Class<T> type) {
-		Object result;
-		if (type == long.class) result = asLong();
-		else if (type == double.class) result = asDouble();
-		else if (type == int.class) result = asInt();
-		else if (type == float.class) result = asFloat();
-		else if (type == char.class) result = asChar();
-		else if (type == short.class) result = asShort();
-		else if (type == byte.class) result = asByte();
-		else if (type == boolean.class) result = asBoolean();
-		else throw new IllegalStateException("Cannot represent " + this + " as " + type);
-		return (T) result;
-	}
-
-	@Override
 	public boolean asBoolean() {
 		return asByte() != 0;
 	}

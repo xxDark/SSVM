@@ -20,11 +20,6 @@ public final class NullValue extends SimpleObjectValue {
 	}
 
 	@Override
-	public <T> T as(Class<T> type) {
-		return null;
-	}
-
-	@Override
 	public boolean isWide() {
 		return false;
 	}

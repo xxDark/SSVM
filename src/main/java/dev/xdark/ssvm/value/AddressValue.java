@@ -16,11 +16,6 @@ public final class AddressValue implements Value {
 	private final int position;
 
 	@Override
-	public <T> T as(Class<T> type) {
-		throw new IllegalArgumentException(type.toString());
-	}
-
-	@Override
 	public boolean isWide() {
 		return false;
 	}

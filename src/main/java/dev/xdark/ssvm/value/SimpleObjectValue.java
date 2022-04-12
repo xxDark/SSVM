@@ -31,11 +31,6 @@ public class SimpleObjectValue implements ObjectValue {
 	}
 
 	@Override
-	public <T> T as(Class<T> type) {
-		throw new IllegalStateException(type.toString());
-	}
-
-	@Override
 	public long asLong() {
 		return memory.getAddress();
 	}

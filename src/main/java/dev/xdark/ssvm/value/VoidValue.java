@@ -13,11 +13,6 @@ public final class VoidValue implements Value {
 	}
 
 	@Override
-	public <T> T as(Class<T> type) {
-		throw new IllegalStateException();
-	}
-
-	@Override
 	public boolean isWide() {
 		throw new UnsupportedOperationException();
 	}

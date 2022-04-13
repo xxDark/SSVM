@@ -163,7 +163,7 @@ public class UnsafeNatives {
 				throw new PanicException("Segfault");
 			}
 			val value = (ObjectValue) obj;
-			val offset = (int) locals.load(2).asLong();
+			val offset = locals.load(2).asLong();
 			val expected = locals.load(4).asInt();
 			val x = locals.load(5).asInt();
 			val memoryManager = vm.getMemoryManager();
@@ -189,7 +189,7 @@ public class UnsafeNatives {
 				throw new PanicException("Segfault");
 			}
 			val value = (ObjectValue) obj;
-			val offset = (int) locals.load(2).asLong();
+			val offset = locals.load(2).asLong();
 			val expected = locals.<ObjectValue>load(4);
 			val x = locals.<ObjectValue>load(5);
 			val memoryManager = vm.getMemoryManager();
@@ -212,7 +212,7 @@ public class UnsafeNatives {
 				throw new PanicException("Segfault");
 			}
 			val value = (ObjectValue) $value;
-			val offset = (int) locals.load(2).asLong();
+			val offset = locals.load(2).asLong();
 			val expected = locals.load(4).asLong();
 			val x = locals.load(6).asLong();
 			val memoryManager = vm.getMemoryManager();
@@ -282,12 +282,20 @@ public class UnsafeNatives {
 			ctx.setResult(LongValue.M_ONE);
 			return Result.ABORT;
 		});
+		vmi.setInvoker(unsafe, "putByte", "(JB)V", ctx -> {
+			val memoryManager = vm.getMemoryManager();
+			val locals = ctx.getLocals();
+			val address = locals.load(1).asLong();
+			val block = nonNull(memoryManager.getMemory(address));
+			block.getData().writeByte(address - block.getAddress(), locals.load(3).asByte());
+			return Result.ABORT;
+		});
 		vmi.setInvoker(unsafe, "putLong", "(JJ)V", ctx -> {
 			val memoryManager = vm.getMemoryManager();
 			val locals = ctx.getLocals();
 			val address = locals.load(1).asLong();
 			val block = nonNull(memoryManager.getMemory(address));
-			block.getData().writeLong((int) (address - block.getAddress()), locals.load(3).asLong());
+			block.getData().writeLong(address - block.getAddress(), locals.load(3).asLong());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "getByte", "(J)B", ctx -> {
@@ -295,7 +303,7 @@ public class UnsafeNatives {
 			val locals = ctx.getLocals();
 			val address = locals.load(1).asLong();
 			val block = nonNull(memoryManager.getMemory(address));
-			ctx.setResult(IntValue.of(block.getData().readByte((int) (address - block.getAddress()))));
+			ctx.setResult(IntValue.of(block.getData().readByte(address - block.getAddress())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "putInt", "(Ljava/lang/Object;JI)V", ctx -> {
@@ -346,7 +354,7 @@ public class UnsafeNatives {
 		vmi.setInvoker(unsafe, "getLong", "(J)J", ctx -> {
 			val address = ctx.getLocals().load(1).asLong();
 			val block = nonNull(vm.getMemoryManager().getMemory(address));
-			ctx.setResult(LongValue.of(block.getData().readLong((int) (address - block.getAddress()))));
+			ctx.setResult(LongValue.of(block.getData().readLong(address - block.getAddress())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "defineAnonymousClass", "(Ljava/lang/Class;[B[Ljava/lang/Object;)Ljava/lang/Class;", ctx -> {

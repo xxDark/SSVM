@@ -39,6 +39,31 @@ public class UnsafeTest {
 		}
 
 		@VMTest
+		private static void testLongWithByte() {
+			val address = U.allocateMemory(8L);
+			val v = System.currentTimeMillis();
+			U.putByte(address, (byte) v);
+			U.putByte(address + 1, (byte) (v >> 8));
+			U.putByte(address + 2, (byte) (v >> 16));
+			U.putByte(address + 3, (byte) (v >> 24));
+			U.putByte(address + 4, (byte) (v >> 32));
+			U.putByte(address + 5, (byte) (v >> 40));
+			U.putByte(address + 6, (byte) (v >> 48));
+			U.putByte(address + 7, (byte) (v >> 56));
+			val read = ((long) U.getByte(address + 7) << 56)
+					| ((long) U.getByte(address + 6) & 0xff) << 48
+					| ((long) U.getByte(address + 5) & 0xff) << 40
+					| ((long) U.getByte(address + 4) & 0xff) << 32
+					| ((long) U.getByte(address + 3) & 0xff) << 24
+					| ((long) U.getByte(address + 2) & 0xff) << 16
+					| ((long) U.getByte(address + 1) & 0xff) << 8
+					| ((long) U.getByte(address) & 0xff);
+			if (v != read || v != U.getLong(address)) {
+				throw new IllegalStateException();
+			}
+		}
+
+		@VMTest
 		private static void testArray() {
 			val unsafe = U;
 			val array = new Object[16];

@@ -123,4 +123,21 @@ public class InvokeDynamicTest {
 			throw new IllegalStateException();
 		}
 	}
+
+	private static long tmp1, tmp2;
+
+	@VMTest
+	private static void testLongCapture() {
+		val rng = ThreadLocalRandom.current();
+		val v1 = rng.nextLong();
+		val v2 = rng.nextLong();
+		tmp1 = v1;
+		tmp2 = v2;
+		val r = (Runnable) () -> {
+			if (v1 != tmp1 || v2 != tmp2) {
+				throw new IllegalStateException();
+			}
+		};
+		r.run();
+	}
 }

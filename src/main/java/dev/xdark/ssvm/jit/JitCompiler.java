@@ -62,6 +62,7 @@ public final class JitCompiler {
 	private static final ClassType VALUES = ClassType.of(Value[].class);
 	private static final ClassType VM_EXCEPTION = ClassType.of(VMException.class);
 	private static final ClassType INSTANCE = ClassType.of(InstanceValue.class);
+	private static final ClassType TOP = ClassType.of(TopValue.class);
 
 	// ctx methods
 	private static final Access GET_LOCALS = virtualCall(CTX, "getLocals", LOCALS);
@@ -149,7 +150,7 @@ public final class JitCompiler {
 	private static final Access GET_STATIC_BYTE = staticCall(JIT_HELPER, "getStaticB", J_BYTE, J_OBJECT, J_LONG, CTX);
 	private static final Access GET_STATIC_VALUE = staticCall(JIT_HELPER, "getStaticA", VALUE, J_OBJECT, J_LONG, CTX);
 	private static final Access GET_STATIC_FAIL = staticCall(JIT_HELPER, "getStaticFail", J_VOID, J_OBJECT, J_OBJECT, CTX);
-	private static final Access GET_STATIC_SLOW = staticCall(JIT_HELPER, "getStatic", VALUE, J_STRING, J_STRING, J_STRING, CTX);
+	private static final Access GET_STATIC_SLOW = staticCall(JIT_HELPER, "getStaticA", VALUE, J_STRING, J_STRING, J_STRING, CTX);
 
 	private static final Access GET_FIELD_LONG = staticCall(JIT_HELPER, "getFieldJ", J_LONG, VALUE, J_OBJECT, J_STRING, J_STRING, CTX);
 	private static final Access GET_FIELD_DOUBLE = staticCall(JIT_HELPER, "getFieldD", J_DOUBLE, VALUE, J_OBJECT, J_STRING, J_STRING, CTX);
@@ -180,6 +181,8 @@ public final class JitCompiler {
 	private static final Access GET_EXCEPTION_OOP = virtualCall(VM_EXCEPTION, "getOop", INSTANCE);
 
 	private static final Access DYNAMIC_CALL = staticCall(JIT_HELPER, "invokeDynamic", VALUE, VALUES, J_OBJECT, J_INT, CTX);
+
+	private static final Access GET_TOP = getStatic(TOP, "INSTANCE", TOP);
 
 	private static final int CTX_SLOT = 1;
 	private static final int LOCALS_SLOT = 2;
@@ -1040,7 +1043,7 @@ public final class JitCompiler {
 				jit.visitLdcInsn(node.owner + name + desc);
 				access = INVOKE_FAIL;
 			} else {
-				loadArgs(false, desc);
+				collectStaticCallArgs(desc);
 				loadCompilerConstant(jc);
 				loadCompilerConstant(mn);
 				access = INVOKE_STATIC_INTRINSIC;
@@ -1065,7 +1068,7 @@ public final class JitCompiler {
 
 	private void invokeStaticSlow(MethodInsnNode node) {
 		val desc = node.desc;
-		loadArgs(false, desc);
+		collectStaticCallArgs(desc);
 		pushMethod(node);
 		loadCtx();
 		INVOKE_STATIC_SLOW.emit(jit);
@@ -1093,7 +1096,7 @@ public final class JitCompiler {
 				jit.visitLdcInsn(node.owner + name + desc);
 				access = INVOKE_FAIL;
 			} else {
-				loadArgs(true, desc);
+				collectVirtualCallArgs(desc);
 				loadCompilerConstant(jc);
 				loadCompilerConstant(mn);
 				access = INVOKE_SPECIAL_INTRINSIC;
@@ -1118,7 +1121,7 @@ public final class JitCompiler {
 
 	private void invokeSpecialSlow(MethodInsnNode node) {
 		val desc = node.desc;
-		loadArgs(true, desc);
+		collectVirtualCallArgs(desc);
 		pushMethod(node);
 		loadCtx();
 		INVOKE_SPECIAL_SLOW.emit(jit);
@@ -1127,7 +1130,7 @@ public final class JitCompiler {
 
 	private void invokeVirtual(MethodInsnNode node) {
 		val desc = node.desc;
-		loadArgs(true, desc);
+		collectVirtualCallArgs(desc);
 		loadCompilerConstant(node.name);
 		loadCompilerConstant(desc);
 		loadCtx();
@@ -1136,17 +1139,17 @@ public final class JitCompiler {
 	}
 
 	private void invokeInterface(MethodInsnNode node) {
-		loadArgs(true, node.desc);
+		val desc = node.desc;
+		collectVirtualCallArgs(desc);
 		pushMethod(node);
 		loadCtx();
 		INVOKE_INTERFACE.emit(jit);
-		toJava(Type.getReturnType(node.desc));
+		toJava(Type.getReturnType(desc));
 	}
 
 	private void invokeDynamic(InvokeDynamicInsnNode node) {
 		val jit = this.jit;
-		val types = Type.getArgumentTypes(node.desc);
-		loadArgs(false, types.length + 1, types); // args
+		collectArgs(1, 1, node.desc); // args
 		loadConstants(); // args constants
 		emitInt(makeConstant(node), jit); // args constants index
 		loadCtx(); // args constants index ctx
@@ -1234,25 +1237,38 @@ public final class JitCompiler {
 		}
 	}
 
-	private void loadArgs(boolean vrt, int arrayLength, Type[] args) {
-		int offset = Math.abs(args.length - arrayLength);
-		int idx = vrt ? 1 : 0;
+	private void collectArgs(int insertionOffset, int extra, String desc) {
+		val args = Type.getArgumentTypes(desc);
+		int count = totalSize(args) + extra;
 		val jit = this.jit;
-		jit.visitLdcInsn(arrayLength + idx);
+		jit.visitLdcInsn(count);
 		jit.visitTypeInsn(ANEWARRAY, VALUE.internalName);
-		int i = args.length;
-		while (i-- != 0)
-			loadArgTo(i + idx + offset, args[i]);
-		if (vrt)
-			loadArgTo(offset, VALUE.type);
+		int idx = args.length;
+		count--;
+		while (idx-- != 0) {
+			val arg = args[idx];
+			if (arg.getSize() == 2) {
+				loadTopTo(count-- + insertionOffset);
+			}
+			loadArgTo(count-- + insertionOffset, arg);
+		}
 	}
 
-	private void loadArgs(boolean vrt, Type[] args) {
-		loadArgs(vrt, args.length, args);
+	private void collectVirtualCallArgs(String desc) {
+		collectArgs(0, 1, desc);
+		loadArgTo(0, VALUE.type);
 	}
 
-	private void loadArgs(boolean vrt, String desc) {
-		loadArgs(vrt, Type.getArgumentTypes(desc));
+	private void collectStaticCallArgs(String desc) {
+		collectArgs(0, 0, desc);
+	}
+
+	private static int totalSize(Type[] args) {
+		int size = 0;
+		for (val arg : args) {
+			size += arg.getSize();
+		}
+		return size;
 	}
 
 	private void loadArgTo(int idx, Type type) {
@@ -1263,6 +1279,14 @@ public final class JitCompiler {
 		toVM(type); // args args value
 		jit.visitLdcInsn(idx); // args args value idx
 		jit.visitInsn(SWAP);
+		jit.visitInsn(AASTORE);
+	}
+
+	private void loadTopTo(int idx) {
+		val jit = this.jit;
+		jit.visitInsn(DUP); // args args
+		jit.visitLdcInsn(idx); // args args idx
+		GET_TOP.emit(jit); // args args idx value
 		jit.visitInsn(AASTORE);
 	}
 

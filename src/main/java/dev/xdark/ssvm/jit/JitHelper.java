@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.jit;
 
+import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
@@ -233,19 +234,23 @@ public class JitHelper {
 		}
 	}
 
-	public void getStatic(String owner, String name, String desc, ExecutionContext ctx) {
+	public Value getStaticA(String owner, String name, String desc, ExecutionContext ctx) {
 		val vm = ctx.getVM();
 		val helper = vm.getHelper();
 		InstanceJavaClass klass = (InstanceJavaClass) helper.findClass(ctx.getOwner().getClassLoader(), owner, true);
 		while (klass != null) {
 			val value = klass.getStaticValue(name, desc);
 			if (value != null) {
-				ctx.getStack().pushGeneric(value);
-				return;
+				return value;
 			}
 			klass = klass.getSuperClass();
 		}
 		helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, name);
+		return null;
+	}
+
+	public void getStatic(String owner, String name, String desc, ExecutionContext ctx) {
+		ctx.getStack().pushGeneric(getStaticA(owner, name, desc, ctx));
 	}
 
 	// special intrinsic versions.
@@ -511,10 +516,13 @@ public class JitHelper {
 		val vm = ctx.getVM();
 		val stack = ctx.getStack();
 		val args = Type.getArgumentTypes(desc);
-		int localsLength = args.length + 1;
+		int localsLength = 1;
+		for (val arg : args) {
+			localsLength += arg.getSize();
+		}
 		val locals = new Value[localsLength];
 		while (localsLength-- != 0) {
-			locals[localsLength] = stack.popGeneric();
+			locals[localsLength] = stack.pop();
 		}
 		val result = vm.getHelper().invokeVirtual(name, desc, new Value[0], locals);
 		val v = result.getResult();
@@ -537,10 +545,13 @@ public class JitHelper {
 		val klass = (InstanceJavaClass) helper.findClass(ctx.getOwner().getClassLoader(), owner, true);
 		val stack = ctx.getStack();
 		val args = Type.getArgumentTypes(desc);
-		int localsLength = args.length + 1;
+		int localsLength = 1;
+		for (val arg : args) {
+			localsLength += arg.getSize();
+		}
 		val locals = new Value[localsLength];
 		while (localsLength-- != 0) {
-			locals[localsLength] = stack.popGeneric();
+			locals[localsLength] = stack.pop();
 		}
 		val result = helper.invokeExact(klass, name, desc, new Value[0], locals);
 		val v = result.getResult();
@@ -550,31 +561,16 @@ public class JitHelper {
 	}
 
 	public void invokeStatic(String owner, String name, String desc, ExecutionContext ctx) {
-		val vm = ctx.getVM();
-		val helper = vm.getHelper();
-		InstanceJavaClass klass;
-		try {
-			klass = (InstanceJavaClass) helper.findClass(ctx.getOwner().getClassLoader(), owner, true);
-		} catch (VMException ex) {
-			val oop = ex.getOop();
-			if (oop.isNull() || !vm.getSymbols().java_lang_Error.isAssignableFrom(oop.getJavaClass())) {
-				val cnfe = helper.newException(vm.getSymbols().java_lang_NoClassDefFoundError, owner, oop);
-				throw new VMException(cnfe);
-			}
-			throw ex;
-		}
-		val mn = klass.getStaticMethodRecursively(name, desc);
-		if (mn == null) {
-			helper.throwException(vm.getSymbols().java_lang_NoSuchMethodError, owner + '.' + name + desc);
-		}
+		val mn = resolveStaticMethod(owner, name, desc, ctx);
 		val stack = ctx.getStack();
-		val args = mn.getArgumentTypes();
-		int localsLength = args.length;
+		int localsLength = mn.getMaxArgs();
 		val locals = new Value[localsLength];
 		while (localsLength-- != 0) {
-			locals[localsLength] = stack.popGeneric();
+			locals[localsLength] = stack.pop();
 		}
-		val result = helper.invokeStatic(klass, mn, new Value[0], locals);
+		val vm = ctx.getVM();
+		val helper = vm.getHelper();
+		val result = helper.invokeStatic(mn.getOwner(), mn, new Value[0], locals);
 		val v = result.getResult();
 		if (!v.isVoid()) {
 			stack.pushGeneric(v);
@@ -598,6 +594,14 @@ public class JitHelper {
 		val mn = (JavaMethod) method;
 		val stack = ctx.getStack();
 		val result = helper.invokeStatic((InstanceJavaClass) owner, mn, new Value[0], locals);
+		return result.getResult();
+	}
+
+	public Value invokeStatic(Value[] locals, String owner, String name, String desc, ExecutionContext ctx) {
+		val helper = ctx.getHelper();
+		val mn = resolveStaticMethod(owner, name, desc, ctx);
+		val stack = ctx.getStack();
+		val result = helper.invokeStatic(mn.getOwner(), mn, new Value[0], locals);
 		return result.getResult();
 	}
 
@@ -631,10 +635,13 @@ public class JitHelper {
 		val klass = (InstanceJavaClass) helper.findClass(ctx.getOwner().getClassLoader(), owner, true);
 		val stack = ctx.getStack();
 		val args = Type.getArgumentTypes(desc);
-		int localsLength = args.length + 1;
+		int localsLength = 1;
+		for (val arg : args) {
+			localsLength += arg.getSize();
+		}
 		val locals = new Value[localsLength];
 		while (localsLength-- != 0) {
-			locals[localsLength] = stack.popGeneric();
+			locals[localsLength] = stack.pop();
 		}
 		val result = helper.invokeInterface(klass, name, desc, new Value[0], locals);
 		val v = result.getResult();
@@ -900,7 +907,28 @@ public class JitHelper {
 		}
 		return InvokeDynamicLinker.dynamicCall(args, result.desc, result.handle, ctx);
 	}
-
+	
+	private static JavaMethod resolveStaticMethod(String owner, String name, String desc, ExecutionContext ctx) {
+		val vm = ctx.getVM();
+		val helper = vm.getHelper();
+		InstanceJavaClass klass;
+		try {
+			klass = (InstanceJavaClass) helper.findClass(ctx.getOwner().getClassLoader(), owner, true);
+		} catch (VMException ex) {
+			val oop = ex.getOop();
+			if (oop.isNull() || !vm.getSymbols().java_lang_Error.isAssignableFrom(oop.getJavaClass())) {
+				val cnfe = helper.newException(vm.getSymbols().java_lang_NoClassDefFoundError, owner, oop);
+				throw new VMException(cnfe);
+			}
+			throw ex;
+		}
+		val mn = klass.getStaticMethodRecursively(name, desc);
+		if (mn == null) {
+			helper.throwException(vm.getSymbols().java_lang_NoSuchMethodError, owner + '.' + name + desc);
+		}
+		return mn;
+	}
+	
 	@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 	private static final class DynamicLinkResult {
 		final InstanceValue handle;

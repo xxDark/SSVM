@@ -182,7 +182,6 @@ public class MethodHandleNatives {
 				Value[] lvt = locals.getTable();
 
 				val owner = jm.getOwner();
-				lvt = compactForExecution(lvt);
 				Value result;
 				if ((jm.getAccess() & ACC_STATIC) == 0) {
 					int flags = vmentry.getInt("flags");
@@ -216,7 +215,7 @@ public class MethodHandleNatives {
 			val resolved = (InstanceValue) memberName.getValue("method", symbols.java_lang_invoke_ResolvedMethodName.getDescriptor());
 			val vmtarget = ((JavaValue<JavaMethod>) resolved.getValue(VM_TARGET, "Ljava/lang/Object;")).getValue();
 
-			Value[] args = compactForExecution(Arrays.copyOfRange(table, 0, length - 1));
+			Value[] args = Arrays.copyOfRange(table, 0, length - 1);
 
 			Value result;
 			if ((vmtarget.getAccess() & ACC_STATIC) == 0) {

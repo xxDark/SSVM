@@ -100,7 +100,7 @@ public class VirtualMachine {
 		val groupClass = symbols.java_lang_ThreadGroup;
 		groupClass.initialize();
 
-		IntrinsicsNatives.init(this);
+		 IntrinsicsNatives.init(this);
 	}
 	
 	public VirtualMachine() {

@@ -3,6 +3,8 @@ package dev.xdark.ssvm.execution.asm;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.value.TopValue;
+import lombok.val;
 import org.objectweb.asm.tree.VarInsnNode;
 
 /**
@@ -14,7 +16,10 @@ public final class DoubleStoreProcessor implements InstructionProcessor<VarInsnN
 
 	@Override
 	public Result execute(VarInsnNode insn, ExecutionContext ctx) {
-		ctx.getLocals().set(insn.var, ctx.getStack().popWide());
+		val locals = ctx.getLocals();
+		val var = insn.var;
+		locals.set(var, ctx.getStack().popWide());
+		locals.set(var + 1, TopValue.INSTANCE);
 		return Result.CONTINUE;
 	}
 }

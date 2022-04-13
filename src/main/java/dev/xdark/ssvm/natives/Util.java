@@ -50,38 +50,24 @@ final class Util {
 	 */
 	Value[] convertReflectionArgs(VirtualMachine vm, Value loader, Type[] argTypes, ArrayValue array) {
 		val helper = vm.getHelper();
-		val result = new Value[argTypes.length];
+		int total = 0;
+		for (val arg : argTypes) {
+			total += arg.getSize();
+		}
+		val result = new Value[total];
+		int x = 0;
 		for (int i = 0; i < argTypes.length; i++) {
 			val originalClass = helper.findClass(loader, argTypes[i].getInternalName(), true);
 			val value = (ObjectValue) array.getValue(i);
 			if (value.isNull() || !originalClass.isPrimitive()) {
-				result[i] = value;
+				result[x++] = value;
 			} else {
-				result[i] = helper.unboxGeneric(value, originalClass);
+				if ((result[x++] = helper.unboxGeneric(value, originalClass)).isWide()) {
+					result[x++] = TopValue.INSTANCE;
+				}
 			}
 		}
 		return result;
-	}
-
-	/**
-	 * Converts array of values back to their wrapper types
-	 * if needed.
-	 * Used for InvokeDynamic.
-	 *
-	 * @param vm
-	 * 		VM instance.
-	 * @param types
-	 * 		Parameter types.
-	 * @param args
-	 * 		Arguments.
-	 */
-	void convertInvokeDynamicArgs(VirtualMachine vm, Type[] types, Value[] args) {
-		// TODO figure out why this is even needed
-		// either I'm dumb, or there is some magic in the JVM.
-		val helper = vm.getHelper();
-		for (int i = 0, j = args.length; i < j; i++) {
-			args[i] = convertInvokeDynamicArgument(helper, types[i], args[i]);
-		}
 	}
 
 	/**

@@ -19,6 +19,7 @@ import org.objectweb.asm.tree.ClassNode;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.stream.StreamSupport;
 
 /**
@@ -2128,12 +2129,7 @@ public final class VMHelper {
 		val lvt = ctx.getLocals();
 		int x = 0;
 		for (val arg : locals) {
-			if (arg == null) {
-				x++;
-				continue;
-			}
-			lvt.set(x++, arg);
-			if (arg.isWide()) x++;
+			lvt.set(x++, Objects.requireNonNull(arg, "VM is broken"));
 		}
 		val $stack = ctx.getStack();
 		for (val value : stack) {
@@ -2158,15 +2154,7 @@ public final class VMHelper {
 	}
 
 	private static int getMaxLocals(JavaMethod jm, Value[] locals) {
-		int max = AsmUtil.getMaxLocals(jm);
-		int x = 0;
-		for (val local : locals) {
-			x++;
-			if (local != null && local.isWide()) {
-				x++;
-			}
-		}
-		return Math.max(max, x);
+		return Math.max(AsmUtil.getMaxLocals(jm), locals.length);
 	}
 
 	private static void makeHiddenMethod(InstanceJavaClass jc, String name, String desc) {

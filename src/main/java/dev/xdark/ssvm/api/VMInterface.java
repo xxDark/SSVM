@@ -136,6 +136,16 @@ public final class VMInterface {
 	}
 
 	/**
+	 * Registers global method enter hook.
+	 *
+	 * @param invocation
+	 * 		Hook to register.
+	 */
+	public void registerMethodExit(MethodInvocation invocation) {
+		globalExit.add(invocation);
+	}
+
+	/**
 	 * Registers global method exit hook.
 	 *
 	 * @param invocation
@@ -143,6 +153,16 @@ public final class VMInterface {
 	 */
 	public void removeMethodEnter(MethodInvocation invocation) {
 		globalEnter.remove(invocation);
+	}
+
+	/**
+	 * Registers global method exit hook.
+	 *
+	 * @param invocation
+	 * 		Hook to unregister.
+	 */
+	public void removeMethodExit(MethodInvocation invocation) {
+		globalExit.remove(invocation);
 	}
 
 	/**

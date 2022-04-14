@@ -1149,7 +1149,7 @@ public final class JitCompiler {
 
 	private void invokeDynamic(InvokeDynamicInsnNode node) {
 		val jit = this.jit;
-		collectArgs(1, 1, node.desc); // args
+		collectArgs(1, node.desc); // args
 		loadConstants(); // args constants
 		emitInt(makeConstant(node), jit); // args constants index
 		loadCtx(); // args constants index ctx
@@ -1237,7 +1237,7 @@ public final class JitCompiler {
 		}
 	}
 
-	private void collectArgs(int insertionOffset, int extra, String desc) {
+	private void collectArgs(int extra, String desc) {
 		val args = Type.getArgumentTypes(desc);
 		int count = totalSize(args) + extra;
 		val jit = this.jit;
@@ -1248,19 +1248,19 @@ public final class JitCompiler {
 		while (idx-- != 0) {
 			val arg = args[idx];
 			if (arg.getSize() == 2) {
-				loadTopTo(count-- + insertionOffset);
+				loadTopTo(count--);
 			}
-			loadArgTo(count-- + insertionOffset, arg);
+			loadArgTo(count--, arg);
 		}
 	}
 
 	private void collectVirtualCallArgs(String desc) {
-		collectArgs(0, 1, desc);
+		collectArgs(1, desc);
 		loadArgTo(0, VALUE.type);
 	}
 
 	private void collectStaticCallArgs(String desc) {
-		collectArgs(0, 0, desc);
+		collectArgs(0, desc);
 	}
 
 	private static int totalSize(Type[] args) {

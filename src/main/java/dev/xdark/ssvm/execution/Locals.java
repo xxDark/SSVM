@@ -2,8 +2,10 @@ package dev.xdark.ssvm.execution;
 
 import dev.xdark.ssvm.thread.ThreadRegion;
 import dev.xdark.ssvm.thread.SimpleThreadStorage;
+import dev.xdark.ssvm.value.TopValue;
 import dev.xdark.ssvm.value.Value;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -36,6 +38,23 @@ public final class Locals implements AutoCloseable {
 	 */
 	public void set(int index, Value value) {
 		table.set(index, Objects.requireNonNull(value, "value"));
+	}
+
+	/**
+	 * Sets wide value at specific index.
+	 *
+	 * @param index
+	 * 		Index of local variable.
+	 * @param value
+	 * 		Value to set.
+	 */
+	public void setWide(int index, Value value) {
+		if (!Objects.requireNonNull(value, "value").isWide()) {
+			throw new IllegalStateException("Must use set instead");
+		}
+		val table = this.table;
+		table.set(index, value);
+		table.set(index + 1, TopValue.INSTANCE);
 	}
 
 	/**

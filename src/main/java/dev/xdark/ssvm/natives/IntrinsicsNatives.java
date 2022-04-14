@@ -362,18 +362,22 @@ public class IntrinsicsNatives {
 	private void characterIntrinsics(VirtualMachine vm) {
 		val vmi = vm.getInterface();
 		val jc = vm.getSymbols().java_lang_Character;
-		val toLowerCase = (MethodInvoker) ctx -> {
+		vmi.setInvoker(jc, "toLowerCase", "(I)I", ctx -> {
 			ctx.setResult(IntValue.of(Character.toLowerCase(ctx.getLocals().load(0).asInt())));
 			return Result.ABORT;
-		};
-		vmi.setInvoker(jc, "toLowerCase", "(I)I", toLowerCase);
-		vmi.setInvoker(jc, "toLowerCase", "(C)C", toLowerCase);
-		val toUpperCase = (MethodInvoker) ctx -> {
+		});
+		vmi.setInvoker(jc, "toLowerCase", "(C)C", ctx -> {
+			ctx.setResult(IntValue.of(Character.toLowerCase(ctx.getLocals().load(0).asChar())));
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "toUpperCase", "(I)I", ctx -> {
 			ctx.setResult(IntValue.of(Character.toUpperCase(ctx.getLocals().load(0).asInt())));
 			return Result.ABORT;
-		};
-		vmi.setInvoker(jc, "toUpperCase", "(I)I", toUpperCase);
-		vmi.setInvoker(jc, "toUpperCase", "(C)C", toUpperCase);
+		});
+		vmi.setInvoker(jc, "toUpperCase", "(C)C", ctx -> {
+			ctx.setResult(IntValue.of(Character.toUpperCase(ctx.getLocals().load(0).asChar())));
+			return Result.ABORT;
+		});
 		val digit = (MethodInvoker) ctx -> {
 			val locals = ctx.getLocals();
 			ctx.setResult(IntValue.of(Character.digit(locals.load(0).asInt(), locals.load(1).asInt())));
@@ -813,9 +817,5 @@ public class IntrinsicsNatives {
 			}
 		}
 		return IntValue.ONE;
-	}
-
-	private boolean nativeFillAvailable(ArrayValue value, int from, int to) {
-		return from >= 0 && from <= to && to <= value.getLength();
 	}
 }

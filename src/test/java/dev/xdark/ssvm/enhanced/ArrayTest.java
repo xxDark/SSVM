@@ -63,4 +63,19 @@ public class ArrayTest {
 		} catch (ArrayStoreException ignored) {
 		}
 	}
+	
+	@VMTest
+	private static void testOutOfBounds() {
+		val array = new Object[0];
+		try {
+			val __ = array[-1];
+			throw new IllegalStateException();
+		} catch (ArrayIndexOutOfBoundsException ignored) {
+		}
+		try {
+			val __ = array[1];
+			throw new IllegalStateException();
+		} catch (ArrayIndexOutOfBoundsException ignored) {
+		}
+	}
 }

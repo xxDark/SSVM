@@ -18,13 +18,12 @@ public final class DynamicCallProcessor implements InstructionProcessor<LinkedDy
 	@Override
 	public Result execute(LinkedDynamicCallNode insn, ExecutionContext ctx) {
 		val delegate = insn.getDelegate();
-		val args = insn.getDescriptorArgs();
-		int localsLength = args.length;
-		int x = localsLength + 1;
+		int descriptorSize = insn.getDescriptorArgsSize();
+		int x = descriptorSize + 1;
 		val locals = new Value[x];
 		val stack = ctx.getStack();
-		while (localsLength-- != 0) {
-			locals[--x] = stack.popGeneric();
+		while (descriptorSize-- != 0) {
+			locals[--x] = stack.pop();
 		}
 		val invoked = InvokeDynamicLinker.dynamicCall(locals, delegate.desc, insn.getMethodHandle(), ctx);
 		if (!invoked.isVoid()) {

@@ -37,7 +37,11 @@ public final class Stack implements AutoCloseable {
 	 * 		Value to push.
 	 */
 	public void push(Value value) {
-		stack.set(cursor++, checkValue(value));
+		checkValue(value);
+		if (value.isWide()) {
+			throw new IllegalStateException("Must use pushWide instead");
+		}
+		stack.set(cursor++, value);
 	}
 
 	/**
@@ -48,9 +52,13 @@ public final class Stack implements AutoCloseable {
 	 * 		Value to push.
 	 */
 	public void pushWide(Value value) {
+		checkValue(value);
+		if (!value.isWide()) {
+			throw new IllegalStateException("Must use push instead");
+		}
 		val stack = this.stack;
 		int cursor = this.cursor;
-		stack.set(cursor++, checkValue(value));
+		stack.set(cursor++, value);
 		stack.set(cursor++, TopValue.INSTANCE);
 		this.cursor = cursor;
 	}
@@ -337,10 +345,9 @@ public final class Stack implements AutoCloseable {
 				'}';
 	}
 
-	private static Value checkValue(Value value) {
+	private static void checkValue(Value value) {
 		if (Objects.requireNonNull(value, "value").isVoid()) {
 			throw new IllegalStateException("Cannot push void value");
 		}
-		return value;
 	}
 }

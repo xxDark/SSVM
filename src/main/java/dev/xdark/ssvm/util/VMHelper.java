@@ -1560,7 +1560,7 @@ public final class VMHelper {
 	 * @return boxed value.
 	 */
 	public ObjectValue boxLong(Value value) {
-		return (ObjectValue) invokeStatic(vm.getSymbols().java_lang_Long, "valueOf", "(J)Ljava/lang/Long;", new Value[0], new Value[]{value}).getResult();
+		return (ObjectValue) invokeStatic(vm.getSymbols().java_lang_Long, "valueOf", "(J)Ljava/lang/Long;", new Value[0], new Value[]{value, TopValue.INSTANCE}).getResult();
 	}
 
 	/**
@@ -1572,7 +1572,7 @@ public final class VMHelper {
 	 * @return boxed value.
 	 */
 	public ObjectValue boxDouble(Value value) {
-		return (ObjectValue) invokeStatic(vm.getSymbols().java_lang_Double, "valueOf", "(D)Ljava/lang/Double;", new Value[0], new Value[]{value}).getResult();
+		return (ObjectValue) invokeStatic(vm.getSymbols().java_lang_Double, "valueOf", "(D)Ljava/lang/Double;", new Value[0], new Value[]{value, TopValue.INSTANCE}).getResult();
 	}
 
 	/**
@@ -2101,6 +2101,32 @@ public final class VMHelper {
 	}
 
 	/**
+	 * Attempts to locate a class.
+	 * Throws {@link NoClassDefFoundError} if class is not found.
+	 *
+	 * @param loader
+	 * 		Loader to search the class in.
+	 * @param name
+	 * 		Class name.
+	 * @param initialize
+	 * 		Whether the class should be initialized.
+	 *
+	 * @return found class.
+	 */
+	public JavaClass tryFindClass(ObjectValue loader, String name, boolean initialize) {
+		try {
+			return findClass(loader, name, initialize);
+		} catch (VMException ex) {
+			val oop = ex.getOop();
+			if (oop.isNull() || !vm.getSymbols().java_lang_Error.isAssignableFrom(oop.getJavaClass())) {
+				val cnfe = newException(vm.getSymbols().java_lang_NoClassDefFoundError, name, oop);
+				throw new VMException(cnfe);
+			}
+			throw ex;
+		}
+	}
+
+	/**
 	 * @return VM instance.
 	 */
 	public VirtualMachine getVM() {
@@ -2127,9 +2153,15 @@ public final class VMHelper {
 
 	private static void contextPrepare(ExecutionContext ctx, Value[] stack, Value[] locals) {
 		val lvt = ctx.getLocals();
-		int x = 0;
-		for (val arg : locals) {
-			lvt.set(x++, Objects.requireNonNull(arg, "VM is broken"));
+		for (int i = 0, j = locals.length; i < j; i++) {
+			Value arg = locals[i];
+			Objects.requireNonNull(arg, "Null argument");
+			lvt.set(i, arg);
+			if (arg != TopValue.INSTANCE && arg.isWide()) {
+				if (i + 1 == locals.length || locals[i + 1] != TopValue.INSTANCE) {
+					throw new IllegalStateException("Locals table is broken");
+				}
+			}
 		}
 		val $stack = ctx.getStack();
 		for (val value : stack) {

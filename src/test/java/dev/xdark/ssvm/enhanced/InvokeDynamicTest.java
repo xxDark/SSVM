@@ -7,7 +7,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.IntConsumer;
+import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -139,5 +141,30 @@ public class InvokeDynamicTest {
 			}
 		};
 		r.run();
+	}
+
+	private static long result = -1L;
+
+	@VMTest
+	private static void testBox() {
+		val r = ThreadLocalRandom.current();
+		long v = r.nextLong(0L, Long.MAX_VALUE);
+		((LongConsumer) InvokeDynamicTest::setResult).accept(v);
+		if (result != v) {
+			throw new IllegalStateException();
+		}
+		v = r.nextLong(0L, Long.MAX_VALUE);
+		((Consumer<Long>) InvokeDynamicTest::setResult2).accept(v);
+		if (result != v) {
+			throw new IllegalStateException();
+		}
+	}
+
+	private static void setResult(Long value) {
+		result = value;
+	}
+
+	private static void setResult2(long value) {
+		result = value;
 	}
 }

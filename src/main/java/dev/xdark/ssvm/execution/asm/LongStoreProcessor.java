@@ -18,8 +18,7 @@ public final class LongStoreProcessor implements InstructionProcessor<VarInsnNod
 	public Result execute(VarInsnNode insn, ExecutionContext ctx) {
 		val locals = ctx.getLocals();
 		val var = insn.var;
-		locals.set(var, ctx.getStack().popWide());
-		locals.set(var + 1, TopValue.INSTANCE);
+		locals.setWide(var, ctx.getStack().popWide());
 		return Result.CONTINUE;
 	}
 }

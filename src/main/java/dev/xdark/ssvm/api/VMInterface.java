@@ -6,13 +6,9 @@ import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import lombok.val;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 
 /**
@@ -23,13 +19,14 @@ import java.util.stream.Stream;
 public final class VMInterface {
 
 	private static final int MAX_INSNS = 1024;
-	private static final int JVM_INSNS = Opcodes.IFNONNULL;
 	private final InstructionProcessor[] processors = new InstructionProcessor[MAX_INSNS];
 	private final Map<JavaMethod, MethodInvoker> invokerMap = new HashMap<>();
 	private final List<MethodInvocation> globalEnter = new ArrayList<>();
 	private final List<MethodInvocation> globalExit = new ArrayList<>();
 	private final Map<JavaMethod, MethodInvocation> methodEnter = new HashMap<>();
 	private final Map<JavaMethod, MethodInvocation> methodExit = new HashMap<>();
+	private final List<InstructionInterceptor> interceptors = new ArrayList<>();
+	private final List<InstructionInterceptor> interceptorsView = Collections.unmodifiableList(interceptors);
 
 	/**
 	 * Gets an instruction processor.
@@ -250,6 +247,26 @@ public final class VMInterface {
 	}
 
 	/**
+	 * Registers instruction interceptor.
+	 *
+	 * @param interceptor
+	 * 		Interceptor to register.
+	 */
+	public void registerInstructionInterceptor(InstructionInterceptor interceptor) {
+		interceptors.add(interceptor);
+	}
+
+	/**
+	 * Removes instruction interceptor.
+	 *
+	 * @param interceptor
+	 * 		Interceptor to remove.
+	 */
+	public void removeInstructionInterceptor(InstructionInterceptor interceptor) {
+		interceptors.remove(interceptor);
+	}
+
+	/**
 	 * Returns stream of invocation hooks.
 	 *
 	 * @param call
@@ -273,6 +290,13 @@ public final class VMInterface {
 		val stream = list.stream();
 		if (invocation == null) return stream;
 		return Stream.concat(Stream.of(invocation), stream);
+	}
+
+	/**
+	 * @return Instruction interceptors.
+	 */
+	public List<InstructionInterceptor> getInterceptors() {
+		return interceptorsView;
 	}
 
 	private static int getOpcode(AbstractInsnNode node) {

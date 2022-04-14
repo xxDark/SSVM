@@ -1,6 +1,5 @@
 package dev.xdark.ssvm.execution;
 
-import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
@@ -28,6 +27,7 @@ public class Interpreter {
 		val vmi = ctx.getVM().getInterface();
 		val mn = jm.getNode();
 		val instructions = mn.instructions;
+		val interceptors = vmi.getInterceptors();
 		exec:
 		while (true) {
 			try {
@@ -35,6 +35,9 @@ public class Interpreter {
 				ctx.setInsnPosition(pos + 1);
 				val insn = instructions.get(pos);
 				if (insn instanceof LineNumberNode) ctx.setLineNumber(((LineNumberNode) insn).line);
+				for (int i = 0; i < interceptors.size(); i++) {
+					interceptors.get(i).intercept(ctx, insn);
+				}
 				if (insn.getOpcode() == -1) continue;
 				val processor = vmi.getProcessor(insn);
 				if (processor == null) {

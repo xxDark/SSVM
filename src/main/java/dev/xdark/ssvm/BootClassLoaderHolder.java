@@ -15,7 +15,7 @@ import lombok.val;
  */
 final class BootClassLoaderHolder {
 
-	private final ClassLoaderData data = new ClassLoaderData();
+	private final ClassLoaderData data;
 	private final VirtualMachine vm;
 	private final BootClassLoader bootClassLoader;
 
@@ -26,10 +26,13 @@ final class BootClassLoaderHolder {
 	 * 		VM instance.
 	 * @param bootClassLoader
 	 * 		Boot class loader.
+	 * @param data
+	 * 		Class storage.
 	 */
-	BootClassLoaderHolder(VirtualMachine vm, BootClassLoader bootClassLoader) {
+	BootClassLoaderHolder(VirtualMachine vm, BootClassLoader bootClassLoader, ClassLoaderData data) {
 		this.vm = vm;
 		this.bootClassLoader = bootClassLoader;
+		this.data = data;
 	}
 
 	/**

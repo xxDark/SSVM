@@ -51,12 +51,13 @@ public class JitTest {
 		e = rng.nextInt();
 		val m = jc.getStaticMethod("jitCall", "(JILjava/lang/String;JI)V");
 		// Force compile
+		val loader = new JitClassLoader();
 		try {
-			JitInstaller.install(
-					m,
-					new JitClassLoader(),
-					JitCompiler.compile(m, 0)
-			);
+			int i = 0;
+			for (val toCompile : jc.getStaticMethodLayout().getAll()) {
+				val compiled = JitCompiler.compile(toCompile, 3);
+				JitInstaller.install(toCompile, loader, compiled);
+			}
 		} catch (ReflectiveOperationException ex) {
 			throw new IllegalStateException(ex);
 		}
@@ -78,6 +79,7 @@ public class JitTest {
 
 	private static void jitCall(long a, int b, String c, long d, int e) {
 		jitCallInner(a, b, c, d, e);
+		testThrowInInvokeDynamic();
 	}
 
 	private static void jitCallInner(long a, int b, String c, long d, int e) {
@@ -86,6 +88,17 @@ public class JitTest {
 		JitTest.c = c;
 		JitTest.d = d;
 		JitTest.e = e;
+	}
+
+	private static void testThrowInInvokeDynamic() {
+		try {
+			Runnable r = () -> {
+				throw new IllegalArgumentException();
+			};
+			r.run();
+			throw new IllegalStateException();
+		} catch (IllegalArgumentException ignored) {
+		}
 	}
 
 	private static final class JitClassLoader extends ClassLoader

@@ -48,7 +48,7 @@ final class Util {
 	 *
 	 * @return original values array.
 	 */
-	Value[] convertReflectionArgs(VirtualMachine vm, Value loader, Type[] argTypes, ArrayValue array) {
+	Value[] convertReflectionArgs(VirtualMachine vm, ObjectValue loader, Type[] argTypes, ArrayValue array) {
 		val helper = vm.getHelper();
 		int total = 0;
 		for (val arg : argTypes) {

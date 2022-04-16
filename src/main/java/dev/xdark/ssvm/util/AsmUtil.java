@@ -5,8 +5,8 @@ import lombok.experimental.UtilityClass;
 import lombok.val;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
-
-import java.lang.reflect.Field;
+import org.objectweb.asm.tree.InsnNode;
+import sun.misc.Unsafe;
 
 /**
  * ASM utilities.
@@ -16,7 +16,8 @@ import java.lang.reflect.Field;
 @UtilityClass
 public class AsmUtil {
 
-	private final Field INSN_INDEX;
+	private final Unsafe UNSAFE;
+	private final long INSN_INDEX;
 	private final String[] INSN_NAMES;
 
 	/**
@@ -54,11 +55,7 @@ public class AsmUtil {
 	 * 		If index could not be extracted.
 	 */
 	public int getIndex(AbstractInsnNode insnNode) {
-		try {
-			return INSN_INDEX.getInt(insnNode);
-		} catch (IllegalAccessException ex) {
-			throw new IllegalStateException(ex);
-		}
+		return UNSAFE.getInt(insnNode, INSN_INDEX);
 	}
 
 	/**
@@ -99,8 +96,11 @@ public class AsmUtil {
 	}
 
 	static {
+		val unsafe = UnsafeUtil.get();
+		UNSAFE = unsafe;
 		try {
-			(INSN_INDEX = AbstractInsnNode.class.getDeclaredField("index")).setAccessible(true);
+			new InsnNode(0);
+			INSN_INDEX = unsafe.objectFieldOffset(AbstractInsnNode.class.getDeclaredField("index"));
 		} catch (NoSuchFieldException ex) {
 			throw new ExceptionInInitializerError(ex);
 		}

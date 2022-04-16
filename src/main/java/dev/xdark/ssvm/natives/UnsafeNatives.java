@@ -3,7 +3,6 @@ package dev.xdark.ssvm.natives;
 import dev.xdark.ssvm.NativeJava;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
-import dev.xdark.ssvm.classloading.ClassLoaderData;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.memory.MemoryData;
@@ -34,8 +33,6 @@ import static dev.xdark.ssvm.asm.Modifier.ACC_VM_HIDDEN;
  */
 @UtilityClass
 public class UnsafeNatives {
-
-	private final String CLASS_LOADER_OOP = NativeJava.CLASS_LOADER_OOP;
 
 	/**
 	 * @param vm
@@ -374,13 +371,8 @@ public class UnsafeNatives {
 			// force link
 			val node = generated.getNode();
 			node.access |= ACC_VM_HIDDEN;
-			ClassLoaderData classLoaderData;
-			if (loader.isNull()) {
-				classLoaderData = vm.getBootClassLoaderData();
-			} else {
-				classLoaderData = ((JavaValue<ClassLoaderData>) ((InstanceValue) loader).getValue(CLASS_LOADER_OOP, "Ljava/lang/Object;")).getValue();
-			}
-			classLoaderData.forceLinkClass(generated);
+			vm.getClassLoaders().getClassLoaderData(loader).forceLinkClass(generated);
+			generated.link();
 
 			// handle cpPatches
 			val cpPatches = locals.load(3);

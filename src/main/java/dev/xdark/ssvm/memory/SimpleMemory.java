@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
  */
 @Getter
 @RequiredArgsConstructor
-public class SimpleMemory implements Memory {
+public final class SimpleMemory implements Memory {
 
 	private final MemoryManager memoryManager;
 	private final MemoryData data;

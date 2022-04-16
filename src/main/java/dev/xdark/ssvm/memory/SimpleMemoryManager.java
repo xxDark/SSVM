@@ -7,6 +7,8 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.util.UnsafeUtil;
 import dev.xdark.ssvm.value.*;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import lombok.val;
 
 import java.nio.ByteBuffer;
@@ -21,14 +23,15 @@ import java.util.concurrent.ThreadLocalRandom;
  *
  * @author xDark
  */
-public class SimpleMemoryManager implements MemoryManager {
+public final class SimpleMemoryManager implements MemoryManager {
 
+	private static final ThreadLocal<MemoryKey> MEMORY_KEY_TCL = ThreadLocal.withInitial(MemoryKey::new);
 	private static final ByteOrder ORDER = ByteOrder.nativeOrder();
 	private static final int ADDRESS_SIZE = 8;
 	private static final long OBJECT_HEADER_SIZE = ADDRESS_SIZE + 4L;
 	private static final long ARRAY_LENGTH = ADDRESS_SIZE;
-	private final TreeMap<Long, Memory> memoryBlocks = new TreeMap<>();
-	private final Map<Memory, ObjectValue> objects = new WeakHashMap<>();
+	private final TreeMap<MemoryKey, MemoryRef> memoryBlocks = new TreeMap<>();
+	private final Map<MemoryKey, ObjectValue> objects = new WeakHashMap<>();
 
 	private final VirtualMachine vm;
 
@@ -38,19 +41,25 @@ public class SimpleMemoryManager implements MemoryManager {
 	 */
 	public SimpleMemoryManager(VirtualMachine vm) {
 		this.vm = vm;
-		objects.put(NullValue.INSTANCE.getMemory(), NullValue.INSTANCE);
+		val nul = NullValue.INSTANCE;
+		val nullMemory = nul.getMemory();
+		val address = nullMemory.getAddress();
+		val key = newAddress(address);
+		memoryBlocks.put(key, new MemoryRef(key, nullMemory));
+		objects.put(key, nul);
 	}
 
 	@Override
 	public Memory allocateDirect(long bytes) {
-		return newMemoryBlock(bytes, true);
+		return newMemoryBlock(bytes, true).memory;
 	}
 
 	@Override
 	public Memory reallocateDirect(long address, long bytes) {
 		val memoryBlocks = this.memoryBlocks;
-		Memory memory = memoryBlocks.remove(address);
-		if (memory == null || !memory.isDirect()) {
+		val ref = memoryBlocks.remove(keyAddress(address));
+		Memory memory;
+		if (ref == null || !(memory = ref.memory).isDirect()) {
 			throw new PanicException("Segfault");
 		}
 		if (bytes == 0L) {
@@ -63,7 +72,7 @@ public class SimpleMemoryManager implements MemoryManager {
 			// TODO verify
 			throw new PanicException("Segfault");
 		}
-		val newBlock = newMemoryBlock(bytes, true);
+		val newBlock = newMemoryBlock(bytes, true).memory;
 		val newBuffer = newBlock.getData();
 		buffer.copy(0L, newBuffer, 0L, buffer.length());
 		return newBlock;
@@ -71,15 +80,15 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public Memory allocateHeap(long bytes) {
-		return newMemoryBlock(bytes, false);
+		return newMemoryBlock(bytes, false).memory;
 	}
 
 	@Override
 	public boolean freeMemory(long address) {
 		val memoryBlocks = this.memoryBlocks;
-		val mem = memoryBlocks.remove(address);
+		val mem = memoryBlocks.remove(keyAddress(address));
 		if (mem != null) {
-			objects.remove(mem);
+			objects.remove(mem.key);
 			return true;
 		}
 		return false;
@@ -88,56 +97,62 @@ public class SimpleMemoryManager implements MemoryManager {
 	@Override
 	public Memory getMemory(long address) {
 		val memoryBlocks = this.memoryBlocks;
-		val block = memoryBlocks.get(memoryBlocks.floorKey(address));
+		val block = memoryBlocks.get(memoryBlocks.floorKey(keyAddress(address)));
 		if (block != null) {
-			val diff = address - block.getAddress();
-			if (diff >= block.getData().length()) {
+			val memory = block.memory;
+			val diff = address - memory.getAddress();
+			if (diff >= memory.getData().length()) {
 				return null;
 			}
+			return memory;
 		}
-		return block;
+		return null;
 	}
 
 	@Override
 	public Value getValue(long address) {
-		return objects.get(new SimpleMemory(null, null, address, true));
+		return objects.get(keyAddress(address));
 	}
 
 	@Override
 	public InstanceValue newInstance(InstanceJavaClass javaClass) {
-		val memory = allocateObjectMemory(javaClass);
+		val ref = allocateObjectMemory(javaClass);
+		val memory = ref.memory;
 		setClass(memory, javaClass);
 		val value = new SimpleInstanceValue(memory);
-		objects.put(memory, value);
+		objects.put(ref.key, value);
 		return value;
 	}
 
 	@Override
 	public <V> JavaValue<V> newJavaInstance(InstanceJavaClass javaClass, V value) {
-		val memory = allocateObjectMemory(javaClass);
+		val ref = allocateObjectMemory(javaClass);
+		val memory = ref.memory;
 		setClass(memory, javaClass);
 		val wrapper = new SimpleJavaValue<>(memory, value);
-		objects.put(memory, wrapper);
+		objects.put(ref.key, wrapper);
 		return wrapper;
 	}
 
 	@Override
 	public JavaValue<InstanceJavaClass> newJavaLangClass(InstanceJavaClass javaClass) {
-		val memory = allocateClassMemory(javaClass, javaClass);
+		val ref = allocateClassMemory(javaClass, javaClass);
+		val memory = ref.memory;
 		val wrapper = new SimpleJavaValue<>(memory, javaClass);
 		javaClass.setOop(wrapper);
 		setClass(memory, javaClass);
-		objects.put(memory, wrapper);
+		objects.put(ref.key, wrapper);
 		return wrapper;
 	}
 
 	@Override
 	public ArrayValue newArray(ArrayJavaClass javaClass, int length) {
-		val memory = allocateArrayMemory(length, arrayIndexScale(javaClass.getComponentType()));
+		val ref = allocateArrayMemory(length, arrayIndexScale(javaClass.getComponentType()));
+		val memory = ref.memory;
 		setClass(memory, javaClass);
 		memory.getData().writeInt(ARRAY_LENGTH, length);
 		val value = new SimpleArrayValue(memory);
-		objects.put(memory, value);
+		objects.put(ref.key, value);
 		return value;
 	}
 
@@ -189,12 +204,12 @@ public class SimpleMemoryManager implements MemoryManager {
 	@Override
 	public ObjectValue readValue(ObjectValue object, long offset) {
 		val address = object.getMemory().getData().readLong(offset);
-		return objects.get(new SimpleMemory(null, null, address, false));
+		return objects.get(keyAddress(address));
 	}
 
 	@Override
 	public JavaClass readClass(ObjectValue object) {
-		val value = objects.get(new SimpleMemory(null, null, object.getMemory().getData().readLong(0), false));
+		val value = objects.get(keyAddress(object.getMemory().getData().readLong(0)));
 		if (!(value instanceof JavaValue)) {
 			throw new PanicException("Segfault");
 		}
@@ -263,10 +278,11 @@ public class SimpleMemoryManager implements MemoryManager {
 	@Override
 	public <C extends JavaClass> JavaValue<C> setOopForClass(C javaClass) {
 		val jlc = vm.findBootstrapClass("java/lang/Class");
-		val memory = allocateClassMemory(jlc, javaClass);
+		val ref = allocateClassMemory(jlc, javaClass);
+		val memory = ref.memory;
 		setClass(memory, jlc);
 		val wrapper = new SimpleJavaValue<>(memory, javaClass);
-		objects.put(memory, wrapper);
+		objects.put(ref.key, wrapper);
 		return wrapper;
 	}
 
@@ -340,47 +356,52 @@ public class SimpleMemoryManager implements MemoryManager {
 		return OBJECT_HEADER_SIZE + jlc.getVirtualFieldLayout().getSize();
 	}
 
-	private Memory newMemoryBlock(long size, boolean isDirect) {
+	private MemoryRef newMemoryBlock(long size, boolean isDirect) {
 		if (size > Integer.MAX_VALUE) {
 			vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError);
 			return null;
 		}
 		val rng = ThreadLocalRandom.current();
 		val memoryBlocks = this.memoryBlocks;
+		val tlc = MEMORY_KEY_TCL.get();
 		long address;
 		while (true) {
 			address = rng.nextLong();
 			if (memoryBlocks.isEmpty()) break;
-			val existingBlock = memoryBlocks.floorKey(address);
+			tlc.address = address;
+			val existingBlock = memoryBlocks.floorKey(tlc);
 			if (existingBlock == null) {
 				val low = memoryBlocks.firstKey();
-				if (address + size < low) break;
+				if (address + size < low.address) break;
 				continue;
 			}
-			val block = memoryBlocks.get(existingBlock);
+			val ref = memoryBlocks.get(existingBlock);
+			val block = ref.memory;
 			val cap = block.getData().length();
-			if (existingBlock + cap >= address) {
+			if (existingBlock.address + cap >= address) {
 				continue;
 			}
 			break;
 		}
 		val block = new SimpleMemory(this, alloc((int) size), address, isDirect);
-		memoryBlocks.put(address, block);
-		return block;
+		val key = newAddress(address);
+		val ref = new MemoryRef(key, block);
+		memoryBlocks.put(key, ref);
+		return ref;
 	}
 
-	private Memory allocateObjectMemory(JavaClass javaClass) {
+	private MemoryRef allocateObjectMemory(JavaClass javaClass) {
 		val objectSize = OBJECT_HEADER_SIZE + javaClass.getVirtualFieldLayout().getSize();
-		return allocateHeap(objectSize);
+		return newMemoryBlock(objectSize, true);
 	}
 
-	private Memory allocateClassMemory(JavaClass jlc, JavaClass javaClass) {
+	private MemoryRef allocateClassMemory(JavaClass jlc, JavaClass javaClass) {
 		val size = OBJECT_HEADER_SIZE + jlc.getVirtualFieldLayout().getSize() + javaClass.getStaticFieldLayout().getSize();
-		return allocateHeap(size);
+		return newMemoryBlock(size, true);
 	}
 
-	private Memory allocateArrayMemory(int length, long componentSize) {
-		return allocateHeap(OBJECT_HEADER_SIZE + (long) length * componentSize);
+	private MemoryRef allocateArrayMemory(int length, long componentSize) {
+		return newMemoryBlock(OBJECT_HEADER_SIZE + (long) length * componentSize, false);
 	}
 
 	private void setClass(Memory memory, JavaClass jc) {
@@ -390,5 +411,54 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	private static MemoryData alloc(int size) {
 		return MemoryData.buffer(ByteBuffer.allocate(size).order(ORDER));
+	}
+
+	private static MemoryKey keyAddress(long address) {
+		val key = MEMORY_KEY_TCL.get();
+		key.address = address;
+		return key;
+	}
+
+	public static MemoryKey newAddress(long address) {
+		val key = new MemoryKey();
+		key.address = address;
+		return key;
+	}
+
+	public static MemoryKey newAddress(Memory memory) {
+		val key = new MemoryKey();
+		key.address = memory.getAddress();
+		return key;
+	}
+
+	private static final class MemoryKey implements Comparable<MemoryKey> {
+		long address;
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (!(o instanceof MemoryKey)) return false;
+
+			MemoryKey memoryKey = (MemoryKey) o;
+
+			return address == memoryKey.address;
+		}
+
+		@Override
+		public int hashCode() {
+			return Long.hashCode(address);
+		}
+
+		@Override
+		public int compareTo(MemoryKey o) {
+			return Long.compare(address, o.address);
+		}
+	}
+
+	@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+	private static final class MemoryRef {
+
+		final MemoryKey key;
+		final Memory memory;
 	}
 }

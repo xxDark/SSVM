@@ -3,7 +3,6 @@ package dev.xdark.ssvm.util;
 import dev.xdark.ssvm.NativeJava;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
-import dev.xdark.ssvm.classloading.ClassLoaderData;
 import dev.xdark.ssvm.execution.*;
 import dev.xdark.ssvm.mirror.*;
 import dev.xdark.ssvm.thread.Backtrace;
@@ -225,7 +224,7 @@ public final class VMHelper {
 		if (cst instanceof Type) {
 			val type = (Type) cst;
 			val ctx = vm.currentThread().getBacktrace().last();
-			Value loader = ctx == null ? NullValue.INSTANCE : ctx.getDeclaringClass().getClassLoader();
+			ObjectValue loader = ctx == null ? NullValue.INSTANCE : ctx.getDeclaringClass().getClassLoader();
 			val sort = type.getSort();
 			switch (sort) {
 				case Type.OBJECT:
@@ -1204,12 +1203,7 @@ public final class VMHelper {
 		if ((off | len | (off + len) | (b.length - (off + len))) < 0) {
 			throwException(vm.getSymbols().java_lang_ArrayIndexOutOfBoundsException);
 		}
-		ClassLoaderData classLoaderData;
-		if (classLoader.isNull()) {
-			classLoaderData = vm.getBootClassLoaderData();
-		} else {
-			classLoaderData = ((JavaValue<ClassLoaderData>) ((InstanceValue) classLoader).getValue(NativeJava.CLASS_LOADER_OOP, "Ljava/lang/Object;")).getValue();
-		}
+		val classLoaderData = vm.getClassLoaders().getClassLoaderData(classLoader);
 		val parsed = vm.getClassDefiner().parseClass(name, b, off, len, source);
 		if (parsed == null) {
 			throwException(vm.getSymbols().java_lang_NoClassDefFoundError, name);
@@ -1354,7 +1348,7 @@ public final class VMHelper {
 		return element;
 	}
 
-	public JavaClass findClass(Value loader, String name, boolean initialize) {
+	public JavaClass findClass(ObjectValue loader, String name, boolean initialize) {
 		int dimensions = 0;
 		while (name.charAt(dimensions) == '[') {
 			dimensions++;
@@ -1731,7 +1725,7 @@ public final class VMHelper {
 	 *
 	 * @return Converted array.
 	 */
-	public JavaClass[] convertTypes(Value loader, Type[] types, boolean initialize) {
+	public JavaClass[] convertTypes(ObjectValue loader, Type[] types, boolean initialize) {
 		val classes = new JavaClass[types.length];
 		for (int i = 0; i < types.length; i++) {
 			val name = types[i].getInternalName();
@@ -1852,7 +1846,7 @@ public final class VMHelper {
 	 *
 	 * @return method type.
 	 */
-	public InstanceValue methodType(Value loader, Type methodType) {
+	public InstanceValue methodType(ObjectValue loader, Type methodType) {
 		val rt = findClass(loader, methodType.getReturnType().getInternalName(), false);
 		val args = convertTypes(loader, methodType.getArgumentTypes(), false);
 		return methodType(rt, args);

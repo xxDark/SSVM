@@ -1,10 +1,8 @@
 package dev.xdark.ssvm.natives;
 
-import dev.xdark.ssvm.NativeJava;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.asm.Modifier;
-import dev.xdark.ssvm.classloading.ClassLoaderData;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
@@ -21,8 +19,6 @@ import lombok.val;
 @UtilityClass
 public class ClassLoaderNatives {
 
-	private final String CLASS_LOADER_OOP = NativeJava.CLASS_LOADER_OOP;
-
 	/**
 	 * @param vm
 	 * 		VM instance.
@@ -32,14 +28,12 @@ public class ClassLoaderNatives {
 		val symbols = vm.getSymbols();
 		val classLoader = symbols.java_lang_ClassLoader;
 		vmi.setInvoker(classLoader, "registerNatives", "()V", MethodInvoker.noop());
-		val clInitHook = (MethodInvoker) ctx -> {
-			val oop = vm.getMemoryManager().newJavaInstance(symbols.java_lang_Object, new ClassLoaderData());
-			ctx.getLocals().<InstanceValue>load(0)
-					.setValue(CLASS_LOADER_OOP, "Ljava/lang/Object;", oop);
+		val initHook = (MethodInvoker) ctx -> {
+			vm.getClassLoaders().setClassLoaderData(ctx.getLocals().load(0));
 			return Result.CONTINUE;
 		};
-		if (!vmi.setInvoker(classLoader, "<init>", "(Ljava/lang/Void;Ljava/lang/String;Ljava/lang/ClassLoader;)V", clInitHook)) {
-			if (!vmi.setInvoker(classLoader, "<init>", "(Ljava/lang/Void;Ljava/lang/ClassLoader;)V", clInitHook)) {
+		if (!vmi.setInvoker(classLoader, "<init>", "(Ljava/lang/Void;Ljava/lang/String;Ljava/lang/ClassLoader;)V", initHook)) {
+			if (!vmi.setInvoker(classLoader, "<init>", "(Ljava/lang/Void;Ljava/lang/ClassLoader;)V", initHook)) {
 				throw new IllegalStateException("Unable to locate ClassLoader init constructor");
 			}
 		}
@@ -69,8 +63,8 @@ public class ClassLoaderNatives {
 			val helper = vm.getHelper();
 			helper.checkNotNull(name);
 			val loader = locals.<InstanceValue>load(0);
-			val oop = ((JavaValue<ClassLoaderData>) loader.getValue(CLASS_LOADER_OOP, "Ljava/lang/Object;")).getValue();
-			InstanceJavaClass loadedClass = oop.getClass(helper.readUtf8(name).replace('.', '/'));
+			val data = vm.getClassLoaders().getClassLoaderData(loader);
+			InstanceJavaClass loadedClass = data.getClass(helper.readUtf8(name).replace('.', '/'));
 			if (loadedClass != null && Modifier.isHiddenMember(loadedClass.getModifiers())) {
 				loadedClass = null;
 			}

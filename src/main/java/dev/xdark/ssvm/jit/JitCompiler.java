@@ -10,16 +10,14 @@ import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.*;
 import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.val;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -63,6 +61,7 @@ public final class JitCompiler {
 	private static final ClassType VM_EXCEPTION = ClassType.of(VMException.class);
 	private static final ClassType INSTANCE = ClassType.of(InstanceValue.class);
 	private static final ClassType TOP = ClassType.of(TopValue.class);
+	private static final ClassType OBJ_ARRAY = ClassType.of(Object[].class);
 
 	// ctx methods
 	private static final Access GET_LOCALS = virtualCall(CTX, "getLocals", LOCALS);
@@ -191,8 +190,10 @@ public final class JitCompiler {
 
 	private final String className;
 	private final JavaMethod target;
+	private final ClassWriter writer;
 	private final MethodVisitor jit;
 	private final Map<Object, Integer> constants = new LinkedHashMap<>();
+	private final Map<DynamicCallInfo, MethodInsnNode> invokeDynamicCalls = new HashMap<>();
 
 	/**
 	 * @param jm
@@ -236,7 +237,7 @@ public final class JitCompiler {
 		init.visitMaxs(1, 1);
 		val jit = writer.visitMethod(ACC_PUBLIC, "accept", "(Ljava/lang/Object;)V", null, null);
 		jit.visitCode();
-		val compiler = new JitCompiler(className, jm, jit);
+		val compiler = new JitCompiler(className, jm, writer, jit);
 		compiler.compileInner();
 		jit.visitEnd();
 		jit.visitMaxs(-1, -1);
@@ -249,7 +250,7 @@ public final class JitCompiler {
 		writer.visitSource(jm.toString(), null);
 		val constants = compiler.constants.keySet();
 		if (!constants.isEmpty()) {
-			writer.visitField(ACC_PRIVATE | ACC_STATIC, "constants", "[Ljava/lang/Object;", null, null);
+			writer.visitField(ACC_PRIVATE | ACC_STATIC | ACC_FINAL, "constants", "[Ljava/lang/Object;", null, null);
 		}
 
 		val bc = writer.toByteArray();
@@ -679,7 +680,7 @@ public final class JitCompiler {
 	}
 
 	private void loadCtx() {
-		jit.visitVarInsn(ALOAD, CTX_SLOT);
+		loadCtx(jit);
 	}
 
 	private void loadLocals() {
@@ -831,7 +832,7 @@ public final class JitCompiler {
 	}
 
 	private void loadConstants() {
-		jit.visitFieldInsn(GETSTATIC, className, "constants", "[Ljava/lang/Object;");
+		loadConstants(jit);
 	}
 
 	private Integer makeConstant(Object value) {
@@ -844,13 +845,12 @@ public final class JitCompiler {
 		return constant;
 	}
 
-	private int loadCompilerConstant(Object value) {
+	private void loadCompilerConstant(Object value) {
 		val constant = makeConstant(value);
 		loadConstants();
 		val jit = this.jit;
 		jit.visitLdcInsn(constant);
 		jit.visitInsn(AALOAD);
-		return constant;
 	}
 
 	private void getStatic(FieldInsnNode node) {
@@ -1148,13 +1148,53 @@ public final class JitCompiler {
 	}
 
 	private void invokeDynamic(InvokeDynamicInsnNode node) {
+		// TODO support other types of invocation
+		// such as invokeVirtual, invokeSpecial, etc
+		val method = invokeDynamicCalls.computeIfAbsent(new DynamicCallInfo(node.desc, node.bsm), __ -> {
+			val methodName = "dynCall" + invokeDynamicCalls.size();
+			val desc = node.desc;
+			val args = Type.getArgumentTypes(desc);
+			// We need to rewrite java types to VM value type
+			for (int i = 0; i < args.length; i++) {
+				if (args[i].getSort() >= Type.ARRAY) {
+					args[i] = VALUE.type;
+				}
+			}
+			val newArgs = Arrays.copyOf(args, args.length + 2);
+			// Inject node index & current context as new arguments
+			newArgs[args.length] = Type.INT_TYPE;
+			newArgs[args.length + 1] = CTX.type;
+			Type returnType = Type.getReturnType(desc);
+			// Same as above
+			if (returnType.getSort() >= Type.ARRAY) {
+				returnType = VALUE.type;
+			}
+			val newDesc = Type.getMethodDescriptor(returnType, newArgs);
+			val split = writer.visitMethod(ACC_PRIVATE | ACC_STATIC, methodName, newDesc, null, null);
+			split.visitCode();
+			int loadIndex = 0;
+			for (val arg : args) {
+				split.visitVarInsn(arg.getOpcode(ILOAD), loadIndex);
+				loadIndex += arg.getSize();
+			}
+			// Need to create new jit compiler for temporary usage
+			// because calling collectArgs uses method that is being compiled
+			new JitCompiler(className, target, writer, split).collectArgs(1, desc);
+			loadConstants(split);
+			split.visitVarInsn(ILOAD, loadIndex);
+			split.visitVarInsn(Opcodes.ALOAD, loadIndex + 1);
+			DYNAMIC_CALL.emit(split);
+			toJava(returnType, split);
+			split.visitInsn(returnType.getOpcode(IRETURN));
+			split.visitEnd();
+			split.visitMaxs(-1, -1);
+			return new MethodInsnNode(INVOKESTATIC, className, methodName, newDesc);
+		});
 		val jit = this.jit;
-		collectArgs(1, node.desc); // args
-		loadConstants(); // args constants
-		emitInt(makeConstant(node), jit); // args constants index
-		loadCtx(); // args constants index ctx
-		DYNAMIC_CALL.emit(jit);
-		toJava(Type.getReturnType(node.desc));
+		// Pass context, node index for rewriting
+		emitInt(makeConstant(node), jit);
+		loadCtx();
+		method.accept(jit);
 	}
 
 	private void newInstance(String type) {
@@ -1291,36 +1331,7 @@ public final class JitCompiler {
 	}
 
 	private void toJava(Type type) {
-		val jit = this.jit;
-		switch (type.getSort()) {
-			case Type.LONG:
-				AS_LONG.emit(jit);
-				break;
-			case Type.DOUBLE:
-				AS_DOUBLE.emit(jit);
-				break;
-			case Type.INT:
-				AS_INT.emit(jit);
-				break;
-			case Type.FLOAT:
-				AS_FLOAT.emit(jit);
-				break;
-			case Type.CHAR:
-				AS_INT.emit(jit);
-				jit.visitInsn(I2C);
-				break;
-			case Type.SHORT:
-				AS_INT.emit(jit);
-				jit.visitInsn(I2S);
-				break;
-			case Type.BYTE:
-			case Type.BOOLEAN:
-				AS_INT.emit(jit);
-				jit.visitInsn(I2B);
-				break;
-			case Type.VOID:
-				jit.visitInsn(POP);
-		}
+		toJava(type, jit);
 	}
 
 	private void toVM(Type type) {
@@ -1399,6 +1410,46 @@ public final class JitCompiler {
 		return insnNode;
 	}
 
+	private void loadConstants(MethodVisitor mv) {
+		mv.visitFieldInsn(GETSTATIC, className, "constants", "[Ljava/lang/Object;");
+	}
+
+	private void loadCtx(MethodVisitor mv) {
+		mv.visitVarInsn(ALOAD, CTX_SLOT);
+	}
+
+	private static void toJava(Type type, MethodVisitor mv) {
+		switch (type.getSort()) {
+			case Type.LONG:
+				AS_LONG.emit(mv);
+				break;
+			case Type.DOUBLE:
+				AS_DOUBLE.emit(mv);
+				break;
+			case Type.INT:
+				AS_INT.emit(mv);
+				break;
+			case Type.FLOAT:
+				AS_FLOAT.emit(mv);
+				break;
+			case Type.CHAR:
+				AS_INT.emit(mv);
+				mv.visitInsn(I2C);
+				break;
+			case Type.SHORT:
+				AS_INT.emit(mv);
+				mv.visitInsn(I2S);
+				break;
+			case Type.BYTE:
+			case Type.BOOLEAN:
+				AS_INT.emit(mv);
+				mv.visitInsn(I2B);
+				break;
+			case Type.VOID:
+				mv.visitInsn(POP);
+		}
+	}
+
 	private static Access staticCall(ClassType owner, String name, ClassType rt, ClassType... args) {
 		return new Access(INVOKESTATIC, owner, name, rt, args);
 	}
@@ -1468,5 +1519,13 @@ public final class JitCompiler {
 			for (val arg : args) b.append(arg.desc);
 			return b.append(')').append(rt.desc).toString();
 		}
+	}
+
+	@EqualsAndHashCode(callSuper = false, doNotUseGetters = true)
+	@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+	private static final class DynamicCallInfo {
+
+		private final String desc;
+		private final Handle handle;
 	}
 }

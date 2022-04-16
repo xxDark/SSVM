@@ -1,11 +1,7 @@
 package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.api.VMInterface;
-import dev.xdark.ssvm.classloading.BootClassLoader;
-import dev.xdark.ssvm.classloading.ClassDefiner;
-import dev.xdark.ssvm.classloading.ClassLoaderData;
-import dev.xdark.ssvm.classloading.RuntimeBootClassLoader;
-import dev.xdark.ssvm.classloading.SimpleClassDefiner;
+import dev.xdark.ssvm.classloading.*;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Interpreter;
 import dev.xdark.ssvm.execution.Result;
@@ -34,7 +30,6 @@ import dev.xdark.ssvm.tz.TimeZoneManager;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.util.VMPrimitives;
 import dev.xdark.ssvm.util.VMSymbols;
-import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.NullValue;
@@ -63,12 +58,15 @@ public class VirtualMachine {
 	private final StringPool stringPool;
 	private final ManagementInterface managementInterface;
 	private final TimeZoneManager timeZoneManager;
+	private final ClassLoaders classLoaders;
 	private final Properties properties;
 	private final Map<String, String> env;
 
 	public VirtualMachine(Object... args) {
 		init(args);
-		bootClassLoader = new BootClassLoaderHolder(this, createBootClassLoader());
+		val classLoaders = createClassLoaders();
+		this.classLoaders = classLoaders;
+		bootClassLoader = new BootClassLoaderHolder(this, createBootClassLoader(), classLoaders.setClassLoaderData(NullValue.INSTANCE));
 		// java/lang/Object & java/lang/Class must be loaded manually,
 		// otherwise some MemoryManager implementations will bottleneck.
 		val klass = internalLink("java/lang/Class");
@@ -84,6 +82,8 @@ public class VirtualMachine {
 		klass.setStaticFieldLayout(klass.createStaticFieldLayout());
 		setClassOop(klass, klass);
 		setClassOop(object, klass);
+		object.link();
+		klass.link();
 		classDefiner = createClassDefiner();
 		val symbols = new VMSymbols(this);
 		this.symbols = symbols;
@@ -293,6 +293,15 @@ public class VirtualMachine {
 	}
 
 	/**
+	 * Returns class loaders storage.
+	 *
+	 * @return class loaders storage.
+	 */
+	public ClassLoaders getClassLoaders() {
+		return classLoaders;
+	}
+
+	/**
 	 * Returns thread storage.
 	 *
 	 * @return thread storage.
@@ -359,7 +368,7 @@ public class VirtualMachine {
 	 * @param initialize
 	 * 		Should class be initialized.
 	 */
-	public JavaClass findClass(Value loader, String name, boolean initialize) {
+	public JavaClass findClass(ObjectValue loader, String name, boolean initialize) {
 		JavaClass jc;
 		val helper = this.helper;
 		if (loader.isNull()) {
@@ -368,8 +377,8 @@ public class VirtualMachine {
 				helper.throwException(symbols.java_lang_ClassNotFoundException, name);
 			}
 		} else {
-			val oop = ((JavaValue<ClassLoaderData>) ((InstanceValue) loader).getValue(NativeJava.CLASS_LOADER_OOP, "Ljava/lang/Object;")).getValue();
-			jc = oop.getClass(name);
+			val data = classLoaders.getClassLoaderData(loader);
+			jc = data.getClass(name);
 			if (jc == null) {
 				jc = ((JavaValue<JavaClass>) helper.invokeVirtual("loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;", new Value[0], new Value[]{loader, helper.newUtf8(name.replace('/', '.')), initialize ? IntValue.ONE : IntValue.ZERO}).getResult()).getValue();
 			} else if (initialize) {
@@ -557,6 +566,16 @@ public class VirtualMachine {
 	 */
 	protected TimeZoneManager createTimeZoneManager() {
 		return new SimpleTimeZoneManager();
+	}
+
+	/**
+	 * Creates class loaders storage.
+	 * One may override this method.
+	 *
+	 * @return class loaders.
+	 */
+	public ClassLoaders createClassLoaders() {
+		return new SimpleClassLoaders(this);
 	}
 
 	private InstanceJavaClass internalLink(String name) {

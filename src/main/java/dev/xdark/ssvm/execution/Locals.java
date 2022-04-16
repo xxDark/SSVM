@@ -1,7 +1,7 @@
 package dev.xdark.ssvm.execution;
 
-import dev.xdark.ssvm.thread.ThreadRegion;
 import dev.xdark.ssvm.thread.SimpleThreadStorage;
+import dev.xdark.ssvm.thread.ThreadRegion;
 import dev.xdark.ssvm.value.TopValue;
 import dev.xdark.ssvm.value.Value;
 import lombok.RequiredArgsConstructor;

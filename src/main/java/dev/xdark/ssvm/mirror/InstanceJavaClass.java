@@ -183,8 +183,6 @@ public final class InstanceJavaClass implements JavaClass {
 		initializer = Thread.currentThread();
 		val vm = this.vm;
 		val helper = vm.getHelper();
-		loadSuperClass();
-		loadInterfaces();
 		// Build class layout
 		// VM might've set it already, do not override.
 		if (vrtFieldLayout == null) {
@@ -213,6 +211,36 @@ public final class InstanceJavaClass implements JavaClass {
 			signal.signalAll();
 			lock.unlock();
 			initializer = null;
+		}
+	}
+
+	/**
+	 * Called on class linkage.
+	 */
+	public void link() {
+		val lock = initializationLock;
+		lock.lock();
+		state = State.IN_PROGRESS;
+		try {
+			try {
+				loadSuperClass();
+				loadInterfaces();
+			} catch (VMException ex) {
+				state = State.FAILED;
+				InstanceValue oop = ex.getOop();
+				val symbols = vm.getSymbols();
+				if (!symbols.java_lang_Error.isAssignableFrom(oop.getJavaClass())) {
+					val cause = oop;
+					oop = vm.getHelper().newException(symbols.java_lang_ExceptionInInitializerError);
+					oop.setValue("exception", "Ljava/lang/Throwable;", cause);
+					throw new VMException(oop);
+				}
+				throw ex;
+			}
+			state = State.PENDING;
+		} finally {
+			signal.signalAll();
+			lock.unlock();
 		}
 	}
 
@@ -430,7 +458,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @return virtual class field or {@code null}, if not found.
 	 */
 	public JavaField getVirtualField(String name, String desc) {
-		return getVirtualFieldLayout().getFields().get(new MemberKey(this, name, desc));
+		return getVirtualFieldLayout().getFields().get(new SimpleMemberKey(this, name, desc));
 	}
 
 	/**
@@ -464,7 +492,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @return static class field or {@code null}, if not found.
 	 */
 	public JavaField getStaticField(String name, String desc) {
-		return getStaticFieldLayout().getFields().get(new MemberKey(this, name, desc));
+		return getStaticFieldLayout().getFields().get(new SimpleMemberKey(this, name, desc));
 	}
 
 	/**
@@ -486,7 +514,7 @@ public final class InstanceJavaClass implements JavaClass {
 		} while (field == null && (jc = jc.getSuperclassWithoutResolving()) != null);
 		return field;
 	}
-	
+
 	/**
 	 * Searches for a static method by it's name and descriptor recursively.
 	 *
@@ -531,7 +559,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * @return class method or {@code null}, if not found.
 	 */
 	public JavaMethod getMethod(String name, String desc) {
-		val key = new MemberKey(this, name, desc);
+		val key = (MemberKey) new SimpleMemberKey(this, name, desc);
 		JavaMethod jm = getVirtualMethodLayout().getMethods().get(key);
 		if (jm == null) {
 			jm = getStaticMethodLayout().getMethods().get(key);
@@ -590,7 +618,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * if field was not found.
 	 */
 	public Value getStaticValue(String name, String desc) {
-		return getStaticValue(new MemberKey(this, name, desc));
+		return getStaticValue(new SimpleMemberKey(this, name, desc));
 	}
 
 	/**
@@ -654,7 +682,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * This method will return {@code false} if there is no such field.
 	 */
 	public boolean setFieldValue(String name, String desc, Value value) {
-		return setFieldValue(new MemberKey(this, name, desc), value);
+		return setFieldValue(new SimpleMemberKey(this, name, desc), value);
 	}
 
 	/**
@@ -669,7 +697,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 */
 	public long getFieldOffset(String name, String desc) {
 		initialize();
-		return vrtFieldLayout.getFieldOffset(new MemberKey(this, name, desc));
+		return vrtFieldLayout.getFieldOffset(new SimpleMemberKey(this, name, desc));
 	}
 
 	/**
@@ -687,7 +715,7 @@ public final class InstanceJavaClass implements JavaClass {
 		val layout = this.vrtFieldLayout;
 		InstanceJavaClass jc = this;
 		do {
-			val offset = layout.getFieldOffset(new MemberKey(jc, name, desc));
+			val offset = layout.getFieldOffset(new SimpleMemberKey(jc, name, desc));
 			if (offset != -1L) return offset;
 		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
 		return -1L;
@@ -738,7 +766,7 @@ public final class InstanceJavaClass implements JavaClass {
 	 * otherwise.
 	 */
 	public boolean hasVirtualField(String name, String desc) {
-		return hasVirtualField(new MemberKey(this, name, desc));
+		return hasVirtualField(new SimpleMemberKey(this, name, desc));
 	}
 
 	/**
@@ -774,7 +802,7 @@ public final class InstanceJavaClass implements JavaClass {
 		for (val field : fields) {
 			if ((field.access & Opcodes.ACC_STATIC) != 0) {
 				val desc = field.desc;
-				map.put(new MemberKey(this, field.name, desc), new JavaField(this, field, slot++, offset));
+				map.put(new SimpleMemberKey(this, field.name, desc), new JavaField(this, field, slot++, offset));
 				offset += UnsafeUtil.getSizeFor(desc);
 			}
 		}
@@ -801,7 +829,7 @@ public final class InstanceJavaClass implements JavaClass {
 			for (val field : fields) {
 				if ((field.access & Opcodes.ACC_STATIC) == 0) {
 					val desc = field.desc;
-					map.put(new MemberKey(javaClass, field.name, desc), new JavaField(javaClass, field, slot++, offset));
+					map.put(new SimpleMemberKey(javaClass, field.name, desc), new JavaField(javaClass, field, slot++, offset));
 					offset += UnsafeUtil.getSizeFor(desc);
 				}
 			}
@@ -1002,10 +1030,7 @@ public final class InstanceJavaClass implements JavaClass {
 			val vm = this.vm;
 			val classLoader = this.classLoader;
 			for (int i = 0, j = _interfaces.size(); i < j; i++) {
-				val iface = $interfaces[i] = (InstanceJavaClass) vm.findClass(classLoader, _interfaces.get(i), false);
-				if (iface == null) {
-					vm.getHelper().throwException(vm.getSymbols().java_lang_NoClassDefFoundError, _interfaces.get(i));
-				}
+				$interfaces[i] = (InstanceJavaClass) vm.findClass(classLoader, _interfaces.get(i), false);
 			}
 			this.interfaces = $interfaces;
 		}
@@ -1035,7 +1060,7 @@ public final class InstanceJavaClass implements JavaClass {
 			val methods = node.methods;
 			for (val method : methods) {
 				if ((method.access & Opcodes.ACC_STATIC) == 0) {
-					map.put(new MemberKey(this, method.name, method.desc), new JavaMethod(this, method, slot++));
+					map.put(new SimpleMemberKey(this, method.name, method.desc), new JavaMethod(this, method, slot++));
 				}
 			}
 			vrtMethodLayout = new MethodLayout(Collections.unmodifiableMap(map));
@@ -1057,7 +1082,7 @@ public final class InstanceJavaClass implements JavaClass {
 			val methods = node.methods;
 			for (val method : methods) {
 				if ((method.access & Opcodes.ACC_STATIC) != 0) {
-					map.put(new MemberKey(this, method.name, method.desc), new JavaMethod(this, method, slot++));
+					map.put(new SimpleMemberKey(this, method.name, method.desc), new JavaMethod(this, method, slot++));
 				}
 			}
 			staticMethodLayout = new MethodLayout(Collections.unmodifiableMap(map));
@@ -1101,9 +1126,9 @@ public final class InstanceJavaClass implements JavaClass {
 
 	private JavaMethod lookupMethodIn(MethodLayout layout, String name, String desc) {
 		val methods = layout.getMethods();
-		JavaMethod jm = methods.get(new MemberKey(this, name, desc));
+		JavaMethod jm = methods.get(new SimpleMemberKey(this, name, desc));
 		if (jm == null) {
-			jm = methods.get(new MemberKey(this, name, POLYMORPHIC_DESC));
+			jm = methods.get(new SimpleMemberKey(this, name, POLYMORPHIC_DESC));
 			if (jm != null) {
 				if (!jm.isPolymorphic()) {
 					jm = null;

@@ -342,6 +342,10 @@ public class JitHelper {
 		putStaticA(IntValue.of(value), owner, name, desc, ctx);
 	}
 
+	public void putStaticC(char value, Object owner, String name, String desc, ExecutionContext ctx) {
+		putStaticA(IntValue.of(value), owner, name, desc, ctx);
+	}
+
 	public void putStaticB(byte value, Object owner, String name, String desc, ExecutionContext ctx) {
 		putStaticA(IntValue.of(value), owner, name, desc, ctx);
 	}

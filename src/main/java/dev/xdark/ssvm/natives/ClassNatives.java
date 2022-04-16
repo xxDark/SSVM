@@ -91,7 +91,7 @@ public class ClassNatives {
 			val helper = vm.getHelper();
 			val name = helper.readUtf8(helper.checkNotNull(locals.load(0)));
 			val initialize = locals.load(1).asBoolean();
-			val loader = locals.load(2);
+			val loader = locals.<ObjectValue>load(2);
 			val klass = helper.findClass(loader, name.replace('.', '/'), initialize);
 			if (Modifier.isHiddenMember(klass.getModifiers())) {
 				helper.throwException(symbols.java_lang_ClassNotFoundException, name);
@@ -473,7 +473,7 @@ public class ClassNatives {
 		return data;
 	}
 
-	private ArrayValue convertExceptions(VMHelper helper, Value loader, List<String> exceptions) {
+	private ArrayValue convertExceptions(VMHelper helper, ObjectValue loader, List<String> exceptions) {
 		val jlc = helper.getVM().getSymbols().java_lang_Class;
 		if (exceptions == null || exceptions.isEmpty()) {
 			return helper.emptyArray(jlc);

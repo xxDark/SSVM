@@ -2,13 +2,9 @@ package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.NativeJava;
 import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.classloading.ClassLoaderData;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.JavaValue;
-import dev.xdark.ssvm.value.NullValue;
-import dev.xdark.ssvm.value.Value;
+import dev.xdark.ssvm.value.*;
 import lombok.experimental.UtilityClass;
 import lombok.val;
 
@@ -19,8 +15,6 @@ import lombok.val;
  */
 @UtilityClass
 public class ProxyNatives {
-
-	private final String CLASS_LOADER_OOP = NativeJava.CLASS_LOADER_OOP;
 
 	/**
 	 * Initializes java/lang/reflect/Proxy.
@@ -36,7 +30,7 @@ public class ProxyNatives {
 			// Simply invoke defineClass in a loader.
 			val locals = ctx.getLocals();
 			val helper = vm.getHelper();
-			val loader = locals.load(0);
+			val loader = locals.<ObjectValue>load(0);
 			val name = locals.load(1);
 			val bytes = helper.checkNotNullArray(locals.load(2));
 			val off = locals.load(3);
@@ -48,7 +42,6 @@ public class ProxyNatives {
 					helper.throwException(symbols.java_lang_InternalError, "Invalid bytecode");
 				}
 				result = helper.newInstanceClass(NullValue.INSTANCE, NullValue.INSTANCE, parsed.getClassReader(), parsed.getNode());
-				vm.getBootClassLoaderData().forceLinkClass(result);
 			} else {
 				result = ((JavaValue<InstanceJavaClass>) helper.invokeVirtual("defineClass", "(Ljava/lang/String;[BII)Ljava/lang/Class;", new Value[0], new Value[]{
 						loader,
@@ -57,9 +50,9 @@ public class ProxyNatives {
 						off,
 						len
 				}).getResult()).getValue();
-				((JavaValue<ClassLoaderData>) ((InstanceValue) loader).getValue(CLASS_LOADER_OOP, "Ljava/lang/Object;")).getValue()
-						.forceLinkClass(result);
 			}
+			vm.getClassLoaders().getClassLoaderData(loader).forceLinkClass(result);
+			result.link();
 			ctx.setResult(result.getOop());
 			return Result.ABORT;
 		});

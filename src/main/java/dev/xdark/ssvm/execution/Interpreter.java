@@ -36,7 +36,8 @@ public class Interpreter {
 				val insn = instructions.get(pos);
 				if (insn instanceof LineNumberNode) ctx.setLineNumber(((LineNumberNode) insn).line);
 				for (int i = 0; i < interceptors.size(); i++) {
-					interceptors.get(i).intercept(ctx, insn);
+					if (interceptors.get(i).intercept(ctx, insn) == Result.ABORT)
+						break;
 				}
 				if (insn.getOpcode() == -1) continue;
 				val processor = vmi.getProcessor(insn);
@@ -61,6 +62,7 @@ public class Interpreter {
 				val tryCatchBlocks = mn.tryCatchBlocks;
 				int index = ctx.getInsnPosition() - 1;
 				val vm = ctx.getVM();
+				// int lastIndex = -1;
 				boolean shouldRepeat;
 				search:
 				do {
@@ -76,6 +78,12 @@ public class Interpreter {
 								handle = candidate.isAssignableFrom(exceptionType);
 							} catch (VMException hex) {
 								index = AsmUtil.getIndex(block.handler);
+								/*
+								if (lastIndex == index) {
+									throw ex;
+								}
+								lastIndex = index;
+								*/
 								shouldRepeat = true;
 								continue search;
 							}

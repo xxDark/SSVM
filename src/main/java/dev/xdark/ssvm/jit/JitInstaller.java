@@ -3,6 +3,7 @@ package dev.xdark.ssvm.jit;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.util.UnsafeUtil;
 import lombok.experimental.UtilityClass;
 import lombok.val;
 
@@ -34,8 +35,11 @@ public class JitInstaller {
 		val constants = jitClass.getConstants();
 		if (!constants.isEmpty()) {
 			val field = c.getDeclaredField("constants");
-			field.setAccessible(true);
-			field.set(null, constants.toArray());
+			try {
+				Class.forName(c.getName(), true, c.getClassLoader());
+			} catch (ClassNotFoundException ignored) {}
+			val u = UnsafeUtil.get();
+			u.putObject(u.staticFieldBase(field), u.staticFieldOffset(field), constants.toArray());
 		}
 		val cons = (Consumer<ExecutionContext>) c.getConstructor().newInstance();
 		val vm = method.getOwner().getVM();

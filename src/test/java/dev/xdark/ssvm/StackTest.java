@@ -1,8 +1,10 @@
 package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.execution.Stack;
+import dev.xdark.ssvm.value.DoubleValue;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.LongValue;
+import dev.xdark.ssvm.value.NullValue;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
@@ -189,5 +191,22 @@ public final class StackTest {
 			assertEquals(1, stack.pop().asInt());
 			assertTrue(stack.isEmpty());
 		}
+	}
+
+	@Test
+	public void testEquality() {
+		try (val stack1 = new Stack(8); val stack2 = new Stack(8)) {
+			filLStack(stack1);
+			filLStack(stack2);
+			assertEquals(stack1, stack2);
+		}
+	}
+	
+	private static void filLStack(Stack stack) {
+		stack.push(IntValue.ONE);
+		stack.pushWide(LongValue.ZERO);
+		stack.pushWide(new DoubleValue(1.3D));
+		stack.push(NullValue.INSTANCE);
+		stack.pushWide(LongValue.ONE);
 	}
 }

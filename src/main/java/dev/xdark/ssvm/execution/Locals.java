@@ -98,6 +98,35 @@ public final class Locals implements AutoCloseable {
 	}
 
 	@Override
+	public boolean equals(Object o) {
+		if (o == this) return true;
+		if (!(o instanceof Locals)) return false;
+		val other = (Locals) o;
+		val table = this.table;
+		int length = table.length();
+		val otherTable = other.table;
+		if (table.length() != otherTable.length()) return false;
+		for (int i = 0; i < length; i++) {
+			if (!Objects.equals(table.get(i), otherTable.get(i))) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	@Override
+	public int hashCode() {
+		int result = 1;
+		val table = this.table;
+		int cursor = table.length();
+		for (int i = 0; i < cursor; i++) {
+			result *= 31;
+			result += Objects.hashCode(table.get(i).hashCode());
+		}
+		return result;
+	}
+
+	@Override
 	public String toString() {
 		return "Locals{" +
 				"table=" + Arrays.toString(table.unwrap()) +

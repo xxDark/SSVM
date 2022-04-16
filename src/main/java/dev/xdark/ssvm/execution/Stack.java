@@ -338,6 +338,33 @@ public final class Stack implements AutoCloseable {
 	}
 
 	@Override
+	public boolean equals(Object o) {
+		if (o == this) return true;
+		if (!(o instanceof Stack)) return false;
+		val other = (Stack) o;
+		int cursor = this.cursor;
+		if (cursor != other.cursor) return false;
+		for (int i = 0; i < cursor; i++) {
+			if (!Objects.equals(getAt(i), other.getAt(i))) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	@Override
+	public int hashCode() {
+		int result = 1;
+		int cursor = this.cursor;
+		val stack = this.stack;
+		for (int i = 0; i < cursor; i++) {
+			result *= 31;
+			result += Objects.hashCode(stack.get(i).hashCode());
+		}
+		return result;
+	}
+
+	@Override
 	public String toString() {
 		return "Stack{" +
 				"stack=" + Arrays.toString(stack.unwrap()) +

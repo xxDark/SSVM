@@ -2168,14 +2168,12 @@ public final class VMHelper {
 		val storage = jc.getVM().getThreadStorage();
 		int maxStack = mn.maxStack;
 		int maxLocals = getMaxLocals(jm, locals);
-		val region = storage.push(maxStack + maxLocals);
 		return new ExecutionContext(
 				jc.getVM(),
 				jc,
 				jm,
-				region,
-				new Stack(region.slice(0, maxStack)),
-				new Locals(region.slice(maxStack, maxStack + maxLocals))
+				storage.newStack(maxStack),
+				storage.newLocals(maxLocals)
 		);
 	}
 

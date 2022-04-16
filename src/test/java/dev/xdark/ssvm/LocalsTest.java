@@ -12,10 +12,10 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class LocalsTest {
-
+	
 	@Test
 	public void testEquality() {
-		try (val locals1 = new Locals(5); val locals2 = new Locals(5)) {
+		try (val locals1 = new Locals(6); val locals2 = new Locals(6)) {
 			fillLocals(locals1);
 			fillLocals(locals2);
 			assertEquals(locals1, locals2);

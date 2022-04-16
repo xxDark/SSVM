@@ -3,7 +3,6 @@ package dev.xdark.ssvm.execution;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
-import dev.xdark.ssvm.thread.ThreadRegion;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.util.VMSymbols;
 import dev.xdark.ssvm.value.TopValue;
@@ -15,7 +14,6 @@ public final class ExecutionContext {
 	private final VirtualMachine virtualMachine;
 	private final InstanceJavaClass owner;
 	private final JavaMethod method;
-	private final ThreadRegion region;
 	private final Stack stack;
 	private final Locals locals;
 	private int insnPosition;
@@ -29,18 +27,15 @@ public final class ExecutionContext {
 	 * 		Owner of the method.
 	 * @param method
 	 * 		Method being executed.
-	 * @param region
-	 * 		Execution region.
 	 * @param stack
 	 * 		Execution stack.
 	 * @param locals
 	 * 		Local variable table.
 	 */
-	public ExecutionContext(VirtualMachine virtualMachine, InstanceJavaClass owner, JavaMethod method, ThreadRegion region, Stack stack, Locals locals) {
+	public ExecutionContext(VirtualMachine virtualMachine, InstanceJavaClass owner, JavaMethod method, Stack stack, Locals locals) {
 		this.virtualMachine = virtualMachine;
 		this.owner = owner;
 		this.method = method;
-		this.region = region;
 		this.stack = stack;
 		this.locals = locals;
 	}
@@ -169,16 +164,10 @@ public final class ExecutionContext {
 	}
 
 	/**
-	 * @return thread region for stack and locals.
-	 */
-	public ThreadRegion getRegion() {
-		return region;
-	}
-
-	/**
 	 * Deallocates stack & registers.
 	 */
 	public void deallocate() {
-		region.close();
+		stack.deallocate();
+		locals.deallocate();
 	}
 }

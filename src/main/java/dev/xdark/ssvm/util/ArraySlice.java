@@ -19,8 +19,8 @@ import java.util.Arrays;
 public class ArraySlice<V> {
 
 	protected V[] array;
-	private final int fromIndex;
-	private final int toIndex;
+	protected final int fromIndex;
+	protected final int toIndex;
 
 	/**
 	 * Sets element.
@@ -67,10 +67,17 @@ public class ArraySlice<V> {
 	 * @return slice of this slice.
 	 */
 	public ArraySlice<V> slice(int fromIndex, int toIndex) {
-		return new ArraySlice<>(array, map(fromIndex), map(toIndex));
+		return new ArraySlice<>(array, map(fromIndex), toIndex + this.fromIndex);
 	}
 
 	protected int map(int index) {
-		return index + fromIndex;
+		if (index < 0) {
+			throw new IndexOutOfBoundsException();
+		}
+		index += fromIndex;
+		if (index >= toIndex) {
+			throw new IndexOutOfBoundsException();
+		}
+		return index;
 	}
 }

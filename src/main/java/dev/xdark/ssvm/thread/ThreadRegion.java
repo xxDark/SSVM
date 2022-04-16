@@ -17,7 +17,7 @@ public final class ThreadRegion extends ArraySlice<Value> implements AutoCloseab
 
 	@Override
 	public ThreadRegion slice(int fromIndex, int toIndex) {
-		return new ThreadRegion(array, map(fromIndex), map(toIndex), storage);
+		return new ThreadRegion(array, map(fromIndex), this.fromIndex + toIndex, storage);
 	}
 
 	@Override

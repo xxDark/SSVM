@@ -37,7 +37,7 @@ public class Interpreter {
 				if (insn instanceof LineNumberNode) ctx.setLineNumber(((LineNumberNode) insn).line);
 				for (int i = 0; i < interceptors.size(); i++) {
 					if (interceptors.get(i).intercept(ctx, insn) == Result.ABORT)
-						break;
+						break exec;
 				}
 				if (insn.getOpcode() == -1) continue;
 				val processor = vmi.getProcessor(insn);

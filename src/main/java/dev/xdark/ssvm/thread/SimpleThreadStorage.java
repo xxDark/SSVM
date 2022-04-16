@@ -26,7 +26,7 @@ public class SimpleThreadStorage implements ThreadStorage {
 		int currentIndex = this.currentIndex;
 		int toIndex = currentIndex + size;
 		val storage = this.storage;
-		if (toIndex >= storage.length) {
+		if (toIndex > storage.length) {
 			throw new IndexOutOfBoundsException();
 		}
 

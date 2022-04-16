@@ -169,6 +169,13 @@ public final class ExecutionContext {
 	}
 
 	/**
+	 * @return thread region for stack and locals.
+	 */
+	public ThreadRegion getRegion() {
+		return region;
+	}
+
+	/**
 	 * Deallocates stack & registers.
 	 */
 	public void deallocate() {

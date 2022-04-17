@@ -43,6 +43,17 @@ public interface NativeLibraryManager {
 	void unload(String name, boolean isBuiltin, long handle);
 
 	/**
+	 * Lookup symbol address in native library.
+	 *
+	 * @param handle
+	 *      Library handle.
+	 * @param symbolName
+	 *      The symbol name to lookup.
+	 * @return symbol address or {@code 0L}, if failed.
+	 */
+	long find(long handle, String symbolName);
+
+	/**
 	 * @return JNI version constant.
 	 */
 	int getJniVersion();

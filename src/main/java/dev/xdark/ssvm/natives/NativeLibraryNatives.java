@@ -1,10 +1,12 @@
 package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
+import dev.xdark.ssvm.value.LongValue;
 import lombok.experimental.UtilityClass;
 import lombok.val;
 
@@ -51,6 +53,19 @@ public class NativeLibraryNatives {
 				return Result.ABORT;
 			})) {
 				throw new IllegalArgumentException("Unable to locate NativeLibrary#load method");
+			}
+		}
+		val find = (MethodInvoker) ctx -> {
+			val helper = vm.getHelper();
+			val _this = ctx.getLocals().<InstanceValue>load(0);
+			val handle = _this.getLong("handle");
+			val mgr = vm.getNativeLibraryManager();
+			ctx.setResult(LongValue.of(mgr.find(handle, helper.readUtf8(ctx.getLocals().load(1)))));
+			return Result.ABORT;
+		};
+		if (!vmi.setInvoker(library, "find", "(Ljava/lang/String;)J", find)) {
+			if (!vmi.setInvoker(library, "findEntry", "(Ljava/lang/String;)J", find)) {
+				throw new IllegalArgumentException("Unable to locate NativeLibrary#findEntry method");
 			}
 		}
 	}

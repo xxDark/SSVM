@@ -74,7 +74,7 @@ public class OldFileSystemNatives {
 			val helper = vm.getHelper();
 			val value = ctx.getLocals().load(1);
 			helper.checkNotNull(value);
-			val path = helper.readUtf8(helper.invokeVirtual("getAbsolutePath", "()Ljava/lang/String;", new Value[0], new Value[]{value}).getResult());
+			val path = helper.readUtf8(((InstanceValue) value).getValue("path", "Ljava/lang/String;"));
 			val list = vm.getFileDescriptorManager().list(path);
 			if (list == null) {
 				ctx.setResult(NullValue.INSTANCE);
@@ -104,7 +104,7 @@ public class OldFileSystemNatives {
 					ctx.setResult(LongValue.of(attributes.lastModifiedTime().toMillis()));
 				}
 			} catch (IOException ex) {
-				helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+				ctx.setResult(LongValue.ZERO);
 			}
 			return Result.ABORT;
 		});
@@ -121,7 +121,7 @@ public class OldFileSystemNatives {
 					ctx.setResult(LongValue.of(attributes.size()));
 				}
 			} catch (IOException ex) {
-				helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+				ctx.setResult(LongValue.ZERO);
 			}
 			return Result.ABORT;
 		});

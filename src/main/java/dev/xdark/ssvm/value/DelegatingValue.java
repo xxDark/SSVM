@@ -24,4 +24,14 @@ public abstract class DelegatingValue<V extends Value> implements Value {
 	 * 		New value.
 	 */
 	public abstract void setDelegate(V delegate);
+
+	@Override
+	public boolean equals(Object obj) {
+		return obj == this || getDelegate().equals(obj);
+	}
+
+	@Override
+	public int hashCode() {
+		return getDelegate().hashCode();
+	}
 }

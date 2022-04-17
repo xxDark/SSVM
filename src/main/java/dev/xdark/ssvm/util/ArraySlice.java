@@ -15,12 +15,12 @@ import java.util.Arrays;
  * @author xDark
  */
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@FieldDefaults(level = AccessLevel.PROTECTED, makeFinal = true)
 public class ArraySlice<V> {
 
-	protected V[] array;
-	protected final int fromIndex;
-	protected final int toIndex;
+	V[] array;
+	int fromIndex;
+	int toIndex;
 
 	/**
 	 * Sets element.

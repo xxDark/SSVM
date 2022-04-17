@@ -25,8 +25,8 @@ import dev.xdark.ssvm.thread.StackFrame;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.thread.VMThread;
-import dev.xdark.ssvm.tz.SimpleTimeZoneManager;
-import dev.xdark.ssvm.tz.TimeZoneManager;
+import dev.xdark.ssvm.tz.SimpleTimeManager;
+import dev.xdark.ssvm.tz.TimeManager;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.util.VMPrimitives;
 import dev.xdark.ssvm.util.VMSymbols;
@@ -57,7 +57,7 @@ public class VirtualMachine {
 	private final NativeLibraryManager nativeLibraryManager;
 	private final StringPool stringPool;
 	private final ManagementInterface managementInterface;
-	private final TimeZoneManager timeZoneManager;
+	private final TimeManager timeManager;
 	private final ClassLoaders classLoaders;
 	private final Properties properties;
 	private final Map<String, String> env;
@@ -92,7 +92,7 @@ public class VirtualMachine {
 		nativeLibraryManager = createNativeLibraryManager();
 		stringPool = createStringPool();
 		managementInterface = createManagementInterface();
-		timeZoneManager = createTimeZoneManager();
+		timeManager = createTimeManager();
 		NativeJava.init(this);
 
 		(properties = new Properties()).putAll(System.getProperties());
@@ -284,12 +284,12 @@ public class VirtualMachine {
 	}
 
 	/**
-	 * Returns time zone manager.
+	 * Returns time manager.
 	 *
-	 * @return time zone manager.
+	 * @return time manager.
 	 */
-	public TimeZoneManager getTimeZoneManager() {
-		return timeZoneManager;
+	public TimeManager getTimeManager() {
+		return timeManager;
 	}
 
 	/**
@@ -559,13 +559,13 @@ public class VirtualMachine {
 	}
 
 	/**
-	 * Creates time zone manager.
+	 * Creates time manager.
 	 * One may override this method.
 	 *
-	 * @return time zone manager.
+	 * @return time manager.
 	 */
-	protected TimeZoneManager createTimeZoneManager() {
-		return new SimpleTimeZoneManager();
+	protected TimeManager createTimeManager() {
+		return new SimpleTimeManager();
 	}
 
 	/**

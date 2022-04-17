@@ -2,7 +2,6 @@ package dev.xdark.ssvm.tz;
 
 import lombok.val;
 
-import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
@@ -11,7 +10,7 @@ import java.util.TimeZone;
  *
  * @author xDark
  */
-public class SimpleTimeZoneManager implements TimeZoneManager {
+public class SimpleTimeManager implements TimeManager {
 
 	@Override
 	public String getSystemTimeZoneId(String javaHome) {
@@ -26,6 +25,16 @@ public class SimpleTimeZoneManager implements TimeZoneManager {
 
 		val offset = String.format("%02d:%02d", Math.abs(offsetInMillis / 3600000), Math.abs((offsetInMillis / 60000) % 60));
 		return "GMT" + (offsetInMillis >= 0L ? "+" : "-") + offset;
+	}
+
+	@Override
+	public long currentTimeMillis() {
+		return System.currentTimeMillis();
+	}
+
+	@Override
+	public long nanoTime() {
+		return System.nanoTime();
 	}
 
 	/**

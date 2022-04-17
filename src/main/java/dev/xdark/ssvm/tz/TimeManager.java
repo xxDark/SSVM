@@ -1,12 +1,12 @@
 package dev.xdark.ssvm.tz;
 
 /**
- * Time one management.
+ * Time management.
  *
  * @author xDark
  * @see java.util.TimeZone
  */
-public interface TimeZoneManager {
+public interface TimeManager {
 
 	/**
 	 * @param javaHome
@@ -21,4 +21,14 @@ public interface TimeZoneManager {
 	 * based on the GMT offset of the platform.
 	 */
 	String getSystemGMTOffsetId();
+
+	/**
+	 * @return the current time in milliseconds.
+	 */
+	long currentTimeMillis();
+
+	/**
+	 * @return the current time in nanoseconds.
+	 */
+	long nanoTime();
 }

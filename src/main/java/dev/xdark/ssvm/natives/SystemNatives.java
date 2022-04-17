@@ -26,11 +26,11 @@ public class SystemNatives {
 		val sys = symbols.java_lang_System;
 		vmi.setInvoker(sys, "registerNatives", "()V", MethodInvoker.noop());
 		vmi.setInvoker(sys, "currentTimeMillis", "()J", ctx -> {
-			ctx.setResult(LongValue.of(System.currentTimeMillis()));
+			ctx.setResult(LongValue.of(vm.getTimeManager().currentTimeMillis()));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "nanoTime", "()J", ctx -> {
-			ctx.setResult(LongValue.of(System.nanoTime()));
+			ctx.setResult(LongValue.of(vm.getTimeManager().nanoTime()));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "arraycopy", "(Ljava/lang/Object;ILjava/lang/Object;II)V", ctx -> {

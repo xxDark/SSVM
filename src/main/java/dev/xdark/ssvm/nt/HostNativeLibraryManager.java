@@ -26,6 +26,11 @@ public class HostNativeLibraryManager implements NativeLibraryManager {
 	}
 
 	@Override
+	public long find(long handle, String symbolName) {
+		return 0L;
+	}
+
+	@Override
 	public int getJniVersion() {
 		return JniVersion.JNI_VERSION_1_8; 
 	}

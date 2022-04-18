@@ -14,3 +14,6 @@
   - Somewhat *JIT* compiler
 
 For some basic example, see: [EXAMPLE.md](EXAMPLE.md)
+
+
+For more complex examples, see [Recaf repository](https://github.com/Col-E/Recaf/tree/dev3/recaf-core/src/main/java/me/coley/recaf/ssvm)

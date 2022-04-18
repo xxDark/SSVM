@@ -53,7 +53,6 @@ public class JitTest {
 		// Force compile
 		val loader = new JitClassLoader();
 		try {
-			int i = 0;
 			for (val toCompile : jc.getStaticMethodLayout().getAll()) {
 				val compiled = JitCompiler.compile(toCompile, 3);
 				JitInstaller.install(toCompile, loader, compiled);

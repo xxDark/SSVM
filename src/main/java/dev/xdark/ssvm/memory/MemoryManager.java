@@ -6,6 +6,7 @@ import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.value.*;
 
 import java.nio.ByteOrder;
+import java.util.Collection;
 
 /**
  * VM memory manager.
@@ -572,4 +573,14 @@ public interface MemoryManager {
 	 * @return static data offset.
 	 */
 	long getStaticOffset(JavaClass jc);
+
+	/**
+	 * @return the collection of all memory blocks.
+	 */
+	Collection<Memory> listMemory();
+
+	/**
+	 * @return the collection of all allocated objects.
+	 */
+	Collection<ObjectValue> listObjects();
 }

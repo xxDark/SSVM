@@ -93,4 +93,14 @@ public interface VMThread {
 	 * @return thread storage.
 	 */
 	ThreadStorage getThreadStorage();
+
+	/**
+	 * Suspends this thread.
+	 */
+	void suspend();
+
+	/**
+	 * Resumes this thread.
+	 */
+	void resume();
 }

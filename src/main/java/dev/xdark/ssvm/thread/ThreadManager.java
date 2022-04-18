@@ -48,4 +48,14 @@ public interface ThreadManager {
 	default VMThread currentThread() {
 		return getVmThread(Thread.currentThread());
 	}
+
+	/**
+	 * Suspends all VM threads.
+	 */
+	void suspendAll();
+
+	/**
+	 * Resumes all VM threads.
+	 */
+	void resumeAll();
 }

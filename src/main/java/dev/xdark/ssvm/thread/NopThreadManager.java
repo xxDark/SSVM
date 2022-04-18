@@ -58,4 +58,14 @@ public final class NopThreadManager implements ThreadManager {
 	public VMThread[] getThreads() {
 		return threadMap.values().toArray(new VMThread[0]);
 	}
+
+	@Override
+	public void suspendAll() {
+		threadMap.values().forEach(VMThread::suspend);
+	}
+
+	@Override
+	public void resumeAll() {
+		threadMap.values().forEach(VMThread::resume);
+	}
 }

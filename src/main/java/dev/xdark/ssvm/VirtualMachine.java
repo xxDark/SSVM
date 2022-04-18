@@ -126,7 +126,6 @@ public class VirtualMachine {
 		val mainThread = threadManager.currentThread();
 		val oop = mainThread.getOop();
 		oop.setValue("group", "Ljava/lang/ThreadGroup;", sysGroup);
-		helper.invokeExact(groupClass, "add", "(Ljava/lang/Thread;)V", new Value[0], new Value[]{sysGroup, oop});
 		sysClass.initialize();
 		findBootstrapClass("java/lang/reflect/Method", true);
 		findBootstrapClass("java/lang/reflect/Field", true);

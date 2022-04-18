@@ -13,10 +13,12 @@ import lombok.val;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.WeakHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 /**
  * Simple and dumb implementation of a memory manager.
@@ -354,6 +356,16 @@ public final class SimpleMemoryManager implements MemoryManager {
 	public long getStaticOffset(JavaClass jc) {
 		val jlc = vm.findBootstrapClass("java/lang/Class");
 		return OBJECT_HEADER_SIZE + jlc.getVirtualFieldLayout().getSize();
+	}
+
+	@Override
+	public Collection<Memory> listMemory() {
+		return memoryBlocks.values().stream().map(x -> x.memory).collect(Collectors.toList());
+	}
+
+	@Override
+	public Collection<ObjectValue> listObjects() {
+		return objects.values();
 	}
 
 	private MemoryRef newMemoryBlock(long size, boolean isDirect) {

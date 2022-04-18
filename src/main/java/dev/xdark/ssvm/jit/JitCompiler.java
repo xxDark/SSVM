@@ -61,7 +61,6 @@ public final class JitCompiler {
 	private static final ClassType VM_EXCEPTION = ClassType.of(VMException.class);
 	private static final ClassType INSTANCE = ClassType.of(InstanceValue.class);
 	private static final ClassType TOP = ClassType.of(TopValue.class);
-	private static final ClassType OBJ_ARRAY = ClassType.of(Object[].class);
 
 	// ctx methods
 	private static final Access GET_LOCALS = virtualCall(CTX, "getLocals", LOCALS);
@@ -187,13 +186,15 @@ public final class JitCompiler {
 	private static final int LOCALS_SLOT = 2;
 	private static final int HELPER_SLOT = 3;
 	private static final int SLOT_OFFSET = 4;
-
-	private final String className;
-	private final JavaMethod target;
-	private final ClassWriter writer;
-	private final MethodVisitor jit;
-	private final Map<Object, Integer> constants = new LinkedHashMap<>();
-	private final Map<DynamicCallInfo, MethodInsnNode> invokeDynamicCalls = new HashMap<>();
+	
+	String className;
+	JavaMethod target;
+	ClassWriter writer;
+	MethodVisitor jit;
+	Map<Object, Integer> constants;
+	int ctxIndex;
+	Map<DynamicCallInfo, MethodInsnNode> invokeDynamicCalls = new HashMap<>();
+	Map<MethodCallInfo, MethodInsnNode> methodCalls = new HashMap<>();
 
 	/**
 	 * @param jm
@@ -237,7 +238,7 @@ public final class JitCompiler {
 		init.visitMaxs(1, 1);
 		val jit = writer.visitMethod(ACC_PUBLIC, "accept", "(Ljava/lang/Object;)V", null, null);
 		jit.visitCode();
-		val compiler = new JitCompiler(className, jm, writer, jit);
+		val compiler = new JitCompiler(className, jm, writer, jit, new LinkedHashMap<>(), CTX_SLOT);
 		compiler.compileInner();
 		jit.visitEnd();
 		jit.visitMaxs(-1, -1);
@@ -262,7 +263,7 @@ public final class JitCompiler {
 		// Setup locals.
 		loadCtx();
 		cast(CTX);
-		jit.visitVarInsn(ASTORE, CTX_SLOT);
+		jit.visitVarInsn(ASTORE, ctxIndex);
 		// Load locals.
 		loadCtx();
 		GET_LOCALS.emit(jit);
@@ -617,16 +618,10 @@ public final class JitCompiler {
 					putField((FieldInsnNode) insn);
 					break;
 				case INVOKEVIRTUAL:
-					invokeVirtual((MethodInsnNode) insn);
-					break;
 				case INVOKESPECIAL:
-					invokeSpecial((MethodInsnNode) insn);
-					break;
 				case INVOKESTATIC:
-					invokeStatic((MethodInsnNode) insn);
-					break;
 				case INVOKEINTERFACE:
-					invokeInterface((MethodInsnNode) insn);
+					doCall((MethodInsnNode) insn);
 					break;
 				case NEW:
 					newInstance(((TypeInsnNode) insn).desc);
@@ -1129,10 +1124,11 @@ public final class JitCompiler {
 	}
 
 	private void invokeVirtual(MethodInsnNode node) {
+		val jit = this.jit;
 		val desc = node.desc;
 		collectVirtualCallArgs(desc);
-		loadCompilerConstant(node.name);
-		loadCompilerConstant(desc);
+		jit.visitLdcInsn(node.name);
+		jit.visitLdcInsn(desc);
 		loadCtx();
 		INVOKE_VIRTUAL_INTRINSIC.emit(jit);
 		toJava(Type.getReturnType(desc));
@@ -1147,28 +1143,80 @@ public final class JitCompiler {
 		toJava(Type.getReturnType(desc));
 	}
 
+	private void doCall(MethodInsnNode node) {
+		val method = methodCalls.computeIfAbsent(new MethodCallInfo(node), __ -> {
+			val methodName = "methodCall" + methodCalls.size();
+			val desc = node.desc;
+			val args = Type.getArgumentTypes(desc);
+			int opcode = node.getOpcode();
+			val vrt = opcode != INVOKESTATIC;
+			// We need to rewrite java types to VM value type
+			ensureVMValues(args);
+			Type[] newArgs = Arrays.copyOf(args, args.length + (vrt ? 2 : 1));
+			if (vrt) {
+				// We need to insert `this`, so shift array to the right by one
+				System.arraycopy(newArgs, 0, newArgs, 1, args.length);
+				newArgs[0] = VALUE.type;
+			}
+			// Inject current context as new argument
+			newArgs[newArgs.length - 1] = CTX.type;
+			// Same as above
+			val returnType = ensureVMValue(Type.getReturnType(desc));
+			val newDesc = Type.getMethodDescriptor(returnType, newArgs);
+			val split = writer.visitMethod(ACC_PRIVATE | ACC_STATIC, methodName, newDesc, null, null);
+			split.visitCode();
+			int loadIndex = 0;
+			if (vrt) {
+				split.visitVarInsn(ALOAD, 0);
+				loadIndex++;
+			}
+			for (val arg : args) {
+				split.visitVarInsn(arg.getOpcode(ILOAD), loadIndex);
+				loadIndex += arg.getSize();
+			}
+			// Need to create new jit compiler for temporary usage
+			// because calling invokeXX uses method that is being compiled
+			val jit = new JitCompiler(className, target, writer, split, constants, loadIndex);
+			switch (opcode) {
+				case INVOKEVIRTUAL:
+					jit.invokeVirtual(node);
+					break;
+				case INVOKESPECIAL:
+					jit.invokeSpecial(node);
+					break;
+				case INVOKESTATIC:
+					jit.invokeStatic(node);
+					break;
+				case INVOKEINTERFACE:
+					jit.invokeInterface(node);
+					break;
+				default:
+					throw new IllegalStateException(Integer.toString(node.getOpcode()));
+			}
+			split.visitInsn(returnType.getOpcode(IRETURN));
+			split.visitEnd();
+			split.visitMaxs(-1, -1);
+			return new MethodInsnNode(INVOKESTATIC, className, methodName, newDesc);
+		});
+		val jit = this.jit;
+		// Pass context
+		loadCtx();
+		method.accept(jit);
+	}
+
 	private void invokeDynamic(InvokeDynamicInsnNode node) {
-		// TODO support other types of invocation
-		// such as invokeVirtual, invokeSpecial, etc
 		val method = invokeDynamicCalls.computeIfAbsent(new DynamicCallInfo(node.desc, node.bsm), __ -> {
 			val methodName = "dynCall" + invokeDynamicCalls.size();
 			val desc = node.desc;
 			val args = Type.getArgumentTypes(desc);
 			// We need to rewrite java types to VM value type
-			for (int i = 0; i < args.length; i++) {
-				if (args[i].getSort() >= Type.ARRAY) {
-					args[i] = VALUE.type;
-				}
-			}
+			ensureVMValues(args);
 			val newArgs = Arrays.copyOf(args, args.length + 2);
 			// Inject node index & current context as new arguments
 			newArgs[args.length] = Type.INT_TYPE;
 			newArgs[args.length + 1] = CTX.type;
-			Type returnType = Type.getReturnType(desc);
 			// Same as above
-			if (returnType.getSort() >= Type.ARRAY) {
-				returnType = VALUE.type;
-			}
+			val returnType = ensureVMValue(Type.getReturnType(desc));
 			val newDesc = Type.getMethodDescriptor(returnType, newArgs);
 			val split = writer.visitMethod(ACC_PRIVATE | ACC_STATIC, methodName, newDesc, null, null);
 			split.visitCode();
@@ -1179,7 +1227,7 @@ public final class JitCompiler {
 			}
 			// Need to create new jit compiler for temporary usage
 			// because calling collectArgs uses method that is being compiled
-			new JitCompiler(className, target, writer, split).collectArgs(1, desc);
+			new JitCompiler(className, target, writer, split, constants, loadIndex + 1).collectArgs(1, desc);
 			loadConstants(split);
 			split.visitVarInsn(ILOAD, loadIndex);
 			split.visitVarInsn(Opcodes.ALOAD, loadIndex + 1);
@@ -1415,7 +1463,7 @@ public final class JitCompiler {
 	}
 
 	private void loadCtx(MethodVisitor mv) {
-		mv.visitVarInsn(ALOAD, CTX_SLOT);
+		mv.visitVarInsn(ALOAD, ctxIndex);
 	}
 
 	private static void toJava(Type type, MethodVisitor mv) {
@@ -1448,6 +1496,15 @@ public final class JitCompiler {
 			case Type.VOID:
 				mv.visitInsn(POP);
 		}
+	}
+
+	private static Type ensureVMValue(Type type) {
+		return type.getSort() >= Type.ARRAY ? VALUE.type : type;
+	}
+
+	private static void ensureVMValues(Type[] types) {
+		for (int i = 0, j = types.length; i < j; types[i] = ensureVMValue(types[i++]))
+			;
 	}
 
 	private static Access staticCall(ClassType owner, String name, ClassType rt, ClassType... args) {
@@ -1524,8 +1581,21 @@ public final class JitCompiler {
 	@EqualsAndHashCode(callSuper = false, doNotUseGetters = true)
 	@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 	private static final class DynamicCallInfo {
-
 		private final String desc;
 		private final Handle handle;
+	}
+
+	@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+	@EqualsAndHashCode(callSuper = false, doNotUseGetters = true)
+	@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+	private static final class MethodCallInfo {
+		int opcode;
+		String owner;
+		String name;
+		String desc;
+
+		MethodCallInfo(MethodInsnNode node) {
+			this(node.getOpcode(), node.owner, node.name, node.desc);
+		}
 	}
 }

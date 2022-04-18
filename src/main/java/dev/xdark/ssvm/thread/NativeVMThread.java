@@ -55,4 +55,14 @@ public final class NativeVMThread extends BaseVMThread {
 		}
 		return thread.isInterrupted();
 	}
+
+	@Override
+	public void suspend() {
+		thread.suspend();
+	}
+
+	@Override
+	public void resume() {
+		thread.resume();
+	}
 }

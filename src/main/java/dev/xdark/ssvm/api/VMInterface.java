@@ -8,7 +8,13 @@ import dev.xdark.ssvm.mirror.JavaMethod;
 import lombok.val;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
 /**
  * Interface to configure/adjust VM.

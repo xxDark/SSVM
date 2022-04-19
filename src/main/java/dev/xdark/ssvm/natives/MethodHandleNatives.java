@@ -392,7 +392,8 @@ public class MethodHandleNatives {
 				}
 				break;
 			default:
-				throw new PanicException("TODO ? " + refKind);
+				helper.throwException(symbols.java_lang_InternalError, "unrecognized MemberName format");
+				return;
 		}
 		if (handle == null) {
 			helper.throwException(symbols.java_lang_NoSuchMethodError, clazz.getInternalName() + '.' + name + desc);
@@ -405,18 +406,23 @@ public class MethodHandleNatives {
 		val symbols = vm.getSymbols();
 		val desc = ((JavaValue<JavaClass>) type).getValue().getDescriptor();
 
+		// TODO hotspot "feature"?
+		// https://github.com/openjdk/jdk/blob/026b85303c01326bc49a1105a89853d7641fcd50/src/hotspot/share/prims/methodHandles.cpp#L839
+		// https://github.com/openjdk/jdk/blob/534e557874274255c55086b4f6128063cbd9cc58/src/hotspot/share/interpreter/linkResolver.cpp#L974
 		JavaField handle;
 		switch (refKind) {
 			case REF_getStatic:
 			case REF_putStatic:
-				handle = clazz.getStaticFieldRecursively(name, desc);
-				break;
 			case REF_getField:
 			case REF_putField:
 				handle = clazz.getVirtualFieldRecursively(name, desc);
+				if (handle == null) {
+					handle = clazz.getStaticFieldRecursively(name, desc);
+				}
 				break;
 			default:
-				throw new PanicException("TODO ?");
+				helper.throwException(symbols.java_lang_InternalError, "unrecognized MemberName format");
+				return;
 		}
 		if (handle == null) {
 			helper.throwException(symbols.java_lang_NoSuchFieldError, name);

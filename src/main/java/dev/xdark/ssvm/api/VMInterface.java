@@ -9,7 +9,6 @@ import lombok.val;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 import java.util.*;
-import java.util.stream.Stream;
 
 /**
  * Interface to configure/adjust VM.
@@ -274,9 +273,9 @@ public final class VMInterface {
 	 * @param enter
 	 * 		True if called upon method entering, method exit otherwise.
 	 *
-	 * @return stream of invocation hooks.
+	 * @return iterable of invocation hooks.
 	 */
-	public Stream<MethodInvocation> getInvocationHooks(JavaMethod call, boolean enter) {
+	public Iterable<MethodInvocation> getInvocationHooks(JavaMethod call, boolean enter) {
 		Map<JavaMethod, MethodInvocation> map;
 		List<MethodInvocation> list;
 		if (enter) {
@@ -287,9 +286,9 @@ public final class VMInterface {
 			list = globalExit;
 		}
 		val invocation = map.get(call);
-		val stream = list.stream();
-		if (invocation == null) return stream;
-		return Stream.concat(Stream.of(invocation), stream);
+		if (invocation == null) return list;
+		if (list.isEmpty()) return () -> new SingletonIterator(invocation);
+		return () -> new InvocationIterator(invocation, list);
 	}
 
 	/**
@@ -302,5 +301,56 @@ public final class VMInterface {
 	private static int getOpcode(AbstractInsnNode node) {
 		if (node instanceof VirtualInsnNode) return ((VirtualInsnNode) node).getVirtualOpcode();
 		return node.getOpcode();
+	}
+
+	private static final class InvocationIterator implements Iterator<MethodInvocation> {
+
+		private MethodInvocation first;
+		private final List<MethodInvocation> rest;
+		private int index;
+
+		private InvocationIterator(MethodInvocation first, List<MethodInvocation> rest) {
+			this.first = first;
+			this.rest = rest;
+		}
+
+		@Override
+		public boolean hasNext() {
+			return first != null || index < rest.size();
+		}
+
+		@Override
+		public MethodInvocation next() {
+			MethodInvocation first = this.first;
+			if (first != null) {
+				this.first = null;
+				return first;
+			}
+			return rest.get(index++);
+		}
+	}
+	
+	private static final class SingletonIterator implements Iterator<MethodInvocation> {
+		
+		private MethodInvocation invocation;
+
+		private SingletonIterator(MethodInvocation invocation) {
+			this.invocation = invocation;
+		}
+
+		@Override
+		public boolean hasNext() {
+			return invocation != null;
+		}
+
+		@Override
+		public MethodInvocation next() {
+			MethodInvocation invocation = this.invocation;
+			if (invocation == null) {
+				throw new NoSuchElementException();
+			}
+			this.invocation = null;
+			return invocation;
+		}
 	}
 }

@@ -20,21 +20,13 @@ import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.natives.IntrinsicsNatives;
 import dev.xdark.ssvm.nt.NativeLibraryManager;
 import dev.xdark.ssvm.nt.SimpleNativeLibraryManager;
-import dev.xdark.ssvm.thread.NopThreadManager;
-import dev.xdark.ssvm.thread.StackFrame;
-import dev.xdark.ssvm.thread.ThreadManager;
-import dev.xdark.ssvm.thread.ThreadStorage;
-import dev.xdark.ssvm.thread.VMThread;
+import dev.xdark.ssvm.thread.*;
 import dev.xdark.ssvm.tz.SimpleTimeManager;
 import dev.xdark.ssvm.tz.TimeManager;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.util.VMPrimitives;
 import dev.xdark.ssvm.util.VMSymbols;
-import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.JavaValue;
-import dev.xdark.ssvm.value.NullValue;
-import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
+import dev.xdark.ssvm.value.*;
 import lombok.val;
 import org.objectweb.asm.Opcodes;
 
@@ -417,8 +409,9 @@ public class VirtualMachine {
 			lock.monitorEnter();
 		}
 		try {
-			vmi.getInvocationHooks(jm, true)
-					.forEach(invocation -> invocation.handle(ctx));
+			for (val invocation : vmi.getInvocationHooks(jm, true)) {
+				invocation.handle(ctx);
+			}
 			if (useInvokers) {
 				val invoker = vmi.getInvoker(jm);
 				if (invoker != null) {
@@ -442,8 +435,9 @@ public class VirtualMachine {
 		} finally {
 			try {
 				try {
-					vmi.getInvocationHooks(jm, false)
-						.forEach(invocation -> invocation.handle(ctx));
+					for (val invocation : vmi.getInvocationHooks(jm, false)) {
+						invocation.handle(ctx);
+					}
 				} finally {
 					ctx.deallocate();
 					if (lock != null && lock.isHeldByCurrentThread()) {

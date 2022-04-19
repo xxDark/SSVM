@@ -4,7 +4,9 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.value.InstanceValue;
+import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
@@ -53,17 +55,35 @@ public class InvokeDynamicLinker {
 			val stringPool = vm.getStringPool();
 			val appendix = helper.newArray(symbols.java_lang_Object, 1);
 			val args = helper.toVMValues(bsmArgs);
-			val linkArgs = new Value[]{
-					caller.getOop(),
-					linker,
-					stringPool.intern(insn.name),
-					helper.methodType(caller.getClassLoader(), Type.getMethodType(insn.desc)),
-					args,
-					appendix
-			};
-
 			val natives = symbols.java_lang_invoke_MethodHandleNatives;
-			helper.invokeStatic(natives, "linkCallSite", "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/invoke/MemberName;", new Value[0], linkArgs);
+			JavaMethod method = natives.getStaticMethod("linkCallSite", "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/invoke/MemberName;");
+			Value[] linkArgs;
+			if (method == null) {
+				// Oracle added indexInCP, it is not even used??
+				method = natives.getStaticMethod("linkCallSite", "(Ljava/lang/Object;ILjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/invoke/MemberName;");
+				linkArgs = new Value[]{
+						caller.getOop(),
+						// TODO hotspot does not use cpIndex right now
+						// so just ignore
+						IntValue.ZERO,
+						linker,
+						stringPool.intern(insn.name),
+						helper.methodType(caller.getClassLoader(), Type.getMethodType(insn.desc)),
+						args,
+						appendix
+				};
+			} else {
+				linkArgs = new Value[]{
+						caller.getOop(),
+						linker,
+						stringPool.intern(insn.name),
+						helper.methodType(caller.getClassLoader(), Type.getMethodType(insn.desc)),
+						args,
+						appendix
+				};
+			}
+
+			helper.invokeStatic(natives, method, new Value[0], linkArgs);
 			return (InstanceValue) appendix.getValue(0);
 		} catch (VMException ex) {
 			val oop = ex.getOop();

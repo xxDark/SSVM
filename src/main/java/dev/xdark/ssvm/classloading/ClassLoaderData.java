@@ -19,6 +19,25 @@ public interface ClassLoaderData {
 	 */
 	InstanceJavaClass getClass(String name);
 
+	/**
+	 * Checks if a class has been linked.
+	 *
+	 * @param name
+	 * 		Name of the class.
+	 *
+	 * @return {@code true} when the class exists.
+	 */
+	boolean hasClass(String name);
+
+	/**
+	 * Unregisters a class by its name.
+	 *
+	 * @param name
+	 * 		Name of the class.
+	 *
+	 * @return {@code true} when the class existed, and was successfully unlinked.
+	 */
+	boolean unlinkClass(String name);
 
 	/**
 	 * Attempts to register a class.

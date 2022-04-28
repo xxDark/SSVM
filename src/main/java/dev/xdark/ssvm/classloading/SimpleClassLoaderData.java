@@ -20,6 +20,16 @@ public final class SimpleClassLoaderData implements ClassLoaderData {
 	}
 
 	@Override
+	public boolean hasClass(String name) {
+		return table.containsKey(name);
+	}
+
+	@Override
+	public boolean unlinkClass(String name) {
+		return table.remove(name) != null;
+	}
+
+	@Override
 	public void linkClass(InstanceJavaClass jc) {
 		String name = jc.getInternalName();
 		if (table.putIfAbsent(name, jc) != null) {

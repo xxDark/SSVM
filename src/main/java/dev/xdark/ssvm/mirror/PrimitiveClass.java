@@ -18,7 +18,7 @@ public final class PrimitiveClass implements JavaClass {
 	private final String name;
 	private final String descriptor;
 	private final InstanceValue oop;
-	private final JavaClass objectClass;
+	private final InstanceJavaClass objectClass;
 	private ArrayJavaClass arrayClass;
 
 	/**
@@ -33,7 +33,7 @@ public final class PrimitiveClass implements JavaClass {
 		this.vm = vm;
 		this.name = name;
 		this.descriptor = descriptor;
-		oop = vm.getMemoryManager().setOopForClass(this);
+		oop = vm.getMemoryManager().createOopForClass(this);
 		objectClass = vm.getSymbols().java_lang_Object;
 	}
 
@@ -78,13 +78,13 @@ public final class PrimitiveClass implements JavaClass {
 	}
 
 	@Override
-	public JavaClass getSuperClass() {
+	public InstanceJavaClass getSuperClass() {
 		return objectClass;
 	}
 
 	@Override
-	public JavaClass[] getInterfaces() {
-		return new JavaClass[0];
+	public InstanceJavaClass[] getInterfaces() {
+		return new InstanceJavaClass[0];
 	}
 
 	@Override

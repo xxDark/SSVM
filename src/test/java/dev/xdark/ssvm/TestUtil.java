@@ -17,10 +17,7 @@ final class TestUtil {
 		val bytes = writer.toByteArray();
 		val result = vm.getClassDefiner().parseClass(node.name, bytes, 0, bytes.length, "");
 		if (result == null) throw new IllegalStateException();
-		val cr = result.getClassReader();
-		val klass = new InstanceJavaClass(vm, NullValue.INSTANCE, cr, result.getNode());
-		val oop = vm.getMemoryManager().setOopForClass(klass);
-		klass.setOop(oop);
+		val klass = vm.getHelper().newInstanceClass(NullValue.INSTANCE, NullValue.INSTANCE, result.getClassReader(), result.getNode());
 		vm.getBootClassLoaderData().forceLinkClass(klass);
 		klass.initialize();
 		return klass;

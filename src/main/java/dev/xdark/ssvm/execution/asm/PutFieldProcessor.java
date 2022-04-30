@@ -4,9 +4,6 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.jit.JitHelper;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.value.*;
-import lombok.val;
 import org.objectweb.asm.tree.FieldInsnNode;
 
 /**

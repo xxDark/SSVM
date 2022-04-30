@@ -30,6 +30,6 @@ public class SimpleNativeLibraryManager implements NativeLibraryManager {
 
 	@Override
 	public String findBuiltinLibrary(String name) {
-		return null;
+		return name;
 	}
 }

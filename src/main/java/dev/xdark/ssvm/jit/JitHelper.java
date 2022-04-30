@@ -780,7 +780,7 @@ public class JitHelper {
 
 	public boolean instanceofResult(Value value, Object javaClass, ExecutionContext ctx) {
 		val vm = ctx.getVM();
-		if (javaClass instanceof InstanceJavaClass) ((InstanceJavaClass) javaClass).loadClassesWithoutMarkingResolved();
+		if (javaClass instanceof InstanceJavaClass) ((InstanceJavaClass) javaClass).loadNoResolve();
 		if (value.isNull()) {
 			return false;
 		} else {

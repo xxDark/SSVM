@@ -2,11 +2,15 @@ package dev.xdark.ssvm.classloading;
 
 import dev.xdark.ssvm.NativeJava;
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.SimpleInstanceJavaClass;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.tree.ClassNode;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -61,6 +65,32 @@ public class SimpleClassLoaders implements ClassLoaders {
 	@Override
 	public Collection<InstanceValue> getAll() {
 		return classLoadersView;
+	}
+
+	@Override
+	public InstanceJavaClass constructClass(ObjectValue classLoader, ClassReader classReader, ClassNode node) {
+		return new SimpleInstanceJavaClass(vm, classLoader, classReader, node);
+	}
+
+	@Override
+	public void setClassOop(InstanceJavaClass javaClass) {
+		javaClass.setOop(vm.getMemoryManager().createOopForClass(javaClass));
+	}
+
+	@Override
+	public void initializeBootClass(InstanceJavaClass javaClass) {
+		val jc = (SimpleInstanceJavaClass) javaClass;
+		jc.setVirtualFieldLayout(jc.createVirtualFieldLayout());
+		jc.setStaticFieldLayout(jc.createStaticFieldLayout());
+	}
+
+	@Override
+	public void initializeBootOop(InstanceJavaClass javaClass, InstanceJavaClass javaLangClass) {
+		val vm = this.vm;
+		val memoryManager = vm.getMemoryManager();
+		JavaValue<InstanceJavaClass> oop = javaLangClass == javaClass ? memoryManager.newJavaLangClass(javaClass) : memoryManager.createOopForClass(javaClass);
+		((SimpleInstanceJavaClass) javaClass).setOop(oop);
+		vm.getHelper().initializeDefaultValues(oop);
 	}
 
 	/**

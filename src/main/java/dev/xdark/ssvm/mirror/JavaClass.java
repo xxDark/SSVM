@@ -71,14 +71,14 @@ public interface JavaClass {
 	 *
 	 * @return parent class.
 	 */
-	JavaClass getSuperClass();
+	InstanceJavaClass getSuperClass();
 
 	/**
 	 * Returns interfaces of this class.
 	 *
 	 * @return interfaces of this class.
 	 */
-	JavaClass[] getInterfaces();
+	InstanceJavaClass[] getInterfaces();
 
 	/**
 	 * Creates new array class.

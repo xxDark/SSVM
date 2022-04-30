@@ -1,6 +1,5 @@
 package dev.xdark.ssvm.natives;
 
-import dev.xdark.ssvm.NativeJava;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.execution.PanicException;

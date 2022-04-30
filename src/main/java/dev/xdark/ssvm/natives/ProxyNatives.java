@@ -1,6 +1,5 @@
 package dev.xdark.ssvm.natives;
 
-import dev.xdark.ssvm.NativeJava;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;

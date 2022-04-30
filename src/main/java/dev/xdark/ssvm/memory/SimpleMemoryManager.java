@@ -278,7 +278,7 @@ public final class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public <C extends JavaClass> JavaValue<C> setOopForClass(C javaClass) {
+	public <C extends JavaClass> JavaValue<C> createOopForClass(C javaClass) {
 		val jlc = vm.findBootstrapClass("java/lang/Class");
 		val ref = allocateClassMemory(jlc, javaClass);
 		val memory = ref.memory;

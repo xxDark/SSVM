@@ -14,7 +14,7 @@ import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.memory.SimpleMemoryManager;
 import dev.xdark.ssvm.memory.SimpleStringPool;
 import dev.xdark.ssvm.memory.StringPool;
-import dev.xdark.ssvm.mirror.FieldLayout;
+import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.natives.IntrinsicsNatives;
@@ -68,12 +68,10 @@ public class VirtualMachine {
 		vmInterface = new VMInterface();
 		helper = new VMHelper(this);
 		threadManager = createThreadManager();
-		object.setVirtualFieldLayout(FieldLayout.EMPTY);
-		object.setStaticFieldLayout(FieldLayout.EMPTY);
-		klass.setVirtualFieldLayout(klass.createVirtualFieldLayout());
-		klass.setStaticFieldLayout(klass.createStaticFieldLayout());
-		setClassOop(klass, klass);
-		setClassOop(object, klass);
+		classLoaders.initializeBootClass(object);
+		classLoaders.initializeBootClass(klass);
+		classLoaders.initializeBootOop(klass, klass);
+		classLoaders.initializeBootOop(object, klass);
 		object.link();
 		klass.link();
 		classDefiner = createClassDefiner();
@@ -578,14 +576,8 @@ public class VirtualMachine {
 		}
 		val cr = result.getClassReader();
 		val node = result.getNode();
-		val jc = new InstanceJavaClass(this, NullValue.INSTANCE, cr, node);
+		val jc = classLoaders.constructClass(NullValue.INSTANCE, cr, node);
 		bootClassLoader.forceLink(jc);
 		return jc;
-	}
-
-	private void setClassOop(InstanceJavaClass javaClass, InstanceJavaClass jlc) {
-		JavaValue<InstanceJavaClass> oop = jlc == javaClass ? memoryManager.newJavaLangClass(javaClass) : memoryManager.setOopForClass(javaClass);
-		javaClass.setOop(oop);
-		helper.initializeDefaultValues(oop);
 	}
 }

@@ -1,7 +1,10 @@
 package dev.xdark.ssvm.classloading;
 
+import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.tree.ClassNode;
 
 import java.util.Collection;
 
@@ -45,4 +48,44 @@ public interface ClassLoaders {
 	 * @return list of all registered laoders.
 	 */
 	Collection<InstanceValue> getAll();
+
+	/**
+	 * Constructs new instance class.
+	 *
+	 * @param classLoader
+	 * 		Class loader which the class was loaded from.
+	 * @param classReader
+	 * 		Class source.
+	 * @param node
+	 * 		Class node.
+	 *
+	 * @return constructed class.
+	 */
+	InstanceJavaClass constructClass(ObjectValue classLoader, ClassReader classReader, ClassNode node);
+
+	/**
+	 * Sets class oop.
+	 *
+	 * @param javaClass
+	 * 		Class to set oop for.
+	 */
+	void setClassOop(InstanceJavaClass javaClass);
+
+	/**
+	 * Used for early initialization by the VM.
+	 *
+	 * @param javaClass
+	 * 		Class to initialize.
+	 */
+	void initializeBootClass(InstanceJavaClass javaClass);
+
+	/**
+	 * Used for early initialization by the VM.
+	 *
+	 * @param javaClass
+	 * 		Class to set oop for.
+	 * @param javaLangClass
+	 *        {@code java/lang/Class} instance.
+	 */
+	void initializeBootOop(InstanceJavaClass javaClass, InstanceJavaClass javaLangClass);
 }

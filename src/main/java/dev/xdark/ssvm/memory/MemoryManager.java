@@ -457,7 +457,7 @@ public interface MemoryManager {
 	 *
 	 * @return oop.
 	 */
-	<C extends JavaClass> JavaValue<C> setOopForClass(C javaClass);
+	<C extends JavaClass> JavaValue<C> createOopForClass(C javaClass);
 
 	/**
 	 * Returns byte order of memory.

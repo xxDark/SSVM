@@ -56,9 +56,9 @@ final class BootClassLoaderHolder {
 				val result = bootClassLoader.findBootClass(trueName);
 				if (result == null) return null;
 				val vm = this.vm;
-				jc = new InstanceJavaClass(vm, NullValue.INSTANCE, result.getClassReader(), result.getNode());
-				val oop = vm.getMemoryManager().setOopForClass(jc);
-				jc.setOop(oop);
+				val classLoaders = vm.getClassLoaders();
+				jc = classLoaders.constructClass(NullValue.INSTANCE, result.getClassReader(), result.getNode());
+				classLoaders.setClassOop(jc);
 				data.linkClass(jc);
 				vm.getHelper().initializeDefaultValues(jc.getOop());
 			}

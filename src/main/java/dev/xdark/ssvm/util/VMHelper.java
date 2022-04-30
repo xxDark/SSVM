@@ -1242,9 +1242,10 @@ public final class VMHelper {
 	 */
 	public InstanceJavaClass newInstanceClass(ObjectValue loader, ObjectValue protectionDomain, ClassReader reader, ClassNode node) {
 		val vm = this.vm;
-		val javaClass = new InstanceJavaClass(vm, loader, reader, node);
-		val oop = vm.getMemoryManager().setOopForClass(javaClass);
-		javaClass.setOop(oop);
+		val classLoaders = vm.getClassLoaders();
+		val javaClass = classLoaders.constructClass(loader, reader, node);
+		classLoaders.setClassOop(javaClass);
+		val oop = javaClass.getOop();
 		initializeDefaultValues(oop);
 		setClassFields(oop, loader, protectionDomain);
 		if (!loader.isNull()) {

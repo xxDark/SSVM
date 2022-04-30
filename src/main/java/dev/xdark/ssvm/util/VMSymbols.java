@@ -67,7 +67,6 @@ public final class VMSymbols {
 	public final InstanceJavaClass java_lang_invoke_MemberName;
 	public final InstanceJavaClass java_lang_invoke_ResolvedMethodName;
 	public final InstanceJavaClass java_util_concurrent_atomic_AtomicLong;
-	public final InstanceJavaClass java_lang_ClassLoader$NativeLibrary;
 	public final InstanceJavaClass java_io_FileDescriptor;
 	public final InstanceJavaClass java_lang_ArrayStoreException;
 	public final InstanceJavaClass java_util_zip_ZipFile;
@@ -158,7 +157,6 @@ public final class VMSymbols {
 		java_lang_invoke_MemberName = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/MemberName");
 		java_lang_invoke_ResolvedMethodName = resolvedMemberName(vm);
 		java_util_concurrent_atomic_AtomicLong = (InstanceJavaClass) vm.findBootstrapClass("java/util/concurrent/atomic/AtomicLong");
-		java_lang_ClassLoader$NativeLibrary = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ClassLoader$NativeLibrary");
 		java_io_FileDescriptor = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileDescriptor");
 		java_lang_ArrayStoreException = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ArrayStoreException");
 		java_util_zip_ZipFile = (InstanceJavaClass) vm.findBootstrapClass("java/util/zip/ZipFile");

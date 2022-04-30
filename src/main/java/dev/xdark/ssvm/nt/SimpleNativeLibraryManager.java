@@ -15,8 +15,8 @@ public class SimpleNativeLibraryManager implements NativeLibraryManager {
 	}
 
 	@Override
-	public long load(String name, boolean isBuiltin) {
-		return ThreadLocalRandom.current().nextLong();
+	public LibraryLoadResult load(String name, boolean isBuiltin) {
+		return new LibraryLoadResult(ThreadLocalRandom.current().nextLong(), JniVersion.JNI_VERSION_1_8, null);
 	}
 
 	@Override
@@ -29,7 +29,7 @@ public class SimpleNativeLibraryManager implements NativeLibraryManager {
 	}
 
 	@Override
-	public int getJniVersion() {
-		return JniVersion.JNI_VERSION_1_8;
+	public String findBuiltinLibrary(String name) {
+		return null;
 	}
 }

@@ -5,6 +5,7 @@ import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.mirror.JavaClass;
 import lombok.val;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -77,7 +78,7 @@ public class SimpleObjectValue implements ObjectValue {
 
 	@Override
 	public void vmWait(long timeoutMillis) throws InterruptedException {
-		signal.wait(timeoutMillis);
+		signal.await(timeoutMillis, TimeUnit.MILLISECONDS);
 	}
 
 	@Override

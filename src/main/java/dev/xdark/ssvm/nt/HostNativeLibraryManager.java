@@ -16,9 +16,9 @@ public class HostNativeLibraryManager implements NativeLibraryManager {
 	}
 
 	@Override
-	public long load(String name, boolean isBuiltin) {
+	public LibraryLoadResult load(String name, boolean isBuiltin) {
 		System.load(name);
-		return ThreadLocalRandom.current().nextLong();
+		return new LibraryLoadResult(ThreadLocalRandom.current().nextLong(), JniVersion.JNI_VERSION_1_8, null);
 	}
 
 	@Override
@@ -31,7 +31,7 @@ public class HostNativeLibraryManager implements NativeLibraryManager {
 	}
 
 	@Override
-	public int getJniVersion() {
-		return JniVersion.JNI_VERSION_1_8; 
+	public String findBuiltinLibrary(String name) {
+		return null;
 	}
 }

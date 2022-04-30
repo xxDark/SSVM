@@ -1,5 +1,8 @@
 package dev.xdark.ssvm;
 
+import dev.xdark.ssvm.execution.VMException;
+import dev.xdark.ssvm.fs.FileDescriptorManager;
+import dev.xdark.ssvm.fs.HostFileDescriptorManager;
 import dev.xdark.ssvm.jit.JitClass;
 import dev.xdark.ssvm.jit.JitCompiler;
 import dev.xdark.ssvm.jit.JitInstaller;
@@ -24,7 +27,12 @@ public class JitTest {
 
 	@Test
 	public void testJit() throws IOException {
-		val vm = new VirtualMachine();
+		val vm = new VirtualMachine() {
+			@Override
+			protected FileDescriptorManager createFileDescriptorManager() {
+				return new HostFileDescriptorManager();
+			}
+		};
 		vm.bootstrap();
 		val baos = new ByteArrayOutputStream();
 		try (val in = JitTest.class.getClassLoader().getResourceAsStream(Type.getInternalName(JitTest.class) + ".class")) {
@@ -60,7 +68,8 @@ public class JitTest {
 		} catch (ReflectiveOperationException ex) {
 			throw new IllegalStateException(ex);
 		}
-		helper.invokeStatic(jc, m, new Value[0], new Value[]{
+		try {
+			helper.invokeStatic(jc, m, new Value[0], new Value[]{
 				LongValue.of(a),
 				TopValue.INSTANCE,
 				IntValue.of(b),
@@ -68,7 +77,11 @@ public class JitTest {
 				LongValue.of(d),
 				TopValue.INSTANCE,
 				IntValue.of(e)
-		});
+			});
+		} catch (VMException ex) {
+			helper.invokeVirtual("printStackTrace", "()V", new Value[0], new Value[]{ex.getOop()});
+			throw ex;
+		}
 		assertEquals(a, jc.getStaticValue("a", "J").asLong());
 		assertEquals(b, jc.getStaticValue("b", "I").asInt());
 		assertEquals(c, helper.readUtf8(jc.getStaticValue("c", "Ljava/lang/String;")));

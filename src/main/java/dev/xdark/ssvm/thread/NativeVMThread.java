@@ -65,4 +65,12 @@ public final class NativeVMThread extends BaseVMThread {
 	public void resume() {
 		thread.resume();
 	}
+
+	@Override
+	public void sleep(long millis) throws InterruptedException {
+		if (thread != Thread.currentThread()) {
+			throw new IllegalStateException("Called sleep on wrong thread");
+		}
+		Thread.sleep(millis);
+	}
 }

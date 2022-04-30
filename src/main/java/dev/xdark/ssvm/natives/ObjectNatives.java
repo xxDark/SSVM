@@ -38,18 +38,30 @@ public class ObjectNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "notify", "()V", ctx -> {
-			ctx.getLocals().<ObjectValue>load(0).vmNotify();
+			val value = ctx.getLocals().<ObjectValue>load(0);
+			if (!value.isHeldByCurrentThread()) {
+				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException);
+			}
+			value.vmNotify();
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "notifyAll", "()V", ctx -> {
-			ctx.getLocals().<ObjectValue>load(0).vmNotifyAll();
+			val value = ctx.getLocals().<ObjectValue>load(0);
+			if (!value.isHeldByCurrentThread()) {
+				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException);
+			}
+			value.vmNotifyAll();
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "wait", "(J)V", ctx -> {
 			val locals = ctx.getLocals();
+			val value = locals.<ObjectValue>load(0);
+			if (!value.isHeldByCurrentThread()) {
+				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException);
+			}
 			try {
-				locals.<ObjectValue>load(0).vmWait(locals.load(1).asLong());
-			} catch (InterruptedException ex) {
+				value.vmWait(locals.load(1).asLong());
+			} catch(InterruptedException ex) {
 				vm.getHelper().throwException(symbols.java_lang_InterruptedException);
 			}
 			return Result.ABORT;

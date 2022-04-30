@@ -68,4 +68,9 @@ public final class NopThreadManager implements ThreadManager {
 	public void resumeAll() {
 		threadMap.values().forEach(VMThread::resume);
 	}
+
+	@Override
+	public void sleep(long millis) throws InterruptedException {
+		currentThread().sleep(millis);
+	}
 }

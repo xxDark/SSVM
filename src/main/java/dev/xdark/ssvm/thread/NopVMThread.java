@@ -55,4 +55,8 @@ public final class NopVMThread extends BaseVMThread {
 	@Override
 	public void resume() {
 	}
+
+	@Override
+	public void sleep(long millis) throws InterruptedException {
+	}
 }

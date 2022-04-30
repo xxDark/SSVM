@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public abstract class BaseVMThread implements VMThread {
 
-	private final Backtrace backtrace = new SimpleBacktrace();
+	private final Backtrace backtrace = createBacktrace();
 	@Getter
 	private final Queue<Runnable> taskQueue = new ConcurrentLinkedQueue<>();
 	@Getter
@@ -37,6 +37,15 @@ public abstract class BaseVMThread implements VMThread {
 	@Override
 	public InstanceValue getOop() {
 		return oop;
+	}
+
+	/**
+	 * Creates backtrace.
+	 *
+	 * @return backtrace.
+	 */
+	protected Backtrace createBacktrace() {
+		return new SimpleBacktrace();
 	}
 
 	/**

@@ -28,7 +28,7 @@ public interface NativeLibraryManager {
 	 *
 	 * @return native library handle or {@code 0L}, if failed.
 	 */
-	long load(String name, boolean isBuiltin);
+	LibraryLoadResult load(String name, boolean isBuiltin);
 
 	/**
 	 * Unloads native library.
@@ -46,15 +46,21 @@ public interface NativeLibraryManager {
 	 * Lookup symbol address in native library.
 	 *
 	 * @param handle
-	 *      Library handle.
+	 * 		Library handle.
 	 * @param symbolName
-	 *      The symbol name to lookup.
+	 * 		The symbol name to lookup.
+	 *
 	 * @return symbol address or {@code 0L}, if failed.
 	 */
 	long find(long handle, String symbolName);
 
 	/**
-	 * @return JNI version constant.
+	 * Returns a path to a static library.
+	 *
+	 * @param name
+	 * 		Library name.
+	 *
+	 * @return path to a library or {@code nul}, if not found.
 	 */
-	int getJniVersion();
+	String findBuiltinLibrary(String name);
 }

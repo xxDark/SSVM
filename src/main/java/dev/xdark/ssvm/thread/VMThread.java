@@ -103,4 +103,15 @@ public interface VMThread {
 	 * Resumes this thread.
 	 */
 	void resume();
+
+	/**
+	 * Causes the currently executing thread to sleep.
+	 *
+	 * @param millis
+	 * 		The length of time to sleep in milliseconds.
+	 *
+	 * @throws InterruptedException
+	 * 		If any thread has interrupted the current thread.
+	 */
+	void sleep(long millis) throws InterruptedException;
 }

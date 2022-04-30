@@ -71,5 +71,18 @@ public class ThreadNatives {
 			ctx.setResult(array);
 			return Result.ABORT;
 		});
+		vmi.setInvoker(thread, "sleep", "(J)V", ctx -> {
+			val time = ctx.getLocals().load(0).asLong();
+			if (time < 0L) {
+				vm.getHelper().throwException(symbols.java_lang_IllegalArgumentException, "millis < 0");
+			}
+			try {
+				vm.getThreadManager().sleep(time);
+			} catch(InterruptedException ex) {
+				val helper = vm.getHelper();
+				helper.throwException(symbols.java_lang_InterruptedException, helper.newUtf8(ex.getMessage()));
+			}
+			return Result.ABORT;
+		});
 	}
 }

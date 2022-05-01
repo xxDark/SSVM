@@ -171,4 +171,9 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 	public ZipFile getZipFile(long handle) {
 		return zipFiles.get(handle);
 	}
+
+	@Override
+	public String getCurrentWorkingDirectory() {
+		return new File("").getAbsolutePath();
+	}
 }

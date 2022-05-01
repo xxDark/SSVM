@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.fs;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -73,5 +74,10 @@ public class SimpleFileDescriptorManager implements FileDescriptorManager {
 	@Override
 	public ZipFile getZipFile(long handle) {
 		return null;
+	}
+
+	@Override
+	public String getCurrentWorkingDirectory() {
+		return new File("").getAbsolutePath();
 	}
 }

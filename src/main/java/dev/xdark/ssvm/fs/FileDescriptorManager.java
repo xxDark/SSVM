@@ -159,4 +159,9 @@ public interface FileDescriptorManager {
 	 * if not found.
 	 */
 	ZipFile getZipFile(long handle);
+
+	/**
+	 * @return current working directory.
+	 */
+	String getCurrentWorkingDirectory();
 }

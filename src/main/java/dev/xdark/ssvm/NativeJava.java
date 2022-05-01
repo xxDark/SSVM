@@ -81,6 +81,10 @@ public final class NativeJava {
 		InflaterNatives.init(vm);
 		ProcessEnvironmentNatives.init(vm);
 		FileSystemNativeDispatcherNatives.init(vm);
+		CDSNatives.init(vm);
+		SystemPropsNatives.init(vm);
+		ScopedMemoryAccessNatives.init(vm);
+		ReferenceNatives.init(vm);
 	}
 
 	/**
@@ -141,14 +145,14 @@ public final class NativeJava {
 			));
 			for (int i = 0; i < fields.size(); i++) {
 				val fn = fields.get(i);
-				if ("method".equals(fn.name) && "Ljava/lang/invoke/MemberName$ResolvedMethodName;".equals(fn.desc)) {
+				if ("method".equals(fn.name) && "Ljava/lang/invoke/ResolvedMethodName;".equals(fn.desc)) {
 					break inject;
 				}
 			}
 			fields.add(new FieldNode(
 					ACC_PRIVATE | ACC_VM_HIDDEN,
 					"method",
-					"Ljava/lang/invoke/MemberName$ResolvedMethodName;",
+					"Ljava/lang/invoke/ResolvedMethodName;",
 					null,
 					null
 			));

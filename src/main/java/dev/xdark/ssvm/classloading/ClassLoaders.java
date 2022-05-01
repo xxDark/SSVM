@@ -73,6 +73,7 @@ public interface ClassLoaders {
 
 	/**
 	 * Used for early initialization by the VM.
+	 * Initializes class layout.
 	 *
 	 * @param javaClass
 	 * 		Class to initialize.
@@ -81,6 +82,7 @@ public interface ClassLoaders {
 
 	/**
 	 * Used for early initialization by the VM.
+	 * Sets oop for boot classes.
 	 *
 	 * @param javaClass
 	 * 		Class to set oop for.
@@ -88,4 +90,26 @@ public interface ClassLoaders {
 	 *        {@code java/lang/Class} instance.
 	 */
 	void initializeBootOop(InstanceJavaClass javaClass, InstanceJavaClass javaLangClass);
+
+	/**
+	 * Sets extra class data for a class.
+	 * Used for JDK 17+.
+	 *
+	 * @param javaClass
+	 * 		Class to set extra data for.
+	 * @param classData
+	 * 		Class data.
+	 */
+	void setClassData(InstanceJavaClass javaClass, ObjectValue classData);
+
+	/**
+	 * Gets extra class data for a class.
+	 * Used for JDK 17+.
+	 *
+	 * @param javaClass
+	 * 		Class to get extra data for.
+	 *
+	 * @return extra data.
+	 */
+	ObjectValue getClassData(InstanceJavaClass javaClass);
 }

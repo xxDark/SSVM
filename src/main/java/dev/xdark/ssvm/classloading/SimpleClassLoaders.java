@@ -89,8 +89,18 @@ public class SimpleClassLoaders implements ClassLoaders {
 		val vm = this.vm;
 		val memoryManager = vm.getMemoryManager();
 		JavaValue<InstanceJavaClass> oop = javaLangClass == javaClass ? memoryManager.newJavaLangClass(javaClass) : memoryManager.createOopForClass(javaClass);
-		((SimpleInstanceJavaClass) javaClass).setOop(oop);
+		javaClass.setOop(oop);
 		vm.getHelper().initializeDefaultValues(oop);
+	}
+
+	@Override
+	public void setClassData(InstanceJavaClass javaClass, ObjectValue classData) {
+		javaClass.getOop().setValue("classData", "Ljava/lang/Object;", classData);
+	}
+
+	@Override
+	public ObjectValue getClassData(InstanceJavaClass javaClass) {
+		return javaClass.getOop().getValue("classData", "Ljava/lang/Object;");
 	}
 
 	/**

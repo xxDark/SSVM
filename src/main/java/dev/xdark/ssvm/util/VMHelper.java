@@ -193,8 +193,11 @@ public final class VMHelper {
 	 */
 	public ExecutionContext invokeExact(InstanceJavaClass javaClass, String name, String desc, Value[] stack, Value[] locals) {
 		JavaMethod mn = javaClass.getVirtualMethodRecursively(name, desc);
-		if (mn == null && javaClass.isInterface()) {
+		if (mn == null) {
 			mn = javaClass.getInterfaceMethodRecursively(name, desc);
+			if (mn != null && (mn.getAccess() & Opcodes.ACC_ABSTRACT) != 0) {
+				mn = null;
+			}
 		}
 		if (mn == null) {
 			throwException(vm.getSymbols().java_lang_NoSuchMethodError, javaClass.getInternalName() + '.' + name + desc);
@@ -212,23 +215,40 @@ public final class VMHelper {
 	 */
 	public Value valueFromLdc(Object cst) {
 		val vm = this.vm;
-		if (cst instanceof Long) return LongValue.of((Long) cst);
-		if (cst instanceof Double) return new DoubleValue((Double) cst);
+		if (cst instanceof Long) {
+			return LongValue.of((Long) cst);
+		}
+		if (cst instanceof Double) {
+			return new DoubleValue((Double) cst);
+		}
 		if (cst instanceof Integer || cst instanceof Short || cst instanceof Byte) {
 			return IntValue.of(((Number) cst).intValue());
 		}
-		if (cst instanceof Character) return IntValue.of((Character) cst);
-		if (cst instanceof Float) return new FloatValue((Float) cst);
-		if (cst instanceof Boolean) return (Boolean) cst ? IntValue.ONE : IntValue.ZERO;
-		if (cst instanceof String) return vm.getStringPool().intern((String) cst);
+		if (cst instanceof Character) {
+			return IntValue.of((Character) cst);
+		}
+		if (cst instanceof Float) {
+			return new FloatValue((Float) cst);
+		}
+		if (cst instanceof Boolean) {
+			return (Boolean) cst ? IntValue.ONE : IntValue.ZERO;
+		}
+		if (cst instanceof String) {
+			return vm.getStringPool().intern((String) cst);
+		}
 		if (cst instanceof Type) {
 			val type = (Type) cst;
 			val ctx = vm.currentThread().getBacktrace().last();
-			ObjectValue loader = ctx == null ? NullValue.INSTANCE : ctx.getDeclaringClass().getClassLoader();
+			val caller = ctx == null ? null : ctx.getDeclaringClass();
+			val loader = caller == null ? NullValue.INSTANCE : caller.getClassLoader();
 			val sort = type.getSort();
-			switch (sort) {
+			switch(sort) {
 				case Type.OBJECT:
-					return vm.findClass(loader, type.getInternalName(), false).getOop();
+					val internalName = type.getInternalName();
+					if (caller != null && Modifier.isHiddenMember(caller.getModifiers()) && internalName.equals(caller.getInternalName())) {
+						return caller.getOop();
+					}
+					return vm.findClass(loader, internalName, false).getOop();
 				case Type.METHOD:
 					return methodType(loader, type);
 				default:
@@ -255,7 +275,7 @@ public final class VMHelper {
 	public long[] toJavaLongs(ArrayValue array) {
 		int length = array.getLength();
 		val result = new long[length];
-		while (length-- != 0) {
+		while(length-- != 0) {
 			result[length] = array.getLong(length);
 		}
 		return result;
@@ -272,7 +292,7 @@ public final class VMHelper {
 	public double[] toJavaDoubles(ArrayValue array) {
 		int length = array.getLength();
 		val result = new double[length];
-		while (length-- != 0) {
+		while(length-- != 0) {
 			result[length] = array.getDouble(length);
 		}
 		return result;
@@ -289,7 +309,7 @@ public final class VMHelper {
 	public int[] toJavaInts(ArrayValue array) {
 		int length = array.getLength();
 		val result = new int[length];
-		while (length-- != 0) {
+		while(length-- != 0) {
 			result[length] = array.getInt(length);
 		}
 		return result;
@@ -306,7 +326,7 @@ public final class VMHelper {
 	public float[] toJavaFloats(ArrayValue array) {
 		int length = array.getLength();
 		val result = new float[length];
-		while (length-- != 0) {
+		while(length-- != 0) {
 			result[length] = array.getFloat(length);
 		}
 		return result;
@@ -323,7 +343,7 @@ public final class VMHelper {
 	public char[] toJavaChars(ArrayValue array) {
 		int length = array.getLength();
 		val result = new char[length];
-		while (length-- != 0) {
+		while(length-- != 0) {
 			result[length] = array.getChar(length);
 		}
 		return result;
@@ -340,7 +360,7 @@ public final class VMHelper {
 	public short[] toJavaShorts(ArrayValue array) {
 		int length = array.getLength();
 		val result = new short[length];
-		while (length-- != 0) {
+		while(length-- != 0) {
 			result[length] = array.getShort(length);
 		}
 		return result;
@@ -357,7 +377,7 @@ public final class VMHelper {
 	public byte[] toJavaBytes(ArrayValue array) {
 		int length = array.getLength();
 		val result = new byte[length];
-		while (length-- != 0) {
+		while(length-- != 0) {
 			result[length] = array.getByte(length);
 		}
 		return result;
@@ -374,7 +394,7 @@ public final class VMHelper {
 	public boolean[] toJavaBooleans(ArrayValue array) {
 		int length = array.getLength();
 		val result = new boolean[length];
-		while (length-- != 0) {
+		while(length-- != 0) {
 			result[length] = array.getBoolean(length);
 		}
 		return result;
@@ -391,7 +411,7 @@ public final class VMHelper {
 	public Value[] toJavaValues(ArrayValue array) {
 		int length = array.getLength();
 		val result = new Value[length];
-		while (length-- != 0) {
+		while(length-- != 0) {
 			result[length] = array.getValue(length);
 		}
 		return result;
@@ -853,7 +873,7 @@ public final class VMHelper {
 			}
 			val offset = entry.getValue().getOffset();
 			val resultingOffset = baseOffset + offset;
-			switch (desc) {
+			switch(desc) {
 				case "J":
 					memoryManager.writeLong(oop, resultingOffset, (Long) cst);
 					break;
@@ -895,7 +915,7 @@ public final class VMHelper {
 		for (val entry : value.getJavaClass().getVirtualFieldLayout().getAll()) {
 			val field = entry.getNode().desc;
 			val offset = baseOffset + entry.getOffset();
-			switch (field) {
+			switch(field) {
 				case "J":
 					memoryManager.writeLong(value, offset, 0L);
 					break;
@@ -1195,10 +1215,12 @@ public final class VMHelper {
 	 * 		Protection domain.
 	 * @param source
 	 * 		Class source, e.g. it's location
+	 * @param linkToLoader
+	 * 		Whether the class should be linked.
 	 *
 	 * @return defined class.
 	 */
-	public InstanceJavaClass defineClass(ObjectValue classLoader, String name, byte[] b, int off, int len, ObjectValue protectionDomain, String source) {
+	public InstanceJavaClass defineClass(ObjectValue classLoader, String name, byte[] b, int off, int len, ObjectValue protectionDomain, String source, boolean linkToLoader) {
 		val vm = this.vm;
 		if ((off | len | (off + len) | (b.length - (off + len))) < 0) {
 			throwException(vm.getSymbols().java_lang_ArrayIndexOutOfBoundsException);
@@ -1217,15 +1239,43 @@ public final class VMHelper {
 		if (name.contains("[")) {
 			throwException(vm.getSymbols().java_lang_NoClassDefFoundError, "Bad class name: " + classReaderName);
 		}
-		synchronized (classLoaderData) {
+		if (!linkToLoader) {
+			val javaClass = newInstanceClass(classLoader, protectionDomain, parsed.getClassReader(), parsed.getNode());
+			javaClass.link();
+			return javaClass;
+		}
+		synchronized(classLoaderData) {
 			if (classLoaderData.getClass(name) != null) {
 				throwException(vm.getSymbols().java_lang_ClassNotFoundException, "Duplicate class name: " + name);
 			}
-			// Create class
 			val javaClass = newInstanceClass(classLoader, protectionDomain, parsed.getClassReader(), parsed.getNode());
 			classLoaderData.linkClass(javaClass);
 			return javaClass;
 		}
+	}
+
+	/**
+	 * Defines class.
+	 *
+	 * @param classLoader
+	 * 		Class loader to define class in.
+	 * @param name
+	 * 		Class name.
+	 * @param b
+	 * 		Class bytes.
+	 * @param off
+	 * 		Class bytes offset.
+	 * @param len
+	 * 		Class bytes length.
+	 * @param protectionDomain
+	 * 		Protection domain.
+	 * @param source
+	 * 		Class source, e.g. it's location
+	 *
+	 * @return defined class.
+	 */
+	public InstanceJavaClass defineClass(ObjectValue classLoader, String name, byte[] b, int off, int len, ObjectValue protectionDomain, String source) {
+		return defineClass(classLoader, name, b, off, len, protectionDomain, source, true);
 	}
 
 	/**
@@ -1351,7 +1401,7 @@ public final class VMHelper {
 
 	public JavaClass findClass(ObjectValue loader, String name, boolean initialize) {
 		int dimensions = 0;
-		while (name.charAt(dimensions) == '[') {
+		while(name.charAt(dimensions) == '[') {
 			dimensions++;
 		}
 		if (dimensions != 0) {
@@ -1360,7 +1410,7 @@ public final class VMHelper {
 		JavaClass klass;
 		if (name.length() == 1) {
 			val primitives = vm.getPrimitives();
-			switch (name.charAt(0)) {
+			switch(name.charAt(0)) {
 				case 'J':
 					klass = primitives.longPrimitive;
 					break;
@@ -1395,9 +1445,20 @@ public final class VMHelper {
 			if (dimensions != 0) {
 				name = name.substring(1, name.length() - 1);
 			}
-			klass = vm.findClass(loader, name, initialize);
+			find:
+			{
+				val ctx = vm.currentThread().getBacktrace().last();
+				if (ctx != null) {
+					val caller = ctx.getDeclaringClass();
+					if (caller.getClassLoader() == loader && name.equals(caller.getInternalName())) {
+						klass = caller;
+						break find;
+					}
+				}
+				klass = vm.findClass(loader, name, initialize);
+			}
 		}
-		while (dimensions-- != 0) {
+		while(dimensions-- != 0) {
 			klass = klass.newArrayClass();
 		}
 		return klass;
@@ -1872,7 +1933,7 @@ public final class VMHelper {
 		if (offset == -1L) {
 			do {
 				offset = javaClass.getFieldOffset(name, desc);
-			} while (offset == -1L && (javaClass = javaClass.getSuperClass()) != null);
+			} while(offset == -1L && (javaClass = javaClass.getSuperClass()) != null);
 		}
 		return offset;
 	}
@@ -1904,6 +1965,7 @@ public final class VMHelper {
 	 * @return new allocated object.
 	 */
 	public InstanceValue newInstance(InstanceJavaClass type, String desc, Value... params) {
+		type.initialize();
 		val instance = vm.getMemoryManager().newInstance(type);
 		val args = new Value[params.length + 1];
 		args[0] = instance;
@@ -2066,14 +2128,24 @@ public final class VMHelper {
 	 * 		If constant value cannot be created.
 	 */
 	public ObjectValue forInvokeDynamicCall(Object cst) {
-		if (cst instanceof Long) return boxLong(LongValue.of((Long) cst));
-		if (cst instanceof Double) return boxDouble(new DoubleValue((Double) cst));
+		if (cst instanceof Long) {
+			return boxLong(LongValue.of((Long) cst));
+		}
+		if (cst instanceof Double) {
+			return boxDouble(new DoubleValue((Double) cst));
+		}
 		if (cst instanceof Integer || cst instanceof Short || cst instanceof Byte) {
 			return boxInt(IntValue.of(((Number) cst).intValue()));
 		}
-		if (cst instanceof Character) return boxInt(IntValue.of((Character) cst));
-		if (cst instanceof Float) return boxFloat(new FloatValue((Float) cst));
-		if (cst instanceof Boolean) return boxBoolean((Boolean) cst ? IntValue.ONE : IntValue.ZERO);
+		if (cst instanceof Character) {
+			return boxInt(IntValue.of((Character) cst));
+		}
+		if (cst instanceof Float) {
+			return boxFloat(new FloatValue((Float) cst));
+		}
+		if (cst instanceof Boolean) {
+			return boxBoolean((Boolean) cst ? IntValue.ONE : IntValue.ZERO);
+		}
 		return (ObjectValue) valueFromLdc(cst);
 	}
 
@@ -2089,7 +2161,7 @@ public final class VMHelper {
 		int length = str.length();
 		val vm = this.vm;
 		val wrapper = newArray(vm.getPrimitives().charPrimitive, length);
-		while (length-- != 0) {
+		while(length-- != 0) {
 			wrapper.setChar(length, str.charAt(length));
 		}
 		return wrapper;
@@ -2111,7 +2183,7 @@ public final class VMHelper {
 	public JavaClass tryFindClass(ObjectValue loader, String name, boolean initialize) {
 		try {
 			return findClass(loader, name, initialize);
-		} catch (VMException ex) {
+		} catch(VMException ex) {
 			val oop = ex.getOop();
 			if (oop.isNull() || !vm.getSymbols().java_lang_Error.isAssignableFrom(oop.getJavaClass())) {
 				val cnfe = newException(vm.getSymbols().java_lang_NoClassDefFoundError, name, oop);
@@ -2140,7 +2212,7 @@ public final class VMHelper {
 		}
 		int length = lengths[depth];
 		val next = depth + 1;
-		while (length-- != 0) {
+		while(length-- != 0) {
 			array.setValue(length, newMultiArrayInner((ArrayJavaClass) newType, lengths, next));
 		}
 		return array;

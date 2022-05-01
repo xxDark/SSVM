@@ -33,6 +33,7 @@ public class JigsawNatives {
 		val module = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Module");
 		if (module != null) {
 			vmi.setInvoker(module, "defineModule0", "(Ljava/lang/Module;ZLjava/lang/String;Ljava/lang/String;[Ljava/lang/String;)V", MethodInvoker.noop());
+			vmi.setInvoker(module, "defineModule0", "(Ljava/lang/Module;ZLjava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)V", MethodInvoker.noop());
 			vmi.setInvoker(module, "addReads0", "(Ljava/lang/Module;Ljava/lang/Module;)V", MethodInvoker.noop());
 			vmi.setInvoker(module, "addExports0", "(Ljava/lang/Module;Ljava/lang/String;Ljava/lang/Module;)V", MethodInvoker.noop());
 			vmi.setInvoker(module, "addExportsToAll0", "(Ljava/lang/Module;Ljava/lang/String;)V", MethodInvoker.noop());

@@ -3,7 +3,11 @@ package dev.xdark.ssvm.memory;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
-import dev.xdark.ssvm.value.*;
+import dev.xdark.ssvm.value.ArrayValue;
+import dev.xdark.ssvm.value.InstanceValue;
+import dev.xdark.ssvm.value.JavaValue;
+import dev.xdark.ssvm.value.ObjectValue;
+import dev.xdark.ssvm.value.Value;
 
 import java.nio.ByteOrder;
 import java.util.Collection;
@@ -583,4 +587,19 @@ public interface MemoryManager {
 	 * @return the collection of all allocated objects.
 	 */
 	Collection<ObjectValue> listObjects();
+
+	/**
+	 * @return the amount of free memory in the VM.
+	 */
+	long freeMemory();
+
+	/**
+	 * @return the total amount of memory in the VM.
+	 */
+	long totalMemory();
+
+	/**
+	 * @return the maximum amount of memory in the VM.
+	 */
+	long maxMemory();
 }

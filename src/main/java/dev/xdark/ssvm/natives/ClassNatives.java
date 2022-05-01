@@ -27,6 +27,7 @@ import java.util.List;
  * Initializes java/lang/Class.
  *
  * @author xDark
+ * @noinspection DuplicatedCode
  */
 @UtilityClass
 public class ClassNatives {
@@ -132,6 +133,12 @@ public class ClassNatives {
 			ctx.setResult(_this.isPrimitive() ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
+		vmi.setInvoker(jlc, "isHidden", "()Z", ctx -> {
+			val locals = ctx.getLocals();
+			val _this = locals.<JavaValue<JavaClass>>load(0).getValue();
+			ctx.setResult(Modifier.isHiddenMember(_this.getModifiers()) ? IntValue.ONE : IntValue.ZERO);
+			return Result.ABORT;
+		});
 		vmi.setInvoker(jlc, "getSuperclass", "()Ljava/lang/Class;", ctx -> {
 			val locals = ctx.getLocals();
 			val _this = locals.<JavaValue<JavaClass>>load(0).getValue();
@@ -142,55 +149,54 @@ public class ClassNatives {
 		vmi.setInvoker(jlc, "getModifiers", "()I", ctx -> {
 			val locals = ctx.getLocals();
 			val _this = locals.<JavaValue<JavaClass>>load(0).getValue();
-			ctx.setResult(IntValue.of(Modifier.erase(_this.getModifiers())));
+			ctx.setResult(IntValue.of(Modifier.eraseClass(_this.getModifiers())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getDeclaredConstructors0", "(Z)[Ljava/lang/reflect/Constructor;", ctx -> {
 			val locals = ctx.getLocals();
-			val klass = locals.<JavaValue<JavaClass>>load(0).getValue();
+			JavaClass klass = locals.<JavaValue<JavaClass>>load(0).getValue();
 			val helper = vm.getHelper();
+			val constructorClass = symbols.java_lang_reflect_Constructor;
 			if (!(klass instanceof InstanceJavaClass)) {
-				val empty = helper.emptyArray(symbols.java_lang_reflect_Constructor);
+				val empty = helper.emptyArray(constructorClass);
 				ctx.setResult(empty);
-			} else {
-				klass.initialize();
-				val pool = vm.getStringPool();
-				val publicOnly = locals.load(1).asBoolean();
-				val methods = ((InstanceJavaClass) klass).getDeclaredConstructors(publicOnly);
-				val loader = klass.getClassLoader();
-				val refFactory = symbols.reflect_ReflectionFactory;
-				val reflectionFactory = (InstanceValue) helper.invokeStatic(refFactory, "getReflectionFactory", "()" + refFactory.getDescriptor(), new Value[0], new Value[0]).getResult();
-				val result = helper.newArray(symbols.java_lang_reflect_Constructor, methods.size());
-				val callerOop = klass.getOop();
-				for (int j = 0; j < methods.size(); j++) {
-					val mn = methods.get(j);
-					val types = mn.getArgumentTypes();
-					val parameters = helper.convertClasses(helper.convertTypes(loader, types, false));
-					val exceptions = convertExceptions(helper, loader, mn.getNode().exceptions);
-					val data = getMethodRawData(mn, false);
-					val c = helper.invokeVirtual("newConstructor", "(Ljava/lang/Class;[Ljava/lang/Class;[Ljava/lang/Class;IILjava/lang/String;[B[B)Ljava/lang/reflect/Constructor;", new Value[0], new Value[]{
-							reflectionFactory,
-							callerOop,
-							parameters,
-							exceptions,
-							IntValue.of(Modifier.erase(mn.getAccess())),
-							IntValue.of(mn.getSlot()),
-							pool.intern(mn.getSignature()),
-							data.annotations,
-							data.parameterAnnotations
-					}).getResult();
-					result.setValue(j, (ObjectValue) c);
-				}
-				ctx.setResult(result);
+				return Result.ABORT;
 			}
+			klass.initialize();
+			val pool = vm.getStringPool();
+			val publicOnly = locals.load(1).asBoolean();
+			val methods = ((InstanceJavaClass) klass).getDeclaredConstructors(publicOnly);
+			val loader = klass.getClassLoader();
+			val result = helper.newArray(constructorClass, methods.size());
+			val callerOop = klass.getOop();
+			val memoryManager = vm.getMemoryManager();
+			for (int j = 0; j < methods.size(); j++) {
+				val mn = methods.get(j);
+				val types = mn.getArgumentTypes();
+				val parameters = helper.convertClasses(helper.convertTypes(loader, types, false));
+				val exceptions = convertExceptions(helper, loader, mn.getNode().exceptions);
+				val data = getMethodRawData(mn, false);
+				val constructor = memoryManager.newInstance(constructorClass);
+				constructor.setValue("clazz", "Ljava/lang/Class;", callerOop);
+				constructor.setInt("slot", mn.getSlot());
+				constructor.setValue("parameterTypes", "[Ljava/lang/Class;", parameters);
+				constructor.setValue("exceptionTypes", "[Ljava/lang/Class;", exceptions);
+				constructor.setInt("modifiers", Modifier.eraseMethod(mn.getAccess()));
+				constructor.setValue("signature", "Ljava/lang/String;", pool.intern(mn.getSignature()));
+				constructor.setValue("annotations", "[B", data.annotations);
+				constructor.setValue("parameterAnnotations", "[B", data.parameterAnnotations);
+				result.setValue(j, constructor);
+			}
+			ctx.setResult(result);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getDeclaredMethods0", "(Z)[Ljava/lang/reflect/Method;", ctx -> {
 			val locals = ctx.getLocals();
 			JavaClass klass = locals.<JavaValue<JavaClass>>load(0).getValue();
 			val helper = vm.getHelper();
+			val methodClass = symbols.java_lang_reflect_Method;
 			if (!(klass instanceof InstanceJavaClass)) {
-				val empty = helper.emptyArray(symbols.java_lang_reflect_Method);
+				val empty = helper.emptyArray(methodClass);
 				ctx.setResult(empty);
 				return Result.ABORT;
 			}
@@ -199,10 +205,9 @@ public class ClassNatives {
 			val publicOnly = locals.load(1).asBoolean();
 			val methods = ((InstanceJavaClass) klass).getDeclaredMethods(publicOnly);
 			val loader = klass.getClassLoader();
-			val refFactory = symbols.reflect_ReflectionFactory;
-			val reflectionFactory = (InstanceValue) helper.invokeStatic(refFactory, "getReflectionFactory", "()" + refFactory.getDescriptor(), new Value[0], new Value[0]).getResult();
-			val result = helper.newArray(symbols.java_lang_reflect_Method, methods.size());
+			val result = helper.newArray(methodClass, methods.size());
 			val callerOop = klass.getOop();
+			val memoryManager = vm.getMemoryManager();
 			for (int j = 0; j < methods.size(); j++) {
 				val mn = methods.get(j);
 				val types = mn.getArgumentTypes();
@@ -210,21 +215,19 @@ public class ClassNatives {
 				val parameters = helper.convertClasses(helper.convertTypes(loader, types, false));
 				val exceptions = convertExceptions(helper, loader, mn.getNode().exceptions);
 				val data = getMethodRawData(mn, true);
-				val c = helper.invokeVirtual("newMethod", "(Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Class;Ljava/lang/Class;[Ljava/lang/Class;IILjava/lang/String;[B[B[B)Ljava/lang/reflect/Method;", new Value[0], new Value[]{
-						reflectionFactory,
-						callerOop,
-						pool.intern(mn.getName()),
-						parameters,
-						rt.getOop(),
-						exceptions,
-						IntValue.of(Modifier.erase(mn.getAccess())),
-						IntValue.of(mn.getSlot()),
-						pool.intern(mn.getSignature()),
-						data.annotations,
-						data.parameterAnnotations,
-						data.annotationDefault
-				}).getResult();
-				result.setValue(j, (ObjectValue) c);
+				val method = memoryManager.newInstance(methodClass);
+				method.setValue("clazz", "Ljava/lang/Class;", callerOop);
+				method.setInt("slot", mn.getSlot());
+				method.setValue("name", "Ljava/lang/String;", pool.intern(mn.getName()));
+				method.setValue("returnType", "Ljava/lang/Class;", rt.getOop());
+				method.setValue("parameterTypes", "[Ljava/lang/Class;", parameters);
+				method.setValue("exceptionTypes", "[Ljava/lang/Class;", exceptions);
+				method.setInt("modifiers", Modifier.eraseMethod(mn.getAccess()));
+				method.setValue("signature", "Ljava/lang/String;", pool.intern(mn.getSignature()));
+				method.setValue("annotations", "[B", data.annotations);
+				method.setValue("parameterAnnotations", "[B", data.parameterAnnotations);
+				method.setValue("annotationDefault", "[B", data.annotationDefault);
+				result.setValue(j, method);
 			}
 			ctx.setResult(result);
 			return Result.ABORT;
@@ -233,36 +236,35 @@ public class ClassNatives {
 			val locals = ctx.getLocals();
 			val klass = locals.<JavaValue<JavaClass>>load(0).getValue();
 			val helper = vm.getHelper();
+			val fieldClass = symbols.java_lang_reflect_Field;
+			fieldClass.initialize();
 			if (!(klass instanceof InstanceJavaClass)) {
-				val empty = helper.emptyArray(symbols.java_lang_reflect_Field);
+				val empty = helper.emptyArray(fieldClass);
 				ctx.setResult(empty);
-			} else {
-				klass.initialize();
-				val pool = vm.getStringPool();
-				val publicOnly = locals.load(1).asBoolean();
-				val fields = ((InstanceJavaClass) klass).getDeclaredFields(publicOnly);
-				val loader = klass.getClassLoader();
-				val refFactory = symbols.reflect_ReflectionFactory;
-				val reflectionFactory = (InstanceValue) helper.invokeStatic(refFactory, "getReflectionFactory", "()" + refFactory.getDescriptor(), new Value[0], new Value[0]).getResult();
-				val result = helper.newArray(symbols.java_lang_reflect_Field, fields.size());
-				val callerOop = klass.getOop();
-				for (int j = 0; j < fields.size(); j++) {
-					val fn = fields.get(j);
-					val type = helper.findClass(loader, fn.getType().getInternalName(), false);
-					val c = helper.invokeVirtual("newField", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Class;IILjava/lang/String;[B)Ljava/lang/reflect/Field;", new Value[0], new Value[]{
-							reflectionFactory,
-							callerOop,
-							pool.intern(fn.getName()),
-							type.getOop(),
-							IntValue.of(Modifier.erase(fn.getAccess())),
-							IntValue.of(fn.getSlot()),
-							pool.intern(fn.getSignature()),
-							readFieldAnnotations(fn)
-					}).getResult();
-					result.setValue(j, (ObjectValue) c);
-				}
-				ctx.setResult(result);
+				return Result.ABORT;
 			}
+			klass.initialize();
+			val pool = vm.getStringPool();
+			val publicOnly = locals.load(1).asBoolean();
+			val fields = ((InstanceJavaClass) klass).getDeclaredFields(publicOnly);
+			val loader = klass.getClassLoader();
+			val result = helper.newArray(fieldClass, fields.size());
+			val callerOop = klass.getOop();
+			val memoryManager = vm.getMemoryManager();
+			for (int j = 0; j < fields.size(); j++) {
+				val fn = fields.get(j);
+				val type = helper.findClass(loader, fn.getType().getInternalName(), false);
+				val field = memoryManager.newInstance(fieldClass);
+				field.setValue("clazz", "Ljava/lang/Class;", callerOop);
+				field.setInt("slot", fn.getSlot());
+				field.setValue("name", "Ljava/lang/String;", pool.intern(fn.getName()));
+				field.setValue("type", "Ljava/lang/Class;", type.getOop());
+				field.setInt("modifiers", Modifier.eraseField(fn.getAccess()));
+				field.setValue("signature", "Ljava/lang/String;", pool.intern(fn.getSignature()));
+				field.setValue("annotations", "[B", readFieldAnnotations(fn));
+				result.setValue(j, field);
+			}
+			ctx.setResult(result);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getInterfaces0", "()[Ljava/lang/Class;", ctx -> {

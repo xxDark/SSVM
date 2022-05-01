@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.enhanced;
 
+import dev.xdark.ssvm.value.IntValue;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 import sun.misc.Unsafe;
@@ -10,16 +11,26 @@ public class UnsafeTest {
 
 	@Test
 	public void doTest() {
-		TestUtil.test(InnerUnsafeTest.class, true);
+		TestUtil.test(InnerUnsafeTest.class, true, c -> {
+			c.setFieldValue("addressSize", "I", IntValue.of(c.getVM().getMemoryManager().addressSize()));
+		});
 	}
 
 	private static final class InnerUnsafeTest {
 
 		private static final Unsafe U = Unsafe.getUnsafe();
 		private long field = -4215678911358L;
+		private static int addressSize; // injected by the VM
+
+		private static void testAddressSize() {
+			if (U.addressSize() != addressSize) {
+				throw new IllegalStateException(Integer.toString(U.addressSize()));
+			}
+		}
 
 		@VMTest
 		private static void testLong() {
+			testAddressSize();
 			val address = U.allocateMemory(8L);
 			val v = System.currentTimeMillis();
 			U.putLong(address, v);
@@ -30,6 +41,7 @@ public class UnsafeTest {
 
 		@VMTest
 		private static void testLong2() {
+			testAddressSize();
 			val address = U.allocateMemory(8L);
 			val v = System.currentTimeMillis();
 			U.putLong(null, address, v);
@@ -40,6 +52,7 @@ public class UnsafeTest {
 
 		@VMTest
 		private static void testLongWithByte() {
+			testAddressSize();
 			val address = U.allocateMemory(8L);
 			val v = System.currentTimeMillis();
 			U.putByte(address, (byte) v);
@@ -65,6 +78,7 @@ public class UnsafeTest {
 
 		@VMTest
 		private static void testArray() {
+			testAddressSize();
 			val unsafe = U;
 			val array = new Object[16];
 			val base = Unsafe.ARRAY_OBJECT_BASE_OFFSET;
@@ -82,6 +96,7 @@ public class UnsafeTest {
 
 		@VMTest
 		private static void testMemorySet() {
+			testAddressSize();
 			val unsafe = U;
 			val v = (byte) ThreadLocalRandom.current().nextInt(Byte.MIN_VALUE, Byte.MAX_VALUE);
 			val a = unsafe.allocateMemory(64L);
@@ -95,6 +110,7 @@ public class UnsafeTest {
 
 		@VMTest
 		private static void testMemorySet2() {
+			testAddressSize();
 			val unsafe = U;
 			val v = (byte) ThreadLocalRandom.current().nextInt(Byte.MIN_VALUE, Byte.MAX_VALUE);
 			val a = unsafe.allocateMemory(1027L);
@@ -108,6 +124,7 @@ public class UnsafeTest {
 
 		@VMTest
 		private static void testMemoryCopy() {
+			testAddressSize();
 			val v = (byte) ThreadLocalRandom.current().nextInt(Byte.MIN_VALUE, Byte.MAX_VALUE);
 			val unsafe = U;
 			val a = unsafe.allocateMemory(64L);
@@ -123,6 +140,7 @@ public class UnsafeTest {
 
 		@VMTest
 		private static void testRandomAccess() {
+			testAddressSize();
 			val r = ThreadLocalRandom.current();
 			val v = (byte) r.nextInt(Byte.MIN_VALUE, Byte.MAX_VALUE);
 			val addr = U.allocateMemory(64L);
@@ -135,6 +153,7 @@ public class UnsafeTest {
 
 		@VMTest
 		private static void testAllocate() throws InstantiationException {
+			testAddressSize();
 			val obj = (InnerUnsafeTest) U.allocateInstance(InnerUnsafeTest.class);
 			if (obj.field != 0L) {
 				throw new IllegalStateException();

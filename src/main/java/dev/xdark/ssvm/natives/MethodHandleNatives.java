@@ -3,6 +3,8 @@ package dev.xdark.ssvm.natives;
 import dev.xdark.ssvm.NativeJava;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
+import dev.xdark.ssvm.asm.Modifier;
+import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
@@ -55,27 +57,6 @@ public class MethodHandleNatives {
 			IS_FIELD = MN_IS_FIELD,
 			IS_TYPE = MN_IS_TYPE;
 	static final int ALL_KINDS = IS_METHOD | IS_CONSTRUCTOR | IS_FIELD | IS_TYPE;
-	private final int RECOGNIZED_METHOD_MODIFIERS = ACC_PUBLIC |
-			ACC_PRIVATE |
-			ACC_PROTECTED |
-			ACC_STATIC |
-			ACC_FINAL |
-			ACC_SYNCHRONIZED |
-			ACC_BRIDGE |
-			ACC_VARARGS |
-			ACC_NATIVE |
-			ACC_ABSTRACT |
-			ACC_STRICT |
-			ACC_SYNTHETIC;
-	private final int RECOGNIZED_FIELD_MODIFIERS = ACC_PUBLIC |
-			ACC_PRIVATE |
-			ACC_PROTECTED |
-			ACC_STATIC |
-			ACC_FINAL |
-			ACC_VOLATILE |
-			ACC_TRANSIENT |
-			ACC_ENUM |
-			ACC_SYNTHETIC;
 
 	/**
 	 * @param vm
@@ -86,36 +67,23 @@ public class MethodHandleNatives {
 		val symbols = vm.getSymbols();
 		val natives = symbols.java_lang_invoke_MethodHandleNatives;
 		vmi.setInvoker(natives, "registerNatives", "()V", MethodInvoker.noop());
+		val speculativeResolve = new byte[]{-1};
 		val resolve = (MethodInvoker) ctx -> {
 			val helper = vm.getHelper();
-			val memberName = helper.<InstanceValue>checkNotNull(ctx.getLocals().load(0));
-			val classWrapper = (JavaValue<InstanceJavaClass>) memberName.getValue("clazz", "Ljava/lang/Class;");
-			val clazz = classWrapper.getValue();
-			clazz.initialize();
-			val name = helper.readUtf8(memberName.getValue("name", "Ljava/lang/String;"));
-			val mt = memberName.getValue("type", "Ljava/lang/Object;");
-			int flags = memberName.getInt("flags");
-			int refKind = (flags >> MN_REFERENCE_KIND_SHIFT) & MN_REFERENCE_KIND_MASK;
-			switch (flags & ALL_KINDS) {
-				case IS_METHOD:
-					initMethodMember(refKind, vm, memberName, clazz, name, mt, IS_METHOD);
-					break;
-				case IS_FIELD:
-					initFieldMember(refKind, vm, memberName, clazz, name, mt);
-					break;
-				case IS_CONSTRUCTOR:
-					initMethodMember(refKind, vm, memberName, clazz, name, mt, IS_CONSTRUCTOR);
-					break;
-				default:
-					helper.throwException(symbols.java_lang_InternalError, "Not implemented for " + refKind + " " + (flags & ALL_KINDS));
-			}
-
+			val locals = ctx.getLocals();
+			val memberName = helper.<InstanceValue>checkNotNull(locals.load(0));
+			resolveMemberName(speculativeResolve[0], locals, memberName);
 			ctx.setResult(memberName);
 			return Result.ABORT;
 		};
-		if (!vmi.setInvoker(natives, "resolve", "(Ljava/lang/invoke/MemberName;Ljava/lang/Class;Z)Ljava/lang/invoke/MemberName;", resolve)) {
-			if (!vmi.setInvoker(natives, "resolve", "(Ljava/lang/invoke/MemberName;Ljava/lang/Class;)Ljava/lang/invoke/MemberName;", resolve)) {
-				throw new IllegalStateException("Unable to locate MethodHandleNatives#resolve method");
+		speculativeResolve[0] = 3;
+		if (!vmi.setInvoker(natives, "resolve", "(Ljava/lang/invoke/MemberName;Ljava/lang/Class;IZ)Ljava/lang/invoke/MemberName;", resolve)) {
+			speculativeResolve[0] = 2;
+			if (!vmi.setInvoker(natives, "resolve", "(Ljava/lang/invoke/MemberName;Ljava/lang/Class;Z)Ljava/lang/invoke/MemberName;", resolve)) {
+				speculativeResolve[0] = -1;
+				if (!vmi.setInvoker(natives, "resolve", "(Ljava/lang/invoke/MemberName;Ljava/lang/Class;)Ljava/lang/invoke/MemberName;", resolve)) {
+					throw new IllegalStateException("Unable to locate MethodHandleNatives#resolve method");
+				}
 			}
 		}
 		vmi.setInvoker(natives, "getConstant", "(I)I", ctx -> {
@@ -171,7 +139,7 @@ public class MethodHandleNatives {
 			val _this = locals.<InstanceValue>load(0);
 			val form = helper.<InstanceValue>checkNotNull(_this.getValue("form", "Ljava/lang/invoke/LambdaForm;"));
 			val vmentry = helper.<InstanceValue>checkNotNull(form.getValue("vmentry", "Ljava/lang/invoke/MemberName;"));
-			val resolved = (InstanceValue) vmentry.getValue("method", symbols.java_lang_invoke_ResolvedMethodName.getDescriptor());
+			val resolved = helper.<InstanceValue>checkNotNull(vmentry.getValue("method", symbols.java_lang_invoke_ResolvedMethodName.getDescriptor()));
 			val vmtarget = ((JavaValue<Object>) resolved.getValue(VM_TARGET, "Ljava/lang/Object;")).getValue();
 			if (vmtarget instanceof JavaMethod) {
 				val jm = (JavaMethod) vmtarget;
@@ -251,24 +219,30 @@ public class MethodHandleNatives {
 		});
 	}
 
-	private static Value[] compactForExecution(Value[] arr) {
-		if (true) return arr;
-		for (int i = 0, j = arr.length; i < j; i++) {
-			if (arr[i] == null) {
-				int len = j - 1;
-				val copy = new Value[len];
-				System.arraycopy(arr, 0, copy, 0, i);
-				int k = i;
-				while (i < j) {
-					val v = arr[i++];
-					if (v != null) {
-						copy[k++] = v;
-					}
-				}
-				return k == len ? copy : Arrays.copyOfRange(copy, 0, k);
-			}
+	private void resolveMemberName(byte speculativeResolveModeIndex, Locals locals, InstanceValue memberName) {
+		val classWrapper = (JavaValue<InstanceJavaClass>) memberName.getValue("clazz", "Ljava/lang/Class;");
+		val clazz = classWrapper.getValue();
+		clazz.initialize();
+		val vm = clazz.getVM();
+		val helper = vm.getHelper();
+		val name = helper.readUtf8(memberName.getValue("name", "Ljava/lang/String;"));
+		val mt = memberName.getValue("type", "Ljava/lang/Object;");
+		int flags = memberName.getInt("flags");
+		int refKind = (flags >> MN_REFERENCE_KIND_SHIFT) & MN_REFERENCE_KIND_MASK;
+		boolean speculativeResolve0 = speculativeResolveModeIndex >= 0 && locals.load(speculativeResolveModeIndex).asBoolean();
+		switch(flags & ALL_KINDS) {
+			case IS_METHOD:
+				initMethodMember(refKind, vm, memberName, clazz, name, mt, IS_METHOD, speculativeResolve0);
+				break;
+			case IS_FIELD:
+				initFieldMember(refKind, vm, memberName, clazz, name, mt, speculativeResolve0);
+				break;
+			case IS_CONSTRUCTOR:
+				initMethodMember(refKind, vm, memberName, clazz, name, mt, IS_CONSTRUCTOR, speculativeResolve0);
+				break;
+			default:
+				helper.throwException(vm.getSymbols().java_lang_InternalError, "Not implemented for " + refKind + " " + (flags & ALL_KINDS));
 		}
-		return arr;
 	}
 
 	private void initMemberNameMethod(VirtualMachine vm, InstanceValue memberName, InstanceValue obj) {
@@ -338,7 +312,7 @@ public class MethodHandleNatives {
 		resolvedName.setValue(VM_HOLDER, "Ljava/lang/Object;", handle.getOwner().getOop());
 		memberName.setValue("method", symbols.java_lang_invoke_ResolvedMethodName.getDescriptor(), resolvedName);
 		// Inject flags
-		int flags = handle.getAccess() & RECOGNIZED_METHOD_MODIFIERS;
+		int flags = handle.getAccess() & Modifier.RECOGNIZED_METHOD_MODIFIERS;
 		flags |= mnType | (refKind << MN_REFERENCE_KIND_SHIFT);
 		memberName.setInt("flags", flags);
 	}
@@ -364,19 +338,19 @@ public class MethodHandleNatives {
 		resolvedName.setValue(VM_HOLDER, "Ljava/lang/Object;", owner.getOop());
 		memberName.setValue("method", symbols.java_lang_invoke_ResolvedMethodName.getDescriptor(), resolvedName);
 		// Inject flags
-		int flags = handle.getAccess() & RECOGNIZED_FIELD_MODIFIERS;
+		int flags = handle.getAccess() & Modifier.RECOGNIZED_FIELD_MODIFIERS;
 		flags |= IS_FIELD | (refKind << MN_REFERENCE_KIND_SHIFT);
 		memberName.setInt("flags", flags);
 	}
 
-	private void initMethodMember(int refKind, VirtualMachine vm, InstanceValue memberName, InstanceJavaClass clazz, String name, Value methodType, int type) {
+	private void initMethodMember(int refKind, VirtualMachine vm, InstanceValue memberName, InstanceJavaClass clazz, String name, Value methodType, int type, boolean speculativeResolve0) {
 		val helper = vm.getHelper();
 		val symbols = vm.getSymbols();
 		val desc = helper.readUtf8(helper.invokeExact(symbols.java_lang_invoke_MethodType, "toMethodDescriptorString", "()Ljava/lang/String;", new Value[0], new Value[]{
 				methodType
 		}).getResult());
 		JavaMethod handle;
-		switch (refKind) {
+		switch(refKind) {
 			case REF_invokeStatic:
 				handle = clazz.getStaticMethod(name, desc);
 				break;
@@ -396,12 +370,15 @@ public class MethodHandleNatives {
 				return;
 		}
 		if (handle == null) {
+			if (!speculativeResolve0) {
+				return;
+			}
 			helper.throwException(symbols.java_lang_NoSuchMethodError, clazz.getInternalName() + '.' + name + desc);
 		}
 		initMethodMember(refKind, vm, memberName, handle, type);
 	}
 
-	private void initFieldMember(int refKind, VirtualMachine vm, InstanceValue memberName, InstanceJavaClass clazz, String name, Value type) {
+	private void initFieldMember(int refKind, VirtualMachine vm, InstanceValue memberName, InstanceJavaClass clazz, String name, Value type, boolean speculativeResolve0) {
 		val helper = vm.getHelper();
 		val symbols = vm.getSymbols();
 		val desc = ((JavaValue<JavaClass>) type).getValue().getDescriptor();
@@ -410,7 +387,7 @@ public class MethodHandleNatives {
 		// https://github.com/openjdk/jdk/blob/026b85303c01326bc49a1105a89853d7641fcd50/src/hotspot/share/prims/methodHandles.cpp#L839
 		// https://github.com/openjdk/jdk/blob/534e557874274255c55086b4f6128063cbd9cc58/src/hotspot/share/interpreter/linkResolver.cpp#L974
 		JavaField handle;
-		switch (refKind) {
+		switch(refKind) {
 			case REF_getStatic:
 			case REF_putStatic:
 			case REF_getField:
@@ -425,6 +402,9 @@ public class MethodHandleNatives {
 				return;
 		}
 		if (handle == null) {
+			if (speculativeResolve0) {
+				return;
+			}
 			helper.throwException(symbols.java_lang_NoSuchFieldError, name);
 		}
 		initFieldMember(refKind, vm, memberName, handle);
@@ -433,7 +413,9 @@ public class MethodHandleNatives {
 	private Value voidAsNull(Value v, JavaMethod jm) {
 		val rt = jm.getReturnType();
 		val isVoid = rt == Type.VOID_TYPE;
-		if (isVoid) return VoidValue.INSTANCE;
+		if (isVoid) {
+			return VoidValue.INSTANCE;
+		}
 		if (v.isVoid()) {
 			// Return null if return type is non-void
 			return NullValue.INSTANCE;

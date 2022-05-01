@@ -170,7 +170,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 			val signal = this.signal;
 			while (true) {
 				try {
-					signal.wait();
+					signal.await();
 					break;
 				} catch (InterruptedException ignored) {
 				}
@@ -894,11 +894,16 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	private void markFailedInitialization(VMException ex) {
 		state = State.FAILED;
 		InstanceValue oop = ex.getOop();
+		val vm = this.vm;
 		val symbols = vm.getSymbols();
 		if (!symbols.java_lang_Error.isAssignableFrom(oop.getJavaClass())) {
 			val cause = oop;
-			oop = vm.getHelper().newException(symbols.java_lang_ExceptionInInitializerError);
-			oop.setValue("exception", "Ljava/lang/Throwable;", cause);
+			val jc = symbols.java_lang_ExceptionInInitializerError;
+			jc.initialize();
+			oop = vm.getMemoryManager().newInstance(jc);
+			vm.getHelper().invokeExact(jc, "<init>", "(Ljava/lang/Throwable;)V", new Value[0], new Value[]{
+					oop, cause
+			});
 			throw new VMException(oop);
 		}
 		throw ex;

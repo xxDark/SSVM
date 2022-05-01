@@ -108,6 +108,16 @@ public class VirtualMachine {
 		val memoryManager = this.memoryManager;
 		val threadManager = this.threadManager;
 
+		// Inject unsafe constants
+		// This must be done first, otherwise
+		// jdk/internal/misc/Unsafe will cache wrong values
+		val unsafeConstants = (InstanceJavaClass) findBootstrapClass("jdk/internal/misc/UnsafeConstants", true);
+		if (unsafeConstants != null) {
+			unsafeConstants.initialize();
+			unsafeConstants.setFieldValue("ADDRESS_SIZE0", "I", IntValue.of(memoryManager.addressSize()));
+			unsafeConstants.setFieldValue("PAGE_SIZE", "I", IntValue.of(memoryManager.pageSize()));
+			unsafeConstants.setFieldValue("BIG_ENDIAN", "Z", memoryManager.getByteOrder() == ByteOrder.BIG_ENDIAN ? IntValue.ONE : IntValue.ZERO);
+		}
 		// Initialize system group
 		val groupClass = symbols.java_lang_ThreadGroup;
 		val sysGroup = memoryManager.newInstance(groupClass);
@@ -126,16 +136,14 @@ public class VirtualMachine {
 			// pre JDK 9 boot
 			helper.invokeStatic(sysClass, initializeSystemClass, new Value[0], new Value[0]);
 		} else {
-			val unsafeConstants = (InstanceJavaClass) findBootstrapClass("jdk/internal/misc/UnsafeConstants", true);
-			if (unsafeConstants != null) {
-				// Inject constants
-				unsafeConstants.initialize();
-				unsafeConstants.setFieldValue("ADDRESS_SIZE0", "I", IntValue.of(memoryManager.addressSize()));
-				unsafeConstants.setFieldValue("PAGE_SIZE", "I", IntValue.of(memoryManager.pageSize()));
-				unsafeConstants.setFieldValue("BIG_ENDIAN", "Z", memoryManager.getByteOrder() == ByteOrder.BIG_ENDIAN ? IntValue.ONE : IntValue.ZERO);
-			}
 			findBootstrapClass("java/lang/StringUTF16", true);
 
+			// Oracle had moved this to native code, do it here
+			// On JDK 8 this is invoked in initializeSystemClass
+			helper.invokeVirtual("add", "(Ljava/lang/Thread;)V", new Value[0], new Value[]{
+					sysGroup,
+					mainThread.getOop()
+			});
 			helper.invokeStatic(sysClass, "initPhase1", "()V", new Value[0], new Value[0]);
 			findBootstrapClass("java/lang/invoke/MethodHandle", true);
 			findBootstrapClass("java/lang/invoke/ResolvedMethodName", true);
@@ -363,7 +371,7 @@ public class VirtualMachine {
 		if (loader.isNull()) {
 			jc = findBootstrapClass(name, initialize);
 			if (jc == null) {
-				helper.throwException(symbols.java_lang_ClassNotFoundException, name);
+				helper.throwException(symbols.java_lang_ClassNotFoundException, name.replace('/', '.'));
 			}
 		} else {
 			val data = classLoaders.getClassLoaderData(loader);

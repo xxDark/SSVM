@@ -368,6 +368,21 @@ public final class SimpleMemoryManager implements MemoryManager {
 		return objects.values();
 	}
 
+	@Override
+	public long freeMemory() {
+		return Runtime.getRuntime().freeMemory();
+	}
+
+	@Override
+	public long totalMemory() {
+		return Runtime.getRuntime().totalMemory();
+	}
+
+	@Override
+	public long maxMemory() {
+		return Runtime.getRuntime().maxMemory();
+	}
+
 	private MemoryRef newMemoryBlock(long size, boolean isDirect) {
 		if (size > Integer.MAX_VALUE) {
 			vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError);

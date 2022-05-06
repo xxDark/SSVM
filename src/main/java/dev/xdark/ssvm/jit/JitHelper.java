@@ -927,6 +927,15 @@ public class JitHelper {
 		return mn;
 	}
 
+	public void tryMonitorExit(ObjectValue value, ExecutionContext ctx) {
+		try {
+			value.monitorExit();
+		} catch (IllegalMonitorStateException ignored) {
+			VirtualMachine vm = ctx.getVM();
+			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalMonitorStateException());
+		}
+	}
+
 	@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 	private static final class DynamicLinkResult {
 		final InstanceValue handle;

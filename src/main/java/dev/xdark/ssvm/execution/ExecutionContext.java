@@ -207,7 +207,7 @@ public final class ExecutionContext implements Disposable {
 		if (--count.value == 0) {
 			lockMap.remove(value);
 		}
-		JitHelper.monitorExit(value, this);
+		JitHelper.tryMonitorExit(value, this);
 	}
 
 	/**

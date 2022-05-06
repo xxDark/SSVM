@@ -2,6 +2,8 @@ package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Stack;
+import dev.xdark.ssvm.execution.ThreadLocals;
+import dev.xdark.ssvm.execution.ThreadStack;
 import dev.xdark.ssvm.thread.SimpleThreadStorage;
 import dev.xdark.ssvm.thread.ThreadRegion;
 import dev.xdark.ssvm.value.IntValue;
@@ -22,8 +24,8 @@ public class ThreadStorageTest {
 		try (ThreadRegion region = SimpleThreadStorage.threadPush(maxStack + maxLocals)) {
 			ThreadRegion stackRegion = region.slice(0, maxStack);
 			ThreadRegion localsRegion = region.slice(maxStack, maxStack + maxLocals);
-			Stack stack = new Stack(stackRegion);
-			Locals locals = new Locals(localsRegion);
+			Stack stack = new ThreadStack(stackRegion);
+			Locals locals = new ThreadLocals(localsRegion);
 			assertDoesNotThrow(() -> {
 				stack.pushWide(LongValue.ZERO);
 				stack.push(IntValue.ZERO);

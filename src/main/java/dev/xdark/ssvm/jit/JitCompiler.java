@@ -104,7 +104,7 @@ public final class JitCompiler {
 	private static final Access SET_LINE = virtualCall(CTX, "setLineNumber", J_VOID, J_INT);
 
 	// locals methods
-	private static final Access LOAD = virtualCall(LOCALS, "load", VALUE, J_INT);
+	private static final Access LOAD = interfaceCall(LOCALS, "load", VALUE, J_INT);
 
 	// value static methods
 	private static final Access GET_NULL = getStatic(NULL, "INSTANCE", NULL);

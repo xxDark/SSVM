@@ -1,6 +1,7 @@
 package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.execution.Locals;
+import dev.xdark.ssvm.execution.ThreadLocals;
 import dev.xdark.ssvm.value.DoubleValue;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.LongValue;
@@ -12,8 +13,8 @@ public class LocalsTest {
 	
 	@Test
 	public void testEquality() {
-		try (Locals locals1 = new Locals(6);
-			 Locals locals2 = new Locals(6)) {
+		try (ThreadLocals locals1 = new ThreadLocals(6);
+			 ThreadLocals locals2 = new ThreadLocals(6)) {
 			fillLocals(locals1);
 			fillLocals(locals2);
 			assertEquals(locals1, locals2);

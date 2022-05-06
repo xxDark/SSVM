@@ -540,7 +540,7 @@ public class VirtualMachine {
 						invocation.handle(ctx);
 					}
 				} finally {
-					ctx.deallocate();
+					ctx.dispose();
 					if (lock != null && lock.isHeldByCurrentThread()) {
 						lock.monitorExit();
 					}

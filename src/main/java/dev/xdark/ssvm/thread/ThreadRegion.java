@@ -1,12 +1,13 @@
 package dev.xdark.ssvm.thread;
 
 import dev.xdark.ssvm.util.ArraySlice;
+import dev.xdark.ssvm.util.Disposable;
 import dev.xdark.ssvm.value.Value;
 
 /**
  * @see ArraySlice
  */
-public final class ThreadRegion extends ArraySlice<Value> implements AutoCloseable {
+public final class ThreadRegion extends ArraySlice<Value> implements AutoCloseable, Disposable {
 
 	private final ThreadStorage storage;
 
@@ -22,6 +23,11 @@ public final class ThreadRegion extends ArraySlice<Value> implements AutoCloseab
 
 	@Override
 	public void close() {
+		dispose();
+	}
+
+	@Override
+	public void dispose() {
 		storage.pop(length());
 	}
 }

@@ -2,6 +2,8 @@ package dev.xdark.ssvm.thread;
 
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Stack;
+import dev.xdark.ssvm.execution.ThreadLocals;
+import dev.xdark.ssvm.execution.ThreadStack;
 import dev.xdark.ssvm.value.Value;
 
 /**
@@ -43,12 +45,12 @@ public class SimpleThreadStorage implements ThreadStorage {
 
 	@Override
 	public Stack newStack(int size) {
-		return new Stack(push(size));
+		return new ThreadStack(push(size));
 	}
 
 	@Override
 	public Locals newLocals(int size) {
-		return new Locals(push(size));
+		return new ThreadLocals(push(size));
 	}
 
 	/**

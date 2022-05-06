@@ -3,13 +3,15 @@ package dev.xdark.ssvm.execution;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.util.Disposable;
+import dev.xdark.ssvm.util.DisposeUtil;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.TopValue;
 import dev.xdark.ssvm.value.Value;
 import dev.xdark.ssvm.value.VoidValue;
 
-public final class ExecutionContext {
+public final class ExecutionContext implements Disposable {
 
 	private final VirtualMachine virtualMachine;
 	private final InstanceJavaClass owner;
@@ -163,11 +165,10 @@ public final class ExecutionContext {
 		this.result = result;
 	}
 
-	/**
-	 * Deallocates stack & registers.
-	 */
-	public void deallocate() {
-		stack.deallocate();
-		locals.deallocate();
+
+	@Override
+	public void dispose() {
+		DisposeUtil.dispose(stack);
+		DisposeUtil.dispose(locals);
 	}
 }

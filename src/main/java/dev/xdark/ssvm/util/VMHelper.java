@@ -2266,7 +2266,6 @@ public final class VMHelper {
 		int maxLocals = getMaxLocals(jm, locals);
 		return new ExecutionContext(
 				jc.getVM(),
-				jc,
 				jm,
 				storage.newStack(maxStack),
 				storage.newLocals(maxLocals)

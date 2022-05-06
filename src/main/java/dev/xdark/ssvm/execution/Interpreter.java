@@ -8,8 +8,6 @@ import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
@@ -59,16 +57,7 @@ public class Interpreter {
 				}
 				if (processor.execute(insn, ctx) == Result.ABORT) break;
 			} catch (VMException ex) {
-				Stack stack = ctx.getStack();
-				Value value;
-				while ((value = stack.poll()) != null) {
-					if (value instanceof ObjectValue) {
-						ObjectValue obj = (ObjectValue) value;
-						if (obj.isHeldByCurrentThread()) {
-							obj.monitorExit();
-						}
-					}
-				}
+				ctx.unwind();
 				InstanceValue oop = ex.getOop();
 				InstanceJavaClass exceptionType = oop.getJavaClass();
 				List<TryCatchBlockNode> tryCatchBlocks = mn.tryCatchBlocks;
@@ -101,7 +90,7 @@ public class Interpreter {
 							}
 						}
 						if (handle) {
-							stack.push(oop);
+							ctx.getStack().push(oop);
 							ctx.setInsnPosition(AsmUtil.getIndex(block.handler));
 							continue exec;
 						}

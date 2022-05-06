@@ -507,7 +507,7 @@ public class VirtualMachine {
 			} else {
 				lock = jm.getOwner().getOop();
 			}
-			lock.monitorEnter();
+			ctx.monitorEnter(lock);
 		}
 		try {
 			for (MethodInvocation invocation : vmi.getInvocationHooks(jm, true)) {
@@ -540,10 +540,11 @@ public class VirtualMachine {
 						invocation.handle(ctx);
 					}
 				} finally {
-					ctx.dispose();
-					if (lock != null && lock.isHeldByCurrentThread()) {
-						lock.monitorExit();
+					if (lock != null) {
+						ctx.monitorExit(lock);
 					}
+					ctx.verifyMonitors();
+					ctx.dispose();
 				}
 			} finally {
 				backtrace.pop();

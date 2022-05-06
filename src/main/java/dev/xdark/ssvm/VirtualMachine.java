@@ -100,7 +100,8 @@ public class VirtualMachine {
 	 * 		If VM is not initialized.
 	 */
 	public void assertInitialized() {
-		if (state.get() == InitializationState.UNINITIALIZED) {
+		InitializationState state = this.state.get();
+		if (state == InitializationState.UNINITIALIZED || state == InitializationState.FAILED) {
 			throw new IllegalStateException("VM is not initialized");
 		}
 	}

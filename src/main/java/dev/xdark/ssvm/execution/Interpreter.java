@@ -54,7 +54,7 @@ public class Interpreter {
 				if (insn.getOpcode() == -1) continue;
 				InstructionProcessor<AbstractInsnNode> processor = vmi.getProcessor(insn);
 				if (processor == null) {
-					ctx.getHelper().throwException(ctx.getSymbols().java_lang_InternalError, "No implemented processor for " + insn.getOpcode());
+					ctx.getHelper().throwException(ctx.getSymbols().java_lang_InternalError(), "No implemented processor for " + insn.getOpcode());
 					continue;
 				}
 				if (processor.execute(insn, ctx) == Result.ABORT) break;

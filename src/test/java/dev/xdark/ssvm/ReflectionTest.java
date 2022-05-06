@@ -1,10 +1,10 @@
 package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.thread.StackFrame;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.util.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
@@ -31,10 +31,10 @@ public class ReflectionTest {
 		pushFrame();
 		VMHelper helper = vm.getHelper();
 		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass c = symbols.java_lang_String;
+		InstanceJavaClass c = symbols.java_lang_String();
 		String str = "Hello, World";
 		ArrayValue chars = helper.toVMChars(str.toCharArray());
-		ArrayValue parameters = helper.toVMValues(new ObjectValue[]{vm.getPrimitives().charPrimitive.newArrayClass().getOop()});
+		ArrayValue parameters = helper.toVMValues(new ObjectValue[]{vm.getPrimitives().charPrimitive().newArrayClass().getOop()});
 		InstanceValue constructor = (InstanceValue) helper.invokeVirtual("getConstructor", "([Ljava/lang/Class;)Ljava/lang/reflect/Constructor;", new Value[0], new Value[]{
 				c.getOop(),
 				parameters
@@ -52,10 +52,10 @@ public class ReflectionTest {
 		pushFrame();
 		VMHelper helper = vm.getHelper();
 		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass c = symbols.java_lang_String;
+		InstanceJavaClass c = symbols.java_lang_String();
 		String str = "Hello, World";
 		ObjectValue instance = helper.newUtf8(str);
-		ArrayValue parameters = helper.emptyArray(symbols.java_lang_Class);
+		ArrayValue parameters = helper.emptyArray(symbols.java_lang_Class());
 		InstanceValue method = (InstanceValue) helper.invokeVirtual("getMethod", "(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;", new Value[0], new Value[]{
 				c.getOop(),
 				helper.newUtf8("toUpperCase"),
@@ -65,7 +65,7 @@ public class ReflectionTest {
 		Value lower = helper.invokeVirtual("invoke", "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;", new Value[0], new Value[]{
 				method,
 				instance,
-				helper.emptyArray(symbols.java_lang_Object)
+				helper.emptyArray(symbols.java_lang_Object())
 		}).getResult();
 		assertEquals(str.toUpperCase(), helper.readUtf8(lower));
 	}
@@ -75,11 +75,9 @@ public class ReflectionTest {
 		pushFrame();
 		VMHelper helper = vm.getHelper();
 		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass c = symbols.java_lang_Integer;
+		InstanceJavaClass c = symbols.java_lang_Integer();
 		int primitive = ThreadLocalRandom.current().nextInt();
-		Value instance = helper.invokeStatic(symbols.java_lang_Integer, "valueOf", "(I)Ljava/lang/Integer;", new Value[0], new Value[]{
-				IntValue.of(primitive)
-		}).getResult();
+		Value instance = helper.boxInt(IntValue.of(primitive));
 		InstanceValue field = (InstanceValue) helper.invokeVirtual("getDeclaredField", "(Ljava/lang/String;)Ljava/lang/reflect/Field;", new Value[0], new Value[]{
 				c.getOop(),
 				helper.newUtf8("value"),
@@ -96,7 +94,7 @@ public class ReflectionTest {
 		ThreadManager threadManager = vm.getThreadManager();
 		threadManager.currentThread().getBacktrace()
 				.push(StackFrame.from(
-						vm.getSymbols().java_lang_System,
+						vm.getSymbols().java_lang_System(),
 						"junit",
 						null,
 						-2

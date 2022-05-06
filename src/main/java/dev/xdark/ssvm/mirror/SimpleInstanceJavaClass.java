@@ -6,7 +6,7 @@ import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.util.UnsafeUtil;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.util.VMSymbols;
+import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.DoubleValue;
 import dev.xdark.ssvm.value.FloatValue;
 import dev.xdark.ssvm.value.InstanceValue;
@@ -176,7 +176,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		if (state == State.FAILED) {
 			lock.unlock();
 			VirtualMachine vm = this.vm;
-			vm.getHelper().throwException(vm.getSymbols().java_lang_ExceptionInInitializerError, getInternalName());
+			vm.getHelper().throwException(vm.getSymbols().java_lang_ExceptionInInitializerError(), getInternalName());
 		}
 		if (state == State.IN_PROGRESS) {
 			if (Thread.currentThread() == initializer) {
@@ -247,7 +247,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	public boolean isAssignableFrom(JavaClass other) {
 		if (other == null) {
 			VirtualMachine vm = this.vm;
-			vm.getHelper().throwException(vm.getSymbols().java_lang_NullPointerException);
+			vm.getHelper().throwException(vm.getSymbols().java_lang_NullPointerException());
 		}
 		if (other == this) {
 			return true;
@@ -260,10 +260,10 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 				String internalName = node.name;
 				return "java/io/Serializable".equals(internalName) || "java/lang/Cloneable".equals(internalName);
 			} else {
-				return this == vm.getSymbols().java_lang_Object;
+				return this == vm.getSymbols().java_lang_Object();
 			}
 		}
-		if (this == vm.getSymbols().java_lang_Object) {
+		if (this == vm.getSymbols().java_lang_Object()) {
 			return true;
 		}
 		if (other.isInterface()) {
@@ -693,7 +693,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		VirtualMachine vm = this.vm;
 		if (state == State.FAILED) {
 			lock.unlock();
-			vm.getHelper().throwException(vm.getSymbols().java_lang_ExceptionInInitializerError);
+			vm.getHelper().throwException(vm.getSymbols().java_lang_ExceptionInInitializerError());
 		}
 		try {
 			loadSuperClass();
@@ -938,9 +938,9 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		InstanceValue oop = ex.getOop();
 		VirtualMachine vm = this.vm;
 		VMSymbols symbols = vm.getSymbols();
-		if (!symbols.java_lang_Error.isAssignableFrom(oop.getJavaClass())) {
+		if (!symbols.java_lang_Error().isAssignableFrom(oop.getJavaClass())) {
 			InstanceValue cause = oop;
-			InstanceJavaClass jc = symbols.java_lang_ExceptionInInitializerError;
+			InstanceJavaClass jc = symbols.java_lang_ExceptionInInitializerError();
 			jc.initialize();
 			oop = vm.getMemoryManager().newInstance(jc);
 			vm.getHelper().invokeExact(jc, "<init>", "(Ljava/lang/Throwable;)V", new Value[0], new Value[]{

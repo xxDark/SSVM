@@ -7,7 +7,7 @@ import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.util.VMSymbols;
+import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.JavaValue;
@@ -29,7 +29,7 @@ public class ArrayNatives {
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
 		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass array = symbols.java_lang_reflect_Array;
+		InstanceJavaClass array = symbols.java_lang_reflect_Array();
 		vmi.setInvoker(array, "getLength", "(Ljava/lang/Object;)I", ctx -> {
 			Value value = ctx.getLocals().load(0);
 			vm.getHelper().checkArray(value);
@@ -42,15 +42,15 @@ public class ArrayNatives {
 			VMHelper helper = vm.getHelper();
 			helper.checkNotNull(local);
 			if (!(local instanceof JavaValue)) {
-				helper.throwException(symbols.java_lang_IllegalArgumentException);
+				helper.throwException(symbols.java_lang_IllegalArgumentException());
 			}
 			Object wrapper = ((JavaValue<?>) local).getValue();
 			if (!(wrapper instanceof JavaClass)) {
-				helper.throwException(symbols.java_lang_IllegalArgumentException);
+				helper.throwException(symbols.java_lang_IllegalArgumentException());
 			}
 			JavaClass klass = (JavaClass) wrapper;
 			if (klass.isArray()) {
-				helper.throwException(symbols.java_lang_IllegalArgumentException);
+				helper.throwException(symbols.java_lang_IllegalArgumentException());
 			}
 			int length = locals.load(1).asInt();
 			ArrayValue result = helper.newArray(klass, length);

@@ -53,7 +53,7 @@ public class ConstructorAccessorNatives {
 				}
 			}
 			if (mn == null || !"<init>".equals(mn.getName())) {
-				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 			}
 			Value values = locals.load(1);
 			Value[] converted;

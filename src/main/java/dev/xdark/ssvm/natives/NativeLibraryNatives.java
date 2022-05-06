@@ -43,7 +43,7 @@ public class NativeLibraryNatives {
 			if (handle == 0L) {
 				boolean throwULE = !throwException[0] || locals.load(3).asBoolean();
 				if (throwULE) {
-					helper.throwException(vm.getSymbols().java_lang_UnsatisfiedLinkError, helper.newUtf8(result.getErrorMessage()));
+					helper.throwException(vm.getSymbols().java_lang_UnsatisfiedLinkError(), helper.newUtf8(result.getErrorMessage()));
 				}
 				return false;
 			}
@@ -89,7 +89,7 @@ public class NativeLibraryNatives {
 					}
 				}
 			}
-			findBuiltinLibClass = vm.getSymbols().java_lang_ClassLoader;
+			findBuiltinLibClass = vm.getSymbols().java_lang_ClassLoader();
 		}
 		MethodInvoker find = ctx -> {
 			VMHelper helper = vm.getHelper();

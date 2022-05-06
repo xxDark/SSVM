@@ -11,7 +11,7 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.util.VMSymbols;
+import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
@@ -38,7 +38,7 @@ public class SystemNatives {
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
 		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass sys = symbols.java_lang_System;
+		InstanceJavaClass sys = symbols.java_lang_System();
 		vmi.setInvoker(sys, "registerNatives", "()V", MethodInvoker.noop());
 		vmi.setInvoker(sys, "currentTimeMillis", "()J", ctx -> {
 			ctx.setResult(LongValue.of(vm.getTimeManager().currentTimeMillis()));

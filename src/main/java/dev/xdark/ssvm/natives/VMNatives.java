@@ -31,7 +31,7 @@ public class VMNatives {
 				throw new IllegalStateException("Unable to locate VM class");
 			}
 			vmi.setInvoker(klass, "latestUserDefinedLoader0", "()Ljava/lang/ClassLoader;", ctx -> {
-				vm.getHelper().throwException(vm.getSymbols().java_lang_UnsatisfiedLinkError, "TODO implement me");
+				vm.getHelper().throwException(vm.getSymbols().java_lang_UnsatisfiedLinkError(), "TODO implement me");
 				return Result.ABORT;
 			});
 		}

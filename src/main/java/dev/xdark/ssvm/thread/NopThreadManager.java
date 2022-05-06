@@ -36,7 +36,7 @@ public final class NopThreadManager implements ThreadManager {
 			return current;
 		}
 		VirtualMachine vm = this.vm;
-		InstanceJavaClass klass = vm.getSymbols().java_lang_Thread;
+		InstanceJavaClass klass = vm.getSymbols().java_lang_Thread();
 		klass.initialize();
 		InstanceValue instance = vm.getMemoryManager().newInstance(klass);
 		VMHelper helper = vm.getHelper();

@@ -11,7 +11,7 @@ import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.util.VMSymbols;
+import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
@@ -33,7 +33,7 @@ public class ObjectNatives {
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
 		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass object = symbols.java_lang_Object;
+		InstanceJavaClass object = symbols.java_lang_Object();
 		vmi.setInvoker(object, "registerNatives", "()V", MethodInvoker.noop());
 		vmi.setInvoker(object, "<init>", "()V", ctx -> {
 			ctx.getLocals().<InstanceValue>load(0).initialize();
@@ -46,7 +46,7 @@ public class ObjectNatives {
 		vmi.setInvoker(object, "notify", "()V", ctx -> {
 			ObjectValue value = ctx.getLocals().<ObjectValue>load(0);
 			if (!value.isHeldByCurrentThread()) {
-				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException);
+				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException());
 			}
 			value.vmNotify();
 			return Result.ABORT;
@@ -54,7 +54,7 @@ public class ObjectNatives {
 		vmi.setInvoker(object, "notifyAll", "()V", ctx -> {
 			ObjectValue value = ctx.getLocals().<ObjectValue>load(0);
 			if (!value.isHeldByCurrentThread()) {
-				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException);
+				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException());
 			}
 			value.vmNotifyAll();
 			return Result.ABORT;
@@ -63,12 +63,12 @@ public class ObjectNatives {
 			Locals locals = ctx.getLocals();
 			ObjectValue value = locals.<ObjectValue>load(0);
 			if (!value.isHeldByCurrentThread()) {
-				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException);
+				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException());
 			}
 			try {
 				value.vmWait(locals.load(1).asLong());
 			} catch(InterruptedException ex) {
-				vm.getHelper().throwException(symbols.java_lang_InterruptedException);
+				vm.getHelper().throwException(symbols.java_lang_InterruptedException());
 			}
 			return Result.ABORT;
 		});

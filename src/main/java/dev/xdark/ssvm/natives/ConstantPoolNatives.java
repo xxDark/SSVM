@@ -27,7 +27,7 @@ public class ConstantPoolNatives {
 	 * 		VM instance.
 	 */
 	public void init(VirtualMachine vm) {
-		InstanceJavaClass cpClass = vm.getSymbols().reflect_ConstantPool;
+		InstanceJavaClass cpClass = vm.getSymbols().reflect_ConstantPool();
 		VMInterface vmi = vm.getInterface();
 		vmi.setInvoker(cpClass, "getSize0", "(Ljav/lang/Object;)I", ctx -> {
 			JavaClass wrapper = getCpOop(ctx);
@@ -48,7 +48,7 @@ public class ConstantPoolNatives {
 			VMHelper helper = vm.getHelper();
 			JavaClass result = helper.findClass(ctx.getOwner().getClassLoader(), className, false);
 			if (result == null) {
-				helper.throwException(vm.getSymbols().java_lang_ClassNotFoundException, className);
+				helper.throwException(vm.getSymbols().java_lang_ClassNotFoundException(), className);
 			}
 			ctx.setResult(result.getOop());
 			return Result.ABORT;
@@ -115,7 +115,7 @@ public class ConstantPoolNatives {
 		int index = ctx.getLocals().load(2).asInt();
 		if (index < 0 || index >= cf.getPool().size()) {
 			VirtualMachine vm = ctx.getVM();
-			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 		}
 		return index;
 	}
@@ -124,7 +124,7 @@ public class ConstantPoolNatives {
 		JavaClass jc = getCpOop(ctx);
 		if (!(jc instanceof InstanceJavaClass)) {
 			VirtualMachine vm = ctx.getVM();
-			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 		}
 		return (InstanceJavaClass) jc;
 	}
@@ -133,11 +133,11 @@ public class ConstantPoolNatives {
 		VirtualMachine vm = ctx.getVM();
 		Value value = ctx.getLocals().load(1);
 		if (!(value instanceof JavaValue)) {
-			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 		}
 		Object wrapper = ((JavaValue<?>) value).getValue();
 		if (!(wrapper instanceof JavaClass)) {
-			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 		}
 		return (JavaClass) wrapper;
 	}

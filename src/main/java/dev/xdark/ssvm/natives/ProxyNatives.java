@@ -7,7 +7,7 @@ import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.util.VMSymbols;
+import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.NullValue;
@@ -32,7 +32,7 @@ public class ProxyNatives {
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
 		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass jc = symbols.java_lang_reflect_Proxy;
+		InstanceJavaClass jc = symbols.java_lang_reflect_Proxy();
 		vmi.setInvoker(jc, "defineClass0", "(Ljava/lang/ClassLoader;Ljava/lang/String;[BII)Ljava/lang/Class;", ctx -> {
 			// Simply invoke defineClass in a loader.
 			Locals locals = ctx.getLocals();
@@ -46,7 +46,7 @@ public class ProxyNatives {
 			if (loader.isNull()) {
 				ClassParseResult parsed = vm.getClassDefiner().parseClass(helper.readUtf8(name), helper.toJavaBytes(bytes), off.asInt(), len.asInt(), "JVM_DefineClass");
 				if (parsed == null) {
-					helper.throwException(symbols.java_lang_InternalError, "Invalid bytecode");
+					helper.throwException(symbols.java_lang_InternalError(), "Invalid bytecode");
 				}
 				result = helper.newInstanceClass(NullValue.INSTANCE, NullValue.INSTANCE, parsed.getClassReader(), parsed.getNode());
 			} else {

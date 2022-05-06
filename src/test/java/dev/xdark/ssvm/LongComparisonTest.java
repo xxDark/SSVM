@@ -20,7 +20,7 @@ public class LongComparisonTest {
 
 	@BeforeAll
 	private static void setup() {
-		vm = new VirtualMachine();
+		(vm = new VirtualMachine()).initialize();
 	}
 
 	@Test // a < b (< 0)

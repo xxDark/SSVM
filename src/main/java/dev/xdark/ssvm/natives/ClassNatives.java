@@ -13,9 +13,9 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaField;
 import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.util.VMPrimitives;
-import dev.xdark.ssvm.util.VMSymbols;
+import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
@@ -58,7 +58,7 @@ public class ClassNatives {
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
 		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass jlc = symbols.java_lang_Class;
+		InstanceJavaClass jlc = symbols.java_lang_Class();
 		vmi.setInvoker(jlc, "registerNatives", "()V", MethodInvoker.noop());
 		vmi.setInvoker(jlc, "getPrimitiveClass", "(Ljava/lang/String;)Ljava/lang/Class;", ctx -> {
 			String name = vm.getHelper().readUtf8(ctx.getLocals().load(0));
@@ -66,34 +66,34 @@ public class ClassNatives {
 			Value result;
 			switch(name) {
 				case "long":
-					result = primitives.longPrimitive.getOop();
+					result = primitives.longPrimitive().getOop();
 					break;
 				case "double":
-					result = primitives.doublePrimitive.getOop();
+					result = primitives.doublePrimitive().getOop();
 					break;
 				case "int":
-					result = primitives.intPrimitive.getOop();
+					result = primitives.intPrimitive().getOop();
 					break;
 				case "float":
-					result = primitives.floatPrimitive.getOop();
+					result = primitives.floatPrimitive().getOop();
 					break;
 				case "char":
-					result = primitives.charPrimitive.getOop();
+					result = primitives.charPrimitive().getOop();
 					break;
 				case "short":
-					result = primitives.shortPrimitive.getOop();
+					result = primitives.shortPrimitive().getOop();
 					break;
 				case "byte":
-					result = primitives.bytePrimitive.getOop();
+					result = primitives.bytePrimitive().getOop();
 					break;
 				case "boolean":
-					result = primitives.booleanPrimitive.getOop();
+					result = primitives.booleanPrimitive().getOop();
 					break;
 				case "void":
-					result = primitives.voidPrimitive.getOop();
+					result = primitives.voidPrimitive().getOop();
 					break;
 				default:
-					vm.getHelper().throwException(symbols.java_lang_IllegalArgumentException);
+					vm.getHelper().throwException(symbols.java_lang_IllegalArgumentException());
 					result = null;
 			}
 			ctx.setResult(result);
@@ -111,7 +111,7 @@ public class ClassNatives {
 			ObjectValue loader = locals.load(2);
 			JavaClass klass = helper.findClass(loader, name.replace('.', '/'), initialize);
 			if (Modifier.isHiddenMember(klass.getModifiers())) {
-				helper.throwException(symbols.java_lang_ClassNotFoundException, name);
+				helper.throwException(symbols.java_lang_ClassNotFoundException(), name);
 			}
 			ctx.setResult(klass.getOop());
 			return Result.ABORT;
@@ -172,7 +172,7 @@ public class ClassNatives {
 			Locals locals = ctx.getLocals();
 			JavaClass klass = locals.<JavaValue<JavaClass>>load(0).getValue();
 			VMHelper helper = vm.getHelper();
-			InstanceJavaClass constructorClass = symbols.java_lang_reflect_Constructor;
+			InstanceJavaClass constructorClass = symbols.java_lang_reflect_Constructor();
 			if (!(klass instanceof InstanceJavaClass)) {
 				ArrayValue empty = helper.emptyArray(constructorClass);
 				ctx.setResult(empty);
@@ -211,7 +211,7 @@ public class ClassNatives {
 			Locals locals = ctx.getLocals();
 			JavaClass klass = locals.<JavaValue<JavaClass>>load(0).getValue();
 			VMHelper helper = vm.getHelper();
-			InstanceJavaClass methodClass = symbols.java_lang_reflect_Method;
+			InstanceJavaClass methodClass = symbols.java_lang_reflect_Method();
 			if (!(klass instanceof InstanceJavaClass)) {
 				ArrayValue empty = helper.emptyArray(methodClass);
 				ctx.setResult(empty);
@@ -254,7 +254,7 @@ public class ClassNatives {
 			Locals locals = ctx.getLocals();
 			JavaClass klass = locals.<JavaValue<JavaClass>>load(0).getValue();
 			VMHelper helper = vm.getHelper();
-			InstanceJavaClass fieldClass = symbols.java_lang_reflect_Field;
+			InstanceJavaClass fieldClass = symbols.java_lang_reflect_Field();
 			fieldClass.initialize();
 			if (!(klass instanceof InstanceJavaClass)) {
 				ArrayValue empty = helper.emptyArray(fieldClass);
@@ -399,7 +399,7 @@ public class ClassNatives {
 			return Result.ABORT;
 		});
 
-		InstanceJavaClass cpClass = symbols.reflect_ConstantPool;
+		InstanceJavaClass cpClass = symbols.reflect_ConstantPool();
 		vmi.setInvoker(jlc, "getConstantPool", "()" + cpClass.getDescriptor(), ctx -> {
 			InstanceValue _this = ctx.getLocals().load(0);
 			ObjectValue cp = _this.getValue(CONSTANT_POOL, "Ljava/lang/Object;");
@@ -447,7 +447,7 @@ public class ClassNatives {
 	private ObjectValue readAnnotation(Attribute attr, VirtualMachine vm) {
 		VMHelper helper = vm.getHelper();
 		if (!(attr instanceof AnnotationsAttribute)) {
-			helper.throwException(vm.getSymbols().java_lang_IllegalStateException, "Invalid annotation");
+			helper.throwException(vm.getSymbols().java_lang_IllegalStateException(), "Invalid annotation");
 		}
 		return helper.toVMBytes(Util.toBytes((AnnotationsAttribute) attr));
 	}
@@ -455,7 +455,7 @@ public class ClassNatives {
 	private ObjectValue readParameterAnnotations(Attribute attr, VirtualMachine vm) {
 		VMHelper helper = vm.getHelper();
 		if (!(attr instanceof ParameterAnnotationsAttribute)) {
-			helper.throwException(vm.getSymbols().java_lang_IllegalStateException, "Invalid annotation");
+			helper.throwException(vm.getSymbols().java_lang_IllegalStateException(), "Invalid annotation");
 		}
 		return helper.toVMBytes(Util.toBytes((ParameterAnnotationsAttribute) attr));
 	}
@@ -463,7 +463,7 @@ public class ClassNatives {
 	private ObjectValue readAnnotationDefault(Attribute attr, VirtualMachine vm) {
 		VMHelper helper = vm.getHelper();
 		if (!(attr instanceof AnnotationDefaultAttribute)) {
-			helper.throwException(vm.getSymbols().java_lang_IllegalStateException, "Invalid annotation");
+			helper.throwException(vm.getSymbols().java_lang_IllegalStateException(), "Invalid annotation");
 		}
 		return helper.toVMBytes(Util.toBytes((AnnotationDefaultAttribute) attr));
 	}
@@ -503,7 +503,7 @@ public class ClassNatives {
 	}
 
 	private ArrayValue convertExceptions(VMHelper helper, ObjectValue loader, List<String> exceptions) {
-		InstanceJavaClass jlc = helper.getVM().getSymbols().java_lang_Class;
+		InstanceJavaClass jlc = helper.getVM().getSymbols().java_lang_Class();
 		if (exceptions == null || exceptions.isEmpty()) {
 			return helper.emptyArray(jlc);
 		}

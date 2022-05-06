@@ -44,7 +44,7 @@ public class OldFileSystemNatives {
 			try {
 				ctx.setResult(helper.newUtf8(vm.getFileDescriptorManager().canonicalize(path)));
 			} catch (IOException ex) {
-				helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+				helper.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 			}
 			return Result.ABORT;
 		});
@@ -67,7 +67,7 @@ public class OldFileSystemNatives {
 					ctx.setResult(IntValue.of(res));
 				}
 			} catch (IOException ex) {
-				helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+				helper.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 			}
 			return Result.ABORT;
 		});

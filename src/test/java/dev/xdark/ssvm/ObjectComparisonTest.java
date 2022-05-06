@@ -18,7 +18,7 @@ public class ObjectComparisonTest {
 
 	@BeforeAll
 	private static void setup() {
-		vm = new VirtualMachine();
+		(vm = new VirtualMachine()).initialize();
 	}
 
 	@Test // v == null

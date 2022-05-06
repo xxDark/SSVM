@@ -19,7 +19,7 @@ public class IntMathTest {
 
 	@BeforeAll
 	private static void setup() {
-		vm = new VirtualMachine();
+		(vm = new VirtualMachine()).initialize();
 	}
 
 	@Test

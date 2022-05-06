@@ -602,4 +602,6 @@ public interface MemoryManager {
 	 * @return the maximum amount of memory in the VM.
 	 */
 	long maxMemory();
+
+
 }

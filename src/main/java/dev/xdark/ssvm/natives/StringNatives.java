@@ -4,7 +4,7 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.util.VMSymbols;
+import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
 import lombok.experimental.UtilityClass;
@@ -26,7 +26,7 @@ public class StringNatives {
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
 		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass string = symbols.java_lang_String;
+		InstanceJavaClass string = symbols.java_lang_String();
 		vmi.setInvoker(string, "intern", "()Ljava/lang/String;", ctx -> {
 			InstanceValue str = ctx.getLocals().<InstanceValue>load(0);
 			ctx.setResult(vm.getStringPool().intern(str));

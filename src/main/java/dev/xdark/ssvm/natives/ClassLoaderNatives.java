@@ -11,7 +11,7 @@ import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.util.VMSymbols;
+import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
@@ -37,7 +37,7 @@ public class ClassLoaderNatives {
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
 		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass classLoader = symbols.java_lang_ClassLoader;
+		InstanceJavaClass classLoader = symbols.java_lang_ClassLoader();
 		vmi.setInvoker(classLoader, "registerNatives", "()V", MethodInvoker.noop());
 		MethodInvoker initHook = ctx -> {
 			vm.getClassLoaders().setClassLoaderData(ctx.getLocals().load(0));

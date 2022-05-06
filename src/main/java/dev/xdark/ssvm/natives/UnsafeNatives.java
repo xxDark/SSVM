@@ -80,7 +80,7 @@ public class UnsafeNatives {
 			MemoryManager memoryManager = vm.getMemoryManager();
 			Memory block = memoryManager.allocateDirect(ctx.getLocals().load(1).asLong());
 			if (block == null) {
-				vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError);
+				vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError());
 			}
 			ctx.setResult(LongValue.of(block.getAddress()));
 			return Result.ABORT;
@@ -92,7 +92,7 @@ public class UnsafeNatives {
 			long bytes = locals.load(3).asLong();
 			Memory block = memoryManager.reallocateDirect(address, bytes);
 			if (block == null) {
-				vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError);
+				vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError());
 			}
 			ctx.setResult(LongValue.of(block.getAddress()));
 			return Result.ABORT;
@@ -121,7 +121,7 @@ public class UnsafeNatives {
 			JavaClass klass = value.getValue();
 			JavaClass component = klass.getComponentType();
 			if (component == null) {
-				vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+				vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 			} else {
 				ctx.setResult(IntValue.of(vm.getMemoryManager().arrayBaseOffset(component)));
 			}
@@ -133,7 +133,7 @@ public class UnsafeNatives {
 			JavaClass klass = value.getValue();
 			JavaClass component = klass.getComponentType();
 			if (component == null) {
-				vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+				vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 			} else {
 				ctx.setResult(IntValue.of(vm.getMemoryManager().arrayIndexScale(component)));
 			}
@@ -395,7 +395,7 @@ public class UnsafeNatives {
 			byte[] array = helper.toJavaBytes(bytes);
 			ClassParseResult result = vm.getClassDefiner().parseClass(null, array, 0, array.length, "JVM_DefineClass");
 			if (result == null) {
-				helper.throwException(vm.getSymbols().java_lang_ClassNotFoundException, "Invalid class");
+				helper.throwException(vm.getSymbols().java_lang_ClassNotFoundException(), "Invalid class");
 			}
 			ObjectValue loader = klass.getClassLoader();
 			InstanceJavaClass generated = helper.newInstanceClass(loader, NullValue.INSTANCE, result.getClassReader(), result.getNode());
@@ -489,11 +489,11 @@ public class UnsafeNatives {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
 			JavaClass klass = helper.<JavaValue<JavaClass>>checkNotNull(locals.load(1)).getValue();
-			if (klass == vm.getSymbols().java_lang_Class) {
-				helper.throwException(vm.getSymbols().java_lang_IllegalAccessException, klass.getName());
+			if (klass == vm.getSymbols().java_lang_Class()) {
+				helper.throwException(vm.getSymbols().java_lang_IllegalAccessException(), klass.getName());
 			}
 			if (!canAllocateInstance(klass)) {
-				helper.throwException(vm.getSymbols().java_lang_InstantiationException, klass.getName());
+				helper.throwException(vm.getSymbols().java_lang_InstantiationException(), klass.getName());
 			}
 			klass.initialize();
 			InstanceValue instance = vm.getMemoryManager().newInstance((InstanceJavaClass) klass);

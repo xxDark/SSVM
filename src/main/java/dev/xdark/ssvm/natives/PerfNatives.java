@@ -5,7 +5,7 @@ import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.util.VMSymbols;
+import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
@@ -25,10 +25,10 @@ public class PerfNatives {
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
 		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass jc = symbols.perf_Perf;
+		InstanceJavaClass jc = symbols.perf_Perf();
 		vmi.setInvoker(jc, "registerNatives", "()V", MethodInvoker.noop());
 		vmi.setInvoker(jc, "createLong", "(Ljava/lang/String;IIJ)Ljava/nio/ByteBuffer;", ctx -> {
-			Value buf = vm.getHelper().invokeStatic(symbols.java_nio_ByteBuffer, "allocateDirect", "(I)Ljava/nio/ByteBuffer;", new Value[0], new Value[]{IntValue.of(8)}).getResult();
+			Value buf = vm.getHelper().invokeStatic(symbols.java_nio_ByteBuffer(), "allocateDirect", "(I)Ljava/nio/ByteBuffer;", new Value[0], new Value[]{IntValue.of(8)}).getResult();
 			ctx.setResult(buf);
 			return Result.ABORT;
 		});

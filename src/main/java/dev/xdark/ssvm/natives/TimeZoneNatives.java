@@ -5,7 +5,7 @@ import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.util.VMSymbols;
+import dev.xdark.ssvm.symbol.VMSymbols;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -23,7 +23,7 @@ public class TimeZoneNatives {
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
 		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass jc = symbols.java_util_TimeZone;
+		InstanceJavaClass jc = symbols.java_util_TimeZone();
 		vmi.setInvoker(jc, "getSystemTimeZoneID", "(Ljava/lang/String;)Ljava/lang/String;", ctx -> {
 			VMHelper helper = vm.getHelper();
 			ctx.setResult(helper.newUtf8(vm.getTimeManager().getSystemTimeZoneId(helper.readUtf8(ctx.getLocals().load(0)))));

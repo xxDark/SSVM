@@ -5,6 +5,7 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.memory.StringPool;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
@@ -40,19 +41,19 @@ public class InvokeDynamicLinker {
 		VMSymbols symbols = vm.getSymbols();
 		Handle bootstrap = insn.bsm;
 		if (bootstrap.getTag() != Opcodes.H_INVOKESTATIC) {
-			helper.throwException(symbols.java_lang_IllegalStateException, "Bootstrap tag is not static");
+			helper.throwException(symbols.java_lang_IllegalStateException(), "Bootstrap tag is not static");
 		}
 		InstanceValue linker = helper.linkMethodHandleConstant(caller, bootstrap);
 
 		Object[] $bsmArgs = insn.bsmArgs;
-		ArrayValue bsmArgs = helper.newArray(symbols.java_lang_Object, $bsmArgs.length);
+		ArrayValue bsmArgs = helper.newArray(symbols.java_lang_Object(), $bsmArgs.length);
 		for (int i = 0; i < $bsmArgs.length; i++) {
 			bsmArgs.setValue(i, helper.forInvokeDynamicCall($bsmArgs[i]));
 		}
 
 		StringPool stringPool = vm.getStringPool();
-		ArrayValue appendix = helper.newArray(symbols.java_lang_Object, 1);
-		InstanceJavaClass natives = symbols.java_lang_invoke_MethodHandleNatives;
+		ArrayValue appendix = helper.newArray(symbols.java_lang_Object(), 1);
+		InstanceJavaClass natives = symbols.java_lang_invoke_MethodHandleNatives();
 		JavaMethod method = natives.getStaticMethod("linkCallSite", "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/invoke/MemberName;");
 		Value[] linkArgs;
 		if (method == null) {
@@ -114,7 +115,7 @@ public class InvokeDynamicLinker {
 	 */
 	public Value dynamicCall(Value[] args, String desc, InstanceValue handle, VirtualMachine vm) {
 		VMHelper helper = vm.getHelper();
-		if (vm.getSymbols().java_lang_invoke_CallSite.isAssignableFrom(handle.getJavaClass())) {
+		if (vm.getSymbols().java_lang_invoke_CallSite().isAssignableFrom(handle.getJavaClass())) {
 			handle = helper.checkNotNull(helper.invokeVirtual("getTarget", "()Ljava/lang/invoke/MethodHandle;", new Value[0], new Value[]{handle}).getResult());
 		}
 		if (args[0] == null) {

@@ -12,7 +12,7 @@ import dev.xdark.ssvm.thread.SimpleBacktrace;
 import dev.xdark.ssvm.thread.StackFrame;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.util.VMSymbols;
+import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.JavaValue;
@@ -33,7 +33,7 @@ public class ThrowableNatives {
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
 		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass throwable = symbols.java_lang_Throwable;
+		InstanceJavaClass throwable = symbols.java_lang_Throwable();
 		vmi.setInvoker(throwable, "fillInStackTrace", "(I)Ljava/lang/Throwable;", ctx -> {
 			InstanceValue exception = ctx.getLocals().<InstanceValue>load(0);
 			ThreadManager threadManager = vm.getThreadManager();
@@ -46,7 +46,7 @@ public class ThrowableNatives {
 				}
 				copy.push(frame.freeze());
 			}
-			JavaValue<SimpleBacktrace> backtrace = vm.getMemoryManager().newJavaInstance(symbols.java_lang_Object, copy);
+			JavaValue<SimpleBacktrace> backtrace = vm.getMemoryManager().newJavaInstance(symbols.java_lang_Object(), copy);
 			exception.setValue("backtrace", "Ljava/lang/Object;", backtrace);
 			long depth = exception.getFieldOffset("depth", "I");
 			if (depth != -1L) {

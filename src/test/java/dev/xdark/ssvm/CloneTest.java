@@ -16,7 +16,7 @@ public class CloneTest {
 
 	@BeforeAll
 	private static void setup() {
-		vm = new VirtualMachine();
+		(vm = new VirtualMachine()).initialize();
 	}
 
 	@Test

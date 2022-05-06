@@ -69,13 +69,13 @@ public class SystemPropsNatives {
 		if (jc != null) {
 			VMInterface vmi = vm.getInterface();
 			vmi.setInvoker(jc, "platformProperties", "()[Ljava/lang/String;", ctx -> {
-				ctx.setResult(vm.getHelper().newArray(vm.getSymbols().java_lang_String, FIXED_LENGTH));
+				ctx.setResult(vm.getHelper().newArray(vm.getSymbols().java_lang_String(), FIXED_LENGTH));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(jc, "vmProperties", "()[Ljava/lang/String;", ctx -> {
 				Properties properties = vm.getProperties();
 				VMHelper helper = vm.getHelper();
-				ArrayValue array = helper.newArray(vm.getSymbols().java_lang_String, properties.size() * 2);
+				ArrayValue array = helper.newArray(vm.getSymbols().java_lang_String(), properties.size() * 2);
 				int i = 0;
 				for (Map.Entry<Object, Object> entry : properties.entrySet()) {
 					array.setValue(i++, helper.newUtf8(entry.getKey().toString()));

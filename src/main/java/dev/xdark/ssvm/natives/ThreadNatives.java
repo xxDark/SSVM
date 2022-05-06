@@ -8,7 +8,7 @@ import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.thread.VMThread;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.util.VMSymbols;
+import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
@@ -30,7 +30,7 @@ public class ThreadNatives {
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
 		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass thread = symbols.java_lang_Thread;
+		InstanceJavaClass thread = symbols.java_lang_Thread();
 		vmi.setInvoker(thread, "registerNatives", "()V", MethodInvoker.noop());
 		vmi.setInvoker(thread, "currentThread", "()Ljava/lang/Thread;", ctx -> {
 			ctx.setResult(vm.currentThread().getOop());
@@ -80,13 +80,13 @@ public class ThreadNatives {
 		vmi.setInvoker(thread, "sleep", "(J)V", ctx -> {
 			long time = ctx.getLocals().load(0).asLong();
 			if (time < 0L) {
-				vm.getHelper().throwException(symbols.java_lang_IllegalArgumentException, "millis < 0");
+				vm.getHelper().throwException(symbols.java_lang_IllegalArgumentException(), "millis < 0");
 			}
 			try {
 				vm.getThreadManager().sleep(time);
 			} catch(InterruptedException ex) {
 				VMHelper helper = vm.getHelper();
-				helper.throwException(symbols.java_lang_InterruptedException, helper.newUtf8(ex.getMessage()));
+				helper.throwException(symbols.java_lang_InterruptedException(), helper.newUtf8(ex.getMessage()));
 			}
 			return Result.ABORT;
 		});

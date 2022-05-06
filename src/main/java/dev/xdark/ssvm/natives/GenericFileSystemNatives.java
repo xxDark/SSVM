@@ -40,7 +40,7 @@ public class GenericFileSystemNatives {
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		InstanceJavaClass fd = vm.getSymbols().java_io_FileDescriptor;
+		InstanceJavaClass fd = vm.getSymbols().java_io_FileDescriptor();
 
 		MethodInvoker set = ctx -> {
 			ctx.setResult(LongValue.of(mapVMStream(vm, ctx.getLocals().load(0).asInt())));
@@ -73,7 +73,7 @@ public class GenericFileSystemNatives {
 			try {
 				vm.getFileDescriptorManager().close(handle);
 			} catch (IOException ex) {
-				vm.getHelper().throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+				vm.getHelper().throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 			}
 			return Result.ABORT;
 		});
@@ -92,7 +92,7 @@ public class GenericFileSystemNatives {
 			try {
 				out.write(bytes, off, len);
 			} catch (IOException ex) {
-				helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+				helper.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 			}
 			return Result.ABORT;
 		});
@@ -106,7 +106,7 @@ public class GenericFileSystemNatives {
 			try {
 				out.write(locals.load(1).asByte());
 			} catch (IOException ex) {
-				helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+				helper.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 			}
 			return Result.ABORT;
 		});
@@ -120,7 +120,7 @@ public class GenericFileSystemNatives {
 				long handle = vm.getFileDescriptorManager().open(path, append ? FileDescriptorManager.APPEND : FileDescriptorManager.WRITE);
 				((InstanceValue) _this.getValue("fd", "Ljava/io/FileDescriptor;")).setLong("handle", handle);
 			} catch (IOException ex) {
-				helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+				helper.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 			}
 			return Result.ABORT;
 		});
@@ -132,7 +132,7 @@ public class GenericFileSystemNatives {
 			try {
 				vm.getFileDescriptorManager().close(handle);
 			} catch (IOException ex) {
-				helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+				helper.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 			}
 			return Result.ABORT;
 		});
@@ -161,7 +161,7 @@ public class GenericFileSystemNatives {
 					}
 					ctx.setResult(IntValue.of(read));
 				} catch (IOException ex) {
-					helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+					helper.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 				}
 			}
 			return Result.ABORT;
@@ -178,7 +178,7 @@ public class GenericFileSystemNatives {
 				try {
 					ctx.setResult(IntValue.of(in.read()));
 				} catch (IOException ex) {
-					helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+					helper.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 				}
 			}
 			return Result.ABORT;
@@ -195,7 +195,7 @@ public class GenericFileSystemNatives {
 				try {
 					ctx.setResult(LongValue.of(in.skip(locals.load(1).asLong())));
 				} catch (IOException ex) {
-					helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+					helper.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 				}
 			}
 			return Result.ABORT;
@@ -209,7 +209,7 @@ public class GenericFileSystemNatives {
 				long handle = vm.getFileDescriptorManager().open(path, FileDescriptorManager.READ);
 				((InstanceValue) _this.getValue("fd", "Ljava/io/FileDescriptor;")).setLong("handle", handle);
 			} catch (IOException ex) {
-				helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+				helper.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 			}
 			return Result.ABORT;
 		});
@@ -225,7 +225,7 @@ public class GenericFileSystemNatives {
 				try {
 					ctx.setResult(IntValue.of(in.available()));
 				} catch (IOException ex) {
-					helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+					helper.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 				}
 			}
 			return Result.ABORT;
@@ -238,7 +238,7 @@ public class GenericFileSystemNatives {
 			try {
 				vm.getFileDescriptorManager().close(handle);
 			} catch (IOException ex) {
-				helper.throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+				helper.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 			}
 			return Result.ABORT;
 		});
@@ -248,7 +248,7 @@ public class GenericFileSystemNatives {
 		try {
 			return vm.getFileDescriptorManager().newFD(d);
 		} catch (IllegalStateException ex) {
-			vm.getHelper().throwException(vm.getSymbols().java_io_IOException, ex.getMessage());
+			vm.getHelper().throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 		}
 		return 0L;
 	}

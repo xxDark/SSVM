@@ -6,7 +6,7 @@ import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.util.CrcUtil;
-import dev.xdark.ssvm.util.VMSymbols;
+import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.IntValue;
 import lombok.experimental.UtilityClass;
@@ -26,7 +26,7 @@ public class CRC32Natives {
 	public static void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
 		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass jc = symbols.java_util_zip_CRC32;
+		InstanceJavaClass jc = symbols.java_util_zip_CRC32();
 		vmi.setInvoker(jc, "updateBytes", "(I[BII)I", ctx -> {
 			Locals locals = ctx.getLocals();
 			int crc = locals.load(0).asInt();

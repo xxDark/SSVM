@@ -6,7 +6,7 @@ import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.util.VMSymbols;
+import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.LongValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
@@ -28,7 +28,7 @@ public class VMManagementNatives {
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
 		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass jc = symbols.sun_management_VMManagementImpl;
+		InstanceJavaClass jc = symbols.sun_management_VMManagementImpl();
 		vmi.setInvoker(jc, "getVersion0", "()Ljava/lang/String;", ctx -> {
 			ctx.setResult(vm.getStringPool().intern(vm.getManagementInterface().getVersion()));
 			return Result.ABORT;

@@ -44,12 +44,12 @@ public class MethodAccessorNatives {
 			VMHelper helper = vm.getHelper();
 			JavaMethod mn = helper.getMethodBySlot(declaringClass, slot);
 			if (mn == null) {
-				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 			}
 			Value instance = locals.load(1);
 			boolean isStatic = (mn.getAccess() & ACC_STATIC) != 0;
 			if (!isStatic && instance.isNull()) {
-				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException);
+				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 			}
 			Value values = locals.load(2);
 			Type[] types = mn.getArgumentTypes();

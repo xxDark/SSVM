@@ -9,10 +9,10 @@ import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.util.InvokeDynamicLinker;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.util.VMPrimitives;
-import dev.xdark.ssvm.util.VMSymbols;
+import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.DoubleValue;
 import dev.xdark.ssvm.value.FloatValue;
@@ -214,7 +214,7 @@ public class JitHelper {
 			JavaClass valueType = o.getJavaClass();
 			if (!type.isAssignableFrom(valueType)) {
 				VMSymbols symbols = ctx.getVM().getSymbols();
-				helper.throwException(symbols.java_lang_ArrayStoreException, valueType.getName());
+				helper.throwException(symbols.java_lang_ArrayStoreException(), valueType.getName());
 			}
 		}
 
@@ -256,7 +256,7 @@ public class JitHelper {
 			}
 			klass = klass.getSuperClass();
 		}
-		helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, name);
+		helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError(), name);
 		return null;
 	}
 
@@ -268,11 +268,11 @@ public class JitHelper {
 	public void getStaticFail(Object owner, Object field, long offset, ExecutionContext ctx) {
 		if (owner instanceof String) {
 			// Class was not found
-			ctx.getHelper().throwException(ctx.getSymbols().java_lang_NoClassDefFoundError, (String) owner);
+			ctx.getHelper().throwException(ctx.getSymbols().java_lang_NoClassDefFoundError(), (String) owner);
 		}
 		if (offset == -1L) {
 			// Field was not found.
-			ctx.getHelper().throwException(ctx.getSymbols().java_lang_NoSuchFieldError, (String) field);
+			ctx.getHelper().throwException(ctx.getSymbols().java_lang_NoSuchFieldError(), (String) field);
 		}
 	}
 
@@ -326,7 +326,7 @@ public class JitHelper {
 			klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), (String) owner, true);
 		}
 		if (!klass.setFieldValue(name, desc, value)) {
-			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, name);
+			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError(), name);
 		}
 	}
 
@@ -378,7 +378,7 @@ public class JitHelper {
 		InstanceValue instance = helper.<InstanceValue>checkNotNull($instance);
 		long offset = helper.getFieldOffset(klass, instance.getJavaClass(), name, desc);
 		if (offset == -1L) {
-			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, name);
+			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError(), name);
 		}
 		Value value;
 		MemoryManager manager = vm.getMemoryManager();
@@ -458,7 +458,7 @@ public class JitHelper {
 		InstanceValue instance = helper.<InstanceValue>checkNotNull($instance);
 		long offset = helper.getFieldOffset(klass, instance.getJavaClass(), name, desc);
 		if (offset == -1L) {
-			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, name);
+			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError(), name);
 		}
 		MemoryManager manager = vm.getMemoryManager();
 		offset += manager.valueBaseOffset(instance);
@@ -598,9 +598,9 @@ public class JitHelper {
 		VMSymbols symbols = ctx.getSymbols();
 		if (owner instanceof String) {
 			// Class was not found
-			helper.throwException(symbols.java_lang_NoClassDefFoundError, (String) owner);
+			helper.throwException(symbols.java_lang_NoClassDefFoundError(), (String) owner);
 		}
-		ctx.getHelper().throwException(symbols.java_lang_NoSuchMethodError, (String) method);
+		ctx.getHelper().throwException(symbols.java_lang_NoSuchMethodError(), (String) method);
 		return null;
 	}
 
@@ -694,28 +694,28 @@ public class JitHelper {
 		ArrayValue array;
 		switch(operand) {
 			case T_LONG:
-				array = helper.newArray(primitives.longPrimitive, length);
+				array = helper.newArray(primitives.longPrimitive(), length);
 				break;
 			case T_DOUBLE:
-				array = helper.newArray(primitives.doublePrimitive, length);
+				array = helper.newArray(primitives.doublePrimitive(), length);
 				break;
 			case T_INT:
-				array = helper.newArray(primitives.intPrimitive, length);
+				array = helper.newArray(primitives.intPrimitive(), length);
 				break;
 			case T_FLOAT:
-				array = helper.newArray(primitives.floatPrimitive, length);
+				array = helper.newArray(primitives.floatPrimitive(), length);
 				break;
 			case T_CHAR:
-				array = helper.newArray(primitives.charPrimitive, length);
+				array = helper.newArray(primitives.charPrimitive(), length);
 				break;
 			case T_SHORT:
-				array = helper.newArray(primitives.shortPrimitive, length);
+				array = helper.newArray(primitives.shortPrimitive(), length);
 				break;
 			case T_BYTE:
-				array = helper.newArray(primitives.bytePrimitive, length);
+				array = helper.newArray(primitives.bytePrimitive(), length);
 				break;
 			case T_BOOLEAN:
-				array = helper.newArray(primitives.booleanPrimitive, length);
+				array = helper.newArray(primitives.booleanPrimitive(), length);
 				break;
 			default:
 				throw new IllegalStateException("Illegal array type: " + operand);
@@ -757,7 +757,7 @@ public class JitHelper {
 		if (exception.isNull()) {
 			// NPE it is then.
 			VirtualMachine vm = ctx.getVM();
-			InstanceJavaClass exceptionClass = vm.getSymbols().java_lang_NullPointerException;
+			InstanceJavaClass exceptionClass = vm.getSymbols().java_lang_NullPointerException();
 			exceptionClass.initialize();
 			exception = vm.getMemoryManager().newInstance(exceptionClass);
 			vm.getHelper().invokeExact(exceptionClass, "<init>", "()V", new Value[0], new Value[]{exception});
@@ -775,7 +775,7 @@ public class JitHelper {
 			JavaClass against = ((ObjectValue) value).getJavaClass();
 			JavaClass jc = (JavaClass) type;
 			if (!jc.isAssignableFrom(against)) {
-				vm.getHelper().throwException(vm.getSymbols().java_lang_ClassCastException, against.getName() + " cannot be cast to " + jc.getName());
+				vm.getHelper().throwException(vm.getSymbols().java_lang_ClassCastException(), against.getName() + " cannot be cast to " + jc.getName());
 			}
 		}
 		return value;
@@ -817,7 +817,7 @@ public class JitHelper {
 
 	public void monitorEnter(Value value, ExecutionContext ctx) {
 		if (value.isNull()) {
-			ctx.getHelper().throwException(ctx.getSymbols().java_lang_NullPointerException);
+			ctx.getHelper().throwException(ctx.getSymbols().java_lang_NullPointerException());
 		} else {
 			((ObjectValue) value).monitorEnter();
 		}
@@ -829,13 +829,13 @@ public class JitHelper {
 
 	public void monitorExit(Value value, ExecutionContext ctx) {
 		if (value.isNull()) {
-			ctx.getHelper().throwException(ctx.getSymbols().java_lang_NullPointerException);
+			ctx.getHelper().throwException(ctx.getSymbols().java_lang_NullPointerException());
 		}
 		try {
 			((ObjectValue) value).monitorExit();
 		} catch(IllegalMonitorStateException ex) {
 			VirtualMachine vm = ctx.getVM();
-			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalMonitorStateException);
+			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalMonitorStateException());
 		}
 	}
 
@@ -934,7 +934,7 @@ public class JitHelper {
 		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
 		JavaMethod mn = klass.getStaticMethodRecursively(name, desc);
 		if (mn == null) {
-			helper.throwException(vm.getSymbols().java_lang_NoSuchMethodError, owner + '.' + name + desc);
+			helper.throwException(vm.getSymbols().java_lang_NoSuchMethodError(), owner + '.' + name + desc);
 		}
 		return mn;
 	}

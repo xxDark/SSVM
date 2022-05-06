@@ -5,8 +5,8 @@ import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.util.UnsafeUtil;
-import dev.xdark.ssvm.util.VMPrimitives;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
@@ -339,16 +339,16 @@ public final class SimpleMemoryManager implements MemoryManager {
 	@Override
 	public int arrayIndexScale(JavaClass javaClass) {
 		VMPrimitives primitives = vm.getPrimitives();
-		if (javaClass == primitives.longPrimitive || javaClass == primitives.doublePrimitive) {
+		if (javaClass == primitives.longPrimitive() || javaClass == primitives.doublePrimitive()) {
 			return 8;
 		}
-		if (javaClass == primitives.intPrimitive || javaClass == primitives.floatPrimitive) {
+		if (javaClass == primitives.intPrimitive() || javaClass == primitives.floatPrimitive()) {
 			return 4;
 		}
-		if (javaClass == primitives.charPrimitive || javaClass == primitives.shortPrimitive) {
+		if (javaClass == primitives.charPrimitive() || javaClass == primitives.shortPrimitive()) {
 			return 2;
 		}
-		if (javaClass == primitives.bytePrimitive || javaClass == primitives.booleanPrimitive) {
+		if (javaClass == primitives.bytePrimitive() || javaClass == primitives.booleanPrimitive()) {
 			return 1;
 		}
 		return 8;
@@ -409,7 +409,7 @@ public final class SimpleMemoryManager implements MemoryManager {
 
 	private MemoryRef newMemoryBlock(long size, boolean isDirect) {
 		if (size > Integer.MAX_VALUE) {
-			vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError);
+			vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError());
 			return null;
 		}
 		ThreadLocalRandom rng = ThreadLocalRandom.current();

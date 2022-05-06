@@ -14,7 +14,7 @@ import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaField;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.util.VMSymbols;
+import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.*;
 import lombok.experimental.UtilityClass;
 import org.objectweb.asm.Type;
@@ -68,13 +68,13 @@ public class MethodHandleNatives {
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
 		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass natives = symbols.java_lang_invoke_MethodHandleNatives;
+		InstanceJavaClass natives = symbols.java_lang_invoke_MethodHandleNatives();
 		vmi.setInvoker(natives, "registerNatives", "()V", MethodInvoker.noop());
 		byte[] speculativeResolve = new byte[]{-1};
 		MethodInvoker resolve = ctx -> {
 			VMHelper helper = vm.getHelper();
 			Locals locals = ctx.getLocals();
-			InstanceValue memberName = helper.<InstanceValue>checkNotNull(locals.load(0));
+			InstanceValue memberName = helper.checkNotNull(locals.load(0));
 			resolveMemberName(speculativeResolve[0], locals, memberName);
 			ctx.setResult(memberName);
 			return Result.ABORT;
@@ -96,17 +96,17 @@ public class MethodHandleNatives {
 		vmi.setInvoker(natives, "init", "(Ljava/lang/invoke/MemberName;Ljava/lang/Object;)V", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = ctx.getHelper();
-			InstanceValue memberName = helper.<InstanceValue>checkNotNull(locals.load(0));
-			InstanceValue obj = helper.<InstanceValue>checkNotNull(locals.load(1));
+			InstanceValue memberName = helper.checkNotNull(locals.load(0));
+			InstanceValue obj = helper.checkNotNull(locals.load(1));
 			InstanceJavaClass objClass = obj.getJavaClass();
-			if (objClass == symbols.java_lang_reflect_Method) {
+			if (objClass == symbols.java_lang_reflect_Method()) {
 				initMemberNameMethod(vm, memberName, obj);
-			} else if (objClass == symbols.java_lang_reflect_Field) {
+			} else if (objClass == symbols.java_lang_reflect_Field()) {
 				initMemberNameField(vm, memberName, obj);
-			} else if (objClass == symbols.java_lang_reflect_Constructor) {
+			} else if (objClass == symbols.java_lang_reflect_Constructor()) {
 				initMemberNameConstructor(vm, memberName, obj);
 			} else {
-				helper.throwException(symbols.java_lang_InternalError, "Unsupported class: " + objClass.getName());
+				helper.throwException(symbols.java_lang_InternalError(), "Unsupported class: " + objClass.getName());
 			}
 			return Result.ABORT;
 		});
@@ -135,20 +135,20 @@ public class MethodHandleNatives {
 		vmi.setInvoker(natives, "setCallSiteTargetNormal", "(Ljava/lang/invoke/CallSite;Ljava/lang/invoke/MethodHandle;)V", setCallSiteTarget);
 		vmi.setInvoker(natives, "setCallSiteTargetVolatile", "(Ljava/lang/invoke/CallSite;Ljava/lang/invoke/MethodHandle;)V", setCallSiteTarget);
 
-		InstanceJavaClass mh = symbols.java_lang_invoke_MethodHandle;
+		InstanceJavaClass mh = symbols.java_lang_invoke_MethodHandle();
 		MethodInvoker invoke = ctx -> {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
-			InstanceValue _this = locals.<InstanceValue>load(0);
-			InstanceValue form = helper.<InstanceValue>checkNotNull(_this.getValue("form", "Ljava/lang/invoke/LambdaForm;"));
-			InstanceValue vmentry = helper.<InstanceValue>checkNotNull(form.getValue("vmentry", "Ljava/lang/invoke/MemberName;"));
-			InstanceValue resolved = helper.<InstanceValue>checkNotNull(vmentry.getValue("method", symbols.java_lang_invoke_ResolvedMethodName.getDescriptor()));
+			InstanceValue _this = locals.load(0);
+			InstanceValue form = helper.checkNotNull(_this.getValue("form", "Ljava/lang/invoke/LambdaForm;"));
+			InstanceValue vmentry = helper.checkNotNull(form.getValue("vmentry", "Ljava/lang/invoke/MemberName;"));
+			InstanceValue resolved = helper.checkNotNull(vmentry.getValue("method", symbols.java_lang_invoke_ResolvedMethodName().getDescriptor()));
 			Object vmtarget = ((JavaValue<Object>) resolved.getValue(VM_TARGET, "Ljava/lang/Object;")).getValue();
 			if (vmtarget instanceof JavaMethod) {
 				JavaMethod jm = (JavaMethod) vmtarget;
 				String name = jm.getName();
 				if ("<init>".equals(name)) {
-					helper.throwException(symbols.java_lang_InternalError, "Bad name " + name);
+					helper.throwException(symbols.java_lang_InternalError(), "Bad name " + name);
 				}
 				Value[] lvt = locals.getTable();
 
@@ -182,8 +182,8 @@ public class MethodHandleNatives {
 			VMHelper helper = vm.getHelper();
 			Value[] table = locals.getTable();
 			int length = table.length;
-			InstanceValue memberName = locals.<InstanceValue>load(length - 1);
-			InstanceValue resolved = (InstanceValue) memberName.getValue("method", symbols.java_lang_invoke_ResolvedMethodName.getDescriptor());
+			InstanceValue memberName = locals.load(length - 1);
+			InstanceValue resolved = (InstanceValue) memberName.getValue("method", symbols.java_lang_invoke_ResolvedMethodName().getDescriptor());
 			JavaMethod vmtarget = ((JavaValue<JavaMethod>) resolved.getValue(VM_TARGET, "Ljava/lang/Object;")).getValue();
 
 			Value[] args = Arrays.copyOfRange(table, 0, length - 1);
@@ -211,11 +211,11 @@ public class MethodHandleNatives {
 		vmi.setInvoker(mh, "linkToInterface", "([Ljava/lang/Object;)Ljava/lang/Object;", linkToXX);
 		vmi.setInvoker(mh, "linkToSpecial", "([Ljava/lang/Object;)Ljava/lang/Object;", linkToXX);
 
-		InstanceJavaClass lookup = symbols.java_lang_invoke_MethodHandles$Lookup;
+		InstanceJavaClass lookup = symbols.java_lang_invoke_MethodHandles$Lookup();
 		vmi.setInvoker(lookup, "checkAccess", "(BLjava/lang/Class;Ljava/lang/invoke/MemberName;)V", MethodInvoker.noop());
 
 		// TODO impl getMemberVMInfo
-		InstanceJavaClass memberName = symbols.java_lang_invoke_MemberName;
+		InstanceJavaClass memberName = symbols.java_lang_invoke_MemberName();
 		vmi.setInvoker(memberName, "vminfoIsConsistent", "()Z", ctx -> {
 			ctx.setResult(IntValue.ONE);
 			return Result.ABORT;
@@ -244,7 +244,7 @@ public class MethodHandleNatives {
 				initMethodMember(refKind, vm, memberName, clazz, name, mt, IS_CONSTRUCTOR, speculativeResolve0);
 				break;
 			default:
-				helper.throwException(vm.getSymbols().java_lang_InternalError, "Not implemented for " + refKind + " " + (flags & ALL_KINDS));
+				helper.throwException(vm.getSymbols().java_lang_InternalError(), "Not implemented for " + refKind + " " + (flags & ALL_KINDS));
 		}
 	}
 
@@ -306,14 +306,14 @@ public class MethodHandleNatives {
 		// Inject vmholder & vmtarget into resolved name
 		memberName.setInt(VM_INDEX, handle.getSlot());
 		MemoryManager memoryManager = vm.getMemoryManager();
-		InstanceJavaClass rmn = symbols.java_lang_invoke_ResolvedMethodName;
+		InstanceJavaClass rmn = symbols.java_lang_invoke_ResolvedMethodName();
 		rmn.initialize();
 		InstanceValue resolvedName = memoryManager.newInstance(rmn);
 		resolvedName.initialize();
-		InstanceJavaClass jlo = symbols.java_lang_Object;
+		InstanceJavaClass jlo = symbols.java_lang_Object();
 		resolvedName.setValue(VM_TARGET, "Ljava/lang/Object;", memoryManager.newJavaInstance(jlo, handle));
 		resolvedName.setValue(VM_HOLDER, "Ljava/lang/Object;", handle.getOwner().getOop());
-		memberName.setValue("method", symbols.java_lang_invoke_ResolvedMethodName.getDescriptor(), resolvedName);
+		memberName.setValue("method", symbols.java_lang_invoke_ResolvedMethodName().getDescriptor(), resolvedName);
 		// Inject flags
 		int flags = handle.getAccess() & Modifier.RECOGNIZED_METHOD_MODIFIERS;
 		flags |= mnType | (refKind << MN_REFERENCE_KIND_SHIFT);
@@ -332,14 +332,14 @@ public class MethodHandleNatives {
 			offset += memoryManager.getStaticOffset(owner);
 		}
 		memberName.setInt(VM_INDEX, (int) offset);
-		InstanceJavaClass rmn = symbols.java_lang_invoke_ResolvedMethodName;
+		InstanceJavaClass rmn = symbols.java_lang_invoke_ResolvedMethodName();
 		rmn.initialize();
 		InstanceValue resolvedName = memoryManager.newInstance(rmn);
 		resolvedName.initialize();
-		InstanceJavaClass jlo = symbols.java_lang_Object;
+		InstanceJavaClass jlo = symbols.java_lang_Object();
 		resolvedName.setValue(VM_TARGET, "Ljava/lang/Object;", memoryManager.newJavaInstance(jlo, handle));
 		resolvedName.setValue(VM_HOLDER, "Ljava/lang/Object;", owner.getOop());
-		memberName.setValue("method", symbols.java_lang_invoke_ResolvedMethodName.getDescriptor(), resolvedName);
+		memberName.setValue("method", symbols.java_lang_invoke_ResolvedMethodName().getDescriptor(), resolvedName);
 		// Inject flags
 		int flags = handle.getAccess() & Modifier.RECOGNIZED_FIELD_MODIFIERS;
 		flags |= IS_FIELD | (refKind << MN_REFERENCE_KIND_SHIFT);
@@ -349,7 +349,7 @@ public class MethodHandleNatives {
 	private void initMethodMember(int refKind, VirtualMachine vm, InstanceValue memberName, InstanceJavaClass clazz, String name, Value methodType, int type, boolean speculativeResolve0) {
 		VMHelper helper = vm.getHelper();
 		VMSymbols symbols = vm.getSymbols();
-		String desc = helper.readUtf8(helper.invokeExact(symbols.java_lang_invoke_MethodType, "toMethodDescriptorString", "()Ljava/lang/String;", new Value[0], new Value[]{
+		String desc = helper.readUtf8(helper.invokeExact(symbols.java_lang_invoke_MethodType(), "toMethodDescriptorString", "()Ljava/lang/String;", new Value[0], new Value[]{
 				methodType
 		}).getResult());
 		JavaMethod handle;
@@ -369,14 +369,14 @@ public class MethodHandleNatives {
 				}
 				break;
 			default:
-				helper.throwException(symbols.java_lang_InternalError, "unrecognized MemberName format");
+				helper.throwException(symbols.java_lang_InternalError(), "unrecognized MemberName format");
 				return;
 		}
 		if (handle == null) {
 			if (!speculativeResolve0) {
 				return;
 			}
-			helper.throwException(symbols.java_lang_NoSuchMethodError, clazz.getInternalName() + '.' + name + desc);
+			helper.throwException(symbols.java_lang_NoSuchMethodError(), clazz.getInternalName() + '.' + name + desc);
 		}
 		initMethodMember(refKind, vm, memberName, handle, type);
 	}
@@ -401,14 +401,14 @@ public class MethodHandleNatives {
 				}
 				break;
 			default:
-				helper.throwException(symbols.java_lang_InternalError, "unrecognized MemberName format");
+				helper.throwException(symbols.java_lang_InternalError(), "unrecognized MemberName format");
 				return;
 		}
 		if (handle == null) {
 			if (speculativeResolve0) {
 				return;
 			}
-			helper.throwException(symbols.java_lang_NoSuchFieldError, name);
+			helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
 		}
 		initFieldMember(refKind, vm, memberName, handle);
 	}

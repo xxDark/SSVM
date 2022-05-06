@@ -2,6 +2,8 @@ package dev.xdark.ssvm.classloading;
 
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 
+import java.util.Collection;
+
 /**
  * Holds all classes loaded by the loader.
  *
@@ -39,4 +41,17 @@ public interface ClassLoaderData {
 	 * 		Class to register.
 	 */
 	void forceLinkClass(InstanceJavaClass jc);
+
+	/**
+	 * @return a collection of all classes.
+	 */
+	Collection<InstanceJavaClass> getAll();
+
+	/**
+	 * Claims another class loader data.
+	 *
+	 * @param classLoaderData
+	 * 		Class loader data to claim.
+	 */
+	void claim(ClassLoaderData classLoaderData);
 }

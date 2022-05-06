@@ -109,7 +109,7 @@ public class IntrinsicsNatives {
 
 	private static void objectIntrinsics(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		InstanceJavaClass jc = vm.getSymbols().java_lang_Object;
+		InstanceJavaClass jc = vm.getSymbols().java_lang_Object();
 		vmi.setInvoker(jc, "equals", "(Ljava/lang/Object;)Z", ctx -> {
 			Locals locals = ctx.getLocals();
 			ctx.setResult(locals.load(0) == locals.load(1) ? IntValue.ONE : IntValue.ZERO);
@@ -119,7 +119,7 @@ public class IntrinsicsNatives {
 
 	private static void stringIntrinsics(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		InstanceJavaClass jc = vm.getSymbols().java_lang_String;
+		InstanceJavaClass jc = vm.getSymbols().java_lang_String();
 		// This will only work on JDK 8, sadly.
 		if (jc.hasVirtualField("value", "[C")) {
 			MemoryManager memoryManager = vm.getMemoryManager();
@@ -219,7 +219,7 @@ public class IntrinsicsNatives {
 				ctx.setResult(startsWith(_this, prefix, toOffset) ? IntValue.ONE : IntValue.ZERO);
 				return Result.ABORT;
 			});
-			PrimitiveClass charPrimitive = vm.getPrimitives().charPrimitive;
+			PrimitiveClass charPrimitive = vm.getPrimitives().charPrimitive();
 			vmi.setInvoker(jc, "replace", "(CC)Ljava/lang/String;", ctx -> {
 				Locals locals = ctx.getLocals();
 				char oldChar = locals.load(1).asChar();
@@ -374,7 +374,7 @@ public class IntrinsicsNatives {
 
 	private void characterIntrinsics(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		InstanceJavaClass jc = vm.getSymbols().java_lang_Character;
+		InstanceJavaClass jc = vm.getSymbols().java_lang_Character();
 		vmi.setInvoker(jc, "toLowerCase", "(I)I", ctx -> {
 			ctx.setResult(IntValue.of(Character.toLowerCase(ctx.getLocals().load(0).asInt())));
 			return Result.ABORT;
@@ -407,7 +407,7 @@ public class IntrinsicsNatives {
 
 	private void intIntrinsics(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		InstanceJavaClass jc = vm.getSymbols().java_lang_Integer;
+		InstanceJavaClass jc = vm.getSymbols().java_lang_Integer();
 		vmi.setInvoker(jc, "hashCode", "(I)I", ctx -> {
 			ctx.setResult(IntValue.of(Integer.hashCode(ctx.getLocals().load(0).asInt())));
 			return Result.ABORT;
@@ -465,7 +465,7 @@ public class IntrinsicsNatives {
 
 	private void longIntrinsics(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		InstanceJavaClass jc = vm.getSymbols().java_lang_Long;
+		InstanceJavaClass jc = vm.getSymbols().java_lang_Long();
 		vmi.setInvoker(jc, "hashCode", "(J)I", ctx -> {
 			ctx.setResult(IntValue.of(Long.hashCode(ctx.getLocals().load(0).asLong())));
 			return Result.ABORT;

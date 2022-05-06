@@ -22,12 +22,16 @@ import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.natives.IntrinsicsNatives;
 import dev.xdark.ssvm.nt.NativeLibraryManager;
 import dev.xdark.ssvm.nt.SimpleNativeLibraryManager;
+import dev.xdark.ssvm.symbol.InitializedVMPrimitives;
+import dev.xdark.ssvm.symbol.InitializedVMSymbols;
+import dev.xdark.ssvm.symbol.UninitializedVMPrimitives;
+import dev.xdark.ssvm.symbol.UninitializedVMSymbols;
+import dev.xdark.ssvm.symbol.VMPrimitives;
+import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.thread.*;
 import dev.xdark.ssvm.tz.SimpleTimeManager;
 import dev.xdark.ssvm.tz.TimeManager;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.util.VMPrimitives;
-import dev.xdark.ssvm.util.VMSymbols;
 import dev.xdark.ssvm.value.*;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
@@ -38,14 +42,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class VirtualMachine {
 
+	private final AtomicBoolean initialized = new AtomicBoolean();
+	private final AtomicBoolean booted = new AtomicBoolean();
 	private final BootClassLoaderHolder bootClassLoader;
 	private final VMInterface vmInterface;
 	private final MemoryManager memoryManager;
-	private final VMSymbols symbols;
-	private final VMPrimitives primitives;
+	private final DelegatingVMSymbols symbols;
+	private final DelegatingVMPrimitives primitives;
 	private final VMHelper helper;
 	private final ClassDefiner classDefiner;
 	private final ThreadManager threadManager;
@@ -57,58 +64,94 @@ public class VirtualMachine {
 	private final ClassLoaders classLoaders;
 	private final Properties properties;
 	private final Map<String, String> env;
+	private final VMInitializer initializer;
 
-	public VirtualMachine(Object... args) {
-		init(args);
+	public VirtualMachine(VMInitializer initializer) {
+		this.initializer = initializer;
 		ClassLoaders classLoaders = createClassLoaders();
 		this.classLoaders = classLoaders;
 		bootClassLoader = new BootClassLoaderHolder(this, createBootClassLoader(), classLoaders.setClassLoaderData(NullValue.INSTANCE));
-		// java/lang/Object & java/lang/Class must be loaded manually,
-		// otherwise some MemoryManager implementations will bottleneck.
-		InstanceJavaClass klass = internalLink("java/lang/Class");
-		InstanceJavaClass object = internalLink("java/lang/Object");
-		NativeJava.injectPhase1(this);
 		memoryManager = createMemoryManager();
 		vmInterface = new VMInterface();
 		helper = new VMHelper(this);
 		threadManager = createThreadManager();
-		classLoaders.initializeBootClass(object);
-		classLoaders.initializeBootClass(klass);
-		classLoaders.initializeBootOop(klass, klass);
-		classLoaders.initializeBootOop(object, klass);
-		object.link();
-		klass.link();
 		classDefiner = createClassDefiner();
-		VMSymbols symbols = new VMSymbols(this);
+		DelegatingVMSymbols symbols = new DelegatingVMSymbols();
+		symbols.setSymbols(new UninitializedVMSymbols());
 		this.symbols = symbols;
-		primitives = new VMPrimitives(this);
+		DelegatingVMPrimitives primitives = new DelegatingVMPrimitives();
+		primitives.setPrimitives(new UninitializedVMPrimitives());
+		this.primitives = primitives;
 		fileDescriptorManager = createFileDescriptorManager();
 		nativeLibraryManager = createNativeLibraryManager();
 		stringPool = createStringPool();
 		managementInterface = createManagementInterface();
 		timeManager = createTimeManager();
-		NativeJava.init(this);
 
 		(properties = new Properties()).putAll(System.getProperties());
 		env = new HashMap<>(System.getenv());
-		InstanceJavaClass groupClass = symbols.java_lang_ThreadGroup;
-		groupClass.initialize();
-
-		 IntrinsicsNatives.init(this);
 	}
 	
 	public VirtualMachine() {
-		this(new Object[0]);
+		this(DummyVMInitializer.INSTANCE);
+	}
+
+	/**
+	 * @throws IllegalStateException
+	 * 		If VM is not initialized.
+	 */
+	public void assertInitialized() {
+		if (!initialized.get()) {
+			throw new IllegalStateException("VM is not initialized");
+		}
+	}
+
+	/**
+	 * Initializes up the VM.
+	 */
+	public void initialize() {
+		if (initialized.compareAndSet(false, true)) {
+			ClassLoaders classLoaders = this.classLoaders;
+			VMInitializer initializer = this.initializer;
+			initializer.initBegin(this);
+			initializer.initClassLoaders(this);
+			// java/lang/Object & java/lang/Class must be loaded manually,
+			// otherwise some MemoryManager implementations will bottleneck.
+			InstanceJavaClass klass = internalLink("java/lang/Class");
+			InstanceJavaClass object = internalLink("java/lang/Object");
+			initializer.bootLink(this, klass, object);
+			NativeJava.injectPhase1(this);
+			classLoaders.initializeBootClass(object);
+			classLoaders.initializeBootClass(klass);
+			classLoaders.initializeBootOop(klass, klass);
+			classLoaders.initializeBootOop(object, klass);
+			object.link();
+			klass.link();
+			symbols.setSymbols(new InitializedVMSymbols(this));
+			primitives.setPrimitives(new InitializedVMPrimitives(this));
+			NativeJava.init(this);
+			initializer.nativeInit(this);
+			InstanceJavaClass groupClass = symbols.java_lang_ThreadGroup();
+			groupClass.initialize();
+			IntrinsicsNatives.init(this);
+		}
 	}
 
 	/**
 	 * Full VM initialization.
+	 *
+	 * @throws IllegalStateException
+	 * 		If an attempt to boot VM twice was made.
 	 */
 	public void bootstrap() {
+		initialize();
+		if (!booted.compareAndSet(false, true)) {
+			throw new IllegalStateException("Already booted");
+		}
 		VMSymbols symbols = this.symbols;
-		symbols.java_lang_ClassLoader.initialize();
+		symbols.java_lang_ClassLoader().initialize();
 		VMHelper helper = this.helper;
-		InstanceJavaClass sysClass = symbols.java_lang_System;
+		InstanceJavaClass sysClass = symbols.java_lang_System();
 		MemoryManager memoryManager = this.memoryManager;
 		ThreadManager threadManager = this.threadManager;
 
@@ -123,7 +166,7 @@ public class VirtualMachine {
 			unsafeConstants.setFieldValue("BIG_ENDIAN", "Z", memoryManager.getByteOrder() == ByteOrder.BIG_ENDIAN ? IntValue.ONE : IntValue.ZERO);
 		}
 		// Initialize system group
-		InstanceJavaClass groupClass = symbols.java_lang_ThreadGroup;
+		InstanceJavaClass groupClass = symbols.java_lang_ThreadGroup();
 		InstanceValue sysGroup = memoryManager.newInstance(groupClass);
 		helper.invokeExact(groupClass, "<init>", "()V", new Value[0], new Value[]{sysGroup});
 		// Initialize main thread
@@ -160,7 +203,7 @@ public class VirtualMachine {
 			}
 			helper.invokeStatic(sysClass, "initPhase3", "()V", new Value[0], new Value[0]);
 		}
-		InstanceJavaClass classLoaderClass = symbols.java_lang_ClassLoader;
+		InstanceJavaClass classLoaderClass = symbols.java_lang_ClassLoader();
 		classLoaderClass.initialize();
 		helper.invokeStatic(classLoaderClass, "getSystemClassLoader", "()Ljava/lang/ClassLoader;", new Value[0], new Value[0]);
 	}
@@ -375,7 +418,7 @@ public class VirtualMachine {
 		if (loader.isNull()) {
 			jc = findBootstrapClass(name, initialize);
 			if (jc == null) {
-				helper.throwException(symbols.java_lang_ClassNotFoundException, name.replace('/', '.'));
+				helper.throwException(symbols.java_lang_ClassNotFoundException(), name.replace('/', '.'));
 			}
 		} else {
 			ClassLoaderData data = classLoaders.getClassLoaderData(loader);
@@ -432,10 +475,10 @@ public class VirtualMachine {
 				}
 			}
 			if (isNative) {
-				helper.throwException(symbols.java_lang_UnsatisfiedLinkError, ctx.getOwner().getInternalName() + '.' + jm.getName() + jm.getDesc());
+				helper.throwException(symbols.java_lang_UnsatisfiedLinkError(), ctx.getOwner().getInternalName() + '.' + jm.getName() + jm.getDesc());
 			}
 			if ((access & Opcodes.ACC_ABSTRACT) != 0) {
-				helper.throwException(symbols.java_lang_AbstractMethodError, ctx.getOwner().getInternalName() + '.' + jm.getName() + jm.getDesc());
+				helper.throwException(symbols.java_lang_AbstractMethodError(), ctx.getOwner().getInternalName() + '.' + jm.getName() + jm.getDesc());
 			}
 			Interpreter.execute(ctx);
 		} catch (VMException ex) {
@@ -591,5 +634,10 @@ public class VirtualMachine {
 		InstanceJavaClass jc = classLoaders.constructClass(NullValue.INSTANCE, cr, node);
 		bootClassLoader.forceLink(jc);
 		return jc;
+	}
+
+	private static final class DummyVMInitializer implements VMInitializer {
+
+		static final VMInitializer INSTANCE = new DummyVMInitializer();
 	}
 }

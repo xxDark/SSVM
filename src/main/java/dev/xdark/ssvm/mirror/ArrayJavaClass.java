@@ -34,7 +34,7 @@ public final class ArrayJavaClass implements JavaClass {
 		this.componentType = componentType;
 		name = internalName.replace('/', '.');
 		oop = vm.getMemoryManager().createOopForClass(this);
-		objectClass = vm.getSymbols().java_lang_Object;
+		objectClass = vm.getSymbols().java_lang_Object();
 	}
 
 	@Override

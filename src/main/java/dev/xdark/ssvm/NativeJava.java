@@ -5,7 +5,7 @@ import dev.xdark.ssvm.asm.VMOpcodes;
 import dev.xdark.ssvm.execution.asm.*;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.natives.*;
-import dev.xdark.ssvm.util.VMSymbols;
+import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.tree.FieldNode;
@@ -124,7 +124,7 @@ public final class NativeJava {
 	 */
 	static void injectPhase2(VirtualMachine vm) {
 		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass classLoader = symbols.java_lang_ClassLoader;
+		InstanceJavaClass classLoader = symbols.java_lang_ClassLoader();
 
 		classLoader.getNode().fields.add(new FieldNode(
 				ACC_PRIVATE | ACC_VM_HIDDEN,
@@ -136,7 +136,7 @@ public final class NativeJava {
 
 		inject:
 		{
-			InstanceJavaClass memberName = symbols.java_lang_invoke_MemberName;
+			InstanceJavaClass memberName = symbols.java_lang_invoke_MemberName();
 			List<FieldNode> fields = memberName.getNode().fields;
 			fields.add(new FieldNode(
 					ACC_PRIVATE | ACC_VM_HIDDEN,
@@ -161,7 +161,7 @@ public final class NativeJava {
 		}
 
 		{
-			InstanceJavaClass resolvedMethodName = symbols.java_lang_invoke_ResolvedMethodName;
+			InstanceJavaClass resolvedMethodName = symbols.java_lang_invoke_ResolvedMethodName();
 			List<FieldNode> fields = resolvedMethodName.getNode().fields;
 			fields.add(new FieldNode(
 					ACC_PRIVATE | ACC_VM_HIDDEN,
@@ -180,7 +180,7 @@ public final class NativeJava {
 		}
 		inject:
 		{
-			InstanceJavaClass fd = symbols.java_io_FileDescriptor;
+			InstanceJavaClass fd = symbols.java_io_FileDescriptor();
 			// For whatever reason unix/macos does not have
 			// 'handle' field, we need to inject it
 			List<FieldNode> fields = fd.getNode().fields;

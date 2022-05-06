@@ -48,7 +48,7 @@ public class SimpleClassLoaders implements ClassLoaders {
 				throw new IllegalStateException("Class loader data for " + classLoader + " is already set");
 			}
 			ClassLoaderData data = createClassLoaderData();
-			JavaValue<ClassLoaderData> oop = vm.getMemoryManager().newJavaInstance(vm.getSymbols().java_lang_Object, data);
+			JavaValue<ClassLoaderData> oop = vm.getMemoryManager().newJavaInstance(vm.getSymbols().java_lang_Object(), data);
 			instance.setValue(NativeJava.CLASS_LOADER_OOP, "Ljava/lang/Object;", oop);
 			return data;
 		}

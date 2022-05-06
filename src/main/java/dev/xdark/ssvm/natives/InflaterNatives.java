@@ -18,7 +18,7 @@ public class InflaterNatives {
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		InstanceJavaClass jc = vm.getSymbols().java_util_zip_Inflater;
+		InstanceJavaClass jc = vm.getSymbols().java_util_zip_Inflater();
 		vmi.setInvoker(jc, "initIDs", "()V", MethodInvoker.noop());
 	}
 }

@@ -14,7 +14,9 @@ public final class VirtualMachineArrayHelperTest {
 
 	@BeforeAll
 	private static void setup() {
-		helper = new VirtualMachine().getHelper();
+		VirtualMachine vm = new VirtualMachine();
+		vm.initialize();
+		helper = vm.getHelper();
 	}
 
 	@Test

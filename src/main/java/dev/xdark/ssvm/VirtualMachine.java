@@ -42,12 +42,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Queue;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class VirtualMachine {
 
-	private final AtomicBoolean initialized = new AtomicBoolean();
-	private final AtomicBoolean booted = new AtomicBoolean();
+	private final AtomicReference<InitializationState> state = new AtomicReference<>(InitializationState.UNINITIALIZED);
 	private final BootClassLoaderHolder bootClassLoader;
 	private final VMInterface vmInterface;
 	private final MemoryManager memoryManager;
@@ -101,39 +100,51 @@ public class VirtualMachine {
 	 * 		If VM is not initialized.
 	 */
 	public void assertInitialized() {
-		if (!initialized.get()) {
+		if (state.get() == InitializationState.UNINITIALIZED) {
 			throw new IllegalStateException("VM is not initialized");
 		}
 	}
 
 	/**
 	 * Initializes up the VM.
+	 *
+	 * @throws IllegalStateException
+	 * 		If VM fails to transit to {@link InitializationState#INITIALIZING} state,
+	 * 		or fails to initialize.
 	 */
 	public void initialize() {
-		if (initialized.compareAndSet(false, true)) {
-			ClassLoaders classLoaders = this.classLoaders;
-			VMInitializer initializer = this.initializer;
-			initializer.initBegin(this);
-			initializer.initClassLoaders(this);
-			// java/lang/Object & java/lang/Class must be loaded manually,
-			// otherwise some MemoryManager implementations will bottleneck.
-			InstanceJavaClass klass = internalLink("java/lang/Class");
-			InstanceJavaClass object = internalLink("java/lang/Object");
-			initializer.bootLink(this, klass, object);
-			NativeJava.injectPhase1(this);
-			classLoaders.initializeBootClass(object);
-			classLoaders.initializeBootClass(klass);
-			classLoaders.initializeBootOop(klass, klass);
-			classLoaders.initializeBootOop(object, klass);
-			object.link();
-			klass.link();
-			symbols.setSymbols(new InitializedVMSymbols(this));
-			primitives.setPrimitives(new InitializedVMPrimitives(this));
-			NativeJava.init(this);
-			initializer.nativeInit(this);
-			InstanceJavaClass groupClass = symbols.java_lang_ThreadGroup();
-			groupClass.initialize();
-			IntrinsicsNatives.init(this);
+		if (state.compareAndSet(InitializationState.UNINITIALIZED, InitializationState.INITIALIZING)) {
+			try {
+				ClassLoaders classLoaders = this.classLoaders;
+				VMInitializer initializer = this.initializer;
+				initializer.initBegin(this);
+				initializer.initClassLoaders(this);
+				// java/lang/Object & java/lang/Class must be loaded manually,
+				// otherwise some MemoryManager implementations will bottleneck.
+				InstanceJavaClass klass = internalLink("java/lang/Class");
+				InstanceJavaClass object = internalLink("java/lang/Object");
+				initializer.bootLink(this, klass, object);
+				NativeJava.injectPhase1(this);
+				classLoaders.initializeBootClass(object);
+				classLoaders.initializeBootClass(klass);
+				classLoaders.initializeBootOop(klass, klass);
+				classLoaders.initializeBootOop(object, klass);
+				object.link();
+				klass.link();
+				symbols.setSymbols(new InitializedVMSymbols(this));
+				primitives.setPrimitives(new InitializedVMPrimitives(this));
+				NativeJava.init(this);
+				initializer.nativeInit(this);
+				InstanceJavaClass groupClass = symbols.java_lang_ThreadGroup();
+				groupClass.initialize();
+				IntrinsicsNatives.init(this);
+				state.set(InitializationState.INITIALIZED);
+			} catch (Exception ex) {
+				state.set(InitializationState.FAILED);
+				throw new IllegalStateException("VM initialized failed", ex);
+			}
+		} else {
+			throw new IllegalStateException("Failed to enter in INITIALIZING state");
 		}
 	}
 
@@ -141,71 +152,97 @@ public class VirtualMachine {
 	 * Full VM initialization.
 	 *
 	 * @throws IllegalStateException
-	 * 		If an attempt to boot VM twice was made.
+	 * 		If VM fails to transit to {@link InitializationState#BOOTING} state,
+	 * 		or fails to boot.
 	 */
 	public void bootstrap() {
 		initialize();
-		if (!booted.compareAndSet(false, true)) {
-			throw new IllegalStateException("Already booted");
-		}
-		VMSymbols symbols = this.symbols;
-		symbols.java_lang_ClassLoader().initialize();
-		VMHelper helper = this.helper;
-		InstanceJavaClass sysClass = symbols.java_lang_System();
-		MemoryManager memoryManager = this.memoryManager;
-		ThreadManager threadManager = this.threadManager;
+		if (state.compareAndSet(InitializationState.INITIALIZED, InitializationState.BOOTING)) {
+			try {
+				VMSymbols symbols = this.symbols;
+				symbols.java_lang_ClassLoader().initialize();
+				VMHelper helper = this.helper;
+				InstanceJavaClass sysClass = symbols.java_lang_System();
+				MemoryManager memoryManager = this.memoryManager;
+				ThreadManager threadManager = this.threadManager;
 
-		// Inject unsafe constants
-		// This must be done first, otherwise
-		// jdk/internal/misc/Unsafe will cache wrong values
-		InstanceJavaClass unsafeConstants = (InstanceJavaClass) findBootstrapClass("jdk/internal/misc/UnsafeConstants", true);
-		if (unsafeConstants != null) {
-			unsafeConstants.initialize();
-			unsafeConstants.setFieldValue("ADDRESS_SIZE0", "I", IntValue.of(memoryManager.addressSize()));
-			unsafeConstants.setFieldValue("PAGE_SIZE", "I", IntValue.of(memoryManager.pageSize()));
-			unsafeConstants.setFieldValue("BIG_ENDIAN", "Z", memoryManager.getByteOrder() == ByteOrder.BIG_ENDIAN ? IntValue.ONE : IntValue.ZERO);
-		}
-		// Initialize system group
-		InstanceJavaClass groupClass = symbols.java_lang_ThreadGroup();
-		InstanceValue sysGroup = memoryManager.newInstance(groupClass);
-		helper.invokeExact(groupClass, "<init>", "()V", new Value[0], new Value[]{sysGroup});
-		// Initialize main thread
-		VMThread mainThread = threadManager.currentThread();
-		InstanceValue oop = mainThread.getOop();
-		oop.setValue("group", "Ljava/lang/ThreadGroup;", sysGroup);
-		sysClass.initialize();
-		findBootstrapClass("java/lang/reflect/Method", true);
-		findBootstrapClass("java/lang/reflect/Field", true);
-		findBootstrapClass("java/lang/reflect/Constructor", true);
+				// Inject unsafe constants
+				// This must be done first, otherwise
+				// jdk/internal/misc/Unsafe will cache wrong values
+				InstanceJavaClass unsafeConstants = (InstanceJavaClass) findBootstrapClass("jdk/internal/misc/UnsafeConstants", true);
+				if (unsafeConstants != null) {
+					unsafeConstants.initialize();
+					unsafeConstants.setFieldValue("ADDRESS_SIZE0", "I", IntValue.of(memoryManager.addressSize()));
+					unsafeConstants.setFieldValue("PAGE_SIZE", "I", IntValue.of(memoryManager.pageSize()));
+					unsafeConstants.setFieldValue("BIG_ENDIAN", "Z", memoryManager.getByteOrder() == ByteOrder.BIG_ENDIAN ? IntValue.ONE : IntValue.ZERO);
+				}
+				// Initialize system group
+				InstanceJavaClass groupClass = symbols.java_lang_ThreadGroup();
+				InstanceValue sysGroup = memoryManager.newInstance(groupClass);
+				helper.invokeExact(groupClass, "<init>", "()V", new Value[0], new Value[]{sysGroup});
+				// Initialize main thread
+				VMThread mainThread = threadManager.currentThread();
+				InstanceValue oop = mainThread.getOop();
+				oop.setValue("group", "Ljava/lang/ThreadGroup;", sysGroup);
+				sysClass.initialize();
+				findBootstrapClass("java/lang/reflect/Method", true);
+				findBootstrapClass("java/lang/reflect/Field", true);
+				findBootstrapClass("java/lang/reflect/Constructor", true);
 
-		JavaMethod initializeSystemClass = sysClass.getStaticMethod("initializeSystemClass", "()V");
-		if (initializeSystemClass != null) {
-			// pre JDK 9 boot
-			helper.invokeStatic(sysClass, initializeSystemClass, new Value[0], new Value[0]);
-		} else {
-			findBootstrapClass("java/lang/StringUTF16", true);
+				JavaMethod initializeSystemClass = sysClass.getStaticMethod("initializeSystemClass", "()V");
+				if (initializeSystemClass != null) {
+					// pre JDK 9 boot
+					helper.invokeStatic(sysClass, initializeSystemClass, new Value[0], new Value[0]);
+				} else {
+					findBootstrapClass("java/lang/StringUTF16", true);
 
-			// Oracle had moved this to native code, do it here
-			// On JDK 8 this is invoked in initializeSystemClass
-			helper.invokeVirtual("add", "(Ljava/lang/Thread;)V", new Value[0], new Value[]{
-					sysGroup,
-					mainThread.getOop()
-			});
-			helper.invokeStatic(sysClass, "initPhase1", "()V", new Value[0], new Value[0]);
-			findBootstrapClass("java/lang/invoke/MethodHandle", true);
-			findBootstrapClass("java/lang/invoke/ResolvedMethodName", true);
-			findBootstrapClass("java/lang/invoke/MemberName", true);
-			findBootstrapClass("java/lang/invoke/MethodHandleNatives", true);
+					// Oracle had moved this to native code, do it here
+					// On JDK 8 this is invoked in initializeSystemClass
+					helper.invokeVirtual("add", "(Ljava/lang/Thread;)V", new Value[0], new Value[]{
+							sysGroup,
+							mainThread.getOop()
+					});
+					helper.invokeStatic(sysClass, "initPhase1", "()V", new Value[0], new Value[0]);
+					findBootstrapClass("java/lang/invoke/MethodHandle", true);
+					findBootstrapClass("java/lang/invoke/ResolvedMethodName", true);
+					findBootstrapClass("java/lang/invoke/MemberName", true);
+					findBootstrapClass("java/lang/invoke/MethodHandleNatives", true);
 
-			int result = helper.invokeStatic(sysClass, "initPhase2", "(ZZ)I", new Value[0], new Value[]{IntValue.ONE, IntValue.ONE}).getResult().asInt();
-			if (result != 0) {
-				throw new IllegalStateException("VM initialization failed, initPhase2 returned " + result);
+					int result = helper.invokeStatic(sysClass, "initPhase2", "(ZZ)I", new Value[0], new Value[]{IntValue.ONE, IntValue.ONE}).getResult().asInt();
+					if (result != 0) {
+						throw new IllegalStateException("VM bootstrapping failed, initPhase2 returned " + result);
+					}
+					helper.invokeStatic(sysClass, "initPhase3", "()V", new Value[0], new Value[0]);
+				}
+				InstanceJavaClass classLoaderClass = symbols.java_lang_ClassLoader();
+				classLoaderClass.initialize();
+				helper.invokeStatic(classLoaderClass, "getSystemClassLoader", "()Ljava/lang/ClassLoader;", new Value[0], new Value[0]);
+				state.set(InitializationState.BOOTED);
+			} catch (Exception ex) {
+				state.set(InitializationState.FAILED);
+				throw new IllegalStateException("VM initialized failed", ex);
 			}
-			helper.invokeStatic(sysClass, "initPhase3", "()V", new Value[0], new Value[0]);
+		} else {
+			throw new IllegalStateException("Failed to enter in BOOTING state");
 		}
-		InstanceJavaClass classLoaderClass = symbols.java_lang_ClassLoader();
-		classLoaderClass.initialize();
-		helper.invokeStatic(classLoaderClass, "getSystemClassLoader", "()Ljava/lang/ClassLoader;", new Value[0], new Value[0]);
+	}
+
+	/**
+	 * @return current initialization state.
+	 */
+	public InitializationState getState() {
+		return state.get();
+	}
+
+	/**
+	 * This must be only invoked by the VM
+	 * to support snapshot restore.
+	 *
+	 * @param state
+	 * 		New state.
+	 */
+	public void setState(InitializationState state) {
+		this.state.set(state);
 	}
 
 	/**

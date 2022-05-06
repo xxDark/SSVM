@@ -65,7 +65,7 @@ public final class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public Memory reallocateDirect(long address, long bytes) {
+	public synchronized Memory reallocateDirect(long address, long bytes) {
 		TreeMap<MemoryKey, MemoryRef> memoryBlocks = this.memoryBlocks;
 		MemoryRef ref = memoryBlocks.remove(keyAddress(address));
 		Memory memory;
@@ -94,7 +94,7 @@ public final class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public boolean freeMemory(long address) {
+	public synchronized boolean freeMemory(long address) {
 		TreeMap<MemoryKey, MemoryRef> memoryBlocks = this.memoryBlocks;
 		MemoryRef mem = memoryBlocks.remove(keyAddress(address));
 		if (mem != null) {
@@ -105,7 +105,7 @@ public final class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public Memory getMemory(long address) {
+	public synchronized Memory getMemory(long address) {
 		TreeMap<MemoryKey, MemoryRef> memoryBlocks = this.memoryBlocks;
 		MemoryRef block = memoryBlocks.get(memoryBlocks.floorKey(keyAddress(address)));
 		if (block != null) {
@@ -120,7 +120,7 @@ public final class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public Value getValue(long address) {
+	public synchronized Value getValue(long address) {
 		return objects.get(keyAddress(address));
 	}
 
@@ -130,7 +130,9 @@ public final class SimpleMemoryManager implements MemoryManager {
 		Memory memory = ref.memory;
 		setClass(memory, javaClass);
 		SimpleInstanceValue value = new SimpleInstanceValue(memory);
-		objects.put(ref.key, value);
+		synchronized (this) {
+			objects.put(ref.key, value);
+		}
 		return value;
 	}
 
@@ -140,7 +142,9 @@ public final class SimpleMemoryManager implements MemoryManager {
 		Memory memory = ref.memory;
 		setClass(memory, javaClass);
 		SimpleJavaValue<V> wrapper = new SimpleJavaValue<>(memory, value);
-		objects.put(ref.key, wrapper);
+		synchronized (this) {
+			objects.put(ref.key, wrapper);
+		}
 		return wrapper;
 	}
 
@@ -151,7 +155,9 @@ public final class SimpleMemoryManager implements MemoryManager {
 		SimpleJavaValue<InstanceJavaClass> wrapper = new SimpleJavaValue<>(memory, javaClass);
 		javaClass.setOop(wrapper);
 		setClass(memory, javaClass);
-		objects.put(ref.key, wrapper);
+		synchronized (this) {
+			objects.put(ref.key, wrapper);
+		}
 		return wrapper;
 	}
 
@@ -162,7 +168,9 @@ public final class SimpleMemoryManager implements MemoryManager {
 		setClass(memory, javaClass);
 		memory.getData().writeInt(ARRAY_LENGTH, length);
 		SimpleArrayValue value = new SimpleArrayValue(memory);
-		objects.put(ref.key, value);
+		synchronized (this) {
+			objects.put(ref.key, value);
+		}
 		return value;
 	}
 
@@ -212,13 +220,13 @@ public final class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public ObjectValue readValue(ObjectValue object, long offset) {
+	public synchronized ObjectValue readValue(ObjectValue object, long offset) {
 		long address = object.getMemory().getData().readLong(offset);
 		return objects.get(keyAddress(address));
 	}
 
 	@Override
-	public JavaClass readClass(ObjectValue object) {
+	public synchronized JavaClass readClass(ObjectValue object) {
 		ObjectValue value = objects.get(keyAddress(object.getMemory().getData().readLong(0)));
 		if (!(value instanceof JavaValue)) {
 			throw new PanicException("Segfault");
@@ -292,7 +300,9 @@ public final class SimpleMemoryManager implements MemoryManager {
 		Memory memory = ref.memory;
 		setClass(memory, jlc);
 		SimpleJavaValue<C> wrapper = new SimpleJavaValue<>(memory, javaClass);
-		objects.put(ref.key, wrapper);
+		synchronized (this) {
+			objects.put(ref.key, wrapper);
+		}
 		return wrapper;
 	}
 
@@ -415,7 +425,7 @@ public final class SimpleMemoryManager implements MemoryManager {
 		memoryBlocks.put(copy.key, copy);
 	}
 
-	private MemoryRef newMemoryBlock(long size, boolean isDirect) {
+	private synchronized MemoryRef newMemoryBlock(long size, boolean isDirect) {
 		if (size > Integer.MAX_VALUE) {
 			vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError());
 			return null;

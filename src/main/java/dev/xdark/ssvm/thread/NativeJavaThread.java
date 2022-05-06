@@ -61,6 +61,7 @@ public class NativeJavaThread extends Thread {
 						} else {
 							try {
 								os.write(msg.getBytes(StandardCharsets.UTF_8));
+								os.write((byte) '\n');
 								os.flush();
 							} catch (IOException ignored) {
 							}

@@ -32,7 +32,7 @@ public class NativeThreadManager implements ThreadManager {
 			Map<Thread, VMThread> systemThreads = this.systemThreads;
 			VMThread vmThread = systemThreads.get(thread);
 			if (vmThread == null) {
-				synchronized (this) {
+				synchronized(this) {
 					vmThread = systemThreads.get(thread);
 					if (vmThread == null) {
 						vmThread = new DetachedVMThread(vm, thread);
@@ -53,7 +53,7 @@ public class NativeThreadManager implements ThreadManager {
 			synchronized(this) {
 				vmThread = threadMap.get(thread);
 				if (vmThread == null) {
-					vmThread = new NativeVMThread(thread);
+					vmThread = createThread(thread);
 					threadMap.put(thread, vmThread);
 				}
 			}
@@ -84,5 +84,17 @@ public class NativeThreadManager implements ThreadManager {
 	@Override
 	public void sleep(long millis) throws InterruptedException {
 		currentThread().sleep(millis);
+	}
+
+	/**
+	 * Creates new native thread.
+	 *
+	 * @param value
+	 * 		Thread oop.
+	 *
+	 * @return created thread.
+	 */
+	protected NativeVMThread createThread(InstanceValue value) {
+		return new NativeVMThread(value);
 	}
 }

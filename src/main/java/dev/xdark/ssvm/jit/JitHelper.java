@@ -816,11 +816,7 @@ public class JitHelper {
 	}
 
 	public void monitorEnter(Value value, ExecutionContext ctx) {
-		if (value.isNull()) {
-			ctx.getHelper().throwException(ctx.getSymbols().java_lang_NullPointerException());
-		} else {
-			((ObjectValue) value).monitorEnter();
-		}
+		ctx.monitorEnter((ObjectValue) value);
 	}
 
 	public void monitorEnter(ExecutionContext ctx) {
@@ -828,15 +824,7 @@ public class JitHelper {
 	}
 
 	public void monitorExit(Value value, ExecutionContext ctx) {
-		if (value.isNull()) {
-			ctx.getHelper().throwException(ctx.getSymbols().java_lang_NullPointerException());
-		}
-		try {
-			((ObjectValue) value).monitorExit();
-		} catch(IllegalMonitorStateException ex) {
-			VirtualMachine vm = ctx.getVM();
-			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalMonitorStateException());
-		}
+		ctx.monitorExit((ObjectValue) value);
 	}
 
 	public void monitorExit(ExecutionContext ctx) {

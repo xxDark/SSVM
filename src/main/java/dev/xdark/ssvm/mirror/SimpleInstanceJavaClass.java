@@ -255,15 +255,15 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		if (other.isPrimitive()) {
 			return false;
 		}
+		VMSymbols symbols = vm.getSymbols();
 		if (other.isArray()) {
 			if (isInterface()) {
-				String internalName = node.name;
-				return "java/io/Serializable".equals(internalName) || "java/lang/Cloneable".equals(internalName);
+				return this == symbols.java_io_Serializable() || this == symbols.java_lang_Cloneable();
 			} else {
-				return this == vm.getSymbols().java_lang_Object();
+				return this == symbols.java_lang_Object();
 			}
 		}
-		if (this == vm.getSymbols().java_lang_Object()) {
+		if (this == symbols.java_lang_Object()) {
 			return true;
 		}
 		if (other.isInterface()) {
@@ -278,7 +278,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 				}
 			}
 		} else {
-			Deque<JavaClass> toCheck = new ArrayDeque<JavaClass>();
+			Deque<JavaClass> toCheck = new ArrayDeque<>();
 			JavaClass superClass = other.getSuperClass();
 			if (superClass != null) {
 				toCheck.add(superClass);

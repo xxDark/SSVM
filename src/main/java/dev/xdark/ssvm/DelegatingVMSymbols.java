@@ -412,6 +412,16 @@ final class DelegatingVMSymbols implements VMSymbols {
 		return symbols.java_lang_Module();
 	}
 
+	@Override
+	public InstanceJavaClass java_io_Serializable() {
+		return symbols.java_io_Serializable();
+	}
+
+	@Override
+	public InstanceJavaClass java_lang_Cloneable() {
+		return symbols.java_lang_Cloneable();
+	}
+
 	/**
 	 * @param symbols
 	 * 		New symbols.

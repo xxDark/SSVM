@@ -182,4 +182,16 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 	public String getCurrentWorkingDirectory() {
 		return new File("").getAbsolutePath();
 	}
+
+	@Override
+	public OutputStream getStreamOut(int stream) {
+		switch(stream) {
+			case 1:
+				return stdout;
+			case 2:
+				return stderr;
+			default:
+				throw new IllegalStateException("Unsupported stream: " + stream);
+		}
+	}
 }

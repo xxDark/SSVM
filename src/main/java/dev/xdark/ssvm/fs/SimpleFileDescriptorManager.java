@@ -80,4 +80,9 @@ public class SimpleFileDescriptorManager implements FileDescriptorManager {
 	public String getCurrentWorkingDirectory() {
 		return new File("").getAbsolutePath();
 	}
+
+	@Override
+	public OutputStream getStreamOut(int stream) {
+		return out;
+	}
 }

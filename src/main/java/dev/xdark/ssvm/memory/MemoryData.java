@@ -227,6 +227,15 @@ public interface MemoryData {
 	MemoryData slice(long offset, long bytes);
 
 	/**
+	 * Transfers data of this memory to
+	 * another memory data.
+	 *
+	 * @param other
+	 * 		Memory data to transfer to.
+	 */
+	void transferTo(MemoryData other);
+
+	/**
 	 * Creates buffer backed memory data.
 	 *
 	 * @param buffer

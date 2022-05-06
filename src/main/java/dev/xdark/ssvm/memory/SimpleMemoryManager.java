@@ -407,6 +407,14 @@ public final class SimpleMemoryManager implements MemoryManager {
 		return Runtime.getRuntime().maxMemory();
 	}
 
+	@Override
+	public void claim(Memory memory) {
+		MemoryRef copy = newMemoryBlock(memory.getAddress(), memory.isDirect());
+		Memory newMemory = copy.memory;
+		memory.getData().transferTo(newMemory.getData());
+		memoryBlocks.put(copy.key, copy);
+	}
+
 	private MemoryRef newMemoryBlock(long size, boolean isDirect) {
 		if (size > Integer.MAX_VALUE) {
 			vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError());
@@ -474,15 +482,9 @@ public final class SimpleMemoryManager implements MemoryManager {
 		return key;
 	}
 
-	public static MemoryKey newAddress(long address) {
+	private static MemoryKey newAddress(long address) {
 		MemoryKey key = new MemoryKey();
 		key.address = address;
-		return key;
-	}
-
-	public static MemoryKey newAddress(Memory memory) {
-		MemoryKey key = new MemoryKey();
-		key.address = memory.getAddress();
 		return key;
 	}
 

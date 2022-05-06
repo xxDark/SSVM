@@ -94,6 +94,8 @@ public  final class InitializedVMSymbols implements VMSymbols {
 	private final InstanceJavaClass java_util_zip_ZipException;
 	private final InstanceJavaClass java_lang_IllegalAccessException;
 	private final InstanceJavaClass java_lang_Module;
+	private final InstanceJavaClass java_io_Serializable;
+	private final InstanceJavaClass java_lang_Cloneable;
 
 	/**
 	 * @param vm
@@ -198,6 +200,8 @@ public  final class InitializedVMSymbols implements VMSymbols {
 		java_util_zip_ZipException = (InstanceJavaClass) vm.findBootstrapClass("java/util/zip/ZipException");
 		java_lang_IllegalAccessException = (InstanceJavaClass) vm.findBootstrapClass("java/lang/IllegalAccessException");
 		java_lang_Module = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Module");
+		java_io_Serializable = (InstanceJavaClass) vm.findBootstrapClass("java/io/Serializable");
+		java_lang_Cloneable = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Cloneable");
 	}
 
 	@Override
@@ -598,6 +602,16 @@ public  final class InitializedVMSymbols implements VMSymbols {
 	@Override
 	public InstanceJavaClass java_lang_Module() {
 		return java_lang_Module;
+	}
+
+	@Override
+	public InstanceJavaClass java_io_Serializable() {
+		return java_io_Serializable;
+	}
+
+	@Override
+	public InstanceJavaClass java_lang_Cloneable() {
+		return java_lang_Cloneable;
 	}
 
 	private static InstanceJavaClass resolvedMemberName(VirtualMachine vm) {

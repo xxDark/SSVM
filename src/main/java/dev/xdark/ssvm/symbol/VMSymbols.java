@@ -89,4 +89,6 @@ public interface VMSymbols {
 	InstanceJavaClass java_util_zip_ZipException();
 	InstanceJavaClass java_lang_IllegalAccessException();
 	InstanceJavaClass java_lang_Module();
+	InstanceJavaClass java_io_Serializable();
+	InstanceJavaClass java_lang_Cloneable();
 }

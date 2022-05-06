@@ -603,5 +603,11 @@ public interface MemoryManager {
 	 */
 	long maxMemory();
 
-
+	/**
+	 * Claims block of memory.
+	 *
+	 * @param memory
+	 * 		Block to claim.
+	 */
+	void claim(Memory memory);
 }

@@ -107,7 +107,17 @@ public class VirtualMachine {
 	}
 
 	/**
-	 * Initializes up the VM.
+	 * @throws IllegalStateException
+	 * 		If VM is not booted.
+	 */
+	public void assertBooted() {
+		if (state.get() != InitializationState.BOOTED) {
+			throw new IllegalStateException("VM is not booted");
+		}
+	}
+
+	/**
+	 * Initializes the VM.
 	 *
 	 * @throws IllegalStateException
 	 * 		If VM fails to transit to {@link InitializationState#INITIALIZING} state,
@@ -142,7 +152,7 @@ public class VirtualMachine {
 				state.set(InitializationState.INITIALIZED);
 			} catch (Exception ex) {
 				state.set(InitializationState.FAILED);
-				throw new IllegalStateException("VM initialized failed", ex);
+				throw new IllegalStateException("VM initialization failed", ex);
 			}
 		} else {
 			throw new IllegalStateException("Failed to enter in INITIALIZING state");
@@ -221,7 +231,7 @@ public class VirtualMachine {
 				state.set(InitializationState.BOOTED);
 			} catch (Exception ex) {
 				state.set(InitializationState.FAILED);
-				throw new IllegalStateException("VM initialized failed", ex);
+				throw new IllegalStateException("VM bootstrap failed", ex);
 			}
 		} else {
 			throw new IllegalStateException("Failed to enter in BOOTING state");
@@ -553,14 +563,6 @@ public class VirtualMachine {
 			r.run();
 		}
 	}
-
-	/**
-	 * Called upon VM creation.
-	 * 
-	 * @param args
-	 * 		Extra args.
-	 */
-	protected void init(Object... args) {}
 
 	/**
 	 * Creates a boot class loader.

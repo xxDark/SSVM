@@ -984,8 +984,8 @@ public final class VMHelper {
 		oop.setInt("priority", javaThread.getPriority());
 		// Copy daemon status
 		oop.setBoolean("daemon", javaThread.isDaemon());
-		// Copy thread state (JVMTI_THREAD_STATE_RUNNABLE)
-		oop.setInt("threadStatus", 0x0004);
+		// Copy thread state (JVMTI_THREAD_STATE_RUNNABLE | JVMTI_THREAD_STATE_ALIVE)
+		oop.setInt("threadStatus", 0x0004 | 0x0001);
 	}
 
 	/**

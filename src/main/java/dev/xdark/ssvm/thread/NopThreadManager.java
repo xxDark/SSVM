@@ -2,7 +2,6 @@ package dev.xdark.ssvm.thread;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.InstanceValue;
 
 import java.util.Map;
@@ -35,15 +34,20 @@ public final class NopThreadManager implements ThreadManager {
 		if (current != null) {
 			return current;
 		}
-		VirtualMachine vm = this.vm;
-		InstanceJavaClass klass = vm.getSymbols().java_lang_Thread();
-		klass.initialize();
-		InstanceValue instance = vm.getMemoryManager().newInstance(klass);
-		VMHelper helper = vm.getHelper();
-		NopVMThread vmThread = new NopVMThread(instance, thread);
-		threadMap.put(thread, vmThread);
-		helper.screenVmThread(vmThread);
-		return vmThread;
+		synchronized(this) {
+			current = threadMap.get(thread);
+			if (current == null) {
+				VirtualMachine vm = this.vm;
+				InstanceJavaClass klass = vm.getSymbols().java_lang_Thread();
+				klass.initialize();
+				InstanceValue instance = vm.getMemoryManager().newInstance(klass);
+				current = new NopVMThread(instance, thread);
+				threadMap.put(thread, current);
+				vm.getHelper().screenVmThread(current);
+				instance.initialize();
+			}
+		}
+		return current;
 	}
 
 	@Override
@@ -52,22 +56,22 @@ public final class NopThreadManager implements ThreadManager {
 	}
 
 	@Override
-	public void setVmThread(VMThread thread) {
+	public synchronized void setVmThread(VMThread thread) {
 		threadMap.put(thread.getJavaThread(), thread);
 	}
 
 	@Override
-	public VMThread[] getThreads() {
+	public synchronized VMThread[] getThreads() {
 		return threadMap.values().toArray(new VMThread[0]);
 	}
 
 	@Override
-	public void suspendAll() {
+	public synchronized void suspendAll() {
 		threadMap.values().forEach(VMThread::suspend);
 	}
 
 	@Override
-	public void resumeAll() {
+	public synchronized void resumeAll() {
 		threadMap.values().forEach(VMThread::resume);
 	}
 

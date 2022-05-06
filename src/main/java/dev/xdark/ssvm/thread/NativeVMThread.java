@@ -2,18 +2,17 @@ package dev.xdark.ssvm.thread;
 
 import dev.xdark.ssvm.value.InstanceValue;
 
-/**
- * Basic implementation of a VM thread.
- *
- * @author xDark
- */
-public final class NativeVMThread extends BaseVMThread {
+public class NativeVMThread extends BaseVMThread {
 
 	private final Thread thread;
 
-	public NativeVMThread(Thread thread, InstanceValue oop) {
+	/**
+	 * @param oop
+	 * 		VM thread oop.
+	 */
+	public NativeVMThread(InstanceValue oop) {
 		super(oop);
-		this.thread = thread;
+		thread = new NativeJavaThread(oop, this);
 	}
 
 	@Override
@@ -63,12 +62,13 @@ public final class NativeVMThread extends BaseVMThread {
 	@Override
 	public void resume() {
 		thread.resume();
+
 	}
 
 	@Override
 	public void sleep(long millis) throws InterruptedException {
 		if (thread != Thread.currentThread()) {
-			throw new IllegalStateException("Called sleep on wrong thread");
+			throw new IllegalStateException("Called sleep on a wrong thread");
 		}
 		Thread.sleep(millis);
 	}

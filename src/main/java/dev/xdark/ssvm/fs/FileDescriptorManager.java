@@ -164,4 +164,15 @@ public interface FileDescriptorManager {
 	 * @return current working directory.
 	 */
 	String getCurrentWorkingDirectory();
+
+	/**
+	 * Maps VM file descriptor to {@link OutputStream}
+	 * to standard error/output stream.
+	 *
+	 * @param stream
+	 * 		Standard stream id.
+	 *
+	 * @return mapped stream.
+	 */
+	OutputStream getStreamOut(int stream);
 }

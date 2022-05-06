@@ -1,10 +1,12 @@
 package dev.xdark.ssvm;
 
+import dev.xdark.ssvm.execution.ExecutionContext;
+import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.Value;
-import lombok.val;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.tree.ClassNode;
 
 import java.util.concurrent.ThreadLocalRandom;
@@ -59,10 +61,10 @@ public class IntComparisonTest {
 	}
 
 	private static boolean doIntJump(int value, int opcode) {
-		val node = new ClassNode();
+		ClassNode node = new ClassNode();
 		node.visit(V11, ACC_PUBLIC, "Test", null, null, null);
-		val mv = node.visitMethod(ACC_STATIC, "test", "()Z", null, null);
-		val label = new Label();
+		MethodVisitor mv = node.visitMethod(ACC_STATIC, "test", "()Z", null, null);
+		Label label = new Label();
 		mv.visitLdcInsn(value);
 		mv.visitJumpInsn(opcode, label);
 		mv.visitInsn(ICONST_0);
@@ -71,8 +73,8 @@ public class IntComparisonTest {
 		mv.visitInsn(ICONST_1);
 		mv.visitInsn(IRETURN);
 		mv.visitMaxs(1, 0);
-		val jc = TestUtil.createClass(vm, node);
-		val result = vm.getHelper().invokeStatic(jc, "test", "()Z", new Value[0], new Value[0]);
+		InstanceJavaClass jc = TestUtil.createClass(vm, node);
+		ExecutionContext result = vm.getHelper().invokeStatic(jc, "test", "()Z", new Value[0], new Value[0]);
 		return result.getResult().asBoolean();
 	}
 

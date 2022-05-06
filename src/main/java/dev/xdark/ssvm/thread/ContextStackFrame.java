@@ -4,7 +4,6 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.val;
 
 /**
  * Stack frame that has context attached to it.
@@ -39,7 +38,7 @@ public class ContextStackFrame implements StackFrame {
 
 	@Override
 	public StackFrame freeze() {
-		val executionContext = this.executionContext;
+		ExecutionContext executionContext = this.executionContext;
 		return new ContextFrozenStackFrame(executionContext, executionContext.getLineNumber());
 	}
 }

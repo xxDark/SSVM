@@ -1,7 +1,6 @@
 package dev.xdark.ssvm.fs;
 
 import lombok.RequiredArgsConstructor;
-import lombok.val;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -9,7 +8,6 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -34,9 +32,13 @@ public class SimpleZipFile implements ZipFile {
 
 	@Override
 	public ZipEntry getEntry(int index) {
-		if (index < 0) return null;
-		val entries = getEntries();
-		if (index >= entries.size()) return null;
+		if (index < 0) {
+			return null;
+		}
+		List<ZipEntry> entries = getEntries();
+		if (index >= entries.size()) {
+			return null;
+		}
 		return entries.get(index);
 	}
 
@@ -45,27 +47,31 @@ public class SimpleZipFile implements ZipFile {
 		Map<String, ZipEntry> names = this.names;
 		if (names == null) {
 			names = new HashMap<>();
-			for (val entry : getEntries()) {
+			for (ZipEntry entry : getEntries()) {
 				names.putIfAbsent(entry.getName(), entry);
 			}
 			this.names = names;
 		}
 		ZipEntry entry = names.get(name);
-		if (entry == null) entry = names.get(name + '/');
+		if (entry == null) {
+			entry = names.get(name + '/');
+		}
 		return entry;
 	}
 
 	@Override
 	public byte[] readEntry(ZipEntry entry) throws IOException {
-		val contents = this.contents;
+		Map<ZipEntry, byte[]> contents = this.contents;
 		byte[] content = contents.get(entry);
 		if (content == null) {
-			try (InputStream in = handle.getInputStream(entry)) {
-				if (in == null) return null;
-				val buf = new byte[1024];
-				val baos = new ByteArrayOutputStream();
+			try(InputStream in = handle.getInputStream(entry)) {
+				if (in == null) {
+					return null;
+				}
+				byte[] buf = new byte[1024];
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
 				int r;
-				while ((r = in.read(buf)) >= 0) {
+				while((r = in.read(buf)) >= 0) {
 					baos.write(buf, 0, r);
 				}
 				contents.put(entry, content = baos.toByteArray());

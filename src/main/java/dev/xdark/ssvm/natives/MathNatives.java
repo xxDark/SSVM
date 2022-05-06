@@ -1,10 +1,13 @@
 package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.api.VMInterface;
+import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.util.VMSymbols;
 import dev.xdark.ssvm.value.DoubleValue;
 import lombok.experimental.UtilityClass;
-import lombok.val;
 
 /**
  * Initializes math natives.
@@ -19,9 +22,9 @@ public class MathNatives {
 	 * 		VM instance.
 	 */
 	public static void init(VirtualMachine vm) {
-		val vmi = vm.getInterface();
-		val symbols = vm.getSymbols();
-		val jc = symbols.java_lang_StrictMath;
+		VMInterface vmi = vm.getInterface();
+		VMSymbols symbols = vm.getSymbols();
+		InstanceJavaClass jc = symbols.java_lang_StrictMath;
 		vmi.setInvoker(jc, "sin", "(D)D", ctx -> {
 			ctx.setResult(new DoubleValue(Math.sin(ctx.getLocals().load(0).asDouble())));
 			return Result.ABORT;
@@ -67,17 +70,17 @@ public class MathNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "IEEEremainder", "(DD)D", ctx -> {
-			val locals = ctx.getLocals();
+			Locals locals = ctx.getLocals();
 			ctx.setResult(new DoubleValue(Math.IEEEremainder(locals.load(0).asDouble(), locals.load(2).asDouble())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "atan2", "(DD)D", ctx -> {
-			val locals = ctx.getLocals();
+			Locals locals = ctx.getLocals();
 			ctx.setResult(new DoubleValue(Math.atan2(locals.load(0).asDouble(), locals.load(2).asDouble())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "pow", "(DD)D", ctx -> {
-			val locals = ctx.getLocals();
+			Locals locals = ctx.getLocals();
 			ctx.setResult(new DoubleValue(Math.pow(locals.load(0).asDouble(), locals.load(2).asDouble())));
 			return Result.ABORT;
 		});
@@ -94,7 +97,7 @@ public class MathNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "hypot", "(DD)D", ctx -> {
-			val locals = ctx.getLocals();
+			Locals locals = ctx.getLocals();
 			ctx.setResult(new DoubleValue(Math.hypot(locals.load(0).asDouble(), locals.load(2).asDouble())));
 			return Result.ABORT;
 		});

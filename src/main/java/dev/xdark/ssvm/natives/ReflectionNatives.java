@@ -1,14 +1,18 @@
 package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.asm.Modifier;
+import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.thread.Backtrace;
+import dev.xdark.ssvm.thread.StackFrame;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.JavaValue;
 import lombok.experimental.UtilityClass;
-import lombok.val;
 
 /**
  * Initializes reflect/Reflection class.
@@ -23,7 +27,7 @@ public class ReflectionNatives {
 	 * 		VM instance.
 	 */
 	public void init(VirtualMachine vm) {
-		val vmi = vm.getInterface();
+		VMInterface vmi = vm.getInterface();
 		InstanceJavaClass reflection = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/Reflection");
 		if (reflection == null) {
 			reflection = (InstanceJavaClass) vm.findBootstrapClass("sun/reflect/Reflection");
@@ -32,16 +36,16 @@ public class ReflectionNatives {
 			}
 		}
 		vmi.setInvoker(reflection, "getCallerClass", "()Ljava/lang/Class;", ctx -> {
-			val backtrace = vm.currentThread().getBacktrace();
+			Backtrace backtrace = vm.currentThread().getBacktrace();
 			int count = backtrace.count();
-			val caller = backtrace.get(count - 2).getExecutionContext().getMethod();
+			JavaMethod caller = backtrace.get(count - 2).getExecutionContext().getMethod();
 			int offset = 3;
 			if (caller.isCallerSensitive()) {
 				while (true) {
-					val frame = backtrace.get(count - offset);
-					val frameCtx = frame.getExecutionContext();
+					StackFrame frame = backtrace.get(count - offset);
+					ExecutionContext frameCtx = frame.getExecutionContext();
 					if (frameCtx == null) break;
-					val method = frameCtx.getMethod();
+					JavaMethod method = frameCtx.getMethod();
 					if (Modifier.isCallerSensitive(method.getAccess())) {
 						offset++;
 					} else {
@@ -53,7 +57,7 @@ public class ReflectionNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(reflection, "getClassAccessFlags", "(Ljava/lang/Class;)I", ctx -> {
-			val klass = ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue();
+			JavaClass klass = ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue();
 			ctx.setResult(IntValue.of(Modifier.eraseClass(klass.getModifiers())));
 			return Result.ABORT;
 		});

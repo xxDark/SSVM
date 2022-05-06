@@ -1,10 +1,10 @@
 package dev.xdark.ssvm.enhanced;
 
-import lombok.val;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -33,7 +33,7 @@ public class InvokeDynamicTest {
 
 	@VMTest
 	private static void testStream() {
-		val list = IntStream.range(0, 6)
+		List<Integer> list = IntStream.range(0, 6)
 				.filter(x -> true)
 				.map(x -> x)
 				.boxed().collect(Collectors.toList());
@@ -45,7 +45,7 @@ public class InvokeDynamicTest {
 	@VMTest
 	private static void testMethodRef() {
 		int v = ThreadLocalRandom.current().nextInt(64) + 100;
-		val counter = new AtomicInteger();
+		AtomicInteger counter = new AtomicInteger();
 		IntStream.range(0, v).forEach(counter::addAndGet);
 		int x = 0;
 		for (int i = 0; i < v; x += i++) ;
@@ -57,10 +57,10 @@ public class InvokeDynamicTest {
 	@VMTest
 	private static void testMethodRef2() {
 		int v = ThreadLocalRandom.current().nextInt(8) + 8;
-		val list = IntStream.range(0, v)
+		ArrayList<String> list = IntStream.range(0, v)
 				.mapToObj(Integer::toString)
 				.collect(Collectors.toCollection(ArrayList::new));
-		val copy = Arrays.asList(new String[v]);
+		List<String> copy = Arrays.asList(new String[v]);
 		while (v-- != 0) {
 			copy.set(v, Integer.toString(v));
 		}
@@ -72,10 +72,10 @@ public class InvokeDynamicTest {
 	@VMTest
 	private static void testMethodRef3() {
 		int v = ThreadLocalRandom.current().nextInt(8) + 8;
-		val array = IntStream.range(0, v)
+		String[] array = IntStream.range(0, v)
 				.mapToObj(Integer::toHexString)
 				.toArray(String[]::new);
-		val copy = new String[v];
+		String[] copy = new String[v];
 		while (v-- != 0) {
 			copy[v] = Integer.toHexString(v);
 		}
@@ -130,12 +130,12 @@ public class InvokeDynamicTest {
 
 	@VMTest
 	private static void testLongCapture() {
-		val rng = ThreadLocalRandom.current();
-		val v1 = rng.nextLong();
-		val v2 = rng.nextLong();
+		ThreadLocalRandom rng = ThreadLocalRandom.current();
+		long v1 = rng.nextLong();
+		long v2 = rng.nextLong();
 		tmp1 = v1;
 		tmp2 = v2;
-		val r = (Runnable) () -> {
+		Runnable r = (Runnable) () -> {
 			if (v1 != tmp1 || v2 != tmp2) {
 				throw new IllegalStateException();
 			}
@@ -147,7 +147,7 @@ public class InvokeDynamicTest {
 
 	@VMTest
 	private static void testBox() {
-		val r = ThreadLocalRandom.current();
+		ThreadLocalRandom r = ThreadLocalRandom.current();
 		long v = r.nextLong(0L, Long.MAX_VALUE);
 		((LongConsumer) InvokeDynamicTest::setResult).accept(v);
 		if (result != v) {

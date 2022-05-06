@@ -4,7 +4,6 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.util.AsmUtil;
-import lombok.val;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
 
 /**

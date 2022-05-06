@@ -1,11 +1,16 @@
 package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ArrayValue;
+import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
-import lombok.val;
+
+import java.util.Map;
 
 /**
  * Initializes java/lang/ProcessEnvironment.
@@ -20,19 +25,19 @@ public class ProcessEnvironmentNatives {
 	 * 		VM instance.
 	 */
 	public void init(VirtualMachine vm) {
-		val vmi = vm.getInterface();
-		val processEnvironment = vm.getSymbols().java_lang_ProcessEnvironment;
+		VMInterface vmi = vm.getInterface();
+		InstanceJavaClass processEnvironment = vm.getSymbols().java_lang_ProcessEnvironment;
 		if (!vmi.setInvoker(processEnvironment, "environ", "()[[B", ctx -> {
-			val helper = vm.getHelper();
-			val env = vm.getenv();
+			VMHelper helper = vm.getHelper();
+			Map<String, String> env = vm.getenv();
 			int idx = 0;
 			int len = env.size();
-			val array = helper.newArray(vm.getPrimitives().bytePrimitive.newArrayClass(), len);
-			for (val entry : env.entrySet()) {
-				val key = helper.newUtf8(entry.getKey());
-				val value = helper.newUtf8(entry.getValue());
-				val keyBytes = (ArrayValue) helper.invokeVirtual("getBytes", "()[B", new Value[0], new Value[]{key}).getResult();
-				val valueBytes = (ArrayValue) helper.invokeVirtual("getBytes", "()[B", new Value[0], new Value[]{value}).getResult();
+			ArrayValue array = helper.newArray(vm.getPrimitives().bytePrimitive.newArrayClass(), len);
+			for (Map.Entry<String, String> entry : env.entrySet()) {
+				ObjectValue key = helper.newUtf8(entry.getKey());
+				ObjectValue value = helper.newUtf8(entry.getValue());
+				ArrayValue keyBytes = (ArrayValue) helper.invokeVirtual("getBytes", "()[B", new Value[0], new Value[]{key}).getResult();
+				ArrayValue valueBytes = (ArrayValue) helper.invokeVirtual("getBytes", "()[B", new Value[0], new Value[]{value}).getResult();
 				array.setValue(idx++, keyBytes);
 				array.setValue(idx++, valueBytes);
 			}
@@ -40,9 +45,9 @@ public class ProcessEnvironmentNatives {
 			return Result.ABORT;
 		})) {
 			vmi.setInvoker(processEnvironment, "environmentBlock", "()Ljava/lang/String;", ctx -> {
-				val result = new StringBuilder();
-				val env = vm.getenv();
-				for (val entry : env.entrySet()) {
+				StringBuilder result = new StringBuilder();
+				Map<String, String> env = vm.getenv();
+				for (Map.Entry<String, String> entry : env.entrySet()) {
 					result.append(entry.getKey()).append('=').append(entry.getValue())
 							.append('\0');
 				}

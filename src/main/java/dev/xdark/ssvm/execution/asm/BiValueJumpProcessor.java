@@ -3,9 +3,9 @@ package dev.xdark.ssvm.execution.asm;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.value.Value;
-import lombok.val;
 import org.objectweb.asm.tree.JumpInsnNode;
 
 import java.util.function.BiPredicate;
@@ -29,9 +29,9 @@ public final class BiValueJumpProcessor implements InstructionProcessor<JumpInsn
 
 	@Override
 	public Result execute(JumpInsnNode insn, ExecutionContext ctx) {
-		val stack = ctx.getStack();
-		val v2 = stack.pop();
-		val v1 = stack.pop();
+		Stack stack = ctx.getStack();
+		Value v2 = stack.pop();
+		Value v1 = stack.pop();
 		if (condition.test(v1, v2)) {
 			ctx.setInsnPosition(AsmUtil.getIndex(insn.label));
 		}

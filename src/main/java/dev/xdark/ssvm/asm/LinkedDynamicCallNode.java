@@ -2,7 +2,6 @@ package dev.xdark.ssvm.asm;
 
 import dev.xdark.ssvm.value.InstanceValue;
 import lombok.Getter;
-import lombok.val;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 
@@ -36,9 +35,9 @@ public final class LinkedDynamicCallNode extends DelegatingInsnNode<InvokeDynami
 	 */
 	public int getDescriptorArgsSize() {
 		int descriptorArgsSize = this.descriptorArgsSize;
-		if (descriptorArgsSize == -1 ) {
+		if (descriptorArgsSize == -1) {
 			descriptorArgsSize = 0;
-			for (val arg : descriptorArgs) {
+			for (Type arg : descriptorArgs) {
 				descriptorArgsSize += arg.getSize();
 			}
 			return this.descriptorArgsSize = descriptorArgsSize;

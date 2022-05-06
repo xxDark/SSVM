@@ -3,7 +3,6 @@ package dev.xdark.ssvm.value;
 import dev.xdark.ssvm.memory.Memory;
 import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.mirror.JavaClass;
-import lombok.val;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -26,7 +25,7 @@ public class SimpleObjectValue implements ObjectValue {
 	 */
 	public SimpleObjectValue(Memory memory) {
 		this.memory = memory;
-		val lock = new ReentrantLock();
+		ReentrantLock lock = new ReentrantLock();
 		this.lock = lock;
 		signal = lock.newCondition();
 	}

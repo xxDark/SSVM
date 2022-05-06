@@ -5,7 +5,6 @@ import dev.xdark.ssvm.thread.SimpleThreadStorage;
 import dev.xdark.ssvm.value.TopValue;
 import dev.xdark.ssvm.value.Value;
 import lombok.RequiredArgsConstructor;
-import lombok.val;
 
 import java.util.Arrays;
 import java.util.List;
@@ -56,7 +55,7 @@ public final class Stack implements AutoCloseable {
 		if (!value.isWide()) {
 			throw new IllegalStateException("Must use push instead");
 		}
-		val stack = this.stack;
+		ThreadRegion stack = this.stack;
 		int cursor = this.cursor;
 		stack.set(cursor++, value);
 		stack.set(cursor++, TopValue.INSTANCE);
@@ -118,7 +117,7 @@ public final class Stack implements AutoCloseable {
 	 * @return generic value popped off the stack.
 	 */
 	public <V extends Value> V popGeneric() {
-		val top = pop();
+		Value top = pop();
 		if (top == TopValue.INSTANCE) {
 			return pop();
 		}
@@ -153,8 +152,8 @@ public final class Stack implements AutoCloseable {
 	 * Duplicates value on the stack.
 	 */
 	public void dup() {
-		val stack = this.stack;
-		val cursor = this.cursor;
+		ThreadRegion stack = this.stack;
+		int cursor = this.cursor;
 		stack.set(this.cursor++, stack.get(cursor - 1));
 	}
 
@@ -162,8 +161,8 @@ public final class Stack implements AutoCloseable {
 	 * Duplicate the top operand stack value and insert two values down.
 	 */
 	public void dupx1() {
-		val v1 = pop();
-		val v2 = pop();
+		Value v1 = pop();
+		Value v2 = pop();
 		push(v1);
 		push(v2);
 		push(v1);
@@ -174,14 +173,14 @@ public final class Stack implements AutoCloseable {
 	 * and insert two or three values down.
 	 */
 	public void dupx2() {
-		val v1 = pop();
-		val v2 = popGeneric();
+		Value v1 = pop();
+		Value v2 = popGeneric();
 		if (v2.isWide()) {
 			push(v1);
 			pushWide(v2);
 			push(v1);
 		} else {
-			val v3 = pop();
+			Value v3 = pop();
 			push(v1);
 			push(v3);
 			push(v2);
@@ -193,12 +192,12 @@ public final class Stack implements AutoCloseable {
 	 * Duplicate the top one or two operand stack values.
 	 */
 	public void dup2() {
-		val v = popGeneric();
+		Value v = popGeneric();
 		if (v.isWide()) {
 			pushWide(v);
 			pushWide(v);
 		} else {
-			val v2 = pop();
+			Value v2 = pop();
 			push(v2);
 			push(v);
 			push(v2);
@@ -211,15 +210,15 @@ public final class Stack implements AutoCloseable {
 	 * and insert two or three values down.
 	 */
 	public void dup2x1() {
-		val v = popGeneric();
+		Value v = popGeneric();
 		if (v.isWide()) {
-			val v2 = pop();
+			Value v2 = pop();
 			pushWide(v);
 			push(v2);
 			pushWide(v);
 		} else {
-			val v2 = pop();
-			val v3 = pop();
+			Value v2 = pop();
+			Value v3 = pop();
 			push(v2);
 			push(v);
 			push(v3);
@@ -233,22 +232,22 @@ public final class Stack implements AutoCloseable {
 	 * and insert two, three, or four values down.
 	 */
 	public void dup2x2() {
-		val v1 = popGeneric();
-		val v2 = popGeneric();
+		Value v1 = popGeneric();
+		Value v2 = popGeneric();
 		if (v1.isWide()) {
 			if (v2.isWide()) {
 				pushWide(v1);
 				pushWide(v2);
 				pushWide(v1);
 			} else {
-				val v3 = pop();
+				Value v3 = pop();
 				pushWide(v1);
 				push(v3);
 				push(v2);
 				pushWide(v1);
 			}
 		} else {
-			val v3 = popGeneric();
+			Value v3 = popGeneric();
 			//noinspection IfStatementWithIdenticalBranches
 			if (v3.isWide()) {
 				push(v2);
@@ -257,7 +256,7 @@ public final class Stack implements AutoCloseable {
 				push(v2);
 				push(v1);
 			} else {
-				val v4 = pop();
+				Value v4 = pop();
 				push(v2);
 				push(v1);
 				push(v4);
@@ -272,10 +271,10 @@ public final class Stack implements AutoCloseable {
 	 * Swap the top two operand stack values.
 	 */
 	public void swap() {
-		val stack = this.stack;
-		val cursor = this.cursor;
-		val v1 = stack.get(cursor - 1);
-		val v2 = stack.get(cursor - 2);
+		ThreadRegion stack = this.stack;
+		int cursor = this.cursor;
+		Value v1 = stack.get(cursor - 1);
+		Value v2 = stack.get(cursor - 2);
 		stack.set(cursor - 1, v2);
 		stack.set(cursor - 2, v1);
 	}
@@ -341,7 +340,7 @@ public final class Stack implements AutoCloseable {
 	public boolean equals(Object o) {
 		if (o == this) return true;
 		if (!(o instanceof Stack)) return false;
-		val other = (Stack) o;
+		Stack other = (Stack) o;
 		int cursor = this.cursor;
 		if (cursor != other.cursor) return false;
 		for (int i = 0; i < cursor; i++) {
@@ -356,7 +355,7 @@ public final class Stack implements AutoCloseable {
 	public int hashCode() {
 		int result = 1;
 		int cursor = this.cursor;
-		val stack = this.stack;
+		ThreadRegion stack = this.stack;
 		for (int i = 0; i < cursor; i++) {
 			result *= 31;
 			result += Objects.hashCode(stack.get(i).hashCode());

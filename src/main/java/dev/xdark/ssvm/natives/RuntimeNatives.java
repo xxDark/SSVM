@@ -1,12 +1,13 @@
 package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.LongValue;
 import lombok.experimental.UtilityClass;
-import lombok.val;
 
 /**
  * Initializes java/lang/Runtime.
@@ -21,13 +22,13 @@ public class RuntimeNatives {
 	 * 		VM instance.
 	 */
 	public void init(VirtualMachine vm) {
-		val vmi = vm.getInterface();
-		val runtime = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Runtime");
+		VMInterface vmi = vm.getInterface();
+		InstanceJavaClass runtime = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Runtime");
 		vmi.setInvoker(runtime, "availableProcessors", "()I", ctx -> {
 			ctx.setResult(IntValue.of(Runtime.getRuntime().availableProcessors()));
 			return Result.ABORT;
 		});
-		val memoryManager = vm.getMemoryManager();
+		MemoryManager memoryManager = vm.getMemoryManager();
 		vmi.setInvoker(runtime, "freeMemory", "()J", ctx -> {
 			ctx.setResult(LongValue.of(memoryManager.freeMemory()));
 			return Result.ABORT;

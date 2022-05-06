@@ -2,11 +2,11 @@ package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
+import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.NullValue;
 import lombok.experimental.UtilityClass;
-import lombok.val;
 
 /**
  * Initializes module system.
@@ -21,8 +21,8 @@ public class JigsawNatives {
 	 * 		VM instance.
 	 */
 	public void init(VirtualMachine vm) {
-		val vmi = vm.getInterface();
-		val bootLoader = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/loader/BootLoader");
+		VMInterface vmi = vm.getInterface();
+		InstanceJavaClass bootLoader = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/loader/BootLoader");
 		if (bootLoader != null) {
 			vmi.setInvoker(bootLoader, "setBootLoaderUnnamedModule0", "(Ljava/lang/Module;)V", MethodInvoker.noop());
 			vmi.setInvoker(bootLoader, "getSystemPackageLocation", "(Ljava/lang/String;)Ljava/lang/String;", ctx -> {
@@ -30,7 +30,7 @@ public class JigsawNatives {
 				return Result.ABORT;
 			});
 		}
-		val module = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Module");
+		InstanceJavaClass module = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Module");
 		if (module != null) {
 			vmi.setInvoker(module, "defineModule0", "(Ljava/lang/Module;ZLjava/lang/String;Ljava/lang/String;[Ljava/lang/String;)V", MethodInvoker.noop());
 			vmi.setInvoker(module, "defineModule0", "(Ljava/lang/Module;ZLjava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)V", MethodInvoker.noop());
@@ -39,7 +39,7 @@ public class JigsawNatives {
 			vmi.setInvoker(module, "addExportsToAll0", "(Ljava/lang/Module;Ljava/lang/String;)V", MethodInvoker.noop());
 			vmi.setInvoker(module, "addExportsToAllUnnamed0", "(Ljava/lang/Module;Ljava/lang/String;)V", MethodInvoker.noop());
 		}
-		val moduleLayer = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ModuleLayer");
+		InstanceJavaClass moduleLayer = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ModuleLayer");
 		if (moduleLayer != null) {
 			vmi.setInvoker(moduleLayer, "defineModules", "(Ljava/lang/module/Configuration;Ljava/util/function/Function;)Ljava/lang/ModuleLayer;", ctx -> {
 				ctx.setResult(ctx.getLocals().load(0));

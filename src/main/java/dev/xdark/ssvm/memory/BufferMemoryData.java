@@ -3,7 +3,6 @@ package dev.xdark.ssvm.memory;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.util.VolatileBufferAccess;
 import lombok.RequiredArgsConstructor;
-import lombok.val;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -122,21 +121,21 @@ final class BufferMemoryData implements MemoryData {
 
 	@Override
 	public void set(long offset, long bytes, byte value) {
-		val buffer = this.buffer;
+		ByteBuffer buffer = this.buffer;
 		int $offset = validate(offset);
 		int $bytes = validate(bytes);
 		if ($bytes >= MEMSET_THRESHOLD) {
 			byte[] buf = new byte[MEMSET_THRESHOLD];
 			Arrays.fill(buf, value);
-			val slice = buffer.slice().order(buffer.order());
+			ByteBuffer slice = buffer.slice().order(buffer.order());
 			slice.position($offset);
-			while ($bytes != 0) {
+			while($bytes != 0) {
 				int len = Math.min($bytes, MEMSET_THRESHOLD);
 				slice.put(buf, 0, len);
 				$bytes -= len;
 			}
 		} else {
-			while ($bytes-- != 0) {
+			while($bytes-- != 0) {
 				buffer.put($offset++, value);
 			}
 		}
@@ -145,15 +144,15 @@ final class BufferMemoryData implements MemoryData {
 	@Override
 	public void copy(long srcOffset, MemoryData dst, long dstOffset, long bytes) {
 		if (dst instanceof BufferMemoryData) {
-			val dstBuf = ((BufferMemoryData) dst).buffer;
+			ByteBuffer dstBuf = ((BufferMemoryData) dst).buffer;
 			int $srcOffset = validate(srcOffset);
 			copyOrder(((ByteBuffer) dstBuf.slice().position(validate(dstOffset)))).put((ByteBuffer) buffer.slice().position($srcOffset).limit($srcOffset + validate(bytes)));
 		} else {
 			int start = validate(dstOffset);
 			int $bytes = validate(bytes);
 			int $offset = validate(srcOffset);
-			val buffer = this.buffer;
-			while ($bytes-- != 0) {
+			ByteBuffer buffer = this.buffer;
+			while($bytes-- != 0) {
 				dst.writeByte(start++, buffer.get($offset++));
 			}
 		}

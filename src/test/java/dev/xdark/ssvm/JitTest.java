@@ -6,13 +6,16 @@ import dev.xdark.ssvm.fs.HostFileDescriptorManager;
 import dev.xdark.ssvm.jit.JitClass;
 import dev.xdark.ssvm.jit.JitCompiler;
 import dev.xdark.ssvm.jit.JitInstaller;
+import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.*;
-import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.Type;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,42 +30,42 @@ public class JitTest {
 
 	@Test
 	public void testJit() throws IOException {
-		val vm = new VirtualMachine() {
+		VirtualMachine vm = new VirtualMachine() {
 			@Override
 			protected FileDescriptorManager createFileDescriptorManager() {
 				return new HostFileDescriptorManager();
 			}
 		};
 		vm.bootstrap();
-		val baos = new ByteArrayOutputStream();
-		try (val in = JitTest.class.getClassLoader().getResourceAsStream(Type.getInternalName(JitTest.class) + ".class")) {
-			val buf = new byte[512];
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		try (InputStream in = JitTest.class.getClassLoader().getResourceAsStream(Type.getInternalName(JitTest.class) + ".class")) {
+			byte[] buf = new byte[512];
 			int r;
 			while ((r = in.read(buf)) != -1) {
 				baos.write(buf, 0, r);
 			}
 		}
-		val bc = baos.toByteArray();
-		val helper = vm.getHelper();
-		val jc = helper.defineClass(
+		byte[] bc = baos.toByteArray();
+		VMHelper helper = vm.getHelper();
+		InstanceJavaClass jc = helper.defineClass(
 				NullValue.INSTANCE,
 				null,
 				bc, 0, bc.length,
 				NullValue.INSTANCE,
 				"JVM_DefineClass"
 		);
-		val rng = ThreadLocalRandom.current();
+		ThreadLocalRandom rng = ThreadLocalRandom.current();
 		a = rng.nextLong();
 		b = rng.nextInt();
 		c = Long.toBinaryString(rng.nextLong());
 		d = rng.nextLong();
 		e = rng.nextInt();
-		val m = jc.getStaticMethod("jitCall", "(JILjava/lang/String;JI)V");
+		JavaMethod m = jc.getStaticMethod("jitCall", "(JILjava/lang/String;JI)V");
 		// Force compile
-		val loader = new JitClassLoader();
+		JitClassLoader loader = new JitClassLoader();
 		try {
-			for (val toCompile : jc.getStaticMethodLayout().getAll()) {
-				val compiled = JitCompiler.compile(toCompile, 3);
+			for (JavaMethod toCompile : jc.getStaticMethodLayout().getAll()) {
+				JitClass compiled = JitCompiler.compile(toCompile, 3);
 				JitInstaller.install(toCompile, loader, compiled);
 			}
 		} catch (ReflectiveOperationException ex) {
@@ -118,7 +121,7 @@ public class JitTest {
 
 		@Override
 		public Class<?> define(JitClass jitClass) {
-			val code = jitClass.getCode();
+			byte[] code = jitClass.getCode();
 			return defineClass(jitClass.getClassName().replace('/', '.'), code, 0, code.length);
 		}
 	}

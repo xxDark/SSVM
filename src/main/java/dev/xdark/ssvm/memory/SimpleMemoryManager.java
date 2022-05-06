@@ -6,10 +6,18 @@ import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.util.UnsafeUtil;
-import dev.xdark.ssvm.value.*;
+import dev.xdark.ssvm.util.VMPrimitives;
+import dev.xdark.ssvm.value.ArrayValue;
+import dev.xdark.ssvm.value.InstanceValue;
+import dev.xdark.ssvm.value.JavaValue;
+import dev.xdark.ssvm.value.NullValue;
+import dev.xdark.ssvm.value.ObjectValue;
+import dev.xdark.ssvm.value.SimpleArrayValue;
+import dev.xdark.ssvm.value.SimpleInstanceValue;
+import dev.xdark.ssvm.value.SimpleJavaValue;
+import dev.xdark.ssvm.value.Value;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import lombok.val;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -43,10 +51,10 @@ public final class SimpleMemoryManager implements MemoryManager {
 	 */
 	public SimpleMemoryManager(VirtualMachine vm) {
 		this.vm = vm;
-		val nul = NullValue.INSTANCE;
-		val nullMemory = nul.getMemory();
-		val address = nullMemory.getAddress();
-		val key = newAddress(address);
+		NullValue nul = NullValue.INSTANCE;
+		Memory nullMemory = nul.getMemory();
+		long address = nullMemory.getAddress();
+		MemoryKey key = newAddress(address);
 		memoryBlocks.put(key, new MemoryRef(key, nullMemory));
 		objects.put(key, nul);
 	}
@@ -58,8 +66,8 @@ public final class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public Memory reallocateDirect(long address, long bytes) {
-		val memoryBlocks = this.memoryBlocks;
-		val ref = memoryBlocks.remove(keyAddress(address));
+		TreeMap<MemoryKey, MemoryRef> memoryBlocks = this.memoryBlocks;
+		MemoryRef ref = memoryBlocks.remove(keyAddress(address));
 		Memory memory;
 		if (ref == null || !(memory = ref.memory).isDirect()) {
 			throw new PanicException("Segfault");
@@ -67,15 +75,15 @@ public final class SimpleMemoryManager implements MemoryManager {
 		if (bytes == 0L) {
 			return new SimpleMemory(this, null, 0L, true);
 		}
-		val buffer = memory.getData();
-		val capacity = buffer.length();
+		MemoryData buffer = memory.getData();
+		long capacity = buffer.length();
 		if (bytes < capacity) {
 			// can we do that?
 			// TODO verify
 			throw new PanicException("Segfault");
 		}
-		val newBlock = newMemoryBlock(bytes, true).memory;
-		val newBuffer = newBlock.getData();
+		Memory newBlock = newMemoryBlock(bytes, true).memory;
+		MemoryData newBuffer = newBlock.getData();
 		buffer.copy(0L, newBuffer, 0L, buffer.length());
 		return newBlock;
 	}
@@ -87,8 +95,8 @@ public final class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public boolean freeMemory(long address) {
-		val memoryBlocks = this.memoryBlocks;
-		val mem = memoryBlocks.remove(keyAddress(address));
+		TreeMap<MemoryKey, MemoryRef> memoryBlocks = this.memoryBlocks;
+		MemoryRef mem = memoryBlocks.remove(keyAddress(address));
 		if (mem != null) {
 			objects.remove(mem.key);
 			return true;
@@ -98,11 +106,11 @@ public final class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public Memory getMemory(long address) {
-		val memoryBlocks = this.memoryBlocks;
-		val block = memoryBlocks.get(memoryBlocks.floorKey(keyAddress(address)));
+		TreeMap<MemoryKey, MemoryRef> memoryBlocks = this.memoryBlocks;
+		MemoryRef block = memoryBlocks.get(memoryBlocks.floorKey(keyAddress(address)));
 		if (block != null) {
-			val memory = block.memory;
-			val diff = address - memory.getAddress();
+			Memory memory = block.memory;
+			long diff = address - memory.getAddress();
 			if (diff >= memory.getData().length()) {
 				return null;
 			}
@@ -118,29 +126,29 @@ public final class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public InstanceValue newInstance(InstanceJavaClass javaClass) {
-		val ref = allocateObjectMemory(javaClass);
-		val memory = ref.memory;
+		MemoryRef ref = allocateObjectMemory(javaClass);
+		Memory memory = ref.memory;
 		setClass(memory, javaClass);
-		val value = new SimpleInstanceValue(memory);
+		SimpleInstanceValue value = new SimpleInstanceValue(memory);
 		objects.put(ref.key, value);
 		return value;
 	}
 
 	@Override
 	public <V> JavaValue<V> newJavaInstance(InstanceJavaClass javaClass, V value) {
-		val ref = allocateObjectMemory(javaClass);
-		val memory = ref.memory;
+		MemoryRef ref = allocateObjectMemory(javaClass);
+		Memory memory = ref.memory;
 		setClass(memory, javaClass);
-		val wrapper = new SimpleJavaValue<>(memory, value);
+		SimpleJavaValue<V> wrapper = new SimpleJavaValue<>(memory, value);
 		objects.put(ref.key, wrapper);
 		return wrapper;
 	}
 
 	@Override
 	public JavaValue<InstanceJavaClass> newJavaLangClass(InstanceJavaClass javaClass) {
-		val ref = allocateClassMemory(javaClass, javaClass);
-		val memory = ref.memory;
-		val wrapper = new SimpleJavaValue<>(memory, javaClass);
+		MemoryRef ref = allocateClassMemory(javaClass, javaClass);
+		Memory memory = ref.memory;
+		SimpleJavaValue<InstanceJavaClass> wrapper = new SimpleJavaValue<>(memory, javaClass);
 		javaClass.setOop(wrapper);
 		setClass(memory, javaClass);
 		objects.put(ref.key, wrapper);
@@ -149,11 +157,11 @@ public final class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public ArrayValue newArray(ArrayJavaClass javaClass, int length) {
-		val ref = allocateArrayMemory(length, arrayIndexScale(javaClass.getComponentType()));
-		val memory = ref.memory;
+		MemoryRef ref = allocateArrayMemory(length, arrayIndexScale(javaClass.getComponentType()));
+		Memory memory = ref.memory;
 		setClass(memory, javaClass);
 		memory.getData().writeInt(ARRAY_LENGTH, length);
-		val value = new SimpleArrayValue(memory);
+		SimpleArrayValue value = new SimpleArrayValue(memory);
 		objects.put(ref.key, value);
 		return value;
 	}
@@ -205,17 +213,17 @@ public final class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public ObjectValue readValue(ObjectValue object, long offset) {
-		val address = object.getMemory().getData().readLong(offset);
+		long address = object.getMemory().getData().readLong(offset);
 		return objects.get(keyAddress(address));
 	}
 
 	@Override
 	public JavaClass readClass(ObjectValue object) {
-		val value = objects.get(keyAddress(object.getMemory().getData().readLong(0)));
+		ObjectValue value = objects.get(keyAddress(object.getMemory().getData().readLong(0)));
 		if (!(value instanceof JavaValue)) {
 			throw new PanicException("Segfault");
 		}
-		val wrapper = ((JavaValue<?>) value).getValue();
+		Object wrapper = ((JavaValue<?>) value).getValue();
 		if (!(wrapper instanceof JavaClass)) {
 			throw new PanicException("Segfault");
 		}
@@ -279,11 +287,11 @@ public final class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public <C extends JavaClass> JavaValue<C> createOopForClass(C javaClass) {
-		val jlc = vm.findBootstrapClass("java/lang/Class");
-		val ref = allocateClassMemory(jlc, javaClass);
-		val memory = ref.memory;
+		JavaClass jlc = vm.findBootstrapClass("java/lang/Class");
+		MemoryRef ref = allocateClassMemory(jlc, javaClass);
+		Memory memory = ref.memory;
 		setClass(memory, jlc);
-		val wrapper = new SimpleJavaValue<>(memory, javaClass);
+		SimpleJavaValue<C> wrapper = new SimpleJavaValue<>(memory, javaClass);
 		objects.put(ref.key, wrapper);
 		return wrapper;
 	}
@@ -330,20 +338,36 @@ public final class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public int arrayIndexScale(JavaClass javaClass) {
-		val primitives = vm.getPrimitives();
-		if (javaClass == primitives.longPrimitive || javaClass == primitives.doublePrimitive) return 8;
-		if (javaClass == primitives.intPrimitive || javaClass == primitives.floatPrimitive) return 4;
-		if (javaClass == primitives.charPrimitive || javaClass == primitives.shortPrimitive) return 2;
-		if (javaClass == primitives.bytePrimitive || javaClass == primitives.booleanPrimitive) return 1;
+		VMPrimitives primitives = vm.getPrimitives();
+		if (javaClass == primitives.longPrimitive || javaClass == primitives.doublePrimitive) {
+			return 8;
+		}
+		if (javaClass == primitives.intPrimitive || javaClass == primitives.floatPrimitive) {
+			return 4;
+		}
+		if (javaClass == primitives.charPrimitive || javaClass == primitives.shortPrimitive) {
+			return 2;
+		}
+		if (javaClass == primitives.bytePrimitive || javaClass == primitives.booleanPrimitive) {
+			return 1;
+		}
 		return 8;
 	}
 
 	@Override
 	public int arrayIndexScale(Class<?> javaClass) {
-		if (javaClass == long.class || javaClass == double.class) return 8;
-		if (javaClass == int.class || javaClass == float.class) return 4;
-		if (javaClass == char.class || javaClass == short.class) return 2;
-		if (javaClass == byte.class || javaClass == boolean.class) return 1;
+		if (javaClass == long.class || javaClass == double.class) {
+			return 8;
+		}
+		if (javaClass == int.class || javaClass == float.class) {
+			return 4;
+		}
+		if (javaClass == char.class || javaClass == short.class) {
+			return 2;
+		}
+		if (javaClass == byte.class || javaClass == boolean.class) {
+			return 1;
+		}
 		return 8;
 	}
 
@@ -354,7 +378,7 @@ public final class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public long getStaticOffset(JavaClass jc) {
-		val jlc = vm.findBootstrapClass("java/lang/Class");
+		JavaClass jlc = vm.findBootstrapClass("java/lang/Class");
 		return OBJECT_HEADER_SIZE + jlc.getVirtualFieldLayout().getSize();
 	}
 
@@ -388,42 +412,46 @@ public final class SimpleMemoryManager implements MemoryManager {
 			vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError);
 			return null;
 		}
-		val rng = ThreadLocalRandom.current();
-		val memoryBlocks = this.memoryBlocks;
-		val tlc = MEMORY_KEY_TCL.get();
+		ThreadLocalRandom rng = ThreadLocalRandom.current();
+		TreeMap<MemoryKey, MemoryRef> memoryBlocks = this.memoryBlocks;
+		MemoryKey tlc = MEMORY_KEY_TCL.get();
 		long address;
-		while (true) {
+		while(true) {
 			address = rng.nextLong();
-			if (memoryBlocks.isEmpty()) break;
+			if (memoryBlocks.isEmpty()) {
+				break;
+			}
 			tlc.address = address;
-			val existingBlock = memoryBlocks.floorKey(tlc);
+			MemoryKey existingBlock = memoryBlocks.floorKey(tlc);
 			if (existingBlock == null) {
-				val low = memoryBlocks.firstKey();
-				if (address + size < low.address) break;
+				MemoryKey low = memoryBlocks.firstKey();
+				if (address + size < low.address) {
+					break;
+				}
 				continue;
 			}
-			val ref = memoryBlocks.get(existingBlock);
-			val block = ref.memory;
-			val cap = block.getData().length();
+			MemoryRef ref = memoryBlocks.get(existingBlock);
+			Memory block = ref.memory;
+			long cap = block.getData().length();
 			if (existingBlock.address + cap >= address) {
 				continue;
 			}
 			break;
 		}
-		val block = new SimpleMemory(this, alloc((int) size), address, isDirect);
-		val key = newAddress(address);
-		val ref = new MemoryRef(key, block);
+		SimpleMemory block = new SimpleMemory(this, alloc((int) size), address, isDirect);
+		MemoryKey key = newAddress(address);
+		MemoryRef ref = new MemoryRef(key, block);
 		memoryBlocks.put(key, ref);
 		return ref;
 	}
 
 	private MemoryRef allocateObjectMemory(JavaClass javaClass) {
-		val objectSize = OBJECT_HEADER_SIZE + javaClass.getVirtualFieldLayout().getSize();
+		long objectSize = OBJECT_HEADER_SIZE + javaClass.getVirtualFieldLayout().getSize();
 		return newMemoryBlock(objectSize, true);
 	}
 
 	private MemoryRef allocateClassMemory(JavaClass jlc, JavaClass javaClass) {
-		val size = OBJECT_HEADER_SIZE + jlc.getVirtualFieldLayout().getSize() + javaClass.getStaticFieldLayout().getSize();
+		long size = OBJECT_HEADER_SIZE + jlc.getVirtualFieldLayout().getSize() + javaClass.getStaticFieldLayout().getSize();
 		return newMemoryBlock(size, true);
 	}
 
@@ -432,7 +460,7 @@ public final class SimpleMemoryManager implements MemoryManager {
 	}
 
 	private void setClass(Memory memory, JavaClass jc) {
-		val address = jc.getOop().getMemory().getAddress();
+		long address = jc.getOop().getMemory().getAddress();
 		memory.getData().writeLong(0L, address);
 	}
 
@@ -441,19 +469,19 @@ public final class SimpleMemoryManager implements MemoryManager {
 	}
 
 	private static MemoryKey keyAddress(long address) {
-		val key = MEMORY_KEY_TCL.get();
+		MemoryKey key = MEMORY_KEY_TCL.get();
 		key.address = address;
 		return key;
 	}
 
 	public static MemoryKey newAddress(long address) {
-		val key = new MemoryKey();
+		MemoryKey key = new MemoryKey();
 		key.address = address;
 		return key;
 	}
 
 	public static MemoryKey newAddress(Memory memory) {
-		val key = new MemoryKey();
+		MemoryKey key = new MemoryKey();
 		key.address = memory.getAddress();
 		return key;
 	}
@@ -463,8 +491,12 @@ public final class SimpleMemoryManager implements MemoryManager {
 
 		@Override
 		public boolean equals(Object o) {
-			if (this == o) return true;
-			if (!(o instanceof MemoryKey)) return false;
+			if (this == o) {
+				return true;
+			}
+			if (!(o instanceof MemoryKey)) {
+				return false;
+			}
 
 			MemoryKey memoryKey = (MemoryKey) o;
 

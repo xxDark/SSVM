@@ -2,15 +2,21 @@ package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
+import dev.xdark.ssvm.api.VMInterface;
+import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.memory.MemoryData;
+import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.util.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
-import lombok.val;
 
 /**
  * Initializes java/lang/Object.
@@ -25,9 +31,9 @@ public class ObjectNatives {
 	 * 		VM instance.
 	 */
 	public void init(VirtualMachine vm) {
-		val vmi = vm.getInterface();
-		val symbols = vm.getSymbols();
-		val object = symbols.java_lang_Object;
+		VMInterface vmi = vm.getInterface();
+		VMSymbols symbols = vm.getSymbols();
+		InstanceJavaClass object = symbols.java_lang_Object;
 		vmi.setInvoker(object, "registerNatives", "()V", MethodInvoker.noop());
 		vmi.setInvoker(object, "<init>", "()V", ctx -> {
 			ctx.getLocals().<InstanceValue>load(0).initialize();
@@ -38,7 +44,7 @@ public class ObjectNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "notify", "()V", ctx -> {
-			val value = ctx.getLocals().<ObjectValue>load(0);
+			ObjectValue value = ctx.getLocals().<ObjectValue>load(0);
 			if (!value.isHeldByCurrentThread()) {
 				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException);
 			}
@@ -46,7 +52,7 @@ public class ObjectNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "notifyAll", "()V", ctx -> {
-			val value = ctx.getLocals().<ObjectValue>load(0);
+			ObjectValue value = ctx.getLocals().<ObjectValue>load(0);
 			if (!value.isHeldByCurrentThread()) {
 				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException);
 			}
@@ -54,8 +60,8 @@ public class ObjectNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "wait", "(J)V", ctx -> {
-			val locals = ctx.getLocals();
-			val value = locals.<ObjectValue>load(0);
+			Locals locals = ctx.getLocals();
+			ObjectValue value = locals.<ObjectValue>load(0);
 			if (!value.isHeldByCurrentThread()) {
 				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException);
 			}
@@ -71,22 +77,22 @@ public class ObjectNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "clone", "()Ljava/lang/Object;", ctx -> {
-			val _this = ctx.getLocals().<ObjectValue>load(0);
-			val type = _this.getJavaClass();
-			val helper = vm.getHelper();
-			val memoryManager = vm.getMemoryManager();
+			ObjectValue _this = ctx.getLocals().<ObjectValue>load(0);
+			JavaClass type = _this.getJavaClass();
+			VMHelper helper = vm.getHelper();
+			MemoryManager memoryManager = vm.getMemoryManager();
 			ObjectValue clone;
 			if (type instanceof ArrayJavaClass) {
-				val arr = (ArrayValue) _this;
+				ArrayValue arr = (ArrayValue) _this;
 				clone = memoryManager.newArray((ArrayJavaClass) type, arr.getLength());
 			} else {
 				clone = memoryManager.newInstance((InstanceJavaClass) type);
 			}
-			val originalOffset = memoryManager.valueBaseOffset(_this);
-			val offset = memoryManager.valueBaseOffset(clone);
+			int originalOffset = memoryManager.valueBaseOffset(_this);
+			int offset = memoryManager.valueBaseOffset(clone);
 			helper.checkEquals(originalOffset, offset);
-			val copyTo = clone.getMemory().getData();
-			val copyFrom = _this.getMemory().getData();
+			MemoryData copyTo = clone.getMemory().getData();
+			MemoryData copyFrom = _this.getMemory().getData();
 			copyFrom.copy(
 					offset,
 					copyTo,

@@ -2,11 +2,12 @@ package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
+import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.*;
 import lombok.experimental.UtilityClass;
-import lombok.val;
 
 import java.io.IOException;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -35,11 +36,11 @@ public class OldFileSystemNatives {
 			}
 			unix = true;
 		}
-		val vmi = vm.getInterface();
+		VMInterface vmi = vm.getInterface();
 		vmi.setInvoker(fs, "initIDs", "()V", MethodInvoker.noop());
 		vmi.setInvoker(fs, "canonicalize0", "(Ljava/lang/String;)Ljava/lang/String;", ctx -> {
-			val helper = vm.getHelper();
-			val path = helper.readUtf8(ctx.getLocals().load(1));
+			VMHelper helper = vm.getHelper();
+			String path = helper.readUtf8(ctx.getLocals().load(1));
 			try {
 				ctx.setResult(helper.newUtf8(vm.getFileDescriptorManager().canonicalize(path)));
 			} catch (IOException ex) {
@@ -48,12 +49,12 @@ public class OldFileSystemNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fs, unix ? "getBooleanAttributes0" : "getBooleanAttributes", "(Ljava/io/File;)I", ctx -> {
-			val helper = vm.getHelper();
-			val value = ctx.getLocals().load(1);
+			VMHelper helper = vm.getHelper();
+			Value value = ctx.getLocals().load(1);
 			helper.checkNotNull(value);
 			try {
-				val path = helper.readUtf8(helper.invokeVirtual("getAbsolutePath", "()Ljava/lang/String;", new Value[0], new Value[]{value}).getResult());
-				val attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
+				String path = helper.readUtf8(helper.invokeVirtual("getAbsolutePath", "()Ljava/lang/String;", new Value[0], new Value[]{value}).getResult());
+				BasicFileAttributes attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
 				if (attributes == null) {
 					ctx.setResult(IntValue.ZERO);
 				} else {
@@ -71,15 +72,15 @@ public class OldFileSystemNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fs, "list", "(Ljava/io/File;)[Ljava/lang/String;", ctx -> {
-			val helper = vm.getHelper();
-			val value = ctx.getLocals().load(1);
+			VMHelper helper = vm.getHelper();
+			Value value = ctx.getLocals().load(1);
 			helper.checkNotNull(value);
-			val path = helper.readUtf8(((InstanceValue) value).getValue("path", "Ljava/lang/String;"));
-			val list = vm.getFileDescriptorManager().list(path);
+			String path = helper.readUtf8(((InstanceValue) value).getValue("path", "Ljava/lang/String;"));
+			String[] list = vm.getFileDescriptorManager().list(path);
 			if (list == null) {
 				ctx.setResult(NullValue.INSTANCE);
 			} else {
-				val values = new ObjectValue[list.length];
+				ObjectValue[] values = new ObjectValue[list.length];
 				for (int i = 0; i < list.length; i++) {
 					values[i] = helper.newUtf8(list[i]);
 				}
@@ -92,12 +93,12 @@ public class OldFileSystemNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fs, "getLastModifiedTime", "(Ljava/io/File;)J", ctx -> {
-			val helper = vm.getHelper();
-			val value = ctx.getLocals().load(1);
+			VMHelper helper = vm.getHelper();
+			Value value = ctx.getLocals().load(1);
 			helper.checkNotNull(value);
 			try {
-				val path = helper.readUtf8(helper.invokeVirtual("getAbsolutePath", "()Ljava/lang/String;", new Value[0], new Value[]{value}).getResult());
-				val attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
+				String path = helper.readUtf8(helper.invokeVirtual("getAbsolutePath", "()Ljava/lang/String;", new Value[0], new Value[]{value}).getResult());
+				BasicFileAttributes attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
 				if (attributes == null) {
 					ctx.setResult(LongValue.ZERO);
 				} else {
@@ -109,12 +110,12 @@ public class OldFileSystemNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fs, "getLength", "(Ljava/io/File;)J", ctx -> {
-			val helper = vm.getHelper();
-			val value = ctx.getLocals().load(1);
+			VMHelper helper = vm.getHelper();
+			Value value = ctx.getLocals().load(1);
 			helper.checkNotNull(value);
 			try {
-				val path = helper.readUtf8(helper.invokeVirtual("getAbsolutePath", "()Ljava/lang/String;", new Value[0], new Value[]{value}).getResult());
-				val attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
+				String path = helper.readUtf8(helper.invokeVirtual("getAbsolutePath", "()Ljava/lang/String;", new Value[0], new Value[]{value}).getResult());
+				BasicFileAttributes attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
 				if (attributes == null) {
 					ctx.setResult(LongValue.ZERO);
 				} else {

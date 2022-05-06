@@ -1,7 +1,6 @@
 package dev.xdark.ssvm.util;
 
 import lombok.experimental.UtilityClass;
-import lombok.val;
 
 /**
  * CRC32 utilities.
@@ -14,14 +13,15 @@ public class CrcUtil {
 	private final int[] TABLE;
 
 	static {
-		val table = new int[256];
+		int[] table = new int[256];
 		for (int n = 0; n < 256; n++) {
 			int c = n;
 			for (int k = 8; k-- != 0; ) {
-				if ((c & 1) != 0)
+				if ((c & 1) != 0) {
 					c = 0xedb88320 ^ (c >>> 1);
-				else
+				} else {
 					c = c >>> 1;
+				}
 			}
 			table[n] = c;
 		}

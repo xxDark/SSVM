@@ -1,6 +1,5 @@
 package dev.xdark.ssvm.enhanced;
 
-import lombok.val;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
@@ -32,7 +31,7 @@ public class MathTest {
 
 	@VMTest
 	private static void testAbs() {
-		val v = ThreadLocalRandom.current().nextDouble(0.0D, Double.MAX_VALUE - 1.0D);
+		double v = ThreadLocalRandom.current().nextDouble(0.0D, Double.MAX_VALUE - 1.0D);
 		if (v != Math.abs(-v)) {
 			throw new IllegalStateException();
 		}

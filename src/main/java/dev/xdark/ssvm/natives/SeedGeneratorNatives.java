@@ -1,9 +1,11 @@
 package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.util.VMSymbols;
 import lombok.experimental.UtilityClass;
-import lombok.val;
 
 import java.security.SecureRandom;
 
@@ -21,11 +23,11 @@ public class SeedGeneratorNatives {
 	 */
 	public static void init(VirtualMachine vm) {
 		// TODO remove this stub, let VM decide.
-		val vmi = vm.getInterface();
-		val symbols = vm.getSymbols();
-		val jc = symbols.sun_security_provider_SeedGenerator;
+		VMInterface vmi = vm.getInterface();
+		VMSymbols symbols = vm.getSymbols();
+		InstanceJavaClass jc = symbols.sun_security_provider_SeedGenerator;
 		vmi.setInvoker(jc, "getSystemEntropy", "()[B", ctx -> {
-			val bytes = new byte[20];
+			byte[] bytes = new byte[20];
 			new SecureRandom().nextBytes(bytes);
 			ctx.setResult(vm.getHelper().toVMBytes(bytes));
 			return Result.ABORT;

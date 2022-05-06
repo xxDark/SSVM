@@ -2,13 +2,13 @@ package dev.xdark.ssvm.classloading;
 
 import dev.xdark.ssvm.NativeJava;
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.SimpleInstanceJavaClass;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.RequiredArgsConstructor;
-import lombok.val;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -43,12 +43,12 @@ public class SimpleClassLoaders implements ClassLoaders {
 			}
 			return bootClassLoaderData = createClassLoaderData();
 		} else {
-			val instance = (InstanceValue) classLoader;
+			InstanceValue instance = (InstanceValue) classLoader;
 			if (!instance.getValue(NativeJava.CLASS_LOADER_OOP, "Ljava/lang/Object;").isNull()) {
 				throw new IllegalStateException("Class loader data for " + classLoader + " is already set");
 			}
-			val data = createClassLoaderData();
-			val oop = vm.getMemoryManager().newJavaInstance(vm.getSymbols().java_lang_Object, data);
+			ClassLoaderData data = createClassLoaderData();
+			JavaValue<ClassLoaderData> oop = vm.getMemoryManager().newJavaInstance(vm.getSymbols().java_lang_Object, data);
 			instance.setValue(NativeJava.CLASS_LOADER_OOP, "Ljava/lang/Object;", oop);
 			return data;
 		}
@@ -79,15 +79,15 @@ public class SimpleClassLoaders implements ClassLoaders {
 
 	@Override
 	public void initializeBootClass(InstanceJavaClass javaClass) {
-		val jc = (SimpleInstanceJavaClass) javaClass;
+		SimpleInstanceJavaClass jc = (SimpleInstanceJavaClass) javaClass;
 		jc.setVirtualFieldLayout(jc.createVirtualFieldLayout());
 		jc.setStaticFieldLayout(jc.createStaticFieldLayout());
 	}
 
 	@Override
 	public void initializeBootOop(InstanceJavaClass javaClass, InstanceJavaClass javaLangClass) {
-		val vm = this.vm;
-		val memoryManager = vm.getMemoryManager();
+		VirtualMachine vm = this.vm;
+		MemoryManager memoryManager = vm.getMemoryManager();
 		JavaValue<InstanceJavaClass> oop = javaLangClass == javaClass ? memoryManager.newJavaLangClass(javaClass) : memoryManager.createOopForClass(javaClass);
 		javaClass.setOop(oop);
 		vm.getHelper().initializeDefaultValues(oop);

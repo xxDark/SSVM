@@ -1,7 +1,5 @@
 package dev.xdark.ssvm.mirror;
 
-import lombok.val;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -37,7 +35,7 @@ public final class FieldLayout {
 	 * @return field offset or {@code -1L} if not found.
 	 */
 	public long getFieldOffset(MemberKey info) {
-		val field = fields.get(info);
+		JavaField field = fields.get(info);
 		return field == null ? -1L : field.getOffset();
 	}
 
@@ -52,8 +50,8 @@ public final class FieldLayout {
 	 * @return field offset or {@code -1L} if not found.
 	 */
 	public long getFieldOffset(JavaClass javaClass, String name) {
-		for (val entry : fields.entrySet()) {
-			val key = entry.getKey();
+		for (Map.Entry<MemberKey, JavaField> entry : fields.entrySet()) {
+			MemberKey key = entry.getKey();
 			if (javaClass == key.getOwner() && name.equals(key.getName())) {
 				return entry.getValue().getOffset();
 			}

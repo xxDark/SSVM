@@ -1,24 +1,58 @@
 package dev.xdark.ssvm.jit;
 
+import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.DelegatingInsnNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.mirror.JavaField;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.value.*;
+import dev.xdark.ssvm.value.DoubleValue;
+import dev.xdark.ssvm.value.FloatValue;
+import dev.xdark.ssvm.value.InstanceValue;
+import dev.xdark.ssvm.value.IntValue;
+import dev.xdark.ssvm.value.LongValue;
+import dev.xdark.ssvm.value.NullValue;
+import dev.xdark.ssvm.value.TopValue;
+import dev.xdark.ssvm.value.Value;
 import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import lombok.val;
-import org.objectweb.asm.*;
-import org.objectweb.asm.tree.*;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Handle;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.IincInsnNode;
+import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.IntInsnNode;
+import org.objectweb.asm.tree.InvokeDynamicInsnNode;
+import org.objectweb.asm.tree.JumpInsnNode;
+import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.LineNumberNode;
+import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.MultiANewArrayInsnNode;
+import org.objectweb.asm.tree.TryCatchBlockNode;
+import org.objectweb.asm.tree.TypeInsnNode;
+import org.objectweb.asm.tree.VarInsnNode;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -187,7 +221,7 @@ public final class JitCompiler {
 	private static final int LOCALS_SLOT = 2;
 	private static final int HELPER_SLOT = 3;
 	private static final int SLOT_OFFSET = 4;
-	
+
 	String className;
 	JavaMethod target;
 	ClassWriter writer;
@@ -205,13 +239,17 @@ public final class JitCompiler {
 	 * {@code false} otherwise.
 	 */
 	public static boolean isCompilable(JavaMethod jm) {
-		val node = jm.getNode();
-		val list = node.instructions;
-		if (list.size() == 0) return false;
+		MethodNode node = jm.getNode();
+		InsnList list = node.instructions;
+		if (list.size() == 0) {
+			return false;
+		}
 		for (AbstractInsnNode insn : list) {
 			insn = unmask(insn);
 			int opc = insn.getOpcode();
-			if (opc == MONITORENTER || opc == MONITOREXIT) return false;
+			if (opc == MONITORENTER || opc == MONITOREXIT) {
+				return false;
+			}
 		}
 		return true;
 	}
@@ -227,40 +265,40 @@ public final class JitCompiler {
 	 * @return jit class info.
 	 */
 	public static JitClass compile(JavaMethod jm, int flags) {
-		val writer = new ClassWriter(flags);
-		val className = "dev/xdark/ssvm/jit/JitCode" + CLASS_ID.getAndIncrement();
+		ClassWriter writer = new ClassWriter(flags);
+		String className = "dev/xdark/ssvm/jit/JitCode" + CLASS_ID.getAndIncrement();
 		writer.visit(V1_8, ACC_PUBLIC | ACC_FINAL, className, null, "java/lang/Object", new String[]{"java/util/function/Consumer"});
-		val init = writer.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
+		MethodVisitor init = writer.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
 		init.visitCode();
 		init.visitVarInsn(ALOAD, 0);
 		init.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
 		init.visitInsn(RETURN);
 		init.visitEnd();
 		init.visitMaxs(1, 1);
-		val jit = writer.visitMethod(ACC_PUBLIC, "accept", "(Ljava/lang/Object;)V", null, null);
+		MethodVisitor jit = writer.visitMethod(ACC_PUBLIC, "accept", "(Ljava/lang/Object;)V", null, null);
 		jit.visitCode();
-		val compiler = new JitCompiler(className, jm, writer, jit, new LinkedHashMap<>(), CTX_SLOT);
+		JitCompiler compiler = new JitCompiler(className, jm, writer, jit, new LinkedHashMap<>(), CTX_SLOT);
 		compiler.compileInner();
 		jit.visitEnd();
 		jit.visitMaxs(-1, -1);
 		// Leave some debug info.
-		val owner = jm.getOwner();
+		InstanceJavaClass owner = jm.getOwner();
 		int infoAcc = ACC_PRIVATE | ACC_STATIC | ACC_FINAL;
 		writer.visitField(infoAcc, "CLASS", "Ljava/lang/String;", null, owner.getInternalName());
 		writer.visitField(infoAcc, "METHOD_NAME", "Ljava/lang/String;", null, jm.getName());
 		writer.visitField(infoAcc, "METHOD_DESC", "Ljava/lang/String;", null, jm.getDesc());
 		writer.visitSource(jm.toString(), null);
-		val constants = compiler.constants.keySet();
+		Set<Object> constants = compiler.constants.keySet();
 		if (!constants.isEmpty()) {
 			writer.visitField(ACC_PRIVATE | ACC_STATIC | ACC_FINAL, "constants", "[Ljava/lang/Object;", null, null);
 		}
 
-		val bc = writer.toByteArray();
+		byte[] bc = writer.toByteArray();
 		return new JitClass(className, bc, constants.isEmpty() ? Collections.emptyList() : Collections.unmodifiableList(new ArrayList<>(constants)));
 	}
 
 	private void compileInner() {
-		val jit = this.jit;
+		MethodVisitor jit = this.jit;
 		// Setup locals.
 		loadCtx();
 		cast(CTX);
@@ -274,10 +312,10 @@ public final class JitCompiler {
 		GET_HELPER.emit(jit);
 		jit.visitVarInsn(ASTORE, HELPER_SLOT);
 
-		val target = this.target;
-		val node = target.getNode();
+		JavaMethod target = this.target;
+		MethodNode node = target.getNode();
 		// Load method locals.
-		val args = target.getArgumentTypes();
+		Type[] args = target.getArgumentTypes();
 		int local = 0;
 		if ((target.getAccess() & ACC_STATIC) == 0) {
 			// Load 'this'.
@@ -285,11 +323,13 @@ public final class JitCompiler {
 			jvm_var(ASTORE, 0);
 			local++;
 		}
-		for (val arg : args) {
+		for (Type arg : args) {
 			int x = local++;
 			loadLocal(x);
-			if (arg.getSize() == 2) local++;
-			switch (arg.getSort()) {
+			if (arg.getSize() == 2) {
+				local++;
+			}
+			switch(arg.getSort()) {
 				case Type.LONG:
 					AS_LONG.emit(jit);
 					jvm_var(LSTORE, x);
@@ -315,18 +355,18 @@ public final class JitCompiler {
 			}
 		}
 
-		val instructions = node.instructions;
-		val copy = StreamSupport.stream(instructions.spliterator(), false)
+		InsnList instructions = node.instructions;
+		Map<LabelNode, LabelNode> copy = StreamSupport.stream(instructions.spliterator(), false)
 				.filter(x -> x instanceof LabelNode)
 				.collect(Collectors.toMap(x -> (LabelNode) x, __ -> new LabelNode()));
-		val labels = copy.entrySet()
+		Map<LabelNode, Label> labels = copy.entrySet()
 				.stream()
 				.collect(Collectors.toMap(Map.Entry::getKey, x -> x.getValue().getLabel()));
-		val tryCatchBlocks = node.tryCatchBlocks;
-		val handlers = tryCatchBlocks.stream()
+		List<TryCatchBlockNode> tryCatchBlocks = node.tryCatchBlocks;
+		Map<Label, List<TryCatchBlockNode>> handlers = tryCatchBlocks.stream()
 				.collect(Collectors.groupingBy(x -> labels.get(x.handler),
 						Collectors.mapping(Function.identity(), Collectors.toList())));
-		for (val block : tryCatchBlocks) {
+		for (TryCatchBlockNode block : tryCatchBlocks) {
 			jit.visitTryCatchBlock(
 					labels.get(block.start),
 					labels.get(block.end),
@@ -339,24 +379,26 @@ public final class JitCompiler {
 			insn = unmask(insn);
 			int opcode = insn.getOpcode();
 
-			switch (opcode) {
+			switch(opcode) {
 				case -1:
 					if (insn instanceof LabelNode) {
-						val label = labels.get(insn);
+						Label label = labels.get(insn);
 						jit.visitLabel(label);
-						val blocks = handlers.get(label);
+						List<TryCatchBlockNode> blocks = handlers.get(label);
 						if (blocks != null) {
 							jit.visitInsn(DUP);
 							jit.visitTypeInsn(Opcodes.INSTANCEOF, VALUE.internalName);
-							val overlap = new Label();
+							Label overlap = new Label();
 							jit.visitJumpInsn(IFNE, overlap);
 							cast(VM_EXCEPTION);
 							int count = blocks.size();
-							val classes = new Object[count];
+							Object[] classes = new Object[count];
 							for (int i = 0; i < count; i++) {
-								val block = blocks.get(i);
+								TryCatchBlockNode block = blocks.get(i);
 								String type = block.type;
-								if (type == null) type = "java/lang/Throwable";
+								if (type == null) {
+									type = "java/lang/Throwable";
+								}
 								classes[i] = tryLoadClass(type);
 							}
 							loadCompilerConstant(classes); // ex infos
@@ -541,7 +583,7 @@ public final class JitCompiler {
 					ARR_STORE_SHORT.emit(jit);
 					break;
 				case IINC:
-					val iinc = (IincInsnNode) insn;
+					IincInsnNode iinc = (IincInsnNode) insn;
 					jit.visitIincInsn(iinc.var + SLOT_OFFSET, iinc.incr);
 					break;
 				case IFEQ:
@@ -654,7 +696,7 @@ public final class JitCompiler {
 				case MONITOREXIT:
 					throw new IllegalStateException("JIT does not support MonitorEnter/MonitorExit");
 				case MULTIANEWARRAY:
-					val array = (MultiANewArrayInsnNode) insn;
+					MultiANewArrayInsnNode array = (MultiANewArrayInsnNode) insn;
 					jit.visitLdcInsn(array.desc);
 					jit.visitLdcInsn(array.dims);
 					loadCtx();
@@ -696,7 +738,7 @@ public final class JitCompiler {
 	}
 
 	private void loadLocal(int idx) {
-		val jit = this.jit;
+		MethodVisitor jit = this.jit;
 		loadLocals();
 		jit.visitLdcInsn(idx);
 		LOAD.emit(jit);
@@ -715,7 +757,7 @@ public final class JitCompiler {
 	}
 
 	private void floatOf() {
-		val jit = this.jit;
+		MethodVisitor jit = this.jit;
 		// value
 		newObj(FLOAT); // value wrapper
 		jit.visitInsn(DUP_X1);
@@ -724,7 +766,7 @@ public final class JitCompiler {
 	}
 
 	private void doubleOf() {
-		val jit = this.jit;
+		MethodVisitor jit = this.jit;
 		// value
 		newObj(DOUBLE); // value wrapper
 		jit.visitInsn(DUP); // value wrwapper wrapper
@@ -733,7 +775,7 @@ public final class JitCompiler {
 	}
 
 	private void ldcOf(Object value) {
-		val jit = this.jit;
+		MethodVisitor jit = this.jit;
 		if (value instanceof String) {
 			loadCompilerConstant(target.getOwner().getVM().getStringPool().intern((String) value));
 		} else if (value instanceof Long
@@ -745,9 +787,9 @@ public final class JitCompiler {
 				|| value instanceof Float) {
 			jit.visitLdcInsn(value);
 		} else if (value instanceof Type) {
-			val type = (Type) value;
+			Type type = (Type) value;
 			if (type.getSort() == Type.METHOD) {
-				val mt = tryMethodType(type);
+				Object mt = tryMethodType(type);
 				if (mt instanceof Type) {
 					jit.visitLdcInsn(type.getDescriptor());
 					loadCtx();
@@ -756,7 +798,7 @@ public final class JitCompiler {
 					loadCompilerConstant(mt);
 				}
 			} else {
-				val klass = tryLoadClass(type.getInternalName());
+				Object klass = tryLoadClass(type.getInternalName());
 				if (klass instanceof JavaClass) {
 					loadCompilerConstant(((JavaClass) klass).getOop());
 				} else {
@@ -775,8 +817,8 @@ public final class JitCompiler {
 	}
 
 	private void pushField(FieldInsnNode field) {
-		val jit = this.jit;
-		val owner = tryLoadClass(field.owner);
+		MethodVisitor jit = this.jit;
+		Object owner = tryLoadClass(field.owner);
 		if (owner instanceof InstanceJavaClass) {
 			loadCompilerConstant(owner);
 		} else {
@@ -787,14 +829,14 @@ public final class JitCompiler {
 	}
 
 	private void pushMethod(MethodInsnNode method) {
-		val jit = this.jit;
+		MethodVisitor jit = this.jit;
 		jit.visitLdcInsn(method.owner);
 		jit.visitLdcInsn(method.name);
 		jit.visitLdcInsn(method.desc);
 	}
 
 	private void jvm_swap(int right, int left) {
-		val jit = this.jit;
+		MethodVisitor jit = this.jit;
 		if (right == 1) {
 			if (left == 1) {
 				jit.visitInsn(SWAP);
@@ -832,7 +874,7 @@ public final class JitCompiler {
 	}
 
 	private Integer makeConstant(Object value) {
-		val constants = this.constants;
+		Map<Object, Integer> constants = this.constants;
 		Integer constant = constants.get(value);
 		if (constant == null) {
 			constant = constants.size();
@@ -842,32 +884,32 @@ public final class JitCompiler {
 	}
 
 	private void loadCompilerConstant(Object value) {
-		val constant = makeConstant(value);
+		Integer constant = makeConstant(value);
 		loadConstants();
-		val jit = this.jit;
+		MethodVisitor jit = this.jit;
 		jit.visitLdcInsn(constant);
 		jit.visitInsn(AALOAD);
 	}
 
 	private void getStatic(FieldInsnNode node) {
-		val jit = this.jit;
+		MethodVisitor jit = this.jit;
 		Access access;
 		lookup:
 		{
 			try {
-				val target = this.target;
-				val owner = target.getOwner();
-				val vm = owner.getVM();
+				JavaMethod target = this.target;
+				InstanceJavaClass owner = target.getOwner();
+				VirtualMachine vm = owner.getVM();
 				InstanceJavaClass jc = (InstanceJavaClass) vm.getHelper().findClass(owner.getClassLoader(), node.owner, false);
-				val name = node.name;
-				val desc = node.desc;
-				while (jc != null) {
-					val field = jc.getStaticField(name, desc);
+				String name = node.name;
+				String desc = node.desc;
+				while(jc != null) {
+					JavaField field = jc.getStaticField(name, desc);
 					if (field != null) {
 						long offset = vm.getMemoryManager().getStaticOffset(jc) + field.getOffset();
 						loadCompilerConstant(jc);
 						jit.visitLdcInsn(offset);
-						switch (field.getType().getSort()) {
+						switch(field.getType().getSort()) {
 							case Type.LONG:
 								access = GET_STATIC_LONG;
 								break;
@@ -902,7 +944,7 @@ public final class JitCompiler {
 				jit.visitInsn(ACONST_NULL);
 				jit.visitLdcInsn(node.name);
 				access = GET_STATIC_FAIL;
-			} catch (VMException ex) {
+			} catch(VMException ex) {
 				// Class was probably not found.
 				// We need to use fallback path
 				// because the class may be defined right in the code
@@ -928,8 +970,8 @@ public final class JitCompiler {
 	private void putStatic(FieldInsnNode node) {
 		pushField(node);
 		loadCtx();
-		val jit = this.jit;
-		switch (Type.getType(node.desc).getSort()) {
+		MethodVisitor jit = this.jit;
+		switch(Type.getType(node.desc).getSort()) {
 			case Type.LONG:
 				PUT_STATIC_LONG.emit(jit);
 				break;
@@ -960,8 +1002,8 @@ public final class JitCompiler {
 	private void getField(FieldInsnNode node) {
 		pushField(node);
 		loadCtx();
-		val jit = this.jit;
-		switch (Type.getType(node.desc).getSort()) {
+		MethodVisitor jit = this.jit;
+		switch(Type.getType(node.desc).getSort()) {
 			case Type.LONG:
 				GET_FIELD_LONG.emit(jit);
 				break;
@@ -992,8 +1034,8 @@ public final class JitCompiler {
 	private void putField(FieldInsnNode node) {
 		pushField(node);
 		loadCtx();
-		val jit = this.jit;
-		switch (Type.getType(node.desc).getSort()) {
+		MethodVisitor jit = this.jit;
+		switch(Type.getType(node.desc).getSort()) {
 			case Type.LONG:
 				PUT_FIELD_LONG.emit(jit);
 				break;
@@ -1022,17 +1064,17 @@ public final class JitCompiler {
 	}
 
 	private void invokeStatic(MethodInsnNode node) {
-		val jit = this.jit;
-		val desc = node.desc;
-		val rt = Type.getReturnType(desc);
+		MethodVisitor jit = this.jit;
+		String desc = node.desc;
+		Type rt = Type.getReturnType(desc);
 		Access access;
 		try {
-			val target = this.target;
-			val owner = target.getOwner();
-			val vm = owner.getVM();
-			val jc = (InstanceJavaClass) vm.getHelper().findClass(owner.getClassLoader(), node.owner, false);
-			val name = node.name;
-			val mn = jc.getStaticMethodRecursively(name, desc);
+			JavaMethod target = this.target;
+			InstanceJavaClass owner = target.getOwner();
+			VirtualMachine vm = owner.getVM();
+			InstanceJavaClass jc = (InstanceJavaClass) vm.getHelper().findClass(owner.getClassLoader(), node.owner, false);
+			String name = node.name;
+			JavaMethod mn = jc.getStaticMethodRecursively(name, desc);
 			if (mn == null) {
 				dropArgs(false, desc);
 				jit.visitInsn(ACONST_NULL);
@@ -1044,7 +1086,7 @@ public final class JitCompiler {
 				loadCompilerConstant(mn);
 				access = INVOKE_STATIC_INTRINSIC;
 			}
-		} catch (VMException ex) {
+		} catch(VMException ex) {
 			// Class was probably not found.
 			// We need to use fallback path
 			// because the class may be defined right in the code
@@ -1063,7 +1105,7 @@ public final class JitCompiler {
 	}
 
 	private void invokeStaticSlow(MethodInsnNode node) {
-		val desc = node.desc;
+		String desc = node.desc;
 		collectStaticCallArgs(desc);
 		pushMethod(node);
 		loadCtx();
@@ -1072,16 +1114,16 @@ public final class JitCompiler {
 	}
 
 	private void invokeSpecial(MethodInsnNode node) {
-		val jit = this.jit;
-		val desc = node.desc;
-		val rt = Type.getReturnType(desc);
+		MethodVisitor jit = this.jit;
+		String desc = node.desc;
+		Type rt = Type.getReturnType(desc);
 		Access access;
 		try {
-			val target = this.target;
-			val owner = target.getOwner();
-			val vm = owner.getVM();
-			val jc = (InstanceJavaClass) vm.getHelper().findClass(owner.getClassLoader(), node.owner, false);
-			val name = node.name;
+			JavaMethod target = this.target;
+			InstanceJavaClass owner = target.getOwner();
+			VirtualMachine vm = owner.getVM();
+			InstanceJavaClass jc = (InstanceJavaClass) vm.getHelper().findClass(owner.getClassLoader(), node.owner, false);
+			String name = node.name;
 			JavaMethod mn = jc.getVirtualMethodRecursively(name, desc);
 			if (mn == null && jc.isInterface()) {
 				mn = jc.getInterfaceMethodRecursively(name, desc);
@@ -1097,7 +1139,7 @@ public final class JitCompiler {
 				loadCompilerConstant(mn);
 				access = INVOKE_SPECIAL_INTRINSIC;
 			}
-		} catch (VMException ex) {
+		} catch(VMException ex) {
 			// Class was probably not found.
 			// We need to use fallback path
 			// because the class may be defined right in the code
@@ -1116,7 +1158,7 @@ public final class JitCompiler {
 	}
 
 	private void invokeSpecialSlow(MethodInsnNode node) {
-		val desc = node.desc;
+		String desc = node.desc;
 		collectVirtualCallArgs(desc);
 		pushMethod(node);
 		loadCtx();
@@ -1125,8 +1167,8 @@ public final class JitCompiler {
 	}
 
 	private void invokeVirtual(MethodInsnNode node) {
-		val jit = this.jit;
-		val desc = node.desc;
+		MethodVisitor jit = this.jit;
+		String desc = node.desc;
 		collectVirtualCallArgs(desc);
 		jit.visitLdcInsn(node.name);
 		jit.visitLdcInsn(desc);
@@ -1136,7 +1178,7 @@ public final class JitCompiler {
 	}
 
 	private void invokeInterface(MethodInsnNode node) {
-		val desc = node.desc;
+		String desc = node.desc;
 		collectVirtualCallArgs(desc);
 		pushMethod(node);
 		loadCtx();
@@ -1145,12 +1187,12 @@ public final class JitCompiler {
 	}
 
 	private void doCall(MethodInsnNode node) {
-		val method = methodCalls.computeIfAbsent(new MethodCallInfo(node), __ -> {
-			val methodName = "methodCall" + methodCalls.size();
-			val desc = node.desc;
-			val args = Type.getArgumentTypes(desc);
+		MethodInsnNode method = methodCalls.computeIfAbsent(new MethodCallInfo(node), __ -> {
+			String methodName = "methodCall" + methodCalls.size();
+			String desc = node.desc;
+			Type[] args = Type.getArgumentTypes(desc);
 			int opcode = node.getOpcode();
-			val vrt = opcode != INVOKESTATIC;
+			boolean vrt = opcode != INVOKESTATIC;
 			// We need to rewrite java types to VM value type
 			ensureVMValues(args);
 			Type[] newArgs = Arrays.copyOf(args, args.length + (vrt ? 2 : 1));
@@ -1162,23 +1204,23 @@ public final class JitCompiler {
 			// Inject current context as new argument
 			newArgs[newArgs.length - 1] = CTX.type;
 			// Same as above
-			val returnType = ensureVMValue(Type.getReturnType(desc));
-			val newDesc = Type.getMethodDescriptor(returnType, newArgs);
-			val split = writer.visitMethod(ACC_PRIVATE | ACC_STATIC, methodName, newDesc, null, null);
+			Type returnType = ensureVMValue(Type.getReturnType(desc));
+			String newDesc = Type.getMethodDescriptor(returnType, newArgs);
+			MethodVisitor split = writer.visitMethod(ACC_PRIVATE | ACC_STATIC, methodName, newDesc, null, null);
 			split.visitCode();
 			int loadIndex = 0;
 			if (vrt) {
 				split.visitVarInsn(ALOAD, 0);
 				loadIndex++;
 			}
-			for (val arg : args) {
+			for (Type arg : args) {
 				split.visitVarInsn(arg.getOpcode(ILOAD), loadIndex);
 				loadIndex += arg.getSize();
 			}
 			// Need to create new jit compiler for temporary usage
 			// because calling invokeXX uses method that is being compiled
-			val jit = new JitCompiler(className, target, writer, split, constants, loadIndex);
-			switch (opcode) {
+			JitCompiler jit = new JitCompiler(className, target, writer, split, constants, loadIndex);
+			switch(opcode) {
 				case INVOKEVIRTUAL:
 					jit.invokeVirtual(node);
 					break;
@@ -1199,30 +1241,30 @@ public final class JitCompiler {
 			split.visitMaxs(-1, -1);
 			return new MethodInsnNode(INVOKESTATIC, className, methodName, newDesc);
 		});
-		val jit = this.jit;
+		MethodVisitor jit = this.jit;
 		// Pass context
 		loadCtx();
 		method.accept(jit);
 	}
 
 	private void invokeDynamic(InvokeDynamicInsnNode node) {
-		val method = invokeDynamicCalls.computeIfAbsent(new DynamicCallInfo(node.desc, node.bsm), __ -> {
-			val methodName = "dynCall" + invokeDynamicCalls.size();
-			val desc = node.desc;
-			val args = Type.getArgumentTypes(desc);
+		MethodInsnNode method = invokeDynamicCalls.computeIfAbsent(new DynamicCallInfo(node.desc, node.bsm), __ -> {
+			String methodName = "dynCall" + invokeDynamicCalls.size();
+			String desc = node.desc;
+			Type[] args = Type.getArgumentTypes(desc);
 			// We need to rewrite java types to VM value type
 			ensureVMValues(args);
-			val newArgs = Arrays.copyOf(args, args.length + 2);
+			Type[] newArgs = Arrays.copyOf(args, args.length + 2);
 			// Inject node index & current context as new arguments
 			newArgs[args.length] = Type.INT_TYPE;
 			newArgs[args.length + 1] = CTX.type;
 			// Same as above
-			val returnType = ensureVMValue(Type.getReturnType(desc));
-			val newDesc = Type.getMethodDescriptor(returnType, newArgs);
-			val split = writer.visitMethod(ACC_PRIVATE | ACC_STATIC, methodName, newDesc, null, null);
+			Type returnType = ensureVMValue(Type.getReturnType(desc));
+			String newDesc = Type.getMethodDescriptor(returnType, newArgs);
+			MethodVisitor split = writer.visitMethod(ACC_PRIVATE | ACC_STATIC, methodName, newDesc, null, null);
 			split.visitCode();
 			int loadIndex = 0;
-			for (val arg : args) {
+			for (Type arg : args) {
 				split.visitVarInsn(arg.getOpcode(ILOAD), loadIndex);
 				loadIndex += arg.getSize();
 			}
@@ -1239,7 +1281,7 @@ public final class JitCompiler {
 			split.visitMaxs(-1, -1);
 			return new MethodInsnNode(INVOKESTATIC, className, methodName, newDesc);
 		});
-		val jit = this.jit;
+		MethodVisitor jit = this.jit;
 		// Pass context, node index for rewriting
 		emitInt(makeConstant(node), jit);
 		loadCtx();
@@ -1247,8 +1289,8 @@ public final class JitCompiler {
 	}
 
 	private void newInstance(String type) {
-		val jc = tryLoadClass(type);
-		val jit = this.jit;
+		Object jc = tryLoadClass(type);
+		MethodVisitor jit = this.jit;
 		if (jc instanceof InstanceJavaClass) {
 			loadCompilerConstant(jc);
 			loadCtx();
@@ -1262,8 +1304,8 @@ public final class JitCompiler {
 	}
 
 	private void newArray(String type) {
-		val jc = tryLoadClass(type);
-		val jit = this.jit;
+		Object jc = tryLoadClass(type);
+		MethodVisitor jit = this.jit;
 		if (jc instanceof JavaClass) {
 			loadCompilerConstant(jc);
 			loadCtx();
@@ -1277,8 +1319,8 @@ public final class JitCompiler {
 	}
 
 	private void checkCast(String type) {
-		val jc = tryLoadClass(type);
-		val jit = this.jit;
+		Object jc = tryLoadClass(type);
+		MethodVisitor jit = this.jit;
 		if (jc instanceof JavaClass) {
 			loadCompilerConstant(jc);
 			loadCtx();
@@ -1292,8 +1334,8 @@ public final class JitCompiler {
 	}
 
 	private void instanceofCheck(String type) {
-		val jc = tryLoadClass(type);
-		val jit = this.jit;
+		Object jc = tryLoadClass(type);
+		MethodVisitor jit = this.jit;
 		if (jc instanceof JavaClass) {
 			loadCompilerConstant(jc);
 			loadCtx();
@@ -1307,35 +1349,35 @@ public final class JitCompiler {
 	}
 
 	private Object tryLoadClass(String type) {
-		val owner = target.getOwner();
-		val helper = owner.getVM().getHelper();
+		InstanceJavaClass owner = target.getOwner();
+		VMHelper helper = owner.getVM().getHelper();
 		try {
 			return helper.findClass(owner.getClassLoader(), type, false);
-		} catch (VMException ex) {
+		} catch(VMException ex) {
 			return type;
 		}
 	}
 
 	private Object tryMethodType(Type type) {
-		val owner = target.getOwner();
-		val helper = owner.getVM().getHelper();
+		InstanceJavaClass owner = target.getOwner();
+		VMHelper helper = owner.getVM().getHelper();
 		try {
 			return helper.methodType(owner.getClassLoader(), type);
-		} catch (VMException ex) {
+		} catch(VMException ex) {
 			return type;
 		}
 	}
 
 	private void collectArgs(int extra, String desc) {
-		val args = Type.getArgumentTypes(desc);
+		Type[] args = Type.getArgumentTypes(desc);
 		int count = totalSize(args) + extra;
-		val jit = this.jit;
+		MethodVisitor jit = this.jit;
 		jit.visitLdcInsn(count);
 		jit.visitTypeInsn(ANEWARRAY, VALUE.internalName);
 		int idx = args.length;
 		count--;
-		while (idx-- != 0) {
-			val arg = args[idx];
+		while(idx-- != 0) {
+			Type arg = args[idx];
 			if (arg.getSize() == 2) {
 				loadTopTo(count--);
 			}
@@ -1354,7 +1396,7 @@ public final class JitCompiler {
 
 	private static int totalSize(Type[] args) {
 		int size = 0;
-		for (val arg : args) {
+		for (Type arg : args) {
 			size += arg.getSize();
 		}
 		return size;
@@ -1362,7 +1404,7 @@ public final class JitCompiler {
 
 	private void loadArgTo(int idx, Type type) {
 		// value args
-		val jit = this.jit;
+		MethodVisitor jit = this.jit;
 		jit.visitInsn(DUP); // value args args
 		jvm_swap(2, type.getSize()); // args args value
 		toVM(type); // args args value
@@ -1372,7 +1414,7 @@ public final class JitCompiler {
 	}
 
 	private void loadTopTo(int idx) {
-		val jit = this.jit;
+		MethodVisitor jit = this.jit;
 		jit.visitInsn(DUP); // args args
 		jit.visitLdcInsn(idx); // args args idx
 		GET_TOP.emit(jit); // args args idx value
@@ -1384,7 +1426,7 @@ public final class JitCompiler {
 	}
 
 	private void toVM(Type type) {
-		switch (type.getSort()) {
+		switch(type.getSort()) {
 			case Type.LONG:
 				longOf();
 				break;
@@ -1405,8 +1447,8 @@ public final class JitCompiler {
 	}
 
 	private void dummyValue(Type type) {
-		val jit = this.jit;
-		switch (type.getSort()) {
+		MethodVisitor jit = this.jit;
+		switch(type.getSort()) {
 			case Type.LONG:
 				jit.visitInsn(LCONST_0);
 				break;
@@ -1427,8 +1469,8 @@ public final class JitCompiler {
 	}
 
 	private void dropArgs(boolean vrt, Type[] args) {
-		val jit = this.jit;
-		for (val arg : args) {
+		MethodVisitor jit = this.jit;
+		for (Type arg : args) {
 			jit.visitInsn(arg.getSize() == 2 ? POP2 : POP);
 		}
 		if (vrt) {
@@ -1468,7 +1510,7 @@ public final class JitCompiler {
 	}
 
 	private static void toJava(Type type, MethodVisitor mv) {
-		switch (type.getSort()) {
+		switch(type.getSort()) {
 			case Type.LONG:
 				AS_LONG.emit(mv);
 				break;
@@ -1504,8 +1546,8 @@ public final class JitCompiler {
 	}
 
 	private static void ensureVMValues(Type[] types) {
-		for (int i = 0, j = types.length; i < j; types[i] = ensureVMValue(types[i++]))
-			;
+		for (int i = 0, j = types.length; i < j; types[i] = ensureVMValue(types[i++])) {
+		}
 	}
 
 	private static Access staticCall(ClassType owner, String name, ClassType rt, ClassType... args) {
@@ -1535,7 +1577,7 @@ public final class JitCompiler {
 		final String desc;
 
 		private ClassType(Class<?> klass) {
-			val type = this.type = Type.getType(klass);
+			Type type = this.type = Type.getType(klass);
 			internalName = type.getInternalName();
 			desc = type.getDescriptor();
 		}
@@ -1559,7 +1601,7 @@ public final class JitCompiler {
 		}
 
 		void emit(MethodVisitor visitor) {
-			val opcode = this.opcode;
+			int opcode = this.opcode;
 			if (opcode >= INVOKEVIRTUAL && opcode <= INVOKEINTERFACE) {
 				visitor.visitMethodInsn(opcode, owner, name, desc, opcode == INVOKEINTERFACE);
 			} else {
@@ -1572,9 +1614,11 @@ public final class JitCompiler {
 				// assert args.length == 0;
 				return rt.desc;
 			}
-			val b = new StringBuilder();
+			StringBuilder b = new StringBuilder();
 			b.append('(');
-			for (val arg : args) b.append(arg.desc);
+			for (ClassType arg : args) {
+				b.append(arg.desc);
+			}
 			return b.append(')').append(rt.desc).toString();
 		}
 	}

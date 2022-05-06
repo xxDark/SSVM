@@ -4,7 +4,6 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import lombok.val;
 import org.objectweb.asm.Opcodes;
 
 public final class ArrayJavaClass implements JavaClass {
@@ -96,7 +95,7 @@ public final class ArrayJavaClass implements JavaClass {
 		}
 		ArrayJavaClass arrayClass = this.arrayClass;
 		if (arrayClass == null) {
-			val vm = this.vm;
+			VirtualMachine vm = this.vm;
 			arrayClass = this.arrayClass = new ArrayJavaClass(vm, '[' + name, dimensions + 1, this);
 			vm.getHelper().setComponentType(arrayClass, this);
 		}

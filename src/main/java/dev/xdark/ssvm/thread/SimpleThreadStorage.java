@@ -3,7 +3,6 @@ package dev.xdark.ssvm.thread;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.value.Value;
-import lombok.val;
 
 /**
  * Thread cache for VM.
@@ -25,12 +24,12 @@ public class SimpleThreadStorage implements ThreadStorage {
 	public ThreadRegion push(int size) {
 		int currentIndex = this.currentIndex;
 		int toIndex = currentIndex + size;
-		val storage = this.storage;
+		Value[] storage = this.storage;
 		if (toIndex > storage.length) {
 			throw new IndexOutOfBoundsException();
 		}
 
-		val region = new ThreadRegion(storage, currentIndex, toIndex, this);
+		ThreadRegion region = new ThreadRegion(storage, currentIndex, toIndex, this);
 		this.currentIndex = toIndex;
 		return region;
 	}
@@ -56,7 +55,8 @@ public class SimpleThreadStorage implements ThreadStorage {
 	 * Creates new thread storage.
 	 *
 	 * @param maxSize
-	 *      Storage size.
+	 * 		Storage size.
+	 *
 	 * @return new storage.
 	 */
 	public static SimpleThreadStorage create(int maxSize) {

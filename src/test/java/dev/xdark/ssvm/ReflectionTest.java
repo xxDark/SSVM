@@ -1,11 +1,15 @@
 package dev.xdark.ssvm;
 
+import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.thread.StackFrame;
+import dev.xdark.ssvm.thread.ThreadManager;
+import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.util.VMSymbols;
+import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
-import lombok.val;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -25,18 +29,18 @@ public class ReflectionTest {
 	@Test
 	public void testConstructor() {
 		pushFrame();
-		val helper = vm.getHelper();
-		val symbols = vm.getSymbols();
-		val c = symbols.java_lang_String;
-		val str = "Hello, World";
-		val chars = helper.toVMChars(str.toCharArray());
-		val parameters = helper.toVMValues(new ObjectValue[]{vm.getPrimitives().charPrimitive.newArrayClass().getOop()});
-		val constructor = (InstanceValue) helper.invokeVirtual("getConstructor", "([Ljava/lang/Class;)Ljava/lang/reflect/Constructor;", new Value[0], new Value[]{
+		VMHelper helper = vm.getHelper();
+		VMSymbols symbols = vm.getSymbols();
+		InstanceJavaClass c = symbols.java_lang_String;
+		String str = "Hello, World";
+		ArrayValue chars = helper.toVMChars(str.toCharArray());
+		ArrayValue parameters = helper.toVMValues(new ObjectValue[]{vm.getPrimitives().charPrimitive.newArrayClass().getOop()});
+		InstanceValue constructor = (InstanceValue) helper.invokeVirtual("getConstructor", "([Ljava/lang/Class;)Ljava/lang/reflect/Constructor;", new Value[0], new Value[]{
 				c.getOop(),
 				parameters
 		}).getResult();
 		constructor.setBoolean("override", true);
-		val value = helper.invokeVirtual("newInstance", "([Ljava/lang/Object;)Ljava/lang/Object;", new Value[0], new Value[]{
+		Value value = helper.invokeVirtual("newInstance", "([Ljava/lang/Object;)Ljava/lang/Object;", new Value[0], new Value[]{
 				constructor,
 				helper.toVMValues(new ObjectValue[]{chars})
 		}).getResult();
@@ -46,19 +50,19 @@ public class ReflectionTest {
 	@Test
 	public void testMethod() {
 		pushFrame();
-		val helper = vm.getHelper();
-		val symbols = vm.getSymbols();
-		val c = symbols.java_lang_String;
-		val str = "Hello, World";
-		val instance = helper.newUtf8(str);
-		val parameters = helper.emptyArray(symbols.java_lang_Class);
-		val method = (InstanceValue) helper.invokeVirtual("getMethod", "(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;", new Value[0], new Value[]{
+		VMHelper helper = vm.getHelper();
+		VMSymbols symbols = vm.getSymbols();
+		InstanceJavaClass c = symbols.java_lang_String;
+		String str = "Hello, World";
+		ObjectValue instance = helper.newUtf8(str);
+		ArrayValue parameters = helper.emptyArray(symbols.java_lang_Class);
+		InstanceValue method = (InstanceValue) helper.invokeVirtual("getMethod", "(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;", new Value[0], new Value[]{
 				c.getOop(),
 				helper.newUtf8("toUpperCase"),
 				parameters
 		}).getResult();
 		method.setBoolean("override", true);
-		val lower = helper.invokeVirtual("invoke", "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;", new Value[0], new Value[]{
+		Value lower = helper.invokeVirtual("invoke", "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;", new Value[0], new Value[]{
 				method,
 				instance,
 				helper.emptyArray(symbols.java_lang_Object)
@@ -69,19 +73,19 @@ public class ReflectionTest {
 	@Test
 	public void testField() {
 		pushFrame();
-		val helper = vm.getHelper();
-		val symbols = vm.getSymbols();
-		val c = symbols.java_lang_Integer;
-		val primitive = ThreadLocalRandom.current().nextInt();
-		val instance = helper.invokeStatic(symbols.java_lang_Integer, "valueOf", "(I)Ljava/lang/Integer;", new Value[0], new Value[]{
+		VMHelper helper = vm.getHelper();
+		VMSymbols symbols = vm.getSymbols();
+		InstanceJavaClass c = symbols.java_lang_Integer;
+		int primitive = ThreadLocalRandom.current().nextInt();
+		Value instance = helper.invokeStatic(symbols.java_lang_Integer, "valueOf", "(I)Ljava/lang/Integer;", new Value[0], new Value[]{
 				IntValue.of(primitive)
 		}).getResult();
-		val field = (InstanceValue) helper.invokeVirtual("getDeclaredField", "(Ljava/lang/String;)Ljava/lang/reflect/Field;", new Value[0], new Value[]{
+		InstanceValue field = (InstanceValue) helper.invokeVirtual("getDeclaredField", "(Ljava/lang/String;)Ljava/lang/reflect/Field;", new Value[0], new Value[]{
 				c.getOop(),
 				helper.newUtf8("value"),
 		}).getResult();
 		field.setBoolean("override", true);
-		val backing = helper.invokeVirtual("getInt", "(Ljava/lang/Object;)I", new Value[0], new Value[]{
+		Value backing = helper.invokeVirtual("getInt", "(Ljava/lang/Object;)I", new Value[0], new Value[]{
 				field,
 				instance,
 		}).getResult();
@@ -89,7 +93,7 @@ public class ReflectionTest {
 	}
 
 	private static void pushFrame() {
-		val threadManager = vm.getThreadManager();
+		ThreadManager threadManager = vm.getThreadManager();
 		threadManager.currentThread().getBacktrace()
 				.push(StackFrame.from(
 						vm.getSymbols().java_lang_System,

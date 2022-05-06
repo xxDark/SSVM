@@ -4,7 +4,7 @@ import dev.xdark.ssvm.memory.Memory;
 
 /**
  * Base implementation of array value.
- * 
+ *
  * @author xDark
  */
 public final class SimpleArrayValue extends SimpleObjectValue implements ArrayValue {
@@ -117,7 +117,9 @@ public final class SimpleArrayValue extends SimpleObjectValue implements ArrayVa
 	}
 
 	private long dataOffset(long offset) {
-		if (offset == -1L) return offset;
+		if (offset == -1L) {
+			return offset;
+		}
 		return getMemoryManager().arrayBaseOffset(this) + offset;
 	}
 

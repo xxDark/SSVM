@@ -3,21 +3,48 @@ package dev.xdark.ssvm.util;
 import dev.xdark.ssvm.NativeJava;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
-import dev.xdark.ssvm.execution.*;
-import dev.xdark.ssvm.mirror.*;
+import dev.xdark.ssvm.classloading.ClassLoaderData;
+import dev.xdark.ssvm.classloading.ClassLoaders;
+import dev.xdark.ssvm.classloading.ClassParseResult;
+import dev.xdark.ssvm.execution.ExecutionContext;
+import dev.xdark.ssvm.execution.Locals;
+import dev.xdark.ssvm.execution.Stack;
+import dev.xdark.ssvm.execution.VMException;
+import dev.xdark.ssvm.memory.MemoryManager;
+import dev.xdark.ssvm.mirror.ArrayJavaClass;
+import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.mirror.JavaField;
+import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.mirror.MemberKey;
 import dev.xdark.ssvm.thread.Backtrace;
 import dev.xdark.ssvm.thread.StackFrame;
+import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.thread.VMThread;
-import dev.xdark.ssvm.value.*;
-import lombok.val;
+import dev.xdark.ssvm.value.ArrayValue;
+import dev.xdark.ssvm.value.DoubleValue;
+import dev.xdark.ssvm.value.FloatValue;
+import dev.xdark.ssvm.value.InstanceValue;
+import dev.xdark.ssvm.value.IntValue;
+import dev.xdark.ssvm.value.JavaValue;
+import dev.xdark.ssvm.value.LongValue;
+import dev.xdark.ssvm.value.NullValue;
+import dev.xdark.ssvm.value.ObjectValue;
+import dev.xdark.ssvm.value.TopValue;
+import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.MethodNode;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.StreamSupport;
 
@@ -58,7 +85,7 @@ public final class VMHelper {
 			throw new IllegalStateException("Method is not static");
 		}
 		javaClass.initialize();
-		val ctx = createContext(javaClass, method, locals);
+		ExecutionContext ctx = createContext(javaClass, method, locals);
 		contextPrepare(ctx, stack, locals);
 		vm.execute(ctx, true);
 		return ctx;
@@ -81,7 +108,7 @@ public final class VMHelper {
 	 * @return invocation result.
 	 */
 	public ExecutionContext invokeStatic(InstanceJavaClass javaClass, String name, String desc, Value[] stack, Value[] locals) {
-		val mn = javaClass.getStaticMethodRecursively(name, desc);
+		JavaMethod mn = javaClass.getStaticMethodRecursively(name, desc);
 		if (mn == null) {
 			throwException(vm.getSymbols().java_lang_NoSuchMethodError, javaClass.getInternalName() + '.' + name + desc);
 		}
@@ -103,7 +130,7 @@ public final class VMHelper {
 	 * @return invocation result.
 	 */
 	public ExecutionContext invokeVirtual(String name, String desc, Value[] stack, Value[] locals) {
-		val instance = locals[0];
+		Value instance = locals[0];
 		checkNotNull(instance);
 		InstanceJavaClass javaClass;
 		if (instance instanceof ArrayValue) {
@@ -136,9 +163,9 @@ public final class VMHelper {
 	 * @return invocation result.
 	 */
 	public ExecutionContext invokeInterface(InstanceJavaClass javaClass, String name, String desc, Value[] stack, Value[] locals) {
-		val instance = locals[0];
+		Value instance = locals[0];
 		checkNotNull(instance);
-		val prioritized = ((InstanceValue) instance).getJavaClass();
+		InstanceJavaClass prioritized = ((InstanceValue) instance).getJavaClass();
 
 		JavaMethod mn = prioritized.getInterfaceMethodRecursively(name, desc);
 		if (mn == null) {
@@ -169,7 +196,7 @@ public final class VMHelper {
 			throw new IllegalStateException("Method is static");
 		}
 		javaClass.initialize();
-		val ctx = createContext(javaClass, method, locals);
+		ExecutionContext ctx = createContext(javaClass, method, locals);
 		contextPrepare(ctx, stack, locals);
 		vm.execute(ctx, true);
 		return ctx;
@@ -214,7 +241,7 @@ public final class VMHelper {
 	 * 		If constant value cannot be created.
 	 */
 	public Value valueFromLdc(Object cst) {
-		val vm = this.vm;
+		VirtualMachine vm = this.vm;
 		if (cst instanceof Long) {
 			return LongValue.of((Long) cst);
 		}
@@ -237,14 +264,14 @@ public final class VMHelper {
 			return vm.getStringPool().intern((String) cst);
 		}
 		if (cst instanceof Type) {
-			val type = (Type) cst;
-			val ctx = vm.currentThread().getBacktrace().last();
-			val caller = ctx == null ? null : ctx.getDeclaringClass();
-			val loader = caller == null ? NullValue.INSTANCE : caller.getClassLoader();
-			val sort = type.getSort();
+			Type type = (Type) cst;
+			StackFrame ctx = vm.currentThread().getBacktrace().last();
+			InstanceJavaClass caller = ctx == null ? null : ctx.getDeclaringClass();
+			ObjectValue loader = caller == null ? NullValue.INSTANCE : caller.getClassLoader();
+			int sort = type.getSort();
 			switch(sort) {
 				case Type.OBJECT:
-					val internalName = type.getInternalName();
+					String internalName = type.getInternalName();
 					if (caller != null && Modifier.isHiddenMember(caller.getModifiers()) && internalName.equals(caller.getInternalName())) {
 						return caller.getOop();
 					}
@@ -257,7 +284,7 @@ public final class VMHelper {
 		}
 
 		if (cst instanceof Handle) {
-			val ctx = vm.currentThread().getBacktrace().last();
+			StackFrame ctx = vm.currentThread().getBacktrace().last();
 			return linkMethodHandleConstant(ctx.getDeclaringClass(), (Handle) cst);
 		}
 
@@ -274,7 +301,7 @@ public final class VMHelper {
 	 */
 	public long[] toJavaLongs(ArrayValue array) {
 		int length = array.getLength();
-		val result = new long[length];
+		long[] result = new long[length];
 		while(length-- != 0) {
 			result[length] = array.getLong(length);
 		}
@@ -291,7 +318,7 @@ public final class VMHelper {
 	 */
 	public double[] toJavaDoubles(ArrayValue array) {
 		int length = array.getLength();
-		val result = new double[length];
+		double[] result = new double[length];
 		while(length-- != 0) {
 			result[length] = array.getDouble(length);
 		}
@@ -308,7 +335,7 @@ public final class VMHelper {
 	 */
 	public int[] toJavaInts(ArrayValue array) {
 		int length = array.getLength();
-		val result = new int[length];
+		int[] result = new int[length];
 		while(length-- != 0) {
 			result[length] = array.getInt(length);
 		}
@@ -325,7 +352,7 @@ public final class VMHelper {
 	 */
 	public float[] toJavaFloats(ArrayValue array) {
 		int length = array.getLength();
-		val result = new float[length];
+		float[] result = new float[length];
 		while(length-- != 0) {
 			result[length] = array.getFloat(length);
 		}
@@ -342,7 +369,7 @@ public final class VMHelper {
 	 */
 	public char[] toJavaChars(ArrayValue array) {
 		int length = array.getLength();
-		val result = new char[length];
+		char[] result = new char[length];
 		while(length-- != 0) {
 			result[length] = array.getChar(length);
 		}
@@ -359,7 +386,7 @@ public final class VMHelper {
 	 */
 	public short[] toJavaShorts(ArrayValue array) {
 		int length = array.getLength();
-		val result = new short[length];
+		short[] result = new short[length];
 		while(length-- != 0) {
 			result[length] = array.getShort(length);
 		}
@@ -376,7 +403,7 @@ public final class VMHelper {
 	 */
 	public byte[] toJavaBytes(ArrayValue array) {
 		int length = array.getLength();
-		val result = new byte[length];
+		byte[] result = new byte[length];
 		while(length-- != 0) {
 			result[length] = array.getByte(length);
 		}
@@ -393,7 +420,7 @@ public final class VMHelper {
 	 */
 	public boolean[] toJavaBooleans(ArrayValue array) {
 		int length = array.getLength();
-		val result = new boolean[length];
+		boolean[] result = new boolean[length];
 		while(length-- != 0) {
 			result[length] = array.getBoolean(length);
 		}
@@ -410,7 +437,7 @@ public final class VMHelper {
 	 */
 	public Value[] toJavaValues(ArrayValue array) {
 		int length = array.getLength();
-		val result = new Value[length];
+		Value[] result = new Value[length];
 		while(length-- != 0) {
 			result[length] = array.getValue(length);
 		}
@@ -431,8 +458,8 @@ public final class VMHelper {
 	 */
 	public ArrayValue toVMLongs(long[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
-		val vm = this.vm;
-		val wrapper = newArray(vm.getPrimitives().longPrimitive, newLength);
+		VirtualMachine vm = this.vm;
+		ArrayValue wrapper = newArray(vm.getPrimitives().longPrimitive, newLength);
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setLong(i++, array[startIndex]);
 		}
@@ -465,8 +492,8 @@ public final class VMHelper {
 	 */
 	public ArrayValue toVMDoubles(double[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
-		val vm = this.vm;
-		val wrapper = newArray(vm.getPrimitives().doublePrimitive, newLength);
+		VirtualMachine vm = this.vm;
+		ArrayValue wrapper = newArray(vm.getPrimitives().doublePrimitive, newLength);
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setDouble(i++, array[startIndex]);
 		}
@@ -499,8 +526,8 @@ public final class VMHelper {
 	 */
 	public ArrayValue toVMInts(int[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
-		val vm = this.vm;
-		val wrapper = newArray(vm.getPrimitives().intPrimitive, newLength);
+		VirtualMachine vm = this.vm;
+		ArrayValue wrapper = newArray(vm.getPrimitives().intPrimitive, newLength);
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setInt(i++, array[startIndex]);
 		}
@@ -533,8 +560,8 @@ public final class VMHelper {
 	 */
 	public ArrayValue toVMFloats(float[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
-		val vm = this.vm;
-		val wrapper = newArray(vm.getPrimitives().floatPrimitive, newLength);
+		VirtualMachine vm = this.vm;
+		ArrayValue wrapper = newArray(vm.getPrimitives().floatPrimitive, newLength);
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setFloat(i++, array[startIndex]);
 		}
@@ -567,8 +594,8 @@ public final class VMHelper {
 	 */
 	public ArrayValue toVMChars(char[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
-		val vm = this.vm;
-		val wrapper = newArray(vm.getPrimitives().charPrimitive, newLength);
+		VirtualMachine vm = this.vm;
+		ArrayValue wrapper = newArray(vm.getPrimitives().charPrimitive, newLength);
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setChar(i++, array[startIndex]);
 		}
@@ -601,8 +628,8 @@ public final class VMHelper {
 	 */
 	public ArrayValue toVMShorts(short[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
-		val vm = this.vm;
-		val wrapper = newArray(vm.getPrimitives().shortPrimitive, newLength);
+		VirtualMachine vm = this.vm;
+		ArrayValue wrapper = newArray(vm.getPrimitives().shortPrimitive, newLength);
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setShort(i++, array[startIndex]);
 		}
@@ -635,8 +662,8 @@ public final class VMHelper {
 	 */
 	public ArrayValue toVMBytes(byte[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
-		val vm = this.vm;
-		val wrapper = newArray(vm.getPrimitives().bytePrimitive, newLength);
+		VirtualMachine vm = this.vm;
+		ArrayValue wrapper = newArray(vm.getPrimitives().bytePrimitive, newLength);
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setByte(i++, array[startIndex]);
 		}
@@ -669,8 +696,8 @@ public final class VMHelper {
 	 */
 	public ArrayValue toVMBooleans(boolean[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
-		val vm = this.vm;
-		val wrapper = newArray(vm.getPrimitives().booleanPrimitive, newLength);
+		VirtualMachine vm = this.vm;
+		ArrayValue wrapper = newArray(vm.getPrimitives().booleanPrimitive, newLength);
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setBoolean(i++, array[startIndex]);
 		}
@@ -703,8 +730,8 @@ public final class VMHelper {
 	 */
 	public ArrayValue toVMValues(ObjectValue[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
-		val vm = this.vm;
-		val wrapper = newArray(vm.getSymbols().java_lang_Object, newLength);
+		VirtualMachine vm = this.vm;
+		ArrayValue wrapper = newArray(vm.getSymbols().java_lang_Object, newLength);
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setValue(i++, array[startIndex]);
 		}
@@ -732,8 +759,8 @@ public final class VMHelper {
 	 * @return Java string.
 	 */
 	public String readUtf8(InstanceValue value) {
-		val jc = (InstanceJavaClass) value.getJavaClass();
-		val vm = jc.getVM();
+		InstanceJavaClass jc = (InstanceJavaClass) value.getJavaClass();
+		VirtualMachine vm = jc.getVM();
 		if (jc != vm.getSymbols().java_lang_String) {
 			throw new IllegalStateException("Not a string: " + value + " (" + jc + ')');
 		}
@@ -776,21 +803,21 @@ public final class VMHelper {
 		if (str == null) {
 			return NullValue.INSTANCE;
 		}
-		val vm = this.vm;
-		val jc = vm.getSymbols().java_lang_String;
+		VirtualMachine vm = this.vm;
+		InstanceJavaClass jc = vm.getSymbols().java_lang_String;
 		jc.initialize();
 		if (pool) {
-			val pooled = vm.getStringPool().getIfPresent(str);
+			InstanceValue pooled = vm.getStringPool().getIfPresent(str);
 			if (pooled != null) {
 				return pooled;
 			}
 		}
-		val memoryManager = vm.getMemoryManager();
-		val wrapper = memoryManager.newInstance(jc);
+		MemoryManager memoryManager = vm.getMemoryManager();
+		InstanceValue wrapper = memoryManager.newInstance(jc);
 		long off = wrapper.getFieldOffset("value", "[C");
-		val jdk8 = off != -1L;
+		boolean jdk8 = off != -1L;
 		if (str.isEmpty()) {
-			val primitives = vm.getPrimitives();
+			VMPrimitives primitives = vm.getPrimitives();
 			if (jdk8) {
 				memoryManager.writeValue(wrapper, off, emptyArray(primitives.charPrimitive));
 			} else {
@@ -829,13 +856,13 @@ public final class VMHelper {
 	 * @return VM string.
 	 */
 	public ObjectValue newUtf8(ArrayValue chars) {
-		val vm = this.vm;
-		val jc = vm.getSymbols().java_lang_String;
+		VirtualMachine vm = this.vm;
+		InstanceJavaClass jc = vm.getSymbols().java_lang_String;
 		jc.initialize();
-		val memoryManager = vm.getMemoryManager();
-		val wrapper = memoryManager.newInstance(jc);
+		MemoryManager memoryManager = vm.getMemoryManager();
+		InstanceValue wrapper = memoryManager.newInstance(jc);
 		long off = wrapper.getFieldOffset("value", "[C");
-		val jdk8 = off != -1L;
+		boolean jdk8 = off != -1L;
 		if (jdk8) {
 			memoryManager.writeValue(wrapper, off, chars);
 			wrapper.initialize();
@@ -852,48 +879,42 @@ public final class VMHelper {
 	 * 		Class to set fields for.
 	 */
 	public void initializeStaticFields(InstanceJavaClass javaClass) {
-		val memoryManager = vm.getMemoryManager();
-		val oop = javaClass.getOop();
-		val baseOffset = memoryManager.getStaticOffset(javaClass);
-		val fields = javaClass.getStaticFieldLayout().getFields();
-		val asmFields = javaClass.getNode().fields;
-		for (val entry : fields.entrySet()) {
-			val key = entry.getKey();
-			val name = key.getName();
-			val desc = key.getDesc();
-			val fn = asmFields.stream()
-					.filter(x -> name.equals(x.name) && desc.equals(x.desc))
-					.findFirst();
-			if (!fn.isPresent()) {
-				throw new PanicException("Static layout is broken");
-			}
-			Object cst = fn.get().value;
+		MemoryManager memoryManager = vm.getMemoryManager();
+		InstanceValue oop = javaClass.getOop();
+		long baseOffset = memoryManager.getStaticOffset(javaClass);
+		Map<MemberKey, JavaField> fields = javaClass.getStaticFieldLayout().getFields();
+		for (Map.Entry<MemberKey, JavaField> entry : fields.entrySet()) {
+			MemberKey key = entry.getKey();
+			String desc = key.getDesc();
+			JavaField jf = entry.getValue();
+			FieldNode fn = jf.getNode();
+			Object cst = fn.value;
 			if (cst == null) {
 				cst = AsmUtil.getDefaultValue(desc);
 			}
-			val offset = entry.getValue().getOffset();
-			val resultingOffset = baseOffset + offset;
-			switch(desc) {
-				case "J":
+			long offset = jf.getOffset();
+			long resultingOffset = baseOffset + offset;
+			switch(desc.charAt(0)) {
+				case 'J':
 					memoryManager.writeLong(oop, resultingOffset, (Long) cst);
 					break;
-				case "D":
+				case 'D':
 					memoryManager.writeDouble(oop, resultingOffset, (Double) cst);
 					break;
-				case "I":
+				case 'I':
 					memoryManager.writeInt(oop, resultingOffset, (Integer) cst);
 					break;
-				case "F":
+				case 'F':
 					memoryManager.writeFloat(oop, resultingOffset, (Float) cst);
 					break;
-				case "C":
+				case 'C':
 					memoryManager.writeChar(oop, resultingOffset, (char) ((Integer) cst).intValue());
 					break;
-				case "S":
+				case 'S':
 					memoryManager.writeShort(oop, resultingOffset, ((Integer) cst).shortValue());
 					break;
-				case "B":
-				case "Z":
+				case 'B':
+				case 'Z':
 					memoryManager.writeByte(oop, resultingOffset, ((Integer) cst).byteValue());
 					break;
 				default:
@@ -909,12 +930,12 @@ public final class VMHelper {
 	 * 		Value to set fields for.
 	 */
 	public void initializeDefaultValues(InstanceValue value) {
-		val vm = this.vm;
-		val memoryManager = vm.getMemoryManager();
-		val baseOffset = memoryManager.valueBaseOffset(value);
-		for (val entry : value.getJavaClass().getVirtualFieldLayout().getAll()) {
-			val field = entry.getNode().desc;
-			val offset = baseOffset + entry.getOffset();
+		VirtualMachine vm = this.vm;
+		MemoryManager memoryManager = vm.getMemoryManager();
+		long baseOffset = memoryManager.valueBaseOffset(value);
+		for (JavaField entry : value.getJavaClass().getVirtualFieldLayout().getAll()) {
+			String field = entry.getNode().desc;
+			long offset = baseOffset + entry.getOffset();
 			switch(field) {
 				case "J":
 					memoryManager.writeLong(value, offset, 0L);
@@ -953,8 +974,8 @@ public final class VMHelper {
 	 * 		Thread to modify.
 	 */
 	public void screenVmThread(VMThread vmThread) {
-		val javaThread = vmThread.getJavaThread();
-		val oop = vmThread.getOop();
+		Thread javaThread = vmThread.getJavaThread();
+		InstanceValue oop = vmThread.getOop();
 		// Copy thread name
 		oop.setValue("name", "Ljava/lang/String;", newUtf8(javaThread.getName()));
 		// Copy thread priority
@@ -978,9 +999,9 @@ public final class VMHelper {
 	 * @return new exception instance.
 	 */
 	public InstanceValue newException(InstanceJavaClass javaClass, String message, ObjectValue cause) {
-		val vm = this.vm;
+		VirtualMachine vm = this.vm;
 		javaClass.initialize();
-		val instance = vm.getMemoryManager().newInstance(javaClass);
+		InstanceValue instance = vm.getMemoryManager().newInstance(javaClass);
 		invokeExact(javaClass, "<init>", "()V", new Value[0], new Value[]{instance});
 		if (message != null) {
 			instance.setValue("detailMessage", "Ljava/lang/String;", newUtf8(message));
@@ -1221,16 +1242,16 @@ public final class VMHelper {
 	 * @return defined class.
 	 */
 	public InstanceJavaClass defineClass(ObjectValue classLoader, String name, byte[] b, int off, int len, ObjectValue protectionDomain, String source, boolean linkToLoader) {
-		val vm = this.vm;
+		VirtualMachine vm = this.vm;
 		if ((off | len | (off + len) | (b.length - (off + len))) < 0) {
 			throwException(vm.getSymbols().java_lang_ArrayIndexOutOfBoundsException);
 		}
-		val classLoaderData = vm.getClassLoaders().getClassLoaderData(classLoader);
-		val parsed = vm.getClassDefiner().parseClass(name, b, off, len, source);
+		ClassLoaderData classLoaderData = vm.getClassLoaders().getClassLoaderData(classLoader);
+		ClassParseResult parsed = vm.getClassDefiner().parseClass(name, b, off, len, source);
 		if (parsed == null) {
 			throwException(vm.getSymbols().java_lang_NoClassDefFoundError, name);
 		}
-		val classReaderName = parsed.getClassReader().getClassName();
+		String classReaderName = parsed.getClassReader().getClassName();
 		if (name == null) {
 			name = classReaderName;
 		} else if (!classReaderName.equals(name.replace('.', '/'))) {
@@ -1240,7 +1261,7 @@ public final class VMHelper {
 			throwException(vm.getSymbols().java_lang_NoClassDefFoundError, "Bad class name: " + classReaderName);
 		}
 		if (!linkToLoader) {
-			val javaClass = newInstanceClass(classLoader, protectionDomain, parsed.getClassReader(), parsed.getNode());
+			InstanceJavaClass javaClass = newInstanceClass(classLoader, protectionDomain, parsed.getClassReader(), parsed.getNode());
 			javaClass.link();
 			return javaClass;
 		}
@@ -1248,7 +1269,7 @@ public final class VMHelper {
 			if (classLoaderData.getClass(name) != null) {
 				throwException(vm.getSymbols().java_lang_ClassNotFoundException, "Duplicate class name: " + name);
 			}
-			val javaClass = newInstanceClass(classLoader, protectionDomain, parsed.getClassReader(), parsed.getNode());
+			InstanceJavaClass javaClass = newInstanceClass(classLoader, protectionDomain, parsed.getClassReader(), parsed.getNode());
 			classLoaderData.linkClass(javaClass);
 			return javaClass;
 		}
@@ -1291,15 +1312,15 @@ public final class VMHelper {
 	 * 		Class node
 	 */
 	public InstanceJavaClass newInstanceClass(ObjectValue loader, ObjectValue protectionDomain, ClassReader reader, ClassNode node) {
-		val vm = this.vm;
-		val classLoaders = vm.getClassLoaders();
-		val javaClass = classLoaders.constructClass(loader, reader, node);
+		VirtualMachine vm = this.vm;
+		ClassLoaders classLoaders = vm.getClassLoaders();
+		InstanceJavaClass javaClass = classLoaders.constructClass(loader, reader, node);
 		classLoaders.setClassOop(javaClass);
-		val oop = javaClass.getOop();
+		InstanceValue oop = javaClass.getOop();
 		initializeDefaultValues(oop);
 		setClassFields(oop, loader, protectionDomain);
 		if (!loader.isNull()) {
-			val classes = ((InstanceValue) loader).getValue("classes", "Ljava/util/Vector;");
+			ObjectValue classes = ((InstanceValue) loader).getValue("classes", "Ljava/util/Vector;");
 			invokeVirtual("add", "(Ljava/lang/Object;)Z", new Value[0], new Value[]{classes, javaClass.getOop()});
 		}
 		return javaClass;
@@ -1314,8 +1335,8 @@ public final class VMHelper {
 	 * 		Type of the component.
 	 */
 	public void setComponentType(ArrayJavaClass javaClass, JavaClass componentType) {
-		val oop = javaClass.getOop();
-		val offset = oop.getFieldOffset("componentType", "Ljava/lang/Class;");
+		InstanceValue oop = javaClass.getOop();
+		long offset = oop.getFieldOffset("componentType", "Ljava/lang/Class;");
 		if (offset != -1L) {
 			vm.getMemoryManager().writeValue(oop, offset, componentType.getOop());
 		}
@@ -1330,34 +1351,34 @@ public final class VMHelper {
 	 * @return Java exception.
 	 */
 	public Exception toJavaException(InstanceValue oop) {
-		val msg = readUtf8(oop.getValue("detailMessage", "Ljava/lang/String;"));
-		val exception = new Exception(msg);
-		val backtrace = oop.getValue("backtrace", "Ljava/lang/Object;");
+		String msg = readUtf8(oop.getValue("detailMessage", "Ljava/lang/String;"));
+		Exception exception = new Exception(msg);
+		ObjectValue backtrace = oop.getValue("backtrace", "Ljava/lang/Object;");
 		if (!backtrace.isNull()) {
-			val unmarshalled = ((JavaValue<Backtrace>) backtrace).getValue();
-			val stackTrace = StreamSupport.stream(unmarshalled.spliterator(), false)
+			Backtrace unmarshalled = ((JavaValue<Backtrace>) backtrace).getValue();
+			StackTraceElement[] stackTrace = StreamSupport.stream(unmarshalled.spliterator(), false)
 					.map(frame -> {
-						val methodName = frame.getMethodName();
-						val owner = frame.getDeclaringClass();
-						val className = owner.getName();
-						val sourceFile = frame.getSourceFile();
-						val lineNumber = frame.getLineNumber();
+						String methodName = frame.getMethodName();
+						InstanceJavaClass owner = frame.getDeclaringClass();
+						String className = owner.getName();
+						String sourceFile = frame.getSourceFile();
+						int lineNumber = frame.getLineNumber();
 						return new StackTraceElement(className, methodName, sourceFile, lineNumber);
 					})
 					.toArray(StackTraceElement[]::new);
 			Collections.reverse(Arrays.asList(stackTrace));
 			exception.setStackTrace(stackTrace);
 		}
-		val cause = oop.getValue("cause", "Ljava/lang/Throwable;");
+		ObjectValue cause = oop.getValue("cause", "Ljava/lang/Throwable;");
 		if (!cause.isNull() && cause != oop) {
 			exception.initCause(toJavaException((InstanceValue) cause));
 		}
-		val suppressedExceptions = oop.getValue("suppressedExceptions", "Ljava/util/List;");
+		ObjectValue suppressedExceptions = oop.getValue("suppressedExceptions", "Ljava/util/List;");
 		if (!suppressedExceptions.isNull()) {
-			val list = (InstanceJavaClass) vm.findBootstrapClass("java/util/List");
-			val size = invokeInterface(list, "size", "()I", new Value[0], new Value[]{suppressedExceptions}).getResult().asInt();
+			InstanceJavaClass list = (InstanceJavaClass) vm.findBootstrapClass("java/util/List");
+			int size = invokeInterface(list, "size", "()I", new Value[0], new Value[]{suppressedExceptions}).getResult().asInt();
 			for (int i = 0; i < size; i++) {
-				val ex = invokeInterface(list, "get", "(I)Ljava/lang/Object;", new Value[0], new Value[]{suppressedExceptions, IntValue.of(i)}).getResult();
+				Value ex = invokeInterface(list, "get", "(I)Ljava/lang/Object;", new Value[0], new Value[]{suppressedExceptions, IntValue.of(i)}).getResult();
 				exception.addSuppressed(toJavaException((InstanceValue) ex));
 			}
 		}
@@ -1375,16 +1396,16 @@ public final class VMHelper {
 	 * @return VM StackTraceElement.
 	 */
 	public InstanceValue newStackTraceElement(StackFrame frame, boolean injectDeclaringClass) {
-		val methodName = frame.getMethodName();
-		val owner = frame.getDeclaringClass();
-		val className = owner.getName();
-		val sourceFile = frame.getSourceFile();
-		val lineNumber = frame.getLineNumber();
-		val vm = this.vm;
-		val jc = vm.getSymbols().java_lang_StackTraceElement;
+		String methodName = frame.getMethodName();
+		InstanceJavaClass owner = frame.getDeclaringClass();
+		String className = owner.getName();
+		String sourceFile = frame.getSourceFile();
+		int lineNumber = frame.getLineNumber();
+		VirtualMachine vm = this.vm;
+		InstanceJavaClass jc = vm.getSymbols().java_lang_StackTraceElement;
 		jc.initialize();
-		val memoryManager = vm.getMemoryManager();
-		val element = memoryManager.newInstance(jc);
+		MemoryManager memoryManager = vm.getMemoryManager();
+		InstanceValue element = memoryManager.newInstance(jc);
 		invokeExact(jc, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V", new Value[0], new Value[]{
 				element,
 				newUtf8(className),
@@ -1409,7 +1430,7 @@ public final class VMHelper {
 		}
 		JavaClass klass;
 		if (name.length() == 1) {
-			val primitives = vm.getPrimitives();
+			VMPrimitives primitives = vm.getPrimitives();
 			switch(name.charAt(0)) {
 				case 'J':
 					klass = primitives.longPrimitive;
@@ -1447,9 +1468,9 @@ public final class VMHelper {
 			}
 			find:
 			{
-				val ctx = vm.currentThread().getBacktrace().last();
+				StackFrame ctx = vm.currentThread().getBacktrace().last();
 				if (ctx != null) {
-					val caller = ctx.getDeclaringClass();
+					InstanceJavaClass caller = ctx.getDeclaringClass();
 					if (caller.getClassLoader() == loader && name.equals(caller.getInternalName())) {
 						klass = caller;
 						break find;
@@ -1579,7 +1600,7 @@ public final class VMHelper {
 	 * @return unwrapped value or itself.
 	 */
 	public Value unboxGeneric(ObjectValue value, JavaClass jc) {
-		val primitive = vm.getPrimitives();
+		VMPrimitives primitive = vm.getPrimitives();
 		if (jc == primitive.longPrimitive) {
 			return unboxLong(value);
 		}
@@ -1751,8 +1772,8 @@ public final class VMHelper {
 	 * @return VM array.
 	 */
 	public ArrayValue convertClasses(JavaClass[] classes) {
-		val vm = this.vm;
-		val array = newArray(vm.getSymbols().java_lang_Class, classes.length);
+		VirtualMachine vm = this.vm;
+		ArrayValue array = newArray(vm.getSymbols().java_lang_Class, classes.length);
 		for (int i = 0; i < classes.length; i++) {
 			array.setValue(i, classes[i].getOop());
 		}
@@ -1768,7 +1789,7 @@ public final class VMHelper {
 	 * @return array of oops.
 	 */
 	public InstanceValue[] getClassOops(JavaClass[] classes) {
-		val oops = new InstanceValue[classes.length];
+		InstanceValue[] oops = new InstanceValue[classes.length];
 		for (int i = 0; i < classes.length; i++) {
 			oops[i] = classes[i].getOop();
 		}
@@ -1788,10 +1809,10 @@ public final class VMHelper {
 	 * @return Converted array.
 	 */
 	public JavaClass[] convertTypes(ObjectValue loader, Type[] types, boolean initialize) {
-		val classes = new JavaClass[types.length];
+		JavaClass[] classes = new JavaClass[types.length];
 		for (int i = 0; i < types.length; i++) {
-			val name = types[i].getInternalName();
-			val klass = findClass(loader, name, initialize);
+			String name = types[i].getInternalName();
+			JavaClass klass = findClass(loader, name, initialize);
 			if (klass == null) {
 				throwException(vm.getSymbols().java_lang_NoClassDefFoundError, name);
 			}
@@ -1811,7 +1832,7 @@ public final class VMHelper {
 	 * @return new array.
 	 */
 	public ArrayValue newArray(JavaClass componentType, int length) {
-		val memoryManager = vm.getMemoryManager();
+		MemoryManager memoryManager = vm.getMemoryManager();
 		return memoryManager.newArray(componentType.newArrayClass(), length);
 	}
 
@@ -1840,7 +1861,7 @@ public final class VMHelper {
 		if (!(jc instanceof InstanceJavaClass)) {
 			return false;
 		}
-		val symbols = vm.getSymbols();
+		VMSymbols symbols = vm.getSymbols();
 		return symbols.java_lang_Long == jc
 				|| symbols.java_lang_Double == jc
 				|| symbols.java_lang_Integer == jc
@@ -1860,7 +1881,7 @@ public final class VMHelper {
 	 * @return file descriptor handle.
 	 */
 	public long getFileStreamHandle(InstanceValue fos) {
-		val fd = invokeVirtual("getFD", "()Ljava/io/FileDescriptor;", new Value[0], new Value[]{fos}).getResult();
+		Value fd = invokeVirtual("getFD", "()Ljava/io/FileDescriptor;", new Value[0], new Value[]{fos}).getResult();
 		return this.<InstanceValue>checkNotNull(fd).getLong("handle");
 	}
 
@@ -1891,7 +1912,7 @@ public final class VMHelper {
 	 * @return method type.
 	 */
 	public InstanceValue methodType(JavaClass rt, JavaClass[] parameters) {
-		val array = newArray(vm.getSymbols().java_lang_Class, parameters.length);
+		ArrayValue array = newArray(vm.getSymbols().java_lang_Class, parameters.length);
 		for (int i = 0; i < parameters.length; i++) {
 			array.setValue(i, parameters[i].getOop());
 		}
@@ -1909,8 +1930,8 @@ public final class VMHelper {
 	 * @return method type.
 	 */
 	public InstanceValue methodType(ObjectValue loader, Type methodType) {
-		val rt = findClass(loader, methodType.getReturnType().getInternalName(), false);
-		val args = convertTypes(loader, methodType.getArgumentTypes(), false);
+		JavaClass rt = findClass(loader, methodType.getReturnType().getInternalName(), false);
+		JavaClass[] args = convertTypes(loader, methodType.getArgumentTypes(), false);
 		return methodType(rt, args);
 	}
 
@@ -1966,8 +1987,8 @@ public final class VMHelper {
 	 */
 	public InstanceValue newInstance(InstanceJavaClass type, String desc, Value... params) {
 		type.initialize();
-		val instance = vm.getMemoryManager().newInstance(type);
-		val args = new Value[params.length + 1];
+		InstanceValue instance = vm.getMemoryManager().newInstance(type);
+		Value[] args = new Value[params.length + 1];
 		args[0] = instance;
 		System.arraycopy(params, 0, args, 1, params.length);
 		invokeExact(type, "<init>", desc, new Value[0], args);
@@ -1983,7 +2004,7 @@ public final class VMHelper {
 	 * @see Modifier#ACC_HIDDEN_FRAME
 	 */
 	public void makeHiddenMethod(JavaMethod method) {
-		val node = method.getNode();
+		MethodNode node = method.getNode();
 		node.access |= Modifier.ACC_HIDDEN_FRAME;
 	}
 
@@ -1994,30 +2015,30 @@ public final class VMHelper {
 	 * 		Class to setup.
 	 */
 	public void setupHiddenFrames(InstanceJavaClass jc) {
-		val symbols = vm.getSymbols();
-		val throwable = symbols.java_lang_Throwable;
+		VMSymbols symbols = vm.getSymbols();
+		InstanceJavaClass throwable = symbols.java_lang_Throwable;
 		if (throwable.isAssignableFrom(jc)) {
-			for (val jm : jc.getVirtualMethodLayout().getAll()) {
-				val name = jm.getName();
+			for (JavaMethod jm : jc.getVirtualMethodLayout().getAll()) {
+				String name = jm.getName();
 				if ("<init>".equals(name)) {
 					makeHiddenMethod(jm);
 					continue;
 				}
 				if ("fillInStackTrace".equals(name)) {
-					val args = jm.getArgumentTypes();
+					Type[] args = jm.getArgumentTypes();
 					if (args.length == 0 || (args[0].equals(Type.INT_TYPE))) {
 						makeHiddenMethod(jm);
 					}
 				}
 			}
 		} else {
-			val loader = jc.getClassLoader();
+			ObjectValue loader = jc.getClassLoader();
 			if (loader.isNull()) {
 				if (jc.getInternalName().startsWith("java/lang/invoke/")) {
-					for (val jm : jc.getVirtualMethodLayout().getAll()) {
+					for (JavaMethod jm : jc.getVirtualMethodLayout().getAll()) {
 						hideLambdaForm(jm);
 					}
-					for (val jm : jc.getStaticMethodLayout().getAll()) {
+					for (JavaMethod jm : jc.getStaticMethodLayout().getAll()) {
 						hideLambdaForm(jm);
 					}
 				}
@@ -2034,12 +2055,12 @@ public final class VMHelper {
 				} else if (jc == symbols.java_lang_reflect_Method) {
 					makeCallerSensitive(jc, "invoke", "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;");
 				} else if (symbols.reflect_MethodAccessorImpl.isAssignableFrom(jc)) {
-					for (val jm : jc.getVirtualMethodLayout().getAll()) {
-						val node = jm.getNode();
+					for (JavaMethod jm : jc.getVirtualMethodLayout().getAll()) {
+						MethodNode node = jm.getNode();
 						node.access |= Modifier.ACC_CALLER_SENSITIVE;
 					}
-					for (val jm : jc.getStaticMethodLayout().getAll()) {
-						val node = jm.getNode();
+					for (JavaMethod jm : jc.getStaticMethodLayout().getAll()) {
+						MethodNode node = jm.getNode();
 						node.access |= Modifier.ACC_CALLER_SENSITIVE;
 					}
 				}
@@ -2059,12 +2080,12 @@ public final class VMHelper {
 	 * if not found.
 	 */
 	public JavaMethod getMethodBySlot(InstanceJavaClass jc, int slot) {
-		for (val m : jc.getVirtualMethodLayout().getAll()) {
+		for (JavaMethod m : jc.getVirtualMethodLayout().getAll()) {
 			if (slot == m.getSlot()) {
 				return m;
 			}
 		}
-		for (val m : jc.getStaticMethodLayout().getAll()) {
+		for (JavaMethod m : jc.getStaticMethodLayout().getAll()) {
 			if (slot == m.getSlot()) {
 				return m;
 			}
@@ -2084,12 +2105,12 @@ public final class VMHelper {
 	 * if not found.
 	 */
 	public JavaField getFieldBySlot(InstanceJavaClass jc, int slot) {
-		for (val f : jc.getVirtualFieldLayout().getAll()) {
+		for (JavaField f : jc.getVirtualFieldLayout().getAll()) {
 			if (slot == f.getSlot()) {
 				return f;
 			}
 		}
-		for (val f : jc.getStaticFieldLayout().getAll()) {
+		for (JavaField f : jc.getStaticFieldLayout().getAll()) {
 			if (slot == f.getSlot()) {
 				return f;
 			}
@@ -2106,7 +2127,7 @@ public final class VMHelper {
 	 * @return linked method handle.
 	 */
 	public InstanceValue linkMethodHandleConstant(InstanceJavaClass caller, Handle handle) {
-		val args = new Value[]{
+		Value[] args = new Value[]{
 				caller.getOop(),
 				IntValue.of(handle.getTag()),
 				findClass(caller.getClassLoader(), handle.getOwner(), false).getOop(),
@@ -2114,7 +2135,7 @@ public final class VMHelper {
 				methodType(caller.getClassLoader(), Type.getMethodType(handle.getDesc()))
 		};
 
-		val natives = vm.getSymbols().java_lang_invoke_MethodHandleNatives;
+		InstanceJavaClass natives = vm.getSymbols().java_lang_invoke_MethodHandleNatives;
 		return (InstanceValue) invokeStatic(natives, "linkMethodHandleConstant", "(Ljava/lang/Class;ILjava/lang/Class;Ljava/lang/String;Ljava/lang/Object;)Ljava/lang/invoke/MethodHandle;", new Value[0], args).getResult();
 	}
 
@@ -2159,8 +2180,8 @@ public final class VMHelper {
 	 */
 	public ArrayValue toVMChars(String str) {
 		int length = str.length();
-		val vm = this.vm;
-		val wrapper = newArray(vm.getPrimitives().charPrimitive, length);
+		VirtualMachine vm = this.vm;
+		ArrayValue wrapper = newArray(vm.getPrimitives().charPrimitive, length);
 		while(length-- != 0) {
 			wrapper.setChar(length, str.charAt(length));
 		}
@@ -2184,9 +2205,9 @@ public final class VMHelper {
 		try {
 			return findClass(loader, name, initialize);
 		} catch(VMException ex) {
-			val oop = ex.getOop();
+			InstanceValue oop = ex.getOop();
 			if (oop.isNull() || !vm.getSymbols().java_lang_Error.isAssignableFrom(oop.getJavaClass())) {
-				val cnfe = newException(vm.getSymbols().java_lang_NoClassDefFoundError, name, oop);
+				InstanceValue cnfe = newException(vm.getSymbols().java_lang_NoClassDefFoundError, name, oop);
 				throw new VMException(cnfe);
 			}
 			throw ex;
@@ -2201,17 +2222,17 @@ public final class VMHelper {
 	}
 
 	private ArrayValue newMultiArrayInner(ArrayJavaClass type, int[] lengths, int depth) {
-		val newType = type.getComponentType();
-		val memoryManager = vm.getMemoryManager();
+		JavaClass newType = type.getComponentType();
+		MemoryManager memoryManager = vm.getMemoryManager();
 		if (!newType.isArray()) {
 			return memoryManager.newArray(type, lengths[depth]);
 		}
-		val array = memoryManager.newArray(type, lengths[depth]);
+		ArrayValue array = memoryManager.newArray(type, lengths[depth]);
 		if (depth == lengths.length - 1) {
 			return array;
 		}
 		int length = lengths[depth];
-		val next = depth + 1;
+		int next = depth + 1;
 		while(length-- != 0) {
 			array.setValue(length, newMultiArrayInner((ArrayJavaClass) newType, lengths, next));
 		}
@@ -2219,7 +2240,7 @@ public final class VMHelper {
 	}
 
 	private static void contextPrepare(ExecutionContext ctx, Value[] stack, Value[] locals) {
-		val lvt = ctx.getLocals();
+		Locals lvt = ctx.getLocals();
 		for (int i = 0, j = locals.length; i < j; i++) {
 			Value arg = locals[i];
 			Objects.requireNonNull(arg, "Null argument");
@@ -2230,15 +2251,15 @@ public final class VMHelper {
 				}
 			}
 		}
-		val $stack = ctx.getStack();
-		for (val value : stack) {
+		Stack $stack = ctx.getStack();
+		for (Value value : stack) {
 			$stack.pushGeneric(value);
 		}
 	}
 
 	private static ExecutionContext createContext(InstanceJavaClass jc, JavaMethod jm, Value[] locals) {
-		val mn = jm.getNode();
-		val storage = jc.getVM().getThreadStorage();
+		MethodNode mn = jm.getNode();
+		ThreadStorage storage = jc.getVM().getThreadStorage();
 		int maxStack = mn.maxStack;
 		int maxLocals = getMaxLocals(jm, locals);
 		return new ExecutionContext(
@@ -2260,14 +2281,14 @@ public final class VMHelper {
 			mn = jc.getStaticMethod(name, desc);
 		}
 		if (mn != null) {
-			val node = mn.getNode();
+			MethodNode node = mn.getNode();
 			node.access |= Modifier.ACC_HIDDEN_FRAME | Modifier.ACC_CALLER_SENSITIVE;
 		}
 	}
 
 	private static void hideLambdaForm(JavaMethod jm) {
-		val node = jm.getNode();
-		val annotations = node.visibleAnnotations;
+		MethodNode node = jm.getNode();
+		List<AnnotationNode> annotations = node.visibleAnnotations;
 		if (annotations != null) {
 			for (int i = 0; i < annotations.size(); i++) {
 				if ("Ljava/lang/invoke/LambdaForm$Hidden;".equals(annotations.get(i).desc)) {
@@ -2283,7 +2304,7 @@ public final class VMHelper {
 		if (jm == null) {
 			jm = jc.getStaticMethod(name, desc);
 		}
-		val node = jm.getNode();
+		MethodNode node = jm.getNode();
 		node.access |= Modifier.ACC_CALLER_SENSITIVE;
 	}
 }

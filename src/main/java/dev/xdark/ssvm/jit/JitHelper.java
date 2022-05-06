@@ -1,17 +1,29 @@
 package dev.xdark.ssvm.jit;
 
+import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.ExecutionContext;
+import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.execution.VMException;
+import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.InvokeDynamicLinker;
-import dev.xdark.ssvm.value.*;
+import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.util.VMPrimitives;
+import dev.xdark.ssvm.util.VMSymbols;
+import dev.xdark.ssvm.value.ArrayValue;
+import dev.xdark.ssvm.value.DoubleValue;
+import dev.xdark.ssvm.value.FloatValue;
+import dev.xdark.ssvm.value.InstanceValue;
+import dev.xdark.ssvm.value.IntValue;
+import dev.xdark.ssvm.value.LongValue;
+import dev.xdark.ssvm.value.ObjectValue;
+import dev.xdark.ssvm.value.Value;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.UtilityClass;
-import lombok.val;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 
@@ -27,8 +39,8 @@ import static org.objectweb.asm.Opcodes.*;
 public class JitHelper {
 
 	public int arrayLoadInt(Value array, int index, ExecutionContext ctx) {
-		val helper = ctx.getHelper();
-		val arr = helper.checkNotNullArray((ObjectValue) array);
+		VMHelper helper = ctx.getHelper();
+		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
 		helper.rangeCheck(arr, index);
 		return arr.getInt(index);
 	}
@@ -38,8 +50,8 @@ public class JitHelper {
 	}
 
 	public long arrayLoadLong(Value array, int index, ExecutionContext ctx) {
-		val helper = ctx.getHelper();
-		val arr = helper.checkNotNullArray((ObjectValue) array);
+		VMHelper helper = ctx.getHelper();
+		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
 		helper.rangeCheck(arr, index);
 		return arr.getLong(index);
 	}
@@ -49,8 +61,8 @@ public class JitHelper {
 	}
 
 	public float arrayLoadFloat(Value array, int index, ExecutionContext ctx) {
-		val helper = ctx.getHelper();
-		val arr = helper.checkNotNullArray((ObjectValue) array);
+		VMHelper helper = ctx.getHelper();
+		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
 		helper.rangeCheck(arr, index);
 		return arr.getFloat(index);
 	}
@@ -60,8 +72,8 @@ public class JitHelper {
 	}
 
 	public double arrayLoadDouble(Value array, int index, ExecutionContext ctx) {
-		val helper = ctx.getHelper();
-		val arr = helper.checkNotNullArray((ObjectValue) array);
+		VMHelper helper = ctx.getHelper();
+		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
 		helper.rangeCheck(arr, index);
 		return arr.getDouble(index);
 	}
@@ -71,8 +83,8 @@ public class JitHelper {
 	}
 
 	public char arrayLoadChar(Value array, int index, ExecutionContext ctx) {
-		val helper = ctx.getHelper();
-		val arr = helper.checkNotNullArray((ObjectValue) array);
+		VMHelper helper = ctx.getHelper();
+		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
 		helper.rangeCheck(arr, index);
 		return arr.getChar(index);
 	}
@@ -82,8 +94,8 @@ public class JitHelper {
 	}
 
 	public short arrayLoadShort(Value array, int index, ExecutionContext ctx) {
-		val helper = ctx.getHelper();
-		val arr = helper.checkNotNullArray((ObjectValue) array);
+		VMHelper helper = ctx.getHelper();
+		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
 		helper.rangeCheck(arr, index);
 		return arr.getShort(index);
 	}
@@ -93,8 +105,8 @@ public class JitHelper {
 	}
 
 	public byte arrayLoadByte(Value array, int index, ExecutionContext ctx) {
-		val helper = ctx.getHelper();
-		val arr = helper.checkNotNullArray((ObjectValue) array);
+		VMHelper helper = ctx.getHelper();
+		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
 		helper.rangeCheck(arr, index);
 		return arr.getByte(index);
 	}
@@ -104,8 +116,8 @@ public class JitHelper {
 	}
 
 	public Value arrayLoadValue(Value array, int index, ExecutionContext ctx) {
-		val helper = ctx.getHelper();
-		val arr = helper.checkNotNullArray((ObjectValue) array);
+		VMHelper helper = ctx.getHelper();
+		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
 		helper.rangeCheck(arr, index);
 		return arr.getValue(index);
 	}
@@ -115,8 +127,8 @@ public class JitHelper {
 	}
 
 	public void arrayStoreLong(Value array, int index, long value, ExecutionContext ctx) {
-		val helper = ctx.getHelper();
-		val arr = helper.checkNotNullArray((ObjectValue) array);
+		VMHelper helper = ctx.getHelper();
+		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
 		helper.rangeCheck(arr, index);
 		arr.setLong(index, value);
 	}
@@ -126,8 +138,8 @@ public class JitHelper {
 	}
 
 	public void arrayStoreDouble(Value array, int index, double value, ExecutionContext ctx) {
-		val helper = ctx.getHelper();
-		val arr = helper.checkNotNullArray((ObjectValue) array);
+		VMHelper helper = ctx.getHelper();
+		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
 		helper.rangeCheck(arr, index);
 		arr.setDouble(index, value);
 	}
@@ -137,8 +149,8 @@ public class JitHelper {
 	}
 
 	public void arrayStoreFloat(Value array, int index, float value, ExecutionContext ctx) {
-		val helper = ctx.getHelper();
-		val arr = helper.checkNotNullArray((ObjectValue) array);
+		VMHelper helper = ctx.getHelper();
+		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
 		helper.rangeCheck(arr, index);
 		arr.setFloat(index, value);
 	}
@@ -148,8 +160,8 @@ public class JitHelper {
 	}
 
 	public void arrayStoreInt(Value array, int index, int value, ExecutionContext ctx) {
-		val helper = ctx.getHelper();
-		val arr = helper.checkNotNullArray((ObjectValue) array);
+		VMHelper helper = ctx.getHelper();
+		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
 		helper.rangeCheck(arr, index);
 		arr.setInt(index, value);
 	}
@@ -159,8 +171,8 @@ public class JitHelper {
 	}
 
 	public void arrayStoreChar(Value array, int index, char value, ExecutionContext ctx) {
-		val helper = ctx.getHelper();
-		val arr = helper.checkNotNullArray((ObjectValue) array);
+		VMHelper helper = ctx.getHelper();
+		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
 		helper.rangeCheck(arr, index);
 		arr.setChar(index, value);
 	}
@@ -170,8 +182,8 @@ public class JitHelper {
 	}
 
 	public void arrayStoreShort(Value array, int index, short value, ExecutionContext ctx) {
-		val helper = ctx.getHelper();
-		val arr = helper.checkNotNullArray((ObjectValue) array);
+		VMHelper helper = ctx.getHelper();
+		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
 		helper.rangeCheck(arr, index);
 		arr.setShort(index, value);
 	}
@@ -181,8 +193,8 @@ public class JitHelper {
 	}
 
 	public void arrayStoreByte(Value array, int index, byte value, ExecutionContext ctx) {
-		val helper = ctx.getHelper();
-		val arr = helper.checkNotNullArray((ObjectValue) array);
+		VMHelper helper = ctx.getHelper();
+		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
 		helper.rangeCheck(arr, index);
 		arr.setByte(index, value);
 	}
@@ -192,16 +204,16 @@ public class JitHelper {
 	}
 
 	public void arrayStoreValue(Value array, int index, Value value, ExecutionContext ctx) {
-		val helper = ctx.getHelper();
-		val arr = helper.checkNotNullArray((ObjectValue) array);
+		VMHelper helper = ctx.getHelper();
+		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
 		helper.rangeCheck(arr, index);
 
-		val o = (ObjectValue) value;
+		ObjectValue o = (ObjectValue) value;
 		if (!value.isNull()) {
-			val type = arr.getJavaClass().getComponentType();
-			val valueType = o.getJavaClass();
+			JavaClass type = arr.getJavaClass().getComponentType();
+			JavaClass valueType = o.getJavaClass();
 			if (!type.isAssignableFrom(valueType)) {
-				val symbols = ctx.getVM().getSymbols();
+				VMSymbols symbols = ctx.getVM().getSymbols();
 				helper.throwException(symbols.java_lang_ArrayStoreException, valueType.getName());
 			}
 		}
@@ -214,8 +226,8 @@ public class JitHelper {
 	}
 
 	public Value compareFloat(Value a, Value b, int nan) {
-		val v1 = a.asFloat();
-		val v2 = b.asFloat();
+		float v1 = a.asFloat();
+		float v2 = b.asFloat();
 		if (Float.isNaN(v1) || Float.isNaN(v2)) {
 			return IntValue.of(nan);
 		} else {
@@ -224,8 +236,8 @@ public class JitHelper {
 	}
 
 	public Value compareDouble(Value a, Value b, int nan) {
-		val v1 = a.asDouble();
-		val v2 = b.asDouble();
+		double v1 = a.asDouble();
+		double v2 = b.asDouble();
 		if (Double.isNaN(v1) || Double.isNaN(v2)) {
 			return IntValue.of(nan);
 		} else {
@@ -234,11 +246,11 @@ public class JitHelper {
 	}
 
 	public Value getStaticA(String owner, String name, String desc, ExecutionContext ctx) {
-		val vm = ctx.getVM();
-		val helper = vm.getHelper();
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
 		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
-		while (klass != null) {
-			val value = klass.getStaticValue(name, desc);
+		while(klass != null) {
+			Value value = klass.getStaticValue(name, desc);
 			if (value != null) {
 				return value;
 			}
@@ -265,48 +277,48 @@ public class JitHelper {
 	}
 
 	public long getStaticJ(Object owner, long offset, ExecutionContext ctx) {
-		val memoryManager = ctx.getVM().getMemoryManager();
+		MemoryManager memoryManager = ctx.getVM().getMemoryManager();
 		return memoryManager.readLong(((InstanceJavaClass) owner).getOop(), offset);
 	}
 
 	public double getStaticD(Object owner, long offset, ExecutionContext ctx) {
-		val memoryManager = ctx.getVM().getMemoryManager();
+		MemoryManager memoryManager = ctx.getVM().getMemoryManager();
 		return memoryManager.readDouble(((InstanceJavaClass) owner).getOop(), offset);
 	}
 
 	public int getStaticI(Object owner, long offset, ExecutionContext ctx) {
-		val memoryManager = ctx.getVM().getMemoryManager();
+		MemoryManager memoryManager = ctx.getVM().getMemoryManager();
 		return memoryManager.readInt(((InstanceJavaClass) owner).getOop(), offset);
 	}
 
 	public float getStaticF(Object owner, long offset, ExecutionContext ctx) {
-		val memoryManager = ctx.getVM().getMemoryManager();
+		MemoryManager memoryManager = ctx.getVM().getMemoryManager();
 		return memoryManager.readFloat(((InstanceJavaClass) owner).getOop(), offset);
 	}
 
 	public char getStaticC(Object owner, long offset, ExecutionContext ctx) {
-		val memoryManager = ctx.getVM().getMemoryManager();
+		MemoryManager memoryManager = ctx.getVM().getMemoryManager();
 		return memoryManager.readChar(((InstanceJavaClass) owner).getOop(), offset);
 	}
 
 	public short getStaticS(Object owner, long offset, ExecutionContext ctx) {
-		val memoryManager = ctx.getVM().getMemoryManager();
+		MemoryManager memoryManager = ctx.getVM().getMemoryManager();
 		return memoryManager.readShort(((InstanceJavaClass) owner).getOop(), offset);
 	}
 
 	public byte getStaticB(Object owner, long offset, ExecutionContext ctx) {
-		val memoryManager = ctx.getVM().getMemoryManager();
+		MemoryManager memoryManager = ctx.getVM().getMemoryManager();
 		return memoryManager.readByte(((InstanceJavaClass) owner).getOop(), offset);
 	}
 
 	public Value getStaticA(Object owner, long offset, ExecutionContext ctx) {
-		val memoryManager = ctx.getVM().getMemoryManager();
+		MemoryManager memoryManager = ctx.getVM().getMemoryManager();
 		return memoryManager.readValue(((InstanceJavaClass) owner).getOop(), offset);
 	}
 
 	public void putStaticA(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
-		val vm = ctx.getVM();
-		val helper = vm.getHelper();
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
 		InstanceJavaClass klass;
 		if (owner instanceof InstanceJavaClass) {
 			klass = (InstanceJavaClass) owner;
@@ -355,23 +367,23 @@ public class JitHelper {
 	}
 
 	public Value getFieldA(Value $instance, Object owner, String name, String desc, ExecutionContext ctx) {
-		val vm = ctx.getVM();
-		val helper = vm.getHelper();
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
 		InstanceJavaClass klass;
 		if (owner instanceof InstanceJavaClass) {
 			klass = (InstanceJavaClass) owner;
 		} else {
 			klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), (String) owner, true);
 		}
-		val instance = helper.<InstanceValue>checkNotNull($instance);
+		InstanceValue instance = helper.<InstanceValue>checkNotNull($instance);
 		long offset = helper.getFieldOffset(klass, instance.getJavaClass(), name, desc);
 		if (offset == -1L) {
 			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, name);
 		}
 		Value value;
-		val manager = vm.getMemoryManager();
+		MemoryManager manager = vm.getMemoryManager();
 		offset += manager.valueBaseOffset(instance);
-		switch (desc.charAt(0)) {
+		switch(desc.charAt(0)) {
 			case 'J':
 				value = LongValue.of(manager.readLong(instance, offset));
 				break;
@@ -435,22 +447,22 @@ public class JitHelper {
 	}
 
 	public void putFieldA(Value $instance, Value value, Object owner, String name, String desc, ExecutionContext ctx) {
-		val vm = ctx.getVM();
-		val helper = vm.getHelper();
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
 		InstanceJavaClass klass;
 		if (owner instanceof InstanceJavaClass) {
 			klass = (InstanceJavaClass) owner;
 		} else {
 			klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), (String) owner, true);
 		}
-		val instance = helper.<InstanceValue>checkNotNull($instance);
+		InstanceValue instance = helper.<InstanceValue>checkNotNull($instance);
 		long offset = helper.getFieldOffset(klass, instance.getJavaClass(), name, desc);
 		if (offset == -1L) {
 			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError, name);
 		}
-		val manager = vm.getMemoryManager();
+		MemoryManager manager = vm.getMemoryManager();
 		offset += manager.valueBaseOffset(instance);
-		switch (desc.charAt(0)) {
+		switch(desc.charAt(0)) {
 			case 'J':
 				manager.writeLong(instance, offset, value.asLong());
 				break;
@@ -509,72 +521,72 @@ public class JitHelper {
 	}
 
 	public void putField(String owner, String name, String desc, ExecutionContext ctx) {
-		val stack = ctx.getStack();
-		val value = stack.popGeneric();
-		val instance = stack.pop();
+		Stack stack = ctx.getStack();
+		Value value = stack.popGeneric();
+		Value instance = stack.pop();
 		putFieldA(instance, value, owner, name, desc, ctx);
 	}
 
 	public void invokeVirtual(String owner, String name, String desc, ExecutionContext ctx) {
-		val vm = ctx.getVM();
-		val stack = ctx.getStack();
-		val args = Type.getArgumentTypes(desc);
+		VirtualMachine vm = ctx.getVM();
+		Stack stack = ctx.getStack();
+		Type[] args = Type.getArgumentTypes(desc);
 		int localsLength = 1;
-		for (val arg : args) {
+		for (Type arg : args) {
 			localsLength += arg.getSize();
 		}
-		val locals = new Value[localsLength];
-		while (localsLength-- != 0) {
+		Value[] locals = new Value[localsLength];
+		while(localsLength-- != 0) {
 			locals[localsLength] = stack.pop();
 		}
-		val result = vm.getHelper().invokeVirtual(name, desc, new Value[0], locals);
-		val v = result.getResult();
+		ExecutionContext result = vm.getHelper().invokeVirtual(name, desc, new Value[0], locals);
+		Value v = result.getResult();
 		if (!v.isVoid()) {
 			stack.pushGeneric(v);
 		}
 	}
 
 	public Value invokeSpecial(Value[] locals, String owner, String name, String desc, ExecutionContext ctx) {
-		val vm = ctx.getVM();
-		val helper = vm.getHelper();
-		val klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
-		val result = helper.invokeExact(klass, name, desc, new Value[0], locals);
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
+		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
+		ExecutionContext result = helper.invokeExact(klass, name, desc, new Value[0], locals);
 		return result.getResult();
 	}
 
 	public void invokeSpecial(String owner, String name, String desc, ExecutionContext ctx) {
-		val vm = ctx.getVM();
-		val helper = vm.getHelper();
-		val klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
-		val stack = ctx.getStack();
-		val args = Type.getArgumentTypes(desc);
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
+		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
+		Stack stack = ctx.getStack();
+		Type[] args = Type.getArgumentTypes(desc);
 		int localsLength = 1;
-		for (val arg : args) {
+		for (Type arg : args) {
 			localsLength += arg.getSize();
 		}
-		val locals = new Value[localsLength];
-		while (localsLength-- != 0) {
+		Value[] locals = new Value[localsLength];
+		while(localsLength-- != 0) {
 			locals[localsLength] = stack.pop();
 		}
-		val result = helper.invokeExact(klass, name, desc, new Value[0], locals);
-		val v = result.getResult();
+		ExecutionContext result = helper.invokeExact(klass, name, desc, new Value[0], locals);
+		Value v = result.getResult();
 		if (!v.isVoid()) {
 			stack.pushGeneric(v);
 		}
 	}
 
 	public void invokeStatic(String owner, String name, String desc, ExecutionContext ctx) {
-		val mn = resolveStaticMethod(owner, name, desc, ctx);
-		val stack = ctx.getStack();
+		JavaMethod mn = resolveStaticMethod(owner, name, desc, ctx);
+		Stack stack = ctx.getStack();
 		int localsLength = mn.getMaxArgs();
-		val locals = new Value[localsLength];
-		while (localsLength-- != 0) {
+		Value[] locals = new Value[localsLength];
+		while(localsLength-- != 0) {
 			locals[localsLength] = stack.pop();
 		}
-		val vm = ctx.getVM();
-		val helper = vm.getHelper();
-		val result = helper.invokeStatic(mn.getOwner(), mn, new Value[0], locals);
-		val v = result.getResult();
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
+		ExecutionContext result = helper.invokeStatic(mn.getOwner(), mn, new Value[0], locals);
+		Value v = result.getResult();
 		if (!v.isVoid()) {
 			stack.pushGeneric(v);
 		}
@@ -582,8 +594,8 @@ public class JitHelper {
 
 	// special intrinsic version.
 	public Value invokeFail(Object owner, Object method, ExecutionContext ctx) {
-		val helper = ctx.getHelper();
-		val symbols = ctx.getSymbols();
+		VMHelper helper = ctx.getHelper();
+		VMSymbols symbols = ctx.getSymbols();
 		if (owner instanceof String) {
 			// Class was not found
 			helper.throwException(symbols.java_lang_NoClassDefFoundError, (String) owner);
@@ -593,94 +605,94 @@ public class JitHelper {
 	}
 
 	public Value invokeStatic(Value[] locals, Object owner, Object method, ExecutionContext ctx) {
-		val helper = ctx.getHelper();
-		val mn = (JavaMethod) method;
-		val stack = ctx.getStack();
-		val result = helper.invokeStatic((InstanceJavaClass) owner, mn, new Value[0], locals);
+		VMHelper helper = ctx.getHelper();
+		JavaMethod mn = (JavaMethod) method;
+		Stack stack = ctx.getStack();
+		ExecutionContext result = helper.invokeStatic((InstanceJavaClass) owner, mn, new Value[0], locals);
 		return result.getResult();
 	}
 
 	public Value invokeStatic(Value[] locals, String owner, String name, String desc, ExecutionContext ctx) {
-		val helper = ctx.getHelper();
-		val mn = resolveStaticMethod(owner, name, desc, ctx);
-		val stack = ctx.getStack();
-		val result = helper.invokeStatic(mn.getOwner(), mn, new Value[0], locals);
+		VMHelper helper = ctx.getHelper();
+		JavaMethod mn = resolveStaticMethod(owner, name, desc, ctx);
+		Stack stack = ctx.getStack();
+		ExecutionContext result = helper.invokeStatic(mn.getOwner(), mn, new Value[0], locals);
 		return result.getResult();
 	}
 
 	public Value invokeSpecial(Value[] locals, Object owner, Object method, ExecutionContext ctx) {
-		val vm = ctx.getVM();
-		val helper = vm.getHelper();
-		val stack = ctx.getStack();
-		val mn = (JavaMethod) method;
-		val result = helper.invokeExact((InstanceJavaClass) owner, mn, new Value[0], locals);
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
+		Stack stack = ctx.getStack();
+		JavaMethod mn = (JavaMethod) method;
+		ExecutionContext result = helper.invokeExact((InstanceJavaClass) owner, mn, new Value[0], locals);
 		return result.getResult();
 	}
 
 	public Value invokeVirtual(Value[] locals, Object name, Object desc, ExecutionContext ctx) {
-		val vm = ctx.getVM();
-		val stack = ctx.getStack();
-		val result = vm.getHelper().invokeVirtual((String) name, (String) desc, new Value[0], locals);
+		VirtualMachine vm = ctx.getVM();
+		Stack stack = ctx.getStack();
+		ExecutionContext result = vm.getHelper().invokeVirtual((String) name, (String) desc, new Value[0], locals);
 		return result.getResult();
 	}
 
 	public Value invokeInterface(Value[] locals, String owner, String name, String desc, ExecutionContext ctx) {
-		val vm = ctx.getVM();
-		val helper = vm.getHelper();
-		val klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
-		val result = helper.invokeInterface(klass, name, desc, new Value[0], locals);
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
+		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
+		ExecutionContext result = helper.invokeInterface(klass, name, desc, new Value[0], locals);
 		return result.getResult();
 	}
 
 	public void invokeInterface(String owner, String name, String desc, ExecutionContext ctx) {
-		val vm = ctx.getVM();
-		val helper = vm.getHelper();
-		val klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
-		val stack = ctx.getStack();
-		val args = Type.getArgumentTypes(desc);
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
+		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
+		Stack stack = ctx.getStack();
+		Type[] args = Type.getArgumentTypes(desc);
 		int localsLength = 1;
-		for (val arg : args) {
+		for (Type arg : args) {
 			localsLength += arg.getSize();
 		}
-		val locals = new Value[localsLength];
-		while (localsLength-- != 0) {
+		Value[] locals = new Value[localsLength];
+		while(localsLength-- != 0) {
 			locals[localsLength] = stack.pop();
 		}
-		val result = helper.invokeInterface(klass, name, desc, new Value[0], locals);
-		val v = result.getResult();
+		ExecutionContext result = helper.invokeInterface(klass, name, desc, new Value[0], locals);
+		Value v = result.getResult();
 		if (!v.isVoid()) {
 			stack.pushGeneric(v);
 		}
 	}
 
 	public Value allocateInstance(Object type, ExecutionContext ctx) {
-		val vm = ctx.getVM();
+		VirtualMachine vm = ctx.getVM();
 		// TODO checks like in UnsafeNatives
-		val klass = (InstanceJavaClass) type;
+		InstanceJavaClass klass = (InstanceJavaClass) type;
 		klass.initialize();
-		val instance = vm.getMemoryManager().newInstance(klass);
+		InstanceValue instance = vm.getMemoryManager().newInstance(klass);
 		vm.getHelper().initializeDefaultValues(instance);
 		return instance;
 	}
 
 	public Value allocateInstance(String desc, ExecutionContext ctx) {
-		val vm = ctx.getVM();
-		val helper = vm.getHelper();
-		val type = helper.tryFindClass(ctx.getOwner().getClassLoader(), desc, true);
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
+		JavaClass type = helper.tryFindClass(ctx.getOwner().getClassLoader(), desc, true);
 		// TODO checks like in UnsafeNatives
-		val instance = vm.getMemoryManager().newInstance((InstanceJavaClass) type);
+		InstanceValue instance = vm.getMemoryManager().newInstance((InstanceJavaClass) type);
 		helper.initializeDefaultValues(instance);
 		return instance;
 	}
 
 	public Value allocatePrimitiveArray(int length, int operand, ExecutionContext ctx) {
-		val stack = ctx.getStack();
-		val vm = ctx.getVM();
+		Stack stack = ctx.getStack();
+		VirtualMachine vm = ctx.getVM();
 		vm.getHelper().checkArrayLength(length);
-		val primitives = vm.getPrimitives();
-		val helper = vm.getHelper();
+		VMPrimitives primitives = vm.getPrimitives();
+		VMHelper helper = vm.getHelper();
 		ArrayValue array;
-		switch (operand) {
+		switch(operand) {
 			case T_LONG:
 				array = helper.newArray(primitives.longPrimitive, length);
 				break;
@@ -716,15 +728,15 @@ public class JitHelper {
 	}
 
 	public Value allocateValueArray(int length, Object klass, ExecutionContext ctx) {
-		val stack = ctx.getStack();
-		val vm = ctx.getVM();
-		val helper = vm.getHelper();
+		Stack stack = ctx.getStack();
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
 		helper.checkArrayLength(length);
 		return helper.newArray((JavaClass) klass, length);
 	}
 
 	public Value allocateValueArray(int length, String desc, ExecutionContext ctx) {
-		val helper = ctx.getHelper();
+		VMHelper helper = ctx.getHelper();
 		return allocateValueArray(length, helper.tryFindClass(ctx.getOwner().getClassLoader(), desc, false), ctx);
 	}
 
@@ -733,7 +745,7 @@ public class JitHelper {
 	}
 
 	public int getArrayLength(Value value, ExecutionContext ctx) {
-		val array = ctx.getHelper().checkNotNullArray((ObjectValue) value);
+		ArrayValue array = ctx.getHelper().checkNotNullArray((ObjectValue) value);
 		return array.getLength();
 	}
 
@@ -744,8 +756,8 @@ public class JitHelper {
 	public void throwException(Value exception, ExecutionContext ctx) {
 		if (exception.isNull()) {
 			// NPE it is then.
-			val vm = ctx.getVM();
-			val exceptionClass = vm.getSymbols().java_lang_NullPointerException;
+			VirtualMachine vm = ctx.getVM();
+			InstanceJavaClass exceptionClass = vm.getSymbols().java_lang_NullPointerException;
 			exceptionClass.initialize();
 			exception = vm.getMemoryManager().newInstance(exceptionClass);
 			vm.getHelper().invokeExact(exceptionClass, "<init>", "()V", new Value[0], new Value[]{exception});
@@ -758,10 +770,10 @@ public class JitHelper {
 	}
 
 	public Value checkCast(Value value, Object type, ExecutionContext ctx) {
-		val vm = ctx.getVM();
+		VirtualMachine vm = ctx.getVM();
 		if (!value.isNull()) {
-			val against = ((ObjectValue) value).getJavaClass();
-			val jc = (JavaClass) type;
+			JavaClass against = ((ObjectValue) value).getJavaClass();
+			JavaClass jc = (JavaClass) type;
 			if (!jc.isAssignableFrom(against)) {
 				vm.getHelper().throwException(vm.getSymbols().java_lang_ClassCastException, against.getName() + " cannot be cast to " + jc.getName());
 			}
@@ -770,7 +782,7 @@ public class JitHelper {
 	}
 
 	public Value checkCast(Value value, String desc, ExecutionContext ctx) {
-		val type = ctx.getHelper().tryFindClass(ctx.getOwner().getClassLoader(), desc, true);
+		JavaClass type = ctx.getHelper().tryFindClass(ctx.getOwner().getClassLoader(), desc, true);
 		return checkCast(value, type, ctx);
 	}
 
@@ -779,8 +791,10 @@ public class JitHelper {
 	}
 
 	public boolean instanceofResult(Value value, Object javaClass, ExecutionContext ctx) {
-		val vm = ctx.getVM();
-		if (javaClass instanceof InstanceJavaClass) ((InstanceJavaClass) javaClass).loadNoResolve();
+		VirtualMachine vm = ctx.getVM();
+		if (javaClass instanceof InstanceJavaClass) {
+			((InstanceJavaClass) javaClass).loadNoResolve();
+		}
 		if (value.isNull()) {
 			return false;
 		} else {
@@ -789,15 +803,15 @@ public class JitHelper {
 	}
 
 	public boolean instanceofResult(Value value, String desc, ExecutionContext ctx) {
-		val vm = ctx.getVM();
-		val javaClass = vm.getHelper().tryFindClass(ctx.getOwner().getClassLoader(), desc, false);
+		VirtualMachine vm = ctx.getVM();
+		JavaClass javaClass = vm.getHelper().tryFindClass(ctx.getOwner().getClassLoader(), desc, false);
 		return instanceofResult(value, javaClass, ctx);
 	}
 
 	public void instanceofResult(String desc, ExecutionContext ctx) {
-		val vm = ctx.getVM();
-		val stack = ctx.getStack();
-		val value = stack.<ObjectValue>pop();
+		VirtualMachine vm = ctx.getVM();
+		Stack stack = ctx.getStack();
+		ObjectValue value = stack.<ObjectValue>pop();
 		stack.push(instanceofResult(value, desc, ctx) ? IntValue.ONE : IntValue.ZERO);
 	}
 
@@ -819,8 +833,8 @@ public class JitHelper {
 		}
 		try {
 			((ObjectValue) value).monitorExit();
-		} catch (IllegalMonitorStateException ex) {
-			val vm = ctx.getVM();
+		} catch(IllegalMonitorStateException ex) {
+			VirtualMachine vm = ctx.getVM();
 			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalMonitorStateException);
 		}
 	}
@@ -830,11 +844,13 @@ public class JitHelper {
 	}
 
 	public Value multiNewArray(String desc, int dimensions, ExecutionContext ctx) {
-		val helper = ctx.getHelper();
-		val type = helper.tryFindClass(ctx.getOwner().getClassLoader(), desc, true);
-		val stack = ctx.getStack();
-		val lengths = new int[dimensions];
-		while (dimensions-- != 0) lengths[dimensions] = stack.pop().asInt();
+		VMHelper helper = ctx.getHelper();
+		JavaClass type = helper.tryFindClass(ctx.getOwner().getClassLoader(), desc, true);
+		Stack stack = ctx.getStack();
+		int[] lengths = new int[dimensions];
+		while(dimensions-- != 0) {
+			lengths[dimensions] = stack.pop().asInt();
+		}
 		return helper.newMultiArray((ArrayJavaClass) type, lengths);
 	}
 
@@ -847,9 +863,9 @@ public class JitHelper {
 	}
 
 	public void intToByte(ExecutionContext ctx) {
-		val stack = ctx.getStack();
-		val v = stack.peek();
-		val b = v.asByte();
+		Stack stack = ctx.getStack();
+		Value v = stack.peek();
+		byte b = v.asByte();
 		if (v.asInt() != b) {
 			stack.pop();
 			stack.push(IntValue.of(b));
@@ -857,9 +873,9 @@ public class JitHelper {
 	}
 
 	public void intToChar(ExecutionContext ctx) {
-		val stack = ctx.getStack();
-		val v = stack.peek();
-		val c = v.asChar();
+		Stack stack = ctx.getStack();
+		Value v = stack.peek();
+		char c = v.asChar();
 		if (v.asInt() != c) {
 			stack.pop();
 			stack.push(IntValue.of(c));
@@ -867,9 +883,9 @@ public class JitHelper {
 	}
 
 	public void intToShort(ExecutionContext ctx) {
-		val stack = ctx.getStack();
-		val v = stack.peek();
-		val s = v.asShort();
+		Stack stack = ctx.getStack();
+		Value v = stack.peek();
+		short s = v.asShort();
 		if (v.asInt() != s) {
 			stack.pop();
 			stack.push(IntValue.of(s));
@@ -877,12 +893,12 @@ public class JitHelper {
 	}
 
 	public VMException exceptionCaught(VMException ex, Object $classes, ExecutionContext ctx) {
-		val exceptionType = ex.getOop().getJavaClass();
-		val loader = ctx.getOwner().getClassLoader();
-		val helper = ctx.getHelper();
-		val classes = (Object[]) $classes;
+		InstanceJavaClass exceptionType = ex.getOop().getJavaClass();
+		ObjectValue loader = ctx.getOwner().getClassLoader();
+		VMHelper helper = ctx.getHelper();
+		Object[] classes = (Object[]) $classes;
 		for (int i = 0, j = classes.length; i < j; i++) {
-			val $type = classes[0];
+			Object $type = classes[0];
 			InstanceJavaClass type;
 			if ($type instanceof InstanceJavaClass) {
 				type = (InstanceJavaClass) $type;
@@ -890,19 +906,20 @@ public class JitHelper {
 				type = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), (String) $type, true);
 				classes[i] = type;
 			}
-			if (type.isAssignableFrom(exceptionType))
+			if (type.isAssignableFrom(exceptionType)) {
 				return ex;
+			}
 		}
 		throw ex;
 	}
 
 	public Value invokeDynamic(Value[] args, Object constants, int index, ExecutionContext ctx) {
-		val arr = (Object[]) constants;
-		val operand = arr[index];
+		Object[] arr = (Object[]) constants;
+		Object operand = arr[index];
 		DynamicLinkResult result;
 		if (operand instanceof InvokeDynamicInsnNode) {
-			val insn = (InvokeDynamicInsnNode) operand;
-			val linked= InvokeDynamicLinker.linkCall(insn, ctx);
+			InvokeDynamicInsnNode insn = (InvokeDynamicInsnNode) operand;
+			InstanceValue linked = InvokeDynamicLinker.linkCall(insn, ctx);
 			result = new DynamicLinkResult(linked, insn.desc);
 			arr[index] = result;
 		} else {
@@ -910,12 +927,12 @@ public class JitHelper {
 		}
 		return InvokeDynamicLinker.dynamicCall(args, result.desc, result.handle, ctx);
 	}
-	
+
 	private static JavaMethod resolveStaticMethod(String owner, String name, String desc, ExecutionContext ctx) {
-		val vm = ctx.getVM();
-		val helper = vm.getHelper();
-		val klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
-		val mn = klass.getStaticMethodRecursively(name, desc);
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
+		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
+		JavaMethod mn = klass.getStaticMethodRecursively(name, desc);
 		if (mn == null) {
 			helper.throwException(vm.getSymbols().java_lang_NoSuchMethodError, owner + '.' + name + desc);
 		}

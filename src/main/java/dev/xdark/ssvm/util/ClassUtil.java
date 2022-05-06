@@ -1,7 +1,6 @@
 package dev.xdark.ssvm.util;
 
 import lombok.experimental.UtilityClass;
-import lombok.val;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -24,7 +23,7 @@ public class ClassUtil {
 	 * @return read node.
 	 */
 	public ClassNode readNode(ClassReader reader) {
-		val node = new ClassNode();
+		ClassNode node = new ClassNode();
 		reader.accept(node, ClassReader.SKIP_FRAMES);
 		return node;
 	}

@@ -1,8 +1,9 @@
 package dev.xdark.ssvm.thread;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.InstanceValue;
-import lombok.val;
 
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -20,7 +21,8 @@ public final class NopThreadManager implements ThreadManager {
 	private final VirtualMachine vm;
 
 	/**
-	 * @param vm VM instance.
+	 * @param vm
+	 * 		VM instance.
 	 */
 	public NopThreadManager(VirtualMachine vm) {
 		this.vm = vm;
@@ -28,17 +30,17 @@ public final class NopThreadManager implements ThreadManager {
 
 	@Override
 	public VMThread getVmThread(Thread thread) {
-		val threadMap = this.threadMap;
-		val current = threadMap.get(thread);
+		Map<Thread, VMThread> threadMap = this.threadMap;
+		VMThread current = threadMap.get(thread);
 		if (current != null) {
 			return current;
 		}
-		val vm = this.vm;
-		val klass = vm.getSymbols().java_lang_Thread;
+		VirtualMachine vm = this.vm;
+		InstanceJavaClass klass = vm.getSymbols().java_lang_Thread;
 		klass.initialize();
-		val instance = vm.getMemoryManager().newInstance(klass);
-		val helper = vm.getHelper();
-		val vmThread = new NopVMThread(instance, thread);
+		InstanceValue instance = vm.getMemoryManager().newInstance(klass);
+		VMHelper helper = vm.getHelper();
+		NopVMThread vmThread = new NopVMThread(instance, thread);
 		threadMap.put(thread, vmThread);
 		helper.screenVmThread(vmThread);
 		return vmThread;

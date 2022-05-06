@@ -1,6 +1,5 @@
 package dev.xdark.ssvm.enhanced;
 
-import lombok.val;
 import org.junit.jupiter.api.Test;
 
 public class StringTest {
@@ -19,7 +18,7 @@ public class StringTest {
 
 	@VMTest
 	private static void testIndexOf() {
-		val str = "A B C D E F";
+		String str = "A B C D E F";
 		int idx = 0;
 		for (int i = 0; i < 6; i++) {
 			if (str.charAt(idx) != ('A' + i)) {
@@ -31,7 +30,7 @@ public class StringTest {
 
 	@VMTest
 	private static void testIndexOf2() {
-		val str = "Random text";
+		String str = "Random text";
 		if (str.indexOf("text") != 7) {
 			throw new IllegalStateException();
 		}
@@ -42,7 +41,7 @@ public class StringTest {
 
 	@VMTest
 	private static void testLastIndexOf() {
-		val str = "part1 part2 part3 part1";
+		String str = "part1 part2 part3 part1";
 		if (str.lastIndexOf("part1") != 18) {
 			throw new IllegalStateException();
 		}
@@ -53,7 +52,7 @@ public class StringTest {
 
 	@VMTest
 	private static void testLength() {
-		val str = "string to check length for";
+		String str = "string to check length for";
 		if (str.length() != 26) {
 			throw new IllegalStateException();
 		}

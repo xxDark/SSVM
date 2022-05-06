@@ -3,11 +3,9 @@ package dev.xdark.ssvm.execution.asm;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.util.BiDoubleToDoubleFunction;
-import dev.xdark.ssvm.util.BiLongToLongFunction;
 import dev.xdark.ssvm.value.DoubleValue;
-import dev.xdark.ssvm.value.LongValue;
-import lombok.val;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 /**
@@ -29,9 +27,9 @@ public final class BiDoubleProcessor implements InstructionProcessor<AbstractIns
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
-		val stack = ctx.getStack();
-		val v2 = stack.popWide().asDouble();
-		val v1 = stack.popWide().asDouble();
+		Stack stack = ctx.getStack();
+		double v2 = stack.popWide().asDouble();
+		double v1 = stack.popWide().asDouble();
 		stack.pushWide(new DoubleValue(op.apply(v1, v2)));
 		return Result.CONTINUE;
 	}

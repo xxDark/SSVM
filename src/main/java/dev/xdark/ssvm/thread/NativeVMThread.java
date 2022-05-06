@@ -1,7 +1,6 @@
 package dev.xdark.ssvm.thread;
 
 import dev.xdark.ssvm.value.InstanceValue;
-import lombok.val;
 
 /**
  * Basic implementation of a VM thread.
@@ -49,7 +48,7 @@ public final class NativeVMThread extends BaseVMThread {
 
 	@Override
 	public boolean isInterrupted(boolean clear) {
-		val thread = this.thread;
+		Thread thread = this.thread;
 		if (clear && Thread.currentThread() == thread) {
 			return Thread.interrupted();
 		}

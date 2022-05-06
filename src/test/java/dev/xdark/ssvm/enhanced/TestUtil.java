@@ -5,28 +5,33 @@ import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.fs.FileDescriptorManager;
 import dev.xdark.ssvm.fs.HostFileDescriptorManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
-import lombok.val;
+import org.objectweb.asm.tree.AnnotationNode;
+import org.objectweb.asm.tree.MethodNode;
 import org.opentest4j.TestAbortedException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
 import java.util.function.Consumer;
 
 @UtilityClass
 public class TestUtil {
 
 	public void test(Class<?> klass, boolean bootstrap, Consumer<InstanceJavaClass> init) {
-		val vm = newVirtualMachine();
+		VirtualMachine vm = newVirtualMachine();
 		if (bootstrap) {
 			vm.bootstrap();
 		}
 		byte[] result;
-		try(val in = TestUtil.class.getClassLoader().getResourceAsStream(klass.getName().replace('.', '/') + ".class")) {
-			val bytes = new byte[1024];
-			val out = new ByteArrayOutputStream(1024);
+		try(InputStream in = TestUtil.class.getClassLoader().getResourceAsStream(klass.getName().replace('.', '/') + ".class")) {
+			byte[] bytes = new byte[1024];
+			ByteArrayOutputStream out = new ByteArrayOutputStream(1024);
 			int r;
 			while((r = in.read(bytes)) != -1) {
 				out.write(bytes, 0, r);
@@ -35,7 +40,7 @@ public class TestUtil {
 		} catch(IOException ex) {
 			throw new RuntimeException(ex);
 		}
-		val helper = vm.getHelper();
+		VMHelper helper = vm.getHelper();
 		InstanceJavaClass res;
 		try {
 			res = helper.defineClass(NullValue.INSTANCE, null, result, 0, result.length, NullValue.INSTANCE, "JVM_DefineClass");
@@ -45,9 +50,9 @@ public class TestUtil {
 		if (init != null) {
 			init.accept(res);
 		}
-		for (val m : res.getStaticMethodLayout().getAll()) {
-			val node = m.getNode();
-			val annotations = node.visibleAnnotations;
+		for (JavaMethod m : res.getStaticMethodLayout().getAll()) {
+			MethodNode node = m.getNode();
+			List<AnnotationNode> annotations = node.visibleAnnotations;
 			if (annotations == null || annotations.stream().noneMatch(x -> "Ldev/xdark/ssvm/enhanced/VMTest;".equals(x.desc))) {
 				continue;
 			}

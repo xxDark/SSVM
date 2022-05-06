@@ -4,7 +4,6 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import lombok.val;
 import org.objectweb.asm.Opcodes;
 
 /**
@@ -91,7 +90,7 @@ public final class PrimitiveClass implements JavaClass {
 	public ArrayJavaClass newArrayClass() {
 		ArrayJavaClass arrayClass = this.arrayClass;
 		if (arrayClass == null) {
-			val vm = this.vm;
+			VirtualMachine vm = this.vm;
 			arrayClass = this.arrayClass = new ArrayJavaClass(vm, '[' + descriptor, 1, this);
 			vm.getHelper().setComponentType(arrayClass, this);
 		}

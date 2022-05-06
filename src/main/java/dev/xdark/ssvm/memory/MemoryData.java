@@ -158,7 +158,7 @@ public interface MemoryData {
 	 * WVolatile version of {@link MemoryData#writeByte(long, byte)}.
 	 */
 	void writeByteVolatile(long offset, byte value);
-	
+
 	/**
 	 * Fills data region.
 	 *

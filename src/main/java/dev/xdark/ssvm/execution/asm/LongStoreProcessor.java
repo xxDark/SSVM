@@ -2,9 +2,8 @@ package dev.xdark.ssvm.execution.asm;
 
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
+import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.value.TopValue;
-import lombok.val;
 import org.objectweb.asm.tree.VarInsnNode;
 
 /**
@@ -16,8 +15,8 @@ public final class LongStoreProcessor implements InstructionProcessor<VarInsnNod
 
 	@Override
 	public Result execute(VarInsnNode insn, ExecutionContext ctx) {
-		val locals = ctx.getLocals();
-		val var = insn.var;
+		Locals locals = ctx.getLocals();
+		int var = insn.var;
 		locals.setWide(var, ctx.getStack().popWide());
 		return Result.CONTINUE;
 	}

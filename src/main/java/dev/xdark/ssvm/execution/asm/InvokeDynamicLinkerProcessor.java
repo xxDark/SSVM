@@ -5,7 +5,8 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.util.InvokeDynamicLinker;
-import lombok.val;
+import dev.xdark.ssvm.value.InstanceValue;
+import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 
 /**
@@ -17,9 +18,9 @@ public final class InvokeDynamicLinkerProcessor implements InstructionProcessor<
 
 	@Override
 	public Result execute(InvokeDynamicInsnNode insn, ExecutionContext ctx) {
-		val linked = InvokeDynamicLinker.linkCall(insn, ctx);
+		InstanceValue linked = InvokeDynamicLinker.linkCall(insn, ctx);
 		// Rewrite instruction
-		val list = ctx.getMethod().getNode().instructions;
+		InsnList list = ctx.getMethod().getNode().instructions;
 		list.set(insn, new LinkedDynamicCallNode(insn, linked));
 		// Move insn position backwards so that VM visits
 		// us yet again.

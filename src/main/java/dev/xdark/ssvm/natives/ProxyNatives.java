@@ -1,11 +1,19 @@
 package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.api.VMInterface;
+import dev.xdark.ssvm.classloading.ClassParseResult;
+import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.value.*;
+import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.util.VMSymbols;
+import dev.xdark.ssvm.value.ArrayValue;
+import dev.xdark.ssvm.value.JavaValue;
+import dev.xdark.ssvm.value.NullValue;
+import dev.xdark.ssvm.value.ObjectValue;
+import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
-import lombok.val;
 
 /**
  * Initializes java/lang/reflect/Proxy.
@@ -22,21 +30,21 @@ public class ProxyNatives {
 	 * 		VM instance.
 	 */
 	public void init(VirtualMachine vm) {
-		val vmi = vm.getInterface();
-		val symbols = vm.getSymbols();
-		val jc = symbols.java_lang_reflect_Proxy;
+		VMInterface vmi = vm.getInterface();
+		VMSymbols symbols = vm.getSymbols();
+		InstanceJavaClass jc = symbols.java_lang_reflect_Proxy;
 		vmi.setInvoker(jc, "defineClass0", "(Ljava/lang/ClassLoader;Ljava/lang/String;[BII)Ljava/lang/Class;", ctx -> {
 			// Simply invoke defineClass in a loader.
-			val locals = ctx.getLocals();
-			val helper = vm.getHelper();
-			val loader = locals.<ObjectValue>load(0);
-			val name = locals.load(1);
-			val bytes = helper.checkNotNullArray(locals.load(2));
-			val off = locals.load(3);
-			val len = locals.load(4);
+			Locals locals = ctx.getLocals();
+			VMHelper helper = vm.getHelper();
+			ObjectValue loader = locals.<ObjectValue>load(0);
+			Value name = locals.load(1);
+			ArrayValue bytes = helper.checkNotNullArray(locals.load(2));
+			Value off = locals.load(3);
+			Value len = locals.load(4);
 			InstanceJavaClass result;
 			if (loader.isNull()) {
-				val parsed = vm.getClassDefiner().parseClass(helper.readUtf8(name), helper.toJavaBytes(bytes), off.asInt(), len.asInt(), "JVM_DefineClass");
+				ClassParseResult parsed = vm.getClassDefiner().parseClass(helper.readUtf8(name), helper.toJavaBytes(bytes), off.asInt(), len.asInt(), "JVM_DefineClass");
 				if (parsed == null) {
 					helper.throwException(symbols.java_lang_InternalError, "Invalid bytecode");
 				}

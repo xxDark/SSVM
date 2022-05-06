@@ -1,7 +1,6 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
-    id 'io.freefair.lombok' version '6.4.2'
 }
 
 group 'dev.xdark'
@@ -22,7 +21,7 @@ tasks.withType(JavaCompile) {
 }
 
 task sourcesJar(type: Jar) {
-    from sourceSets.main.delombokTask
+    from sourceSets.main.java
     classifier = 'sources'
 }
 
@@ -51,8 +50,8 @@ test {
 publishing {
     repositories {
         maven {
-            name = 'tmp-delombok-repo'
-            url = 'file:///tmp/delombok-repo'
+            name = 'sources-repo'
+            url = 'file:///tmp/sources-repo'
         }
     }
     publications {

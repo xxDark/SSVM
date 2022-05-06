@@ -2,11 +2,11 @@ package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.classloading.BootClassLoader;
 import dev.xdark.ssvm.classloading.ClassLoaderData;
+import dev.xdark.ssvm.classloading.ClassLoaders;
 import dev.xdark.ssvm.classloading.ClassParseResult;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.value.NullValue;
-import lombok.val;
 
 /**
  * Holder for the boot class loader.
@@ -46,17 +46,17 @@ final class BootClassLoaderHolder {
 	JavaClass findBootClass(String name) {
 		int dimensions = 0;
 		while (name.charAt(dimensions) == '[') dimensions++;
-		val data = this.data;
-		val trueName = dimensions == 0 ? name : name.substring(dimensions + 1, name.length() - 1);
+		ClassLoaderData data = this.data;
+		String trueName = dimensions == 0 ? name : name.substring(dimensions + 1, name.length() - 1);
 		InstanceJavaClass jc;
 		JavaClass res;
 		synchronized (data) {
 			jc = data.getClass(trueName);
 			if (jc == null) {
-				val result = bootClassLoader.findBootClass(trueName);
+				ClassParseResult result = bootClassLoader.findBootClass(trueName);
 				if (result == null) return null;
-				val vm = this.vm;
-				val classLoaders = vm.getClassLoaders();
+				VirtualMachine vm = this.vm;
+				ClassLoaders classLoaders = vm.getClassLoaders();
 				jc = classLoaders.constructClass(NullValue.INSTANCE, result.getClassReader(), result.getNode());
 				classLoaders.setClassOop(jc);
 				data.linkClass(jc);

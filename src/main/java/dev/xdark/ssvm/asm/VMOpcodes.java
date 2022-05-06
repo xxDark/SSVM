@@ -4,8 +4,6 @@ import lombok.experimental.UtilityClass;
 
 /**
  * Set of opcodes for the VM.
- * For set of JVM reserved opcodes,
- * see {@link JVMOpcodes}.
  *
  * @author xDark
  */

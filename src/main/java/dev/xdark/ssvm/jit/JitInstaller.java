@@ -1,12 +1,15 @@
 package dev.xdark.ssvm.jit;
 
+import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.UnsafeUtil;
 import lombok.experimental.UtilityClass;
-import lombok.val;
+import sun.misc.Unsafe;
 
+import java.lang.reflect.Field;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -31,18 +34,19 @@ public class JitInstaller {
 	 * 		If resulting class cannot be instantiated.
 	 */
 	public void install(JavaMethod method, ClassDefiner definer, JitClass jitClass) throws ReflectiveOperationException {
-		val c = definer.define(jitClass);
-		val constants = jitClass.getConstants();
+		Class<?> c = definer.define(jitClass);
+		List<Object> constants = jitClass.getConstants();
 		if (!constants.isEmpty()) {
-			val field = c.getDeclaredField("constants");
+			Field field = c.getDeclaredField("constants");
 			try {
 				Class.forName(c.getName(), true, c.getClassLoader());
-			} catch (ClassNotFoundException ignored) {}
-			val u = UnsafeUtil.get();
+			} catch(ClassNotFoundException ignored) {
+			}
+			Unsafe u = UnsafeUtil.get();
 			u.putObject(u.staticFieldBase(field), u.staticFieldOffset(field), constants.toArray());
 		}
-		val cons = (Consumer<ExecutionContext>) c.getConstructor().newInstance();
-		val vm = method.getOwner().getVM();
+		Consumer<ExecutionContext> cons = (Consumer<ExecutionContext>) c.getConstructor().newInstance();
+		VirtualMachine vm = method.getOwner().getVM();
 		vm.getInterface().setInvoker(method, ctx -> {
 			cons.accept(ctx);
 			return Result.ABORT;

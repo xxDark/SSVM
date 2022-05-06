@@ -1,7 +1,5 @@
 package dev.xdark.ssvm.thread;
 
-import lombok.val;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -25,13 +23,13 @@ public final class SimpleBacktrace implements Backtrace {
 
 	@Override
 	public StackFrame first() {
-		val backtrace = this.backtrace;
+		List<StackFrame> backtrace = this.backtrace;
 		return backtrace.isEmpty() ? null : backtrace.get(0);
 	}
 
 	@Override
 	public StackFrame last() {
-		val backtrace = this.backtrace;
+		List<StackFrame> backtrace = this.backtrace;
 		return backtrace.isEmpty() ? null : backtrace.get(backtrace.size() - 1);
 	}
 
@@ -52,7 +50,7 @@ public final class SimpleBacktrace implements Backtrace {
 
 	@Override
 	public StackFrame pop() {
-		val backtrace = this.backtrace;
+		List<StackFrame> backtrace = this.backtrace;
 		return backtrace.remove(backtrace.size() - 1);
 	}
 

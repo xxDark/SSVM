@@ -1,10 +1,15 @@
 package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.value.ArrayValue;
 import lombok.experimental.UtilityClass;
-import lombok.val;
+
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * Initializes jdk/internal/util/SystemProps.
@@ -60,19 +65,19 @@ public class SystemPropsNatives {
 	 * 		VM instance.
 	 */
 	public void init(VirtualMachine vm) {
-		val jc = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/util/SystemProps$Raw");
+		InstanceJavaClass jc = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/util/SystemProps$Raw");
 		if (jc != null) {
-			val vmi = vm.getInterface();
+			VMInterface vmi = vm.getInterface();
 			vmi.setInvoker(jc, "platformProperties", "()[Ljava/lang/String;", ctx -> {
 				ctx.setResult(vm.getHelper().newArray(vm.getSymbols().java_lang_String, FIXED_LENGTH));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(jc, "vmProperties", "()[Ljava/lang/String;", ctx -> {
-				val properties = vm.getProperties();
-				val helper = vm.getHelper();
-				val array = helper.newArray(vm.getSymbols().java_lang_String, properties.size() * 2);
+				Properties properties = vm.getProperties();
+				VMHelper helper = vm.getHelper();
+				ArrayValue array = helper.newArray(vm.getSymbols().java_lang_String, properties.size() * 2);
 				int i = 0;
-				for (val entry : properties.entrySet()) {
+				for (Map.Entry<Object, Object> entry : properties.entrySet()) {
 					array.setValue(i++, helper.newUtf8(entry.getKey().toString()));
 					array.setValue(i++, helper.newUtf8(entry.getValue().toString()));
 				}

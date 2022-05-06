@@ -4,7 +4,6 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.NullValue;
-import lombok.val;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 
@@ -203,9 +202,9 @@ public final class VMSymbols {
 	private static InstanceJavaClass resolvedMemberName(VirtualMachine vm) {
 		InstanceJavaClass jc = (InstanceJavaClass) vm.findBootstrapClass("java/lang/invoke/ResolvedMethodName");
 		if (jc == null) {
-			val writer = new ClassWriter(0);
+			ClassWriter writer = new ClassWriter(0);
 			writer.visit(Opcodes.V1_8, Modifier.ACC_VM_HIDDEN, "java/lang/invoke/ResolvedMethodName", null, "java/lang/Object", null);
-			val b = writer.toByteArray();
+			byte[] b = writer.toByteArray();
 			jc = vm.getHelper().defineClass(NullValue.INSTANCE, "java/lang/invoke/ResolvedMethodName", b, 0, b.length, NullValue.INSTANCE, "JVM_DefineClass");
 		}
 		return jc;

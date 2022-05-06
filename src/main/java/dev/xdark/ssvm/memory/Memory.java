@@ -1,7 +1,5 @@
 package dev.xdark.ssvm.memory;
 
-import java.nio.ByteBuffer;
-
 /**
  * Represents allocated memory block.
  *

@@ -14,7 +14,8 @@ public interface ThreadStorage {
 	 * Returns an array slice of data.
 	 *
 	 * @param size
-	 *      Array size.
+	 * 		Array size.
+	 *
 	 * @return array slice.
 	 */
 	ThreadRegion push(int size);
@@ -23,7 +24,7 @@ public interface ThreadStorage {
 	 * Decreases current index.
 	 *
 	 * @param size
-	 *      Decrease count.
+	 * 		Decrease count.
 	 */
 	void pop(int size);
 
@@ -31,7 +32,8 @@ public interface ThreadStorage {
 	 * Creates new stack.
 	 *
 	 * @param size
-	 *      Stack size.
+	 * 		Stack size.
+	 *
 	 * @return new stack.
 	 */
 	Stack newStack(int size);
@@ -40,7 +42,8 @@ public interface ThreadStorage {
 	 * Creates new locals.
 	 *
 	 * @param size
-	 *      Locals size.
+	 * 		Locals size.
+	 *
 	 * @return new locals.
 	 */
 	Locals newLocals(int size);

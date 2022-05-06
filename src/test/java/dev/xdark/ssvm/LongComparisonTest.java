@@ -1,10 +1,12 @@
 package dev.xdark.ssvm;
 
+import dev.xdark.ssvm.execution.ExecutionContext;
+import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.Value;
-import lombok.val;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.tree.ClassNode;
 
 import java.util.concurrent.ThreadLocalRandom;
@@ -23,39 +25,39 @@ public class LongComparisonTest {
 
 	@Test // a < b (< 0)
 	public void test_LCMP_LT() {
-		val a = nextLong();
-		val b = a + 1;
+		long a = nextLong();
+		long b = a + 1;
 		assertTrue(doLongOp(a, b, IFLT));
 	}
 
 	@Test // a <= b (<= 0)
 	public void test_LCMP_LE() {
-		val a = nextLong();
-		val b = a + 1;
+		long a = nextLong();
+		long b = a + 1;
 		assertTrue(doLongOp(a, b, IFLE));
 		assertTrue(doLongOp(a, a, IFLE));
 	}
 
 	@Test // a > b (> 0)
 	public void test_LCMP_GT() {
-		val a = nextLong();
-		val b = a - 1;
+		long a = nextLong();
+		long b = a - 1;
 		assertTrue(doLongOp(a, b, IFGT));
 	}
 
 	@Test // a >= b (>= 0)
 	public void test_LCMP_GE() {
-		val a = nextLong();
-		val b = a - 1;
+		long a = nextLong();
+		long b = a - 1;
 		assertTrue(doLongOp(a, b, IFGE));
 		assertTrue(doLongOp(a, a, IFGE));
 	}
 
 	private static boolean doLongOp(long a, long b, int opcode) {
-		val node = new ClassNode();
+		ClassNode node = new ClassNode();
 		node.visit(V11, ACC_PUBLIC, "Test", null, null, null);
-		val mv = node.visitMethod(ACC_STATIC, "test", "()Z", null, null);
-		val label = new Label();
+		MethodVisitor mv = node.visitMethod(ACC_STATIC, "test", "()Z", null, null);
+		Label label = new Label();
 		mv.visitLdcInsn(a);
 		mv.visitLdcInsn(b);
 		mv.visitInsn(LCMP);
@@ -66,8 +68,8 @@ public class LongComparisonTest {
 		mv.visitInsn(ICONST_1);
 		mv.visitInsn(IRETURN);
 		mv.visitMaxs(4, 0);
-		val jc = TestUtil.createClass(vm, node);
-		val result = vm.getHelper().invokeStatic(jc, "test", "()Z", new Value[0], new Value[0]);
+		InstanceJavaClass jc = TestUtil.createClass(vm, node);
+		ExecutionContext result = vm.getHelper().invokeStatic(jc, "test", "()Z", new Value[0], new Value[0]);
 		return result.getResult().asBoolean();
 	}
 

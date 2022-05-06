@@ -1,8 +1,9 @@
 package dev.xdark.ssvm.util;
 
 import lombok.experimental.UtilityClass;
-import lombok.val;
 import sun.misc.Unsafe;
+
+import java.lang.reflect.Field;
 
 /**
  * Unsafe utilities.
@@ -32,7 +33,7 @@ public class UnsafeUtil {
 	 */
 	@SuppressWarnings("DuplicateBranchesInSwitch")
 	public long getSizeFor(String desc) {
-		switch (desc) {
+		switch(desc) {
 			case "J":
 			case "D":
 				return 8L;
@@ -59,8 +60,8 @@ public class UnsafeUtil {
 	 * @return address of an object.
 	 */
 	public long addressOf(Object value) {
-		val helper = new Object[]{value};
-		switch (ADDRESS_SIZE) {
+		Object[] helper = new Object[]{value};
+		switch(ADDRESS_SIZE) {
 			case 1:
 				return UNSAFE.getInt(helper, Unsafe.ARRAY_OBJECT_BASE_OFFSET);
 			case 2:
@@ -79,8 +80,8 @@ public class UnsafeUtil {
 	 * @return object at the specific address.
 	 */
 	public Object byAddress(long address) {
-		val helper = new Object[]{null};
-		switch (ADDRESS_SIZE) {
+		Object[] helper = new Object[]{null};
+		switch(ADDRESS_SIZE) {
 			case 1:
 				UNSAFE.putInt(helper, Unsafe.ARRAY_OBJECT_BASE_OFFSET, (int) address);
 				break;
@@ -95,10 +96,10 @@ public class UnsafeUtil {
 
 	static {
 		try {
-			val field = Unsafe.class.getDeclaredField("theUnsafe");
+			Field field = Unsafe.class.getDeclaredField("theUnsafe");
 			field.setAccessible(true);
 			UNSAFE = (Unsafe) field.get(null);
-		} catch (NoSuchFieldException | IllegalAccessException ex) {
+		} catch(NoSuchFieldException | IllegalAccessException ex) {
 			throw new ExceptionInInitializerError(ex);
 		}
 	}

@@ -3,9 +3,9 @@ package dev.xdark.ssvm.execution.asm;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.util.BiLongToLongFunction;
 import dev.xdark.ssvm.value.LongValue;
-import lombok.val;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 /**
@@ -27,9 +27,9 @@ public final class BiLongProcessor implements InstructionProcessor<AbstractInsnN
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
-		val stack = ctx.getStack();
-		val v2 = stack.popWide().asLong();
-		val v1 = stack.popWide().asLong();
+		Stack stack = ctx.getStack();
+		long v2 = stack.popWide().asLong();
+		long v1 = stack.popWide().asLong();
 		stack.pushWide(LongValue.of(op.apply(v1, v2)));
 		return Result.CONTINUE;
 	}

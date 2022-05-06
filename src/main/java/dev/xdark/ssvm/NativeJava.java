@@ -5,10 +5,12 @@ import dev.xdark.ssvm.asm.VMOpcodes;
 import dev.xdark.ssvm.execution.asm.*;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.natives.*;
+import dev.xdark.ssvm.util.VMSymbols;
 import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.Value;
-import lombok.val;
 import org.objectweb.asm.tree.FieldNode;
+
+import java.util.List;
 
 import static dev.xdark.ssvm.asm.Modifier.ACC_VM_HIDDEN;
 import static dev.xdark.ssvm.asm.VMOpcodes.DYNAMIC_CALL;
@@ -35,7 +37,7 @@ public final class NativeJava {
 	 * 		VM to set up.
 	 */
 	static void init(VirtualMachine vm) {
-		val vmi = vm.getInterface();
+		VMInterface vmi = vm.getInterface();
 		setInstructions(vmi);
 		injectPhase2(vm);
 		ClassNatives.init(vm);
@@ -96,8 +98,8 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	static void injectPhase1(VirtualMachine vm) {
-		val cl = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Class");
-		val fields = cl.getNode().fields;
+		InstanceJavaClass cl = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Class");
+		List<FieldNode> fields = cl.getNode().fields;
 		fields.add(new FieldNode(
 				ACC_PRIVATE | ACC_VM_HIDDEN,
 				PROTECTION_DOMAIN,
@@ -121,8 +123,8 @@ public final class NativeJava {
 	 * 		VM instance.
 	 */
 	static void injectPhase2(VirtualMachine vm) {
-		val symbols = vm.getSymbols();
-		val classLoader = symbols.java_lang_ClassLoader;
+		VMSymbols symbols = vm.getSymbols();
+		InstanceJavaClass classLoader = symbols.java_lang_ClassLoader;
 
 		classLoader.getNode().fields.add(new FieldNode(
 				ACC_PRIVATE | ACC_VM_HIDDEN,
@@ -134,8 +136,8 @@ public final class NativeJava {
 
 		inject:
 		{
-			val memberName = symbols.java_lang_invoke_MemberName;
-			val fields = memberName.getNode().fields;
+			InstanceJavaClass memberName = symbols.java_lang_invoke_MemberName;
+			List<FieldNode> fields = memberName.getNode().fields;
 			fields.add(new FieldNode(
 					ACC_PRIVATE | ACC_VM_HIDDEN,
 					VM_INDEX,
@@ -144,7 +146,7 @@ public final class NativeJava {
 					null
 			));
 			for (int i = 0; i < fields.size(); i++) {
-				val fn = fields.get(i);
+				FieldNode fn = fields.get(i);
 				if ("method".equals(fn.name) && "Ljava/lang/invoke/ResolvedMethodName;".equals(fn.desc)) {
 					break inject;
 				}
@@ -159,8 +161,8 @@ public final class NativeJava {
 		}
 
 		{
-			val resolvedMethodName = symbols.java_lang_invoke_ResolvedMethodName;
-			val fields = resolvedMethodName.getNode().fields;
+			InstanceJavaClass resolvedMethodName = symbols.java_lang_invoke_ResolvedMethodName;
+			List<FieldNode> fields = resolvedMethodName.getNode().fields;
 			fields.add(new FieldNode(
 					ACC_PRIVATE | ACC_VM_HIDDEN,
 					VM_TARGET,
@@ -178,12 +180,12 @@ public final class NativeJava {
 		}
 		inject:
 		{
-			val fd = symbols.java_io_FileDescriptor;
+			InstanceJavaClass fd = symbols.java_io_FileDescriptor;
 			// For whatever reason unix/macos does not have
 			// 'handle' field, we need to inject it
-			val fields = fd.getNode().fields;
+			List<FieldNode> fields = fd.getNode().fields;
 			for (int i = 0; i < fields.size(); i++) {
-				val fn = fields.get(i);
+				FieldNode fn = fields.get(i);
 				if ("handle".equals(fn.name) && "J".equals(fn.desc)) {
 					break inject;
 				}
@@ -205,8 +207,7 @@ public final class NativeJava {
 	 * 		VM interface.
 	 */
 	private static void setInstructions(VMInterface vmi) {
-		val nop = new NopProcessor();
-		vmi.setProcessor(NOP, nop);
+		vmi.setProcessor(NOP, new NopProcessor());
 
 		vmi.setProcessor(ACONST_NULL, new ConstantProcessor(NullValue.INSTANCE));
 

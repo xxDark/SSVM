@@ -42,13 +42,21 @@ public final class SimpleMemberKey implements MemberKey {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (!(o instanceof MemberKey)) return false;
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof MemberKey)) {
+			return false;
+		}
 
 		MemberKey memberKey = (MemberKey) o;
 
-		if (!owner.equals(memberKey.getOwner())) return false;
-		if (!name.equals(memberKey.getName())) return false;
+		if (!owner.equals(memberKey.getOwner())) {
+			return false;
+		}
+		if (!name.equals(memberKey.getName())) {
+			return false;
+		}
 		return desc.equals(memberKey.getDesc());
 	}
 

@@ -1,5 +1,7 @@
 package dev.xdark.ssvm;
 
+import dev.xdark.ssvm.api.MethodInvocation;
+import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.classloading.*;
 import dev.xdark.ssvm.execution.ExecutionContext;
@@ -15,8 +17,8 @@ import dev.xdark.ssvm.memory.SimpleMemoryManager;
 import dev.xdark.ssvm.memory.SimpleStringPool;
 import dev.xdark.ssvm.memory.StringPool;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.natives.IntrinsicsNatives;
 import dev.xdark.ssvm.nt.NativeLibraryManager;
 import dev.xdark.ssvm.nt.SimpleNativeLibraryManager;
@@ -27,13 +29,15 @@ import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.util.VMPrimitives;
 import dev.xdark.ssvm.util.VMSymbols;
 import dev.xdark.ssvm.value.*;
-import lombok.val;
+import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.ClassNode;
 
 import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Queue;
 
 public class VirtualMachine {
 
@@ -56,13 +60,13 @@ public class VirtualMachine {
 
 	public VirtualMachine(Object... args) {
 		init(args);
-		val classLoaders = createClassLoaders();
+		ClassLoaders classLoaders = createClassLoaders();
 		this.classLoaders = classLoaders;
 		bootClassLoader = new BootClassLoaderHolder(this, createBootClassLoader(), classLoaders.setClassLoaderData(NullValue.INSTANCE));
 		// java/lang/Object & java/lang/Class must be loaded manually,
 		// otherwise some MemoryManager implementations will bottleneck.
-		val klass = internalLink("java/lang/Class");
-		val object = internalLink("java/lang/Object");
+		InstanceJavaClass klass = internalLink("java/lang/Class");
+		InstanceJavaClass object = internalLink("java/lang/Object");
 		NativeJava.injectPhase1(this);
 		memoryManager = createMemoryManager();
 		vmInterface = new VMInterface();
@@ -75,7 +79,7 @@ public class VirtualMachine {
 		object.link();
 		klass.link();
 		classDefiner = createClassDefiner();
-		val symbols = new VMSymbols(this);
+		VMSymbols symbols = new VMSymbols(this);
 		this.symbols = symbols;
 		primitives = new VMPrimitives(this);
 		fileDescriptorManager = createFileDescriptorManager();
@@ -87,7 +91,7 @@ public class VirtualMachine {
 
 		(properties = new Properties()).putAll(System.getProperties());
 		env = new HashMap<>(System.getenv());
-		val groupClass = symbols.java_lang_ThreadGroup;
+		InstanceJavaClass groupClass = symbols.java_lang_ThreadGroup;
 		groupClass.initialize();
 
 		 IntrinsicsNatives.init(this);
@@ -101,17 +105,17 @@ public class VirtualMachine {
 	 * Full VM initialization.
 	 */
 	public void bootstrap() {
-		val symbols = this.symbols;
+		VMSymbols symbols = this.symbols;
 		symbols.java_lang_ClassLoader.initialize();
-		val helper = this.helper;
-		val sysClass = symbols.java_lang_System;
-		val memoryManager = this.memoryManager;
-		val threadManager = this.threadManager;
+		VMHelper helper = this.helper;
+		InstanceJavaClass sysClass = symbols.java_lang_System;
+		MemoryManager memoryManager = this.memoryManager;
+		ThreadManager threadManager = this.threadManager;
 
 		// Inject unsafe constants
 		// This must be done first, otherwise
 		// jdk/internal/misc/Unsafe will cache wrong values
-		val unsafeConstants = (InstanceJavaClass) findBootstrapClass("jdk/internal/misc/UnsafeConstants", true);
+		InstanceJavaClass unsafeConstants = (InstanceJavaClass) findBootstrapClass("jdk/internal/misc/UnsafeConstants", true);
 		if (unsafeConstants != null) {
 			unsafeConstants.initialize();
 			unsafeConstants.setFieldValue("ADDRESS_SIZE0", "I", IntValue.of(memoryManager.addressSize()));
@@ -119,19 +123,19 @@ public class VirtualMachine {
 			unsafeConstants.setFieldValue("BIG_ENDIAN", "Z", memoryManager.getByteOrder() == ByteOrder.BIG_ENDIAN ? IntValue.ONE : IntValue.ZERO);
 		}
 		// Initialize system group
-		val groupClass = symbols.java_lang_ThreadGroup;
-		val sysGroup = memoryManager.newInstance(groupClass);
+		InstanceJavaClass groupClass = symbols.java_lang_ThreadGroup;
+		InstanceValue sysGroup = memoryManager.newInstance(groupClass);
 		helper.invokeExact(groupClass, "<init>", "()V", new Value[0], new Value[]{sysGroup});
 		// Initialize main thread
-		val mainThread = threadManager.currentThread();
-		val oop = mainThread.getOop();
+		VMThread mainThread = threadManager.currentThread();
+		InstanceValue oop = mainThread.getOop();
 		oop.setValue("group", "Ljava/lang/ThreadGroup;", sysGroup);
 		sysClass.initialize();
 		findBootstrapClass("java/lang/reflect/Method", true);
 		findBootstrapClass("java/lang/reflect/Field", true);
 		findBootstrapClass("java/lang/reflect/Constructor", true);
 
-		val initializeSystemClass = sysClass.getStaticMethod("initializeSystemClass", "()V");
+		JavaMethod initializeSystemClass = sysClass.getStaticMethod("initializeSystemClass", "()V");
 		if (initializeSystemClass != null) {
 			// pre JDK 9 boot
 			helper.invokeStatic(sysClass, initializeSystemClass, new Value[0], new Value[0]);
@@ -150,13 +154,13 @@ public class VirtualMachine {
 			findBootstrapClass("java/lang/invoke/MemberName", true);
 			findBootstrapClass("java/lang/invoke/MethodHandleNatives", true);
 
-			val result = helper.invokeStatic(sysClass, "initPhase2", "(ZZ)I", new Value[0], new Value[]{IntValue.ONE, IntValue.ONE}).getResult().asInt();
+			int result = helper.invokeStatic(sysClass, "initPhase2", "(ZZ)I", new Value[0], new Value[]{IntValue.ONE, IntValue.ONE}).getResult().asInt();
 			if (result != 0) {
 				throw new IllegalStateException("VM initialization failed, initPhase2 returned " + result);
 			}
 			helper.invokeStatic(sysClass, "initPhase3", "()V", new Value[0], new Value[0]);
 		}
-		val classLoaderClass = symbols.java_lang_ClassLoader;
+		InstanceJavaClass classLoaderClass = symbols.java_lang_ClassLoader;
 		classLoaderClass.initialize();
 		helper.invokeStatic(classLoaderClass, "getSystemClassLoader", "()Ljava/lang/ClassLoader;", new Value[0], new Value[0]);
 	}
@@ -336,7 +340,7 @@ public class VirtualMachine {
 	 * @return bootstrap class or {@code null}, if not found.
 	 */
 	public JavaClass findBootstrapClass(String name, boolean initialize) {
-		val jc = bootClassLoader.findBootClass(name);
+		JavaClass jc = bootClassLoader.findBootClass(name);
 		if (jc != null && initialize) {
 			jc.initialize();
 		}
@@ -367,14 +371,14 @@ public class VirtualMachine {
 	 */
 	public JavaClass findClass(ObjectValue loader, String name, boolean initialize) {
 		JavaClass jc;
-		val helper = this.helper;
+		VMHelper helper = this.helper;
 		if (loader.isNull()) {
 			jc = findBootstrapClass(name, initialize);
 			if (jc == null) {
 				helper.throwException(symbols.java_lang_ClassNotFoundException, name.replace('/', '.'));
 			}
 		} else {
-			val data = classLoaders.getClassLoaderData(loader);
+			ClassLoaderData data = classLoaders.getClassLoaderData(loader);
 			jc = data.getClass(name);
 			if (jc == null) {
 				jc = ((JavaValue<JavaClass>) helper.invokeVirtual("loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;", new Value[0], new Value[]{loader, helper.newUtf8(name.replace('/', '.')), initialize ? IntValue.ONE : IntValue.ZERO}).getResult()).getValue();
@@ -394,16 +398,16 @@ public class VirtualMachine {
 	 * 		Should VM search for VMI hooks.
 	 */
 	public void execute(ExecutionContext ctx, boolean useInvokers) {
-		val jm = ctx.getMethod();
-		val access = jm.getAccess();
-		val isNative = (access & Opcodes.ACC_NATIVE) != 0;
+		JavaMethod jm = ctx.getMethod();
+		int access = jm.getAccess();
+		boolean isNative = (access & Opcodes.ACC_NATIVE) != 0;
 		if (isNative) {
 			ctx.setLineNumber(-2);
 		}
-		val threadManager = this.threadManager;
-		val backtrace = threadManager.currentThread().getBacktrace();
+		ThreadManager threadManager = this.threadManager;
+		Backtrace backtrace = threadManager.currentThread().getBacktrace();
 		backtrace.push(StackFrame.ofContext(ctx));
-		val vmi = vmInterface;
+		VMInterface vmi = vmInterface;
 		jm.increaseInvocation();
 		ObjectValue lock = null;
 		if ((access & Opcodes.ACC_SYNCHRONIZED) != 0) {
@@ -415,13 +419,13 @@ public class VirtualMachine {
 			lock.monitorEnter();
 		}
 		try {
-			for (val invocation : vmi.getInvocationHooks(jm, true)) {
+			for (MethodInvocation invocation : vmi.getInvocationHooks(jm, true)) {
 				invocation.handle(ctx);
 			}
 			if (useInvokers) {
-				val invoker = vmi.getInvoker(jm);
+				MethodInvoker invoker = vmi.getInvoker(jm);
 				if (invoker != null) {
-					val result = invoker.intercept(ctx);
+					Result result = invoker.intercept(ctx);
 					if (result == Result.ABORT) {
 						return;
 					}
@@ -441,7 +445,7 @@ public class VirtualMachine {
 		} finally {
 			try {
 				try {
-					for (val invocation : vmi.getInvocationHooks(jm, false)) {
+					for (MethodInvocation invocation : vmi.getInvocationHooks(jm, false)) {
 						invocation.handle(ctx);
 					}
 				} finally {
@@ -462,7 +466,7 @@ public class VirtualMachine {
 	 * @see VMThread#getTaskQueue()
 	 */
 	public void drainTaskQueue() {
-		val queue = currentThread().getTaskQueue();
+		Queue<Runnable> queue = currentThread().getTaskQueue();
 		Runnable r;
 		while ((r = queue.poll()) != null) {
 			r.run();
@@ -578,13 +582,13 @@ public class VirtualMachine {
 	}
 
 	private InstanceJavaClass internalLink(String name) {
-		val result = bootClassLoader.lookup(name);
+		ClassParseResult result = bootClassLoader.lookup(name);
 		if (result == null) {
 			throw new IllegalStateException("Bootstrap class not found: " + name);
 		}
-		val cr = result.getClassReader();
-		val node = result.getNode();
-		val jc = classLoaders.constructClass(NullValue.INSTANCE, cr, node);
+		ClassReader cr = result.getClassReader();
+		ClassNode node = result.getNode();
+		InstanceJavaClass jc = classLoaders.constructClass(NullValue.INSTANCE, cr, node);
 		bootClassLoader.forceLink(jc);
 		return jc;
 	}

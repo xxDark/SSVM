@@ -5,9 +5,8 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 
 /**
  * Base implementation of instance value.
- * 
- * @author xDark
  *
+ * @author xDark
  * @author xDark
  */
 public class SimpleInstanceValue extends SimpleObjectValue implements InstanceValue {

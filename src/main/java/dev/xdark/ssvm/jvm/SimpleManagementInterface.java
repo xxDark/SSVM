@@ -2,9 +2,9 @@ package dev.xdark.ssvm.jvm;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.val;
 
 import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.util.Collections;
 import java.util.List;
 
@@ -22,7 +22,7 @@ public class SimpleManagementInterface implements ManagementInterface {
 	private final List<String> inputArguments;
 
 	public SimpleManagementInterface() {
-		val bean = ManagementFactory.getRuntimeMXBean();
+		RuntimeMXBean bean = ManagementFactory.getRuntimeMXBean();
 		version = bean.getSpecVersion();
 		startupTime = System.currentTimeMillis();
 		inputArguments = Collections.emptyList();

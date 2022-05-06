@@ -3,17 +3,34 @@ package dev.xdark.ssvm.mirror;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.VMException;
+import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.util.UnsafeUtil;
-import dev.xdark.ssvm.value.*;
-import lombok.val;
+import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.util.VMSymbols;
+import dev.xdark.ssvm.value.DoubleValue;
+import dev.xdark.ssvm.value.FloatValue;
+import dev.xdark.ssvm.value.InstanceValue;
+import dev.xdark.ssvm.value.IntValue;
+import dev.xdark.ssvm.value.JavaValue;
+import dev.xdark.ssvm.value.LongValue;
+import dev.xdark.ssvm.value.ObjectValue;
+import dev.xdark.ssvm.value.Value;
 import me.coley.cafedude.InvalidClassException;
 import me.coley.cafedude.classfile.ClassFile;
 import me.coley.cafedude.io.ClassFileReader;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.MethodNode;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -26,6 +43,8 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 
 	private static final ClassFileReader READER = new ClassFileReader();
 	private static final String POLYMORPHIC_DESC = "([Ljava/lang/Object;)Ljava/lang/Object;";
+	private static final Predicate<JavaField> NON_HIDDEN_FIELD = nonHidden(JavaField::getAccess);
+	private static final Predicate<JavaMethod> NON_HIDDEN_METHOD = nonHidden(JavaMethod::getAccess);
 
 	private final VirtualMachine vm;
 	private final ObjectValue classLoader;
@@ -86,7 +105,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		this.classReader = classReader;
 		this.node = node;
 		this.oop = oop;
-		val lock = new ReentrantLock();
+		ReentrantLock lock = new ReentrantLock();
 		initializationLock = lock;
 		signal = lock.newCondition();
 	}
@@ -110,7 +129,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 
 	@Override
 	public String getName() {
-		val normalName = this.normalName;
+		String normalName = this.normalName;
 		if (normalName == null) {
 			return this.normalName = node.name.replace('/', '.');
 		}
@@ -124,7 +143,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 
 	@Override
 	public String getDescriptor() {
-		val descriptor = this.descriptor;
+		String descriptor = this.descriptor;
 		if (descriptor == null) {
 			return this.descriptor = 'L' + node.name + ';';
 		}
@@ -148,7 +167,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 
 	@Override
 	public void initialize() {
-		val lock = initializationLock;
+		Lock lock = initializationLock;
 		lock.lock();
 		if (state == State.COMPLETE) {
 			lock.unlock();
@@ -156,7 +175,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		}
 		if (state == State.FAILED) {
 			lock.unlock();
-			val vm = this.vm;
+			VirtualMachine vm = this.vm;
 			vm.getHelper().throwException(vm.getSymbols().java_lang_ExceptionInInitializerError, getInternalName());
 		}
 		if (state == State.IN_PROGRESS) {
@@ -167,12 +186,12 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 			// Wait for initialization to complete
 			// and invoke initialize again
 			// 'cause maybe we crashed
-			val signal = this.signal;
-			while (true) {
+			Condition signal = this.signal;
+			while(true) {
 				try {
 					signal.await();
 					break;
-				} catch (InterruptedException ignored) {
+				} catch(InterruptedException ignored) {
 				}
 			}
 			lock.unlock();
@@ -181,8 +200,8 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		}
 		state = State.IN_PROGRESS;
 		initializer = Thread.currentThread();
-		val vm = this.vm;
-		val helper = vm.getHelper();
+		VirtualMachine vm = this.vm;
+		VMHelper helper = vm.getHelper();
 		// Build class layout
 		// VM might've set it already, do not override.
 		if (vrtFieldLayout == null) {
@@ -190,13 +209,13 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		}
 		helper.initializeStaticFields(this);
 		helper.setupHiddenFrames(this);
-		val clinit = getStaticMethod("<clinit>", "()V");
+		JavaMethod clinit = getStaticMethod("<clinit>", "()V");
 		try {
 			if (clinit != null) {
 				helper.invokeStatic(this, clinit, new Value[0], new Value[0]);
 			}
 			state = State.COMPLETE;
-		} catch (VMException ex) {
+		} catch(VMException ex) {
 			markFailedInitialization(ex);
 		} finally {
 			signal.signalAll();
@@ -207,14 +226,14 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 
 	@Override
 	public void link() {
-		val lock = initializationLock;
+		Lock lock = initializationLock;
 		lock.lock();
 		state = State.IN_PROGRESS;
 		try {
 			try {
 				loadSuperClass();
 				loadInterfaces();
-			} catch (VMException ex) {
+			} catch(VMException ex) {
 				markFailedInitialization(ex);
 			}
 			state = State.PENDING;
@@ -227,7 +246,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	@Override
 	public boolean isAssignableFrom(JavaClass other) {
 		if (other == null) {
-			val vm = this.vm;
+			VirtualMachine vm = this.vm;
 			vm.getHelper().throwException(vm.getSymbols().java_lang_NullPointerException);
 		}
 		if (other == this) {
@@ -238,7 +257,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		}
 		if (other.isArray()) {
 			if (isInterface()) {
-				val internalName = node.name;
+				String internalName = node.name;
 				return "java/io/Serializable".equals(internalName) || "java/lang/Cloneable".equals(internalName);
 			} else {
 				return this == vm.getSymbols().java_lang_Object;
@@ -249,33 +268,44 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		}
 		if (other.isInterface()) {
 			if (isInterface()) {
-				val toCheck = new ArrayDeque<>(Arrays.asList(other.getInterfaces()));
+				Deque<InstanceJavaClass> toCheck = new ArrayDeque<>(Arrays.asList(other.getInterfaces()));
 				JavaClass popped;
-				while ((popped = toCheck.poll()) != null) {
-					if (popped == this) return true;
+				while((popped = toCheck.poll()) != null) {
+					if (popped == this) {
+						return true;
+					}
 					toCheck.addAll(Arrays.asList(popped.getInterfaces()));
 				}
 			}
 		} else {
-			val toCheck = new ArrayDeque<JavaClass>();
+			Deque<JavaClass> toCheck = new ArrayDeque<JavaClass>();
 			JavaClass superClass = other.getSuperClass();
-			if (superClass != null)
+			if (superClass != null) {
 				toCheck.add(superClass);
+			}
 			if (isInterface()) {
 				toCheck.addAll(Arrays.asList(other.getInterfaces()));
 				JavaClass popped;
-				while ((popped = toCheck.poll()) != null) {
-					if (popped == this) return true;
+				while((popped = toCheck.poll()) != null) {
+					if (popped == this) {
+						return true;
+					}
 					superClass = popped.getSuperClass();
-					if (superClass != null) toCheck.add(superClass);
+					if (superClass != null) {
+						toCheck.add(superClass);
+					}
 					toCheck.addAll(Arrays.asList(popped.getInterfaces()));
 				}
 			} else {
 				JavaClass popped;
-				while ((popped = toCheck.poll()) != null) {
-					if (popped == this) return true;
+				while((popped = toCheck.poll()) != null) {
+					if (popped == this) {
+						return true;
+					}
 					superClass = popped.getSuperClass();
-					if (superClass != null) toCheck.add(superClass);
+					if (superClass != null) {
+						toCheck.add(superClass);
+					}
 				}
 			}
 		}
@@ -309,7 +339,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 
 	@Override
 	public FieldLayout getStaticFieldLayout() {
-		val staticLayout = this.staticFieldLayout;
+		FieldLayout staticLayout = this.staticFieldLayout;
 		// Build class layout
 		// VM might've set it already, do not override.
 		if (staticLayout == null) {
@@ -334,7 +364,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	public ArrayJavaClass newArrayClass() {
 		ArrayJavaClass arrayClass = this.arrayClass;
 		if (arrayClass == null) {
-			val vm = this.vm;
+			VirtualMachine vm = this.vm;
 			arrayClass = this.arrayClass = new ArrayJavaClass(vm, '[' + getDescriptor(), 1, this);
 			vm.getHelper().setComponentType(arrayClass, this);
 		}
@@ -357,7 +387,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		JavaMethod method;
 		do {
 			method = jc.getVirtualMethod(name, desc);
-		} while (method == null && (jc = jc.getSuperclassWithoutResolving()) != null);
+		} while(method == null && (jc = jc.getSuperclassWithoutResolving()) != null);
 		return method;
 	}
 
@@ -365,19 +395,23 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	public JavaMethod getInterfaceMethodRecursively(String name, String desc) {
 		InstanceJavaClass jc = this;
 		JavaMethod method;
-		val deque = new ArrayDeque<InstanceJavaClass>();
+		Deque<InstanceJavaClass> deque = new ArrayDeque<InstanceJavaClass>();
 		do {
 			method = jc.getVirtualMethod(name, desc);
 			deque.push(jc);
-		} while (method == null && (jc = jc.getSuperclassWithoutResolving()) != null);
+		} while(method == null && (jc = jc.getSuperclassWithoutResolving()) != null);
 		if (method == null) {
 			search:
-			while ((jc = deque.poll()) != null) {
+			while((jc = deque.poll()) != null) {
 				method = jc.getVirtualMethod(name, desc);
-				if (method != null) break;
-				for (val iface : jc.getInterfaces()) {
+				if (method != null) {
+					break;
+				}
+				for (InstanceJavaClass iface : jc.getInterfaces()) {
 					method = iface.getVirtualMethod(name, desc);
-					if (method != null) break search;
+					if (method != null) {
+						break search;
+					}
 					deque.addAll(Arrays.asList(iface.getInterfaces()));
 				}
 			}
@@ -401,7 +435,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		JavaField field;
 		do {
 			field = jc.getVirtualField(name, desc);
-		} while (field == null && (jc = jc.getSuperclassWithoutResolving()) != null);
+		} while(field == null && (jc = jc.getSuperclassWithoutResolving()) != null);
 		return field;
 	}
 
@@ -416,7 +450,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		JavaField field;
 		do {
 			field = jc.getStaticField(name, desc);
-		} while (field == null && (jc = jc.getSuperclassWithoutResolving()) != null);
+		} while(field == null && (jc = jc.getSuperclassWithoutResolving()) != null);
 		return field;
 	}
 
@@ -426,7 +460,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		JavaMethod method;
 		do {
 			method = jc.getStaticMethod(name, desc);
-		} while (method == null && (jc = jc.getSuperclassWithoutResolving()) != null);
+		} while(method == null && (jc = jc.getSuperclassWithoutResolving()) != null);
 		return method;
 	}
 
@@ -437,7 +471,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 
 	@Override
 	public JavaMethod getMethod(String name, String desc) {
-		val key = (MemberKey) new SimpleMemberKey(this, name, desc);
+		MemberKey key = new SimpleMemberKey(this, name, desc);
 		JavaMethod jm = getVirtualMethodLayout().getMethods().get(key);
 		if (jm == null) {
 			jm = getStaticMethodLayout().getMethods().get(key);
@@ -449,12 +483,14 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	public Value getStaticValue(MemberKey field) {
 		initialize();
 
-		val offset = staticFieldLayout.getFieldOffset(field);
-		if (offset == -1L) return null;
-		val oop = this.oop;
-		val memoryManager = vm.getMemoryManager();
-		val resultingOffset = memoryManager.getStaticOffset(this) + offset;
-		switch (field.getDesc()) {
+		long offset = staticFieldLayout.getFieldOffset(field);
+		if (offset == -1L) {
+			return null;
+		}
+		InstanceValue oop = this.oop;
+		MemoryManager memoryManager = vm.getMemoryManager();
+		long resultingOffset = memoryManager.getStaticOffset(this) + offset;
+		switch(field.getDesc()) {
 			case "J":
 				return LongValue.of(memoryManager.readLong(oop, resultingOffset));
 			case "D":
@@ -484,12 +520,14 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	@Override
 	public boolean setFieldValue(MemberKey field, Value value) {
 		initialize();
-		val offset = staticFieldLayout.getFieldOffset(field);
-		if (offset == -1L) return false;
-		val oop = this.oop;
-		val memoryManager = vm.getMemoryManager();
-		val resultingOffset = memoryManager.getStaticOffset(this) + offset;
-		switch (field.getDesc()) {
+		long offset = staticFieldLayout.getFieldOffset(field);
+		if (offset == -1L) {
+			return false;
+		}
+		InstanceValue oop = this.oop;
+		MemoryManager memoryManager = vm.getMemoryManager();
+		long resultingOffset = memoryManager.getStaticOffset(this) + offset;
+		switch(field.getDesc()) {
 			case "J":
 				memoryManager.writeLong(oop, resultingOffset, value.asLong());
 				return true;
@@ -532,24 +570,28 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	@Override
 	public long getFieldOffsetRecursively(String name, String desc) {
 		initialize();
-		val layout = this.vrtFieldLayout;
+		FieldLayout layout = this.vrtFieldLayout;
 		InstanceJavaClass jc = this;
 		do {
-			val offset = layout.getFieldOffset(new SimpleMemberKey(jc, name, desc));
-			if (offset != -1L) return offset;
-		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
+			long offset = layout.getFieldOffset(new SimpleMemberKey(jc, name, desc));
+			if (offset != -1L) {
+				return offset;
+			}
+		} while((jc = jc.getSuperclassWithoutResolving()) != null);
 		return -1L;
 	}
 
 	@Override
 	public long getFieldOffsetRecursively(String name) {
 		initialize();
-		val layout = this.vrtFieldLayout;
+		FieldLayout layout = this.vrtFieldLayout;
 		InstanceJavaClass jc = this;
 		do {
-			val offset = layout.getFieldOffset(jc, name);
-			if (offset != -1L) return offset;
-		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
+			long offset = layout.getFieldOffset(jc, name);
+			if (offset != -1L) {
+				return offset;
+			}
+		} while((jc = jc.getSuperclassWithoutResolving()) != null);
 		return -1L;
 	}
 
@@ -590,13 +632,13 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	 * @return static class layout.
 	 */
 	public FieldLayout createStaticFieldLayout() {
-		val map = new HashMap<MemberKey, JavaField>();
+		Map<MemberKey, JavaField> map = new HashMap<>();
 		long offset = 0L;
 		int slot = getVirtualFieldCount();
-		val fields = node.fields;
-		for (val field : fields) {
+		List<FieldNode> fields = node.fields;
+		for (FieldNode field : fields) {
 			if ((field.access & Opcodes.ACC_STATIC) != 0) {
-				val desc = field.desc;
+				String desc = field.desc;
 				map.put(new SimpleMemberKey(this, field.name, desc), new JavaField(this, field, slot++, offset));
 				offset += UnsafeUtil.getSizeFor(desc);
 			}
@@ -610,20 +652,20 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	 * @return virtual class layout.
 	 */
 	public FieldLayout createVirtualFieldLayout() {
-		val map = new HashMap<MemberKey, JavaField>();
-		val deque = new ArrayDeque<InstanceJavaClass>();
+		HashMap<MemberKey, JavaField> map = new HashMap<MemberKey, JavaField>();
+		ArrayDeque<InstanceJavaClass> deque = new ArrayDeque<InstanceJavaClass>();
 		long offset = 0L;
 		InstanceJavaClass javaClass = this;
-		while (javaClass != null) {
+		while(javaClass != null) {
 			deque.addFirst(javaClass);
 			javaClass = javaClass.getSuperclassWithoutResolving();
 		}
 		int slot = 0;
-		while ((javaClass = deque.pollFirst()) != null) {
-			val fields = javaClass.getNode().fields;
-			for (val field : fields) {
+		while((javaClass = deque.pollFirst()) != null) {
+			List<FieldNode> fields = javaClass.getNode().fields;
+			for (FieldNode field : fields) {
 				if ((field.access & Opcodes.ACC_STATIC) == 0) {
-					val desc = field.desc;
+					String desc = field.desc;
 					map.put(new SimpleMemberKey(javaClass, field.name, desc), new JavaField(javaClass, field, slot++, offset));
 					offset += UnsafeUtil.getSizeFor(desc);
 				}
@@ -646,9 +688,9 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	 * Loads hierarchy of classes without marking them as resolved.
 	 */
 	public void loadNoResolve() {
-		val lock = this.initializationLock;
+		Lock lock = this.initializationLock;
 		lock.lock();
-		val vm = this.vm;
+		VirtualMachine vm = this.vm;
 		if (state == State.FAILED) {
 			lock.unlock();
 			vm.getHelper().throwException(vm.getSymbols().java_lang_ExceptionInInitializerError);
@@ -656,10 +698,10 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		try {
 			loadSuperClass();
 			loadInterfaces();
-			for (val ifc : interfaces) {
+			for (SimpleInstanceJavaClass ifc : interfaces) {
 				ifc.loadNoResolve();
 			}
-		} catch (VMException ex) {
+		} catch(VMException ex) {
 			state = State.FAILED;
 			throw ex;
 		} finally {
@@ -670,13 +712,13 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	@Override
 	public List<JavaMethod> getDeclaredMethods(boolean publicOnly) {
 		if (publicOnly) {
-			val publicMethods = this.publicMethods;
+			List<JavaMethod> publicMethods = this.publicMethods;
 			if (publicMethods == null) {
 				return this.publicMethods = getDeclaredMethods0(true, false);
 			}
 			return publicMethods;
 		}
-		val declaredMethods = this.declaredMethods;
+		List<JavaMethod> declaredMethods = this.declaredMethods;
 		if (declaredMethods == null) {
 			return this.declaredMethods = getDeclaredMethods0(false, false);
 		}
@@ -686,13 +728,13 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	@Override
 	public List<JavaMethod> getDeclaredConstructors(boolean publicOnly) {
 		if (publicOnly) {
-			val publicConstructors = this.publicConstructors;
+			List<JavaMethod> publicConstructors = this.publicConstructors;
 			if (publicConstructors == null) {
 				return this.publicConstructors = getDeclaredMethods0(true, true);
 			}
 			return publicConstructors;
 		}
-		val declaredConstructors = this.declaredConstructors;
+		List<JavaMethod> declaredConstructors = this.declaredConstructors;
 		if (declaredConstructors == null) {
 			return this.declaredConstructors = getDeclaredMethods0(false, true);
 		}
@@ -702,13 +744,13 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	@Override
 	public List<JavaField> getDeclaredFields(boolean publicOnly) {
 		if (publicOnly) {
-			val publicFields = this.publicFields;
+			List<JavaField> publicFields = this.publicFields;
 			if (publicFields == null) {
 				return this.publicFields = getDeclaredFields0(true);
 			}
 			return publicFields;
 		}
-		val declaredFields = this.declaredFields;
+		List<JavaField> declaredFields = this.declaredFields;
 		if (declaredFields == null) {
 			return this.declaredFields = getDeclaredFields0(false);
 		}
@@ -721,7 +763,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		if (rawClassFile == null) {
 			try {
 				return this.rawClassFile = READER.read(classReader.b);
-			} catch (InvalidClassException ex) {
+			} catch(InvalidClassException ex) {
 				// Should not happen.
 				// unless??
 				throw new RuntimeException("Cafedude returned invalid class file", ex);
@@ -734,10 +776,10 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	public MethodLayout getVirtualMethodLayout() {
 		MethodLayout vrtMethodLayout = this.vrtMethodLayout;
 		if (vrtMethodLayout == null) {
-			val map = new HashMap<MemberKey, JavaMethod>();
+			HashMap<MemberKey, JavaMethod> map = new HashMap<MemberKey, JavaMethod>();
 			int slot = 0;
-			val methods = node.methods;
-			for (val method : methods) {
+			List<MethodNode> methods = node.methods;
+			for (MethodNode method : methods) {
 				if ((method.access & Opcodes.ACC_STATIC) == 0) {
 					map.put(new SimpleMemberKey(this, method.name, method.desc), new JavaMethod(this, method, slot++));
 				}
@@ -752,10 +794,10 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	public MethodLayout getStaticMethodLayout() {
 		MethodLayout staticMethodLayout = this.staticMethodLayout;
 		if (staticMethodLayout == null) {
-			val map = new HashMap<MemberKey, JavaMethod>();
+			HashMap<MemberKey, JavaMethod> map = new HashMap<MemberKey, JavaMethod>();
 			int slot = getVirtualMethodCount();
-			val methods = node.methods;
-			for (val method : methods) {
+			List<MethodNode> methods = node.methods;
+			for (MethodNode method : methods) {
 				if ((method.access & Opcodes.ACC_STATIC) != 0) {
 					map.put(new SimpleMemberKey(this, method.name, method.desc), new JavaMethod(this, method, slot++));
 				}
@@ -768,18 +810,20 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 
 	@Override
 	public boolean shouldBeInitialized() {
-		val lock = initializationLock;
+		Lock lock = initializationLock;
 		lock.lock();
-		val isPending = state == State.PENDING;
+		boolean isPending = state == State.PENDING;
 		lock.unlock();
 		return isPending;
 	}
 
 	@Override
 	public InstanceJavaClass getSuperclassWithoutResolving() {
-		val superName = node.superName;
-		if (superName == null) return null;
-		val vm = this.vm;
+		String superName = node.superName;
+		if (superName == null) {
+			return null;
+		}
+		VirtualMachine vm = this.vm;
 		return (InstanceJavaClass) vm.findClass(classLoader, superName, false);
 	}
 
@@ -789,13 +833,13 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	}
 
 	private List<JavaMethod> getDeclaredMethods0(boolean publicOnly, boolean constructors) {
-		val staticMethods = constructors ? Stream.<JavaMethod>empty() : getStaticMethods0(publicOnly);
+		Stream<JavaMethod> staticMethods = constructors ? Stream.<JavaMethod>empty() : getStaticMethods0(publicOnly);
 		return Stream.concat(staticMethods, getVirtualMethodLayout()
-						.getAll()
-						.stream()
-						.filter(x -> constructors == "<init>".equals(x.getName()))
-						.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0))
-				.filter(nonHidden(JavaMethod::getAccess))
+				.getAll()
+				.stream()
+				.filter(x -> constructors == "<init>".equals(x.getName()))
+				.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0))
+				.filter(NON_HIDDEN_METHOD)
 				.collect(Collectors.toList());
 	}
 
@@ -808,29 +852,23 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	}
 
 	private List<JavaField> getDeclaredFields0(boolean publicOnly) {
-		val staticFields = getDeclaredStaticFields0(publicOnly);
-		return Stream.concat(staticFields, getVirtualFieldLayout()
-						.getAll()
-						.stream()
-						.filter(x -> this == x.getOwner())
-						.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0))
-				.filter(nonHidden(JavaField::getAccess))
-				.collect(Collectors.toList());
-	}
-
-	private Stream<JavaField> getDeclaredStaticFields0(boolean publicOnly) {
-		return getStaticFieldLayout()
+		Stream<JavaField> staticFields = getStaticFieldLayout()
 				.getAll()
-				.stream()
+				.stream();
+		return Stream.concat(staticFields, getVirtualFieldLayout()
+				.getAll()
+				.stream())
 				.filter(x -> this == x.getOwner())
-				.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0);
+				.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0)
+				.filter(NON_HIDDEN_FIELD)
+				.collect(Collectors.toList());
 	}
 
 	private void loadSuperClass() {
 		SimpleInstanceJavaClass superClass = this.superClass;
 		if (superClass == null) {
-			val vm = this.vm;
-			val superName = node.superName;
+			VirtualMachine vm = this.vm;
+			String superName = node.superName;
 			if (superName != null) {
 				// Load parent class.
 				superClass = (SimpleInstanceJavaClass) vm.findClass(classLoader, superName, false);
@@ -842,10 +880,10 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	private void loadInterfaces() {
 		SimpleInstanceJavaClass[] $interfaces = this.interfaces;
 		if ($interfaces == null) {
-			val _interfaces = node.interfaces;
+			List<String> _interfaces = node.interfaces;
 			$interfaces = new SimpleInstanceJavaClass[_interfaces.size()];
-			val vm = this.vm;
-			val classLoader = this.classLoader;
+			VirtualMachine vm = this.vm;
+			ObjectValue classLoader = this.classLoader;
 			for (int i = 0, j = _interfaces.size(); i < j; i++) {
 				$interfaces[i] = (SimpleInstanceJavaClass) vm.findClass(classLoader, _interfaces.get(i), false);
 			}
@@ -857,10 +895,12 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		int count = 0;
 		InstanceJavaClass jc = this;
 		do {
-			for (val field : jc.getNode().fields) {
-				if ((field.access & Opcodes.ACC_STATIC) == 0) count++;
+			for (FieldNode field : jc.getNode().fields) {
+				if ((field.access & Opcodes.ACC_STATIC) == 0) {
+					count++;
+				}
 			}
-		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
+		} while((jc = jc.getSuperclassWithoutResolving()) != null);
 		return count;
 	}
 
@@ -868,15 +908,17 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		int count = 0;
 		InstanceJavaClass jc = this;
 		do {
-			for (val field : jc.getNode().methods) {
-				if ((field.access & Opcodes.ACC_STATIC) == 0) count++;
+			for (MethodNode field : jc.getNode().methods) {
+				if ((field.access & Opcodes.ACC_STATIC) == 0) {
+					count++;
+				}
 			}
-		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
+		} while((jc = jc.getSuperclassWithoutResolving()) != null);
 		return count;
 	}
 
 	private JavaMethod lookupMethodIn(MethodLayout layout, String name, String desc) {
-		val methods = layout.getMethods();
+		Map<MemberKey, JavaMethod> methods = layout.getMethods();
 		JavaMethod jm = methods.get(new SimpleMemberKey(this, name, desc));
 		if (jm == null) {
 			jm = methods.get(new SimpleMemberKey(this, name, POLYMORPHIC_DESC));
@@ -894,11 +936,11 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	private void markFailedInitialization(VMException ex) {
 		state = State.FAILED;
 		InstanceValue oop = ex.getOop();
-		val vm = this.vm;
-		val symbols = vm.getSymbols();
+		VirtualMachine vm = this.vm;
+		VMSymbols symbols = vm.getSymbols();
 		if (!symbols.java_lang_Error.isAssignableFrom(oop.getJavaClass())) {
-			val cause = oop;
-			val jc = symbols.java_lang_ExceptionInInitializerError;
+			InstanceValue cause = oop;
+			InstanceJavaClass jc = symbols.java_lang_ExceptionInInitializerError;
 			jc.initialize();
 			oop = vm.getMemoryManager().newInstance(jc);
 			vm.getHelper().invokeExact(jc, "<init>", "(Ljava/lang/Throwable;)V", new Value[0], new Value[]{

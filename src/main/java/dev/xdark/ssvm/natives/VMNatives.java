@@ -2,11 +2,11 @@ package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
+import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.LongValue;
 import lombok.experimental.UtilityClass;
-import lombok.val;
 
 /**
  * Initializes VM class.
@@ -21,7 +21,7 @@ public class VMNatives {
 	 * 		VM instance.
 	 */
 	public void init(VirtualMachine vm) {
-		val vmi = vm.getInterface();
+		VMInterface vmi = vm.getInterface();
 		InstanceJavaClass klass = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/VM");
 		if (klass != null) {
 			vmi.setInvoker(klass, "initializeFromArchive", "(Ljava/lang/Class;)V", MethodInvoker.noop());
@@ -36,7 +36,7 @@ public class VMNatives {
 			});
 		}
 		vmi.setInvoker(klass, "initialize", "()V", MethodInvoker.noop());
-		val win32ErrorMode = (InstanceJavaClass) vm.findBootstrapClass("sun/io/Win32ErrorMode");
+		InstanceJavaClass win32ErrorMode = (InstanceJavaClass) vm.findBootstrapClass("sun/io/Win32ErrorMode");
 		if (win32ErrorMode != null) {
 			vmi.setInvoker(win32ErrorMode, "setErrorMode", "(J)J", ctx -> {
 				ctx.setResult(LongValue.ZERO);

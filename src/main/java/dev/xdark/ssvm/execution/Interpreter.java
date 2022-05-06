@@ -1,11 +1,23 @@
 package dev.xdark.ssvm.execution;
 
+import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.api.InstructionInterceptor;
+import dev.xdark.ssvm.api.VMInterface;
+import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.AsmUtil;
+import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
-import lombok.val;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.LineNumberNode;
+import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TryCatchBlockNode;
+
+import java.util.List;
 
 /**
  * {@link ExecutionContext} processor.
@@ -23,58 +35,58 @@ public class Interpreter {
 	 * 		Context to process.
 	 */
 	public void execute(ExecutionContext ctx) {
-		val jm = ctx.getMethod();
-		val vmi = ctx.getVM().getInterface();
-		val mn = jm.getNode();
-		val instructions = mn.instructions;
-		val interceptors = vmi.getInterceptors();
+		JavaMethod jm = ctx.getMethod();
+		VMInterface vmi = ctx.getVM().getInterface();
+		MethodNode mn = jm.getNode();
+		InsnList instructions = mn.instructions;
+		List<InstructionInterceptor> interceptors = vmi.getInterceptors();
 		exec:
 		while (true) {
 			try {
-				val pos = ctx.getInsnPosition();
+				int pos = ctx.getInsnPosition();
 				ctx.setInsnPosition(pos + 1);
-				val insn = instructions.get(pos);
+				AbstractInsnNode insn = instructions.get(pos);
 				if (insn instanceof LineNumberNode) ctx.setLineNumber(((LineNumberNode) insn).line);
 				for (int i = 0; i < interceptors.size(); i++) {
 					if (interceptors.get(i).intercept(ctx, insn) == Result.ABORT)
 						break exec;
 				}
 				if (insn.getOpcode() == -1) continue;
-				val processor = vmi.getProcessor(insn);
+				InstructionProcessor<AbstractInsnNode> processor = vmi.getProcessor(insn);
 				if (processor == null) {
 					ctx.getHelper().throwException(ctx.getSymbols().java_lang_InternalError, "No implemented processor for " + insn.getOpcode());
 					continue;
 				}
 				if (processor.execute(insn, ctx) == Result.ABORT) break;
 			} catch (VMException ex) {
-				val stack = ctx.getStack();
+				Stack stack = ctx.getStack();
 				Value value;
 				while ((value = stack.poll()) != null) {
 					if (value instanceof ObjectValue) {
-						val obj = (ObjectValue) value;
+						ObjectValue obj = (ObjectValue) value;
 						if (obj.isHeldByCurrentThread()) {
 							obj.monitorExit();
 						}
 					}
 				}
-				val oop = ex.getOop();
-				val exceptionType = oop.getJavaClass();
-				val tryCatchBlocks = mn.tryCatchBlocks;
+				InstanceValue oop = ex.getOop();
+				InstanceJavaClass exceptionType = oop.getJavaClass();
+				List<TryCatchBlockNode> tryCatchBlocks = mn.tryCatchBlocks;
 				int index = ctx.getInsnPosition() - 1;
-				val vm = ctx.getVM();
+				VirtualMachine vm = ctx.getVM();
 				// int lastIndex = -1;
 				boolean shouldRepeat;
 				search:
 				do {
 					shouldRepeat = false;
 					for (int i = 0, j = tryCatchBlocks.size(); i < j; i++) {
-						val block = tryCatchBlocks.get(i);
+						TryCatchBlockNode block = tryCatchBlocks.get(i);
 						if (index < AsmUtil.getIndex(block.start) || index > AsmUtil.getIndex(block.end)) continue;
 						String type = block.type;
 						boolean handle = type == null;
 						if (!handle) {
 							try {
-								val candidate = vm.findClass(ctx.getOwner().getClassLoader(), type, false);
+								JavaClass candidate = vm.findClass(ctx.getOwner().getClassLoader(), type, false);
 								handle = candidate.isAssignableFrom(exceptionType);
 							} catch (VMException hex) {
 								index = AsmUtil.getIndex(block.handler);

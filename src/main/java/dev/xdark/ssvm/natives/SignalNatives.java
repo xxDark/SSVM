@@ -2,12 +2,12 @@ package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
+import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.LongValue;
 import lombok.experimental.UtilityClass;
-import lombok.val;
 
 /**
  * Initializes misc/Signal.
@@ -30,7 +30,7 @@ public class SignalNatives {
 			}
 		}
 		// TODO: implement this?
-		val vmi = vm.getInterface();
+		VMInterface vmi = vm.getInterface();
 		MethodInvoker findSignal = ctx -> {
 			ctx.setResult(IntValue.ZERO);
 			return Result.ABORT;

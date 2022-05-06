@@ -1,9 +1,11 @@
 package dev.xdark.ssvm;
 
+import dev.xdark.ssvm.execution.ExecutionContext;
+import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.Value;
-import lombok.val;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.tree.ClassNode;
 
 import java.util.concurrent.ThreadLocalRandom;
@@ -104,29 +106,29 @@ public class IntMathTest {
 	}
 
 	private static int doIntOp(int a, int b, int opcode) {
-		val node = new ClassNode();
+		ClassNode node = new ClassNode();
 		node.visit(V11, ACC_PUBLIC, "Test", null, null, null);
-		val mv = node.visitMethod(ACC_STATIC, "test", "()I", null, null);
+		MethodVisitor mv = node.visitMethod(ACC_STATIC, "test", "()I", null, null);
 		mv.visitLdcInsn(a);
 		mv.visitLdcInsn(b);
 		mv.visitInsn(opcode);
 		mv.visitInsn(IRETURN);
 		mv.visitMaxs(2, 0);
-		val jc = TestUtil.createClass(vm, node);
-		val result = vm.getHelper().invokeStatic(jc, "test", "()I", new Value[0], new Value[0]);
+		InstanceJavaClass jc = TestUtil.createClass(vm, node);
+		ExecutionContext result = vm.getHelper().invokeStatic(jc, "test", "()I", new Value[0], new Value[0]);
 		return result.getResult().asInt();
 	}
 
 	private static int doIntOp(int v, int opcode) {
-		val node = new ClassNode();
+		ClassNode node = new ClassNode();
 		node.visit(V11, ACC_PUBLIC, "Test", null, null, null);
-		val mv = node.visitMethod(ACC_STATIC, "test", "()I", null, null);
+		MethodVisitor mv = node.visitMethod(ACC_STATIC, "test", "()I", null, null);
 		mv.visitLdcInsn(v);
 		mv.visitInsn(opcode);
 		mv.visitInsn(IRETURN);
 		mv.visitMaxs(1, 0);
-		val jc = TestUtil.createClass(vm, node);
-		val result = vm.getHelper().invokeStatic(jc, "test", "()I", new Value[0], new Value[0]);
+		InstanceJavaClass jc = TestUtil.createClass(vm, node);
+		ExecutionContext result = vm.getHelper().invokeStatic(jc, "test", "()I", new Value[0], new Value[0]);
 		return result.getResult().asInt();
 	}
 

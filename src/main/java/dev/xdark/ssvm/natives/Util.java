@@ -1,10 +1,18 @@
 package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.value.*;
+import dev.xdark.ssvm.value.ArrayValue;
+import dev.xdark.ssvm.value.DoubleValue;
+import dev.xdark.ssvm.value.FloatValue;
+import dev.xdark.ssvm.value.InstanceValue;
+import dev.xdark.ssvm.value.IntValue;
+import dev.xdark.ssvm.value.LongValue;
+import dev.xdark.ssvm.value.ObjectValue;
+import dev.xdark.ssvm.value.TopValue;
+import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
-import lombok.val;
 import me.coley.cafedude.classfile.attribute.AnnotationDefaultAttribute;
 import me.coley.cafedude.classfile.attribute.AnnotationsAttribute;
 import me.coley.cafedude.classfile.attribute.ParameterAnnotationsAttribute;
@@ -49,16 +57,16 @@ final class Util {
 	 * @return original values array.
 	 */
 	Value[] convertReflectionArgs(VirtualMachine vm, ObjectValue loader, Type[] argTypes, ArrayValue array) {
-		val helper = vm.getHelper();
+		VMHelper helper = vm.getHelper();
 		int total = 0;
-		for (val arg : argTypes) {
+		for (Type arg : argTypes) {
 			total += arg.getSize();
 		}
-		val result = new Value[total];
+		Value[] result = new Value[total];
 		int x = 0;
 		for (int i = 0; i < argTypes.length; i++) {
-			val originalClass = helper.findClass(loader, argTypes[i].getInternalName(), true);
-			val value = (ObjectValue) array.getValue(i);
+			JavaClass originalClass = helper.findClass(loader, argTypes[i].getInternalName(), true);
+			ObjectValue value = (ObjectValue) array.getValue(i);
 			if (value.isNull() || !originalClass.isPrimitive()) {
 				result[x++] = value;
 			} else {
@@ -86,23 +94,37 @@ final class Util {
 	 */
 	Value convertInvokeDynamicArgument(VMHelper helper, Type type, Value arg) {
 		if (!(arg instanceof ObjectValue)) {
-			if (LONG.equals(type)) return helper.boxLong(arg);
-			else if (DOUBLE.equals(type)) return helper.boxDouble(arg);
-			else if (INT.equals(type)) return helper.boxInt(arg);
-			else if (FLOAT.equals(type)) return helper.boxFloat(arg);
-			else if (CHAR.equals(type)) return helper.boxChar(arg);
-			else if (SHORT.equals(type)) return helper.boxShort(arg);
-			else if (BYTE.equals(type)) return helper.boxByte(arg);
-			else if (BOOLEAN.equals(type)) return helper.boxBoolean(arg);
+			if (LONG.equals(type)) {
+				return helper.boxLong(arg);
+			} else if (DOUBLE.equals(type)) {
+				return helper.boxDouble(arg);
+			} else if (INT.equals(type)) {
+				return helper.boxInt(arg);
+			} else if (FLOAT.equals(type)) {
+				return helper.boxFloat(arg);
+			} else if (CHAR.equals(type)) {
+				return helper.boxChar(arg);
+			} else if (SHORT.equals(type)) {
+				return helper.boxShort(arg);
+			} else if (BYTE.equals(type)) {
+				return helper.boxByte(arg);
+			} else if (BOOLEAN.equals(type)) {
+				return helper.boxBoolean(arg);
+			}
 			if (type.getSort() == Type.OBJECT) {
-				if (arg instanceof DoubleValue) return helper.boxDouble(arg);
-				else if (arg instanceof LongValue) return helper.boxLong(arg);
-				else if (arg instanceof IntValue) return helper.boxInt(arg);
-				else if (arg instanceof FloatValue) return helper.boxFloat(arg);
+				if (arg instanceof DoubleValue) {
+					return helper.boxDouble(arg);
+				} else if (arg instanceof LongValue) {
+					return helper.boxLong(arg);
+				} else if (arg instanceof IntValue) {
+					return helper.boxInt(arg);
+				} else if (arg instanceof FloatValue) {
+					return helper.boxFloat(arg);
+				}
 			}
 		} else if (arg instanceof InstanceValue) {
-			val obj = (InstanceValue) arg;
-			switch (type.getSort()) {
+			InstanceValue obj = (InstanceValue) arg;
+			switch(type.getSort()) {
 				case Type.LONG:
 					return helper.unboxLong(obj);
 				case Type.DOUBLE:
@@ -134,11 +156,11 @@ final class Util {
 	 * @return raw bytes.
 	 */
 	byte[] toBytes(AnnotationsAttribute attribute) {
-		val baos = new ByteArrayOutputStream();
-		val writer = new AnnotationWriter(new DataOutputStream(baos));
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		AnnotationWriter writer = new AnnotationWriter(new DataOutputStream(baos));
 		try {
 			writer.writeAnnotations(attribute);
-		} catch (IOException ex) {
+		} catch(IOException ex) {
 			throw new RuntimeException(ex); // Should never happen.
 		}
 		return baos.toByteArray();
@@ -154,11 +176,11 @@ final class Util {
 	 * @return raw bytes.
 	 */
 	byte[] toBytes(ParameterAnnotationsAttribute attribute) {
-		val baos = new ByteArrayOutputStream();
-		val writer = new AnnotationWriter(new DataOutputStream(baos));
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		AnnotationWriter writer = new AnnotationWriter(new DataOutputStream(baos));
 		try {
 			writer.writeParameterAnnotations(attribute);
-		} catch (IOException ex) {
+		} catch(IOException ex) {
 			throw new RuntimeException(ex); // Should never happen.
 		}
 		return baos.toByteArray();
@@ -174,11 +196,11 @@ final class Util {
 	 * @return raw bytes.
 	 */
 	byte[] toBytes(AnnotationDefaultAttribute attribute) {
-		val baos = new ByteArrayOutputStream();
-		val writer = new AnnotationWriter(new DataOutputStream(baos));
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		AnnotationWriter writer = new AnnotationWriter(new DataOutputStream(baos));
 		try {
 			writer.writeAnnotationDefault(attribute);
-		} catch (IOException ex) {
+		} catch(IOException ex) {
 			throw new RuntimeException(ex); // Should never happen.
 		}
 		return baos.toByteArray();

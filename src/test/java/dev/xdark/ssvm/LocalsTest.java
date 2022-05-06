@@ -1,12 +1,9 @@
 package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.execution.Locals;
-import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.value.DoubleValue;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.LongValue;
-import dev.xdark.ssvm.value.NullValue;
-import lombok.val;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -15,7 +12,8 @@ public class LocalsTest {
 	
 	@Test
 	public void testEquality() {
-		try (val locals1 = new Locals(6); val locals2 = new Locals(6)) {
+		try (Locals locals1 = new Locals(6);
+			 Locals locals2 = new Locals(6)) {
 			fillLocals(locals1);
 			fillLocals(locals2);
 			assertEquals(locals1, locals2);

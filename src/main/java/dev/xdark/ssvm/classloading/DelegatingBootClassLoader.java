@@ -2,10 +2,11 @@ package dev.xdark.ssvm.classloading;
 
 import dev.xdark.ssvm.util.ClassUtil;
 import lombok.RequiredArgsConstructor;
-import lombok.val;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.tree.ClassNode;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Boot class loader that pulls
@@ -21,7 +22,7 @@ public final class DelegatingBootClassLoader implements BootClassLoader {
 	@Override
 	public ClassParseResult findBootClass(String name) {
 		ClassReader cr;
-		try (val in = delegate.getResourceAsStream(name + ".class")) {
+		try (InputStream in = delegate.getResourceAsStream(name + ".class")) {
 			if (in == null) {
 				return null;
 			}
@@ -29,7 +30,7 @@ public final class DelegatingBootClassLoader implements BootClassLoader {
 		} catch (IOException ex) {
 			throw new IllegalStateException("Could not read bootstrap class: " + name, ex);
 		}
-		val node = ClassUtil.readNode(cr);
+		ClassNode node = ClassUtil.readNode(cr);
 		return new ClassParseResult(cr, node);
 	}
 }

@@ -2,8 +2,9 @@ package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
+import dev.xdark.ssvm.api.VMInterface;
+import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import lombok.experimental.UtilityClass;
-import lombok.val;
 
 /**
  * Initializes java/util/zip/Inflater.
@@ -16,8 +17,8 @@ public class InflaterNatives {
 	 * 		VM instance.
 	 */
 	public void init(VirtualMachine vm) {
-		val vmi = vm.getInterface();
-		val jc = vm.getSymbols().java_util_zip_Inflater;
+		VMInterface vmi = vm.getInterface();
+		InstanceJavaClass jc = vm.getSymbols().java_util_zip_Inflater;
 		vmi.setInvoker(jc, "initIDs", "()V", MethodInvoker.noop());
 	}
 }

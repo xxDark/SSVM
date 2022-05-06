@@ -2,7 +2,7 @@ package dev.xdark.ssvm.value;
 
 /**
  * VM array value.
- * 
+ *
  * @author xDark
  */
 public interface ArrayValue extends ObjectValue {
@@ -115,7 +115,7 @@ public interface ArrayValue extends ObjectValue {
 	 * @param value
 	 * 		Value to set.
 	 */
-	public void setDouble(int index, double value);
+	void setDouble(int index, double value);
 
 	/**
 	 * Sets int value of an array.
@@ -192,5 +192,5 @@ public interface ArrayValue extends ObjectValue {
 	 *
 	 * @return array length.
 	 */
-	 int getLength();
+	int getLength();
 }

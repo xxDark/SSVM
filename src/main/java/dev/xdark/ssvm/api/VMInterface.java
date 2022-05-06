@@ -5,8 +5,8 @@ import dev.xdark.ssvm.asm.VirtualInsnNode;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
-import lombok.val;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.MethodNode;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -97,7 +97,7 @@ public final class VMInterface {
 	 */
 	public void setInvoker(JavaMethod call, MethodInvoker invoker) {
 		invokerMap.put(call, invoker);
-		val node = call.getNode();
+		MethodNode node = call.getNode();
 		node.access |= Modifier.ACC_JIT;
 	}
 
@@ -119,7 +119,7 @@ public final class VMInterface {
 	 * @see Modifier#ACC_JIT
 	 */
 	public boolean setInvoker(InstanceJavaClass jc, String name, String desc, MethodInvoker invoker) {
-		val method = jc.getMethod(name, desc);
+		JavaMethod method = jc.getMethod(name, desc);
 		if (method == null) {
 			return false;
 		}
@@ -195,7 +195,7 @@ public final class VMInterface {
 	 * {@code false} otherwise.
 	 */
 	public boolean registerMethodEnter(InstanceJavaClass jc, String name, String desc, MethodInvocation invocation) {
-		val method = jc.getMethod(name, desc);
+		JavaMethod method = jc.getMethod(name, desc);
 		if (method == null) {
 			return false;
 		}
@@ -243,7 +243,7 @@ public final class VMInterface {
 	 * {@code false} otherwise.
 	 */
 	public boolean registerMethodExit(InstanceJavaClass jc, String name, String desc, MethodInvocation invocation) {
-		val method = jc.getMethod(name, desc);
+		JavaMethod method = jc.getMethod(name, desc);
 		if (method == null) {
 			return false;
 		}
@@ -291,9 +291,13 @@ public final class VMInterface {
 			map = methodExit;
 			list = globalExit;
 		}
-		val invocation = map.get(call);
-		if (invocation == null) return list;
-		if (list.isEmpty()) return () -> new SingletonIterator(invocation);
+		MethodInvocation invocation = map.get(call);
+		if (invocation == null) {
+			return list;
+		}
+		if (list.isEmpty()) {
+			return () -> new SingletonIterator(invocation);
+		}
 		return () -> new InvocationIterator(invocation, list);
 	}
 
@@ -305,7 +309,9 @@ public final class VMInterface {
 	}
 
 	private static int getOpcode(AbstractInsnNode node) {
-		if (node instanceof VirtualInsnNode) return ((VirtualInsnNode) node).getVirtualOpcode();
+		if (node instanceof VirtualInsnNode) {
+			return ((VirtualInsnNode) node).getVirtualOpcode();
+		}
 		return node.getOpcode();
 	}
 
@@ -335,9 +341,9 @@ public final class VMInterface {
 			return rest.get(index++);
 		}
 	}
-	
+
 	private static final class SingletonIterator implements Iterator<MethodInvocation> {
-		
+
 		private MethodInvocation invocation;
 
 		private SingletonIterator(MethodInvocation invocation) {

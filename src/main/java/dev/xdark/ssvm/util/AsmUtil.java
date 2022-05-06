@@ -2,11 +2,13 @@ package dev.xdark.ssvm.util;
 
 import dev.xdark.ssvm.mirror.JavaMethod;
 import lombok.experimental.UtilityClass;
-import lombok.val;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnNode;
 import sun.misc.Unsafe;
+
+import java.lang.reflect.Field;
 
 /**
  * ASM utilities.
@@ -16,6 +18,10 @@ import sun.misc.Unsafe;
 @UtilityClass
 public class AsmUtil {
 
+	private final Long DEFAULT_LONG = 0L;
+	private final Double DEFAULT_DOUBLE = 0.0D;
+	private final Integer DEFAULT_INT = 0;
+	private final Float DEFAULT_FLOAT = 0.0F;
 	private final Unsafe UNSAFE;
 	private final long INSN_INDEX;
 	private final String[] INSN_NAMES;
@@ -35,7 +41,7 @@ public class AsmUtil {
 			if ((access & Opcodes.ACC_STATIC) == 0) {
 				max++;
 			}
-			for (val type : mn.getArgumentTypes()) {
+			for (Type type : mn.getArgumentTypes()) {
 				max += type.getSize();
 			}
 			return max;
@@ -77,44 +83,45 @@ public class AsmUtil {
 	 * 		Type descriptor.
 	 */
 	public Object getDefaultValue(String desc) {
-		switch (desc) {
+		switch(desc) {
 			case "J":
-				return 0L;
+				return DEFAULT_LONG;
 			case "D":
-				return 0.0D;
+				return DEFAULT_DOUBLE;
 			case "I":
 			case "S":
 			case "B":
 			case "Z":
 			case "C":
-				return 0;
+				return DEFAULT_INT;
 			case "F":
-				return 0.0F;
+				return DEFAULT_FLOAT;
 			default:
 				return null;
 		}
 	}
 
 	static {
-		val unsafe = UnsafeUtil.get();
+		Unsafe unsafe = UnsafeUtil.get();
 		UNSAFE = unsafe;
 		try {
 			new InsnNode(0);
 			INSN_INDEX = unsafe.objectFieldOffset(AbstractInsnNode.class.getDeclaredField("index"));
-		} catch (NoSuchFieldException ex) {
+		} catch(NoSuchFieldException ex) {
 			throw new ExceptionInInitializerError(ex);
 		}
-		val insnNames = new String[Opcodes.IFNONNULL + 1];
+		String[] insnNames = new String[Opcodes.IFNONNULL + 1];
 		try {
-			for (val f : Opcodes.class.getDeclaredFields()) {
+			for (Field f : Opcodes.class.getDeclaredFields()) {
 				if (f.getType() != int.class) {
 					continue;
 				}
-				val value = f.getInt(null);
-				if (value >= Opcodes.NOP && value <= Opcodes.IFNONNULL)
+				int value = f.getInt(null);
+				if (value >= Opcodes.NOP && value <= Opcodes.IFNONNULL) {
 					insnNames[value] = f.getName();
+				}
 			}
-		} catch (IllegalAccessException ex) {
+		} catch(IllegalAccessException ex) {
 			throw new ExceptionInInitializerError(ex);
 		}
 		INSN_NAMES = insnNames;

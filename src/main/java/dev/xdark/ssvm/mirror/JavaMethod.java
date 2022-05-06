@@ -1,9 +1,11 @@
 package dev.xdark.ssvm.mirror;
 
-import lombok.val;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.MethodNode;
+
+import java.util.List;
 
 /**
  * Method info.
@@ -162,7 +164,7 @@ public final class JavaMethod {
 	public boolean isPolymorphic() {
 		Boolean polymorphic = this.polymorphic;
 		if (polymorphic == null) {
-			val visibleAnnotations = node.visibleAnnotations;
+			List<AnnotationNode> visibleAnnotations = node.visibleAnnotations;
 			return this.polymorphic = visibleAnnotations != null
 					&& visibleAnnotations.stream().anyMatch(x -> "Ljava/lang/invoke/MethodHandle$PolymorphicSignature;".equals(x.desc));
 		}
@@ -177,8 +179,12 @@ public final class JavaMethod {
 		int maxArgs = this.maxArgs;
 		if (maxArgs == -1) {
 			int x = 0;
-			if ((node.access & Opcodes.ACC_STATIC) == 0) x++;
-			for (val t : getArgumentTypes()) x += t.getSize();
+			if ((node.access & Opcodes.ACC_STATIC) == 0) {
+				x++;
+			}
+			for (Type t : getArgumentTypes()) {
+				x += t.getSize();
+			}
 			return this.maxArgs = x;
 		}
 		return maxArgs;
@@ -206,7 +212,7 @@ public final class JavaMethod {
 	public boolean isCallerSensitive() {
 		Boolean callerSensitive = this.callerSensitive;
 		if (callerSensitive == null) {
-			val visibleAnnotations = node.visibleAnnotations;
+			List<AnnotationNode> visibleAnnotations = node.visibleAnnotations;
 			return this.callerSensitive = visibleAnnotations != null
 					&& visibleAnnotations.stream().anyMatch(x -> "Lsun/reflect/CallerSensitive;".equals(x.desc));
 		}
@@ -215,12 +221,18 @@ public final class JavaMethod {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
 
 		JavaMethod that = (JavaMethod) o;
 
-		if (!owner.equals(that.owner)) return false;
+		if (!owner.equals(that.owner)) {
+			return false;
+		}
 		return node.equals(that.node);
 	}
 
@@ -231,7 +243,7 @@ public final class JavaMethod {
 
 	@Override
 	public String toString() {
-		val node = this.node;
+		MethodNode node = this.node;
 		return owner.getInternalName() + '.' + node.name + desc;
 	}
 }

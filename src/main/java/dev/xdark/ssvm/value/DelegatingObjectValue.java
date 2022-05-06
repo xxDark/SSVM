@@ -12,7 +12,9 @@ import lombok.experimental.Delegate;
 public class DelegatingObjectValue<V extends ObjectValue> extends DelegatingValue<V> implements ObjectValue {
 
 	@Delegate(types = ObjectValue.class)
-	@Getter @Setter private V delegate;
+	@Getter
+	@Setter
+	private V delegate;
 
 	public DelegatingObjectValue(V delegate) {
 		this.delegate = delegate;

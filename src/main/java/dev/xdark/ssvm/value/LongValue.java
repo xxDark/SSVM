@@ -1,7 +1,5 @@
 package dev.xdark.ssvm.value;
 
-import lombok.val;
-
 /**
  * VM representation for long value.
  *
@@ -103,10 +101,11 @@ public final class LongValue extends NumericValue implements WideValue {
 	 * @return int cache.
 	 */
 	public static LongValue[] createCache(int low, int high) {
-		val cache = new LongValue[(high - low) + 1];
+		LongValue[] cache = new LongValue[(high - low) + 1];
 		int j = low;
-		for (int k = 0; k < cache.length; k++)
+		for (int k = 0; k < cache.length; k++) {
 			cache[k] = new LongValue(j++);
+		}
 		return cache;
 	}
 

@@ -1,7 +1,5 @@
 package dev.xdark.ssvm.value;
 
-import lombok.val;
-
 /**
  * VM representation for int value.
  *
@@ -113,10 +111,11 @@ public final class IntValue extends NumericValue {
 	 * @return int cache.
 	 */
 	public static IntValue[] createCache(int low, int high) {
-		val cache = new IntValue[(high - low) + 1];
+		IntValue[] cache = new IntValue[(high - low) + 1];
 		int j = low;
-		for (int k = 0; k < cache.length; k++)
+		for (int k = 0; k < cache.length; k++) {
 			cache[k] = new IntValue(j++);
+		}
 		return cache;
 	}
 

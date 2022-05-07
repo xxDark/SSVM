@@ -2082,17 +2082,7 @@ public final class VMHelper {
 	 * if not found.
 	 */
 	public JavaMethod getMethodBySlot(InstanceJavaClass jc, int slot) {
-		for (JavaMethod m : jc.getVirtualMethodLayout().getAll()) {
-			if (slot == m.getSlot()) {
-				return m;
-			}
-		}
-		for (JavaMethod m : jc.getStaticMethodLayout().getAll()) {
-			if (slot == m.getSlot()) {
-				return m;
-			}
-		}
-		return null;
+		return jc.getMethodBySlot(slot);
 	}
 
 	/**
@@ -2107,17 +2097,7 @@ public final class VMHelper {
 	 * if not found.
 	 */
 	public JavaField getFieldBySlot(InstanceJavaClass jc, int slot) {
-		for (JavaField f : jc.getVirtualFieldLayout().getAll()) {
-			if (slot == f.getSlot()) {
-				return f;
-			}
-		}
-		for (JavaField f : jc.getStaticFieldLayout().getAll()) {
-			if (slot == f.getSlot()) {
-				return f;
-			}
-		}
-		return null;
+		return jc.getFieldBySlot(slot);
 	}
 
 	/**

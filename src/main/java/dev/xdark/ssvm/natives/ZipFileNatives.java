@@ -4,6 +4,7 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
+import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.fs.ZipFile;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
@@ -11,12 +12,9 @@ import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.LongValue;
 import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.UtilityClass;
 
 import java.io.IOException;
@@ -71,7 +69,7 @@ public class ZipFileNatives {
 			vmi.setInvoker(zf, "startsWithLOC", "(J)Z", ctx -> {
 				ZipFile zip = vm.getFileDescriptorManager().getZipFile(ctx.getLocals().load(0).asLong());
 				if (zip == null) {
-					vm.getHelper().throwException(symbols.java_lang_IllegalStateException(), "zip closed");
+					throw new PanicException("Segfault");
 				}
 				ctx.setResult(zip.startsWithLOC() ? IntValue.ONE : IntValue.ZERO);
 				return Result.ABORT;
@@ -82,7 +80,7 @@ public class ZipFileNatives {
 				ZipFile zip = vm.getFileDescriptorManager().getZipFile(handle);
 				VMHelper helper = vm.getHelper();
 				if (zip == null) {
-					helper.throwException(symbols.java_lang_IllegalStateException(), "zip closed");
+					throw new PanicException("Segfault");
 				}
 				String entryName = new String(helper.toJavaBytes(locals.load(2)), StandardCharsets.UTF_8);
 				ZipEntry entry = zip.getEntry(entryName);
@@ -93,18 +91,21 @@ public class ZipFileNatives {
 				if (entry == null) {
 					ctx.setResult(LongValue.ZERO);
 				} else {
-					JavaValue<ZipEntryHolder> value = vm.getMemoryManager().newJavaInstance(symbols.java_lang_Object(), new ZipEntryHolder(zip, entry));
-					value.setWide(true);
-					ctx.setResult(value);
+					long h = zip.makeHandle(entry);
+					ctx.setResult(LongValue.of(h));
 				}
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntryBytes", "(JI)[B", ctx -> {
 				Locals locals = ctx.getLocals();
 				VMHelper helper = vm.getHelper();
-				ZipEntry value = ((JavaValue<ZipEntryHolder>) vm.getMemoryManager().getValue(locals.load(0).asLong())).getValue().handle;
+				long address = locals.load(0).asLong();
+				ZipEntry value = vm.getFileDescriptorManager().getZipEntry(address);
+				if (value == null) {
+					throw new PanicException("Segfault");
+				}
 				int type = locals.load(2).asInt();
-				switch(type) {
+				switch (type) {
 					case 0:
 						ctx.setResult(helper.toVMBytes(value.getName().getBytes(StandardCharsets.UTF_8)));
 						break;
@@ -123,45 +124,73 @@ public class ZipFileNatives {
 			});
 			vmi.setInvoker(zf, "getEntryTime", "(J)J", ctx -> {
 				Locals locals = ctx.getLocals();
-				ZipEntry value = ((JavaValue<ZipEntryHolder>) vm.getMemoryManager().getValue(locals.load(0).asLong())).getValue().handle;
+				ZipEntry value = vm.getFileDescriptorManager().getZipEntry(locals.load(0).asLong());
+				if (value == null) {
+					throw new PanicException("Segfault");
+				}
 				ctx.setResult(LongValue.of(value.getTime()));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntryCrc", "(J)J", ctx -> {
 				Locals locals = ctx.getLocals();
-				ZipEntry value = ((JavaValue<ZipEntryHolder>) vm.getMemoryManager().getValue(locals.load(0).asLong())).getValue().handle;
+				ZipEntry value = vm.getFileDescriptorManager().getZipEntry(locals.load(0).asLong());
+				if (value == null) {
+					throw new PanicException("Segfault");
+				}
 				ctx.setResult(LongValue.of(value.getCrc()));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntrySize", "(J)J", ctx -> {
 				Locals locals = ctx.getLocals();
-				ZipEntry value = ((JavaValue<ZipEntryHolder>) vm.getMemoryManager().getValue(locals.load(0).asLong())).getValue().handle;
+				ZipEntry value = vm.getFileDescriptorManager().getZipEntry(locals.load(0).asLong());
+				if (value == null) {
+					throw new PanicException("Segfault");
+				}
 				ctx.setResult(LongValue.of(value.getSize()));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntryCSize", "(J)J", ctx -> {
 				Locals locals = ctx.getLocals();
-				ZipEntry value = ((JavaValue<ZipEntryHolder>) vm.getMemoryManager().getValue(locals.load(0).asLong())).getValue().handle;
-				ctx.setResult(LongValue.of(value.getSize())); // TODO change?
+				ZipEntry value = vm.getFileDescriptorManager().getZipEntry(locals.load(0).asLong());
+				if (value == null) {
+					throw new PanicException("Segfault");
+				}
+				ctx.setResult(LongValue.of(value.getCompressedSize()));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntryMethod", "(J)I", ctx -> {
-				ctx.setResult(IntValue.of(ZipEntry.STORED)); // TODO change?
+				Locals locals = ctx.getLocals();
+				ZipEntry value = vm.getFileDescriptorManager().getZipEntry(locals.load(0).asLong());
+				if (value == null) {
+					throw new PanicException("Segfault");
+				}
+				ctx.setResult(IntValue.of(ZipEntry.STORED));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntryFlag", "(J)I", ctx -> {
-				// TDOO
+				// TODO
 				ctx.setResult(IntValue.ZERO);
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "freeEntry", "(JJ)V", ctx -> {
 				Locals locals = ctx.getLocals();
-				vm.getMemoryManager().freeMemory(locals.load(2).asLong());
+				long jzfile = locals.load(0).asLong();
+				ZipFile zipFile = vm.getFileDescriptorManager().getZipFile(jzfile);
+				if (zipFile == null || !zipFile.freeHandle(locals.load(2).asLong())) {
+					throw new PanicException("Segfault");
+				}
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "read", "(JJJ[BII)I", ctx -> {
 				Locals locals = ctx.getLocals();
-				ZipEntryHolder entry = ((JavaValue<ZipEntryHolder>) vm.getMemoryManager().getValue(locals.load(2).asLong())).getValue();
+				ZipFile zipFile = vm.getFileDescriptorManager().getZipFile(locals.load(0).asLong());
+				if (zipFile == null) {
+					throw new PanicException("Segfault");
+				}
+				ZipEntry entry = zipFile.getEntry(locals.load(2).asLong());
+				if (entry == null) {
+					throw new PanicException("Segfault");
+				}
 				long pos = locals.load(4).asLong();
 				if (pos > Integer.MAX_VALUE) {
 					vm.getHelper().throwException(vm.getSymbols().java_util_zip_ZipException(), "Entry too large");
@@ -171,7 +200,7 @@ public class ZipFileNatives {
 				int len = locals.load(8).asInt();
 				byte[] read;
 				try {
-					read = entry.readEntry();
+					read = zipFile.readEntry(entry);
 				} catch(IOException ex) {
 					vm.getHelper().throwException(vm.getSymbols().java_util_zip_ZipException(), ex.getMessage());
 					return Result.ABORT;
@@ -199,19 +228,15 @@ public class ZipFileNatives {
 				Locals locals = ctx.getLocals();
 				long handle = locals.load(0).asLong();
 				ZipFile zip = vm.getFileDescriptorManager().getZipFile(handle);
-				VMHelper helper = vm.getHelper();
 				if (zip == null) {
-					helper.throwException(symbols.java_lang_IllegalStateException(), "zip closed");
+					throw new PanicException("Segfault");
 				}
 				int idx = locals.load(2).asInt();
 				ZipEntry entry = zip.getEntry(idx);
 				if (entry == null) {
-					ctx.setResult(LongValue.ZERO);
-				} else {
-					JavaValue<ZipEntryHolder> value = vm.getMemoryManager().newJavaInstance(symbols.java_lang_Object(), new ZipEntryHolder(zip, entry));
-					value.setWide(true);
-					ctx.setResult(value);
+					throw new PanicException("Segfault");
 				}
+				ctx.setResult(LongValue.of(zip.makeHandle(entry)));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "close", "(J)V", ctx -> {
@@ -222,17 +247,6 @@ public class ZipFileNatives {
 				}
 				return Result.ABORT;
 			});
-		}
-	}
-
-	@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-	private static final class ZipEntryHolder {
-
-		final ZipFile zf;
-		final ZipEntry handle;
-
-		byte[] readEntry() throws IOException {
-			return zf.readEntry(handle);
 		}
 	}
 }

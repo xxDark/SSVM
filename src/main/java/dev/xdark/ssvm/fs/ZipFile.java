@@ -57,4 +57,34 @@ public interface ZipFile extends Closeable {
 	 * @return an ordered {@link Stream} of entries in this ZIP file.
 	 */
 	Stream<ZipEntry> stream();
+
+	/**
+	 * Creates zip entry handle.
+	 *
+	 * @param entry
+	 * 		Entry to create handle for.
+	 *
+	 * @return zip entry handle.
+	 */
+	long makeHandle(ZipEntry entry);
+
+	/**
+	 * Gets zip entry by it's handle.
+	 *
+	 * @param handle
+	 * 		Entry handle.
+	 *
+	 * @return zip entry or {@code null}.
+	 */
+	ZipEntry getEntry(long handle);
+
+	/**
+	 * Removes entry handle.
+	 *
+	 * @param handle
+	 * 		Handle to remove.
+	 *
+	 * @return {@code true} if entry was remove.
+	 */
+	boolean freeHandle(long handle);
 }

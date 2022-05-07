@@ -26,6 +26,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
@@ -60,9 +61,11 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 
 	private FieldLayout vrtFieldLayout;
 	private FieldLayout staticFieldLayout;
+	private JavaField[] fieldArray;
 
 	private MethodLayout vrtMethodLayout;
 	private MethodLayout staticMethodLayout;
+	private JavaMethod[] methodArray;
 
 	private SimpleInstanceJavaClass superClass;
 	private SimpleInstanceJavaClass[] interfaces;
@@ -76,7 +79,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	private String normalName;
 	private String descriptor;
 
-	// Reflection cache.
+	// Reflection cache
 	private List<JavaMethod> declaredConstructors;
 	private List<JavaMethod> publicConstructors;
 	private List<JavaMethod> declaredMethods;
@@ -711,6 +714,42 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	}
 
 	@Override
+	public JavaMethod getMethodBySlot(int slot) {
+		JavaMethod[] methodArray = this.methodArray;
+		if (methodArray == null) {
+			Collection<JavaMethod> virtualMethods = getVirtualMethodLayout().getAll();
+			Collection<JavaMethod> staticMethods = getStaticMethodLayout().getAll();
+			methodArray = new JavaMethod[getTotalMethodCount()];
+			for (JavaMethod m : virtualMethods) {
+				methodArray[m.getSlot()] = m;
+			}
+			for (JavaMethod m : staticMethods) {
+				methodArray[m.getSlot()] = m;
+			}
+			this.methodArray = methodArray;
+		}
+		return slot < 0 || slot >= methodArray.length ? null : methodArray[slot];
+	}
+
+	@Override
+	public JavaField getFieldBySlot(int slot) {
+		JavaField[] fieldArray = this.fieldArray;
+		if (fieldArray == null) {
+			Collection<JavaField> virtualFields = getVirtualFieldLayout().getAll();
+			Collection<JavaField> staticFields = getStaticFieldLayout().getAll();
+			fieldArray = new JavaField[getTotalFieldCount()];
+			for (JavaField f : virtualFields) {
+				fieldArray[f.getSlot()] = f;
+			}
+			for (JavaField f : staticFields) {
+				fieldArray[f.getSlot()] = f;
+			}
+			this.fieldArray = fieldArray;
+		}
+		return slot < 0 || slot >= fieldArray.length ? null : fieldArray[slot];
+	}
+
+	@Override
 	public List<JavaMethod> getDeclaredMethods(boolean publicOnly) {
 		if (publicOnly) {
 			List<JavaMethod> publicMethods = this.publicMethods;
@@ -777,7 +816,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	public MethodLayout getVirtualMethodLayout() {
 		MethodLayout vrtMethodLayout = this.vrtMethodLayout;
 		if (vrtMethodLayout == null) {
-			HashMap<MemberKey, JavaMethod> map = new HashMap<MemberKey, JavaMethod>();
+			Map<MemberKey, JavaMethod> map = new HashMap<>();
 			int slot = 0;
 			List<MethodNode> methods = node.methods;
 			for (MethodNode method : methods) {
@@ -795,7 +834,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	public MethodLayout getStaticMethodLayout() {
 		MethodLayout staticMethodLayout = this.staticMethodLayout;
 		if (staticMethodLayout == null) {
-			HashMap<MemberKey, JavaMethod> map = new HashMap<MemberKey, JavaMethod>();
+			Map<MemberKey, JavaMethod> map = new HashMap<>();
 			int slot = getVirtualMethodCount();
 			List<MethodNode> methods = node.methods;
 			for (MethodNode method : methods) {
@@ -905,6 +944,24 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		return count;
 	}
 
+	private int getTotalFieldCount() {
+		int count = 0;
+		InstanceJavaClass jc = this;
+		do {
+			count += jc.getNode().fields.size();
+		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
+		return count;
+	}
+
+	private int getTotalMethodCount() {
+		int count = 0;
+		InstanceJavaClass jc = this;
+		do {
+			count += jc.getNode().methods.size();
+		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
+		return count;
+	}
+
 	private int getVirtualMethodCount() {
 		int count = 0;
 		InstanceJavaClass jc = this;
@@ -914,7 +971,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 					count++;
 				}
 			}
-		} while((jc = jc.getSuperclassWithoutResolving()) != null);
+		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
 		return count;
 	}
 

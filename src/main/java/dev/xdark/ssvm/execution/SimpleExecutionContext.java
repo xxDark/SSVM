@@ -151,34 +151,7 @@ public final class SimpleExecutionContext implements ExecutionContext, Disposabl
 
 	@Override
 	public void unwind() {
-		Stack stack = this.stack;
-		Map<ObjectValue, LockCount> lockMap = this.lockMap;
-		boolean exceptionThrown = false;
-		try {
-			Value value;
-			while ((value = stack.poll()) != null) {
-				if (value instanceof ObjectValue && !value.isNull()) {
-					LockCount count = lockMap.remove(value);
-					if (count != null) {
-						ObjectValue object = (ObjectValue) value;
-						int x = count.value;
-						while (x-- != 0) {
-							try {
-								object.monitorExit();
-							} catch (IllegalMonitorStateException ignored) {
-								exceptionThrown = true;
-							}
-						}
-					}
-				}
-			}
-		} finally {
-			stack.clear();
-			if (exceptionThrown) {
-				VirtualMachine vm = virtualMachine;
-				vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalMonitorStateException());
-			}
-		}
+		stack.clear();
 	}
 
 	@Override

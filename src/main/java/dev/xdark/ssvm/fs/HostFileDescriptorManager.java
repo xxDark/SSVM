@@ -14,6 +14,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.zip.ZipEntry;
 
 /**
  * File descriptor manager that uses host machine
@@ -23,9 +24,9 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class HostFileDescriptorManager implements FileDescriptorManager {
 
-	protected final Map<Long, InputStream> inputs = new HashMap<>();
-	protected final Map<Long, OutputStream> outputs = new HashMap<>();
-	private final Map<Long, ZipFile> zipFiles = new HashMap<>();
+	protected final Map<Handle, InputStream> inputs = new HashMap<>();
+	protected final Map<Handle, OutputStream> outputs = new HashMap<>();
+	private final Map<Handle, ZipFile> zipFiles = new HashMap<>();
 
 	private final InputStream stdin;
 	private final OutputStream stdout;
@@ -50,65 +51,56 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 	}
 
 	@Override
-	public InputStream getFdIn(long handle) {
-		return inputs.get(handle);
+	public synchronized InputStream getFdIn(long handle) {
+		return inputs.get(Handle.threadLocal(handle));
 	}
 
 	@Override
-	public OutputStream getFdOut(long handle) {
-		return outputs.get(handle);
+	public synchronized OutputStream getFdOut(long handle) {
+		return outputs.get(Handle.threadLocal(handle));
 	}
 
 	@Override
-	public void close(long handle) throws IOException {
-		Long wrapper = handle;
-		InputStream in = inputs.remove(wrapper);
+	public synchronized void close(long handle) throws IOException {
+		Handle h = Handle.threadLocal(handle);
+		InputStream in = inputs.remove(h);
 		if (in != null) {
 			in.close();
 			return;
 		}
-		OutputStream out = outputs.remove(wrapper);
+		OutputStream out = outputs.remove(h);
 		if (out != null) {
 			out.close();
 			return;
 		}
-		ZipFile zip = zipFiles.remove(wrapper);
+		ZipFile zip = zipFiles.remove(h);
 		if (zip != null) {
 			zip.close();
 		}
 	}
 
 	@Override
-	public long newFD() {
-		ThreadLocalRandom rng = ThreadLocalRandom.current();
-		Map<Long, InputStream> inputs = this.inputs;
-		Map<Long, OutputStream> outputs = this.outputs;
-		Map<Long, ZipFile> zipFiles = this.zipFiles;
-		long handle;
-		Long wrapper;
-		do {
-			handle = rng.nextLong();
-		} while(inputs.containsKey(wrapper = handle) || outputs.containsKey(wrapper) || zipFiles.containsKey(wrapper));
-		return handle;
+	public synchronized long newFD() {
+		return newFD0(-1L);
 	}
 
 	@Override
-	public long newFD(int stream) {
+	public synchronized long newFD(int stream) {
 		switch(stream) {
 			case 0: {
-				long handle = newFD();
-				inputs.put(handle, stdin);
-				return handle;
+				long fd = newFD();
+				inputs.put(Handle.of(fd), stdin);
+				return fd;
 			}
 			case 1: {
-				long handle = newFD();
-				outputs.put(handle, stdout);
-				return handle;
+				long fd = newFD();
+				outputs.put(Handle.of(fd), stdout);
+				return fd;
 			}
 			case 2: {
-				long handle = newFD();
-				outputs.put(handle, stderr);
-				return handle;
+				long fd = newFD();
+				outputs.put(Handle.of(fd), stderr);
+				return fd;
 			}
 			default:
 				throw new IllegalStateException("Unsupported stream: " + stream);
@@ -126,24 +118,24 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 	}
 
 	@Override
-	public long open(String path, int mode) throws IOException {
+	public synchronized long open(String path, int mode) throws IOException {
 		switch(mode) {
 			case READ: {
 				long fd = newFD();
 				FileInputStream in = new FileInputStream(path);
-				inputs.put(fd, in);
+				inputs.put(Handle.of(fd), in);
 				return fd;
 			}
 			case WRITE: {
 				long fd = newFD();
 				FileOutputStream out = new FileOutputStream(path);
-				outputs.put(fd, out);
+				outputs.put(Handle.of(fd), out);
 				return fd;
 			}
 			case APPEND: {
 				long fd = newFD();
 				FileOutputStream out = new FileOutputStream(path, true);
-				outputs.put(fd, out);
+				outputs.put(Handle.of(fd), out);
 				return fd;
 			}
 			default:
@@ -166,16 +158,30 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 	}
 
 	@Override
-	public long openZipFile(String path, int mode) throws IOException {
-		long fd = newFD();
-		ZipFile zf = new SimpleZipFile(new java.util.zip.ZipFile(new File(path), mode));
-		zipFiles.put(fd, zf);
+	public synchronized long openZipFile(String path, int mode) throws IOException {
+		// Only use 32 bits for zip handles,
+		// see SimpleZipFile
+		int fd = (int) newFD0(0xffffffff);
+		ZipFile zf = new SimpleZipFile(new java.util.zip.ZipFile(new File(path), mode), fd);
+		zipFiles.put(Handle.of(fd), zf);
 		return fd;
 	}
 
 	@Override
-	public ZipFile getZipFile(long handle) {
-		return zipFiles.get(handle);
+	public synchronized ZipFile getZipFile(long handle) {
+		return zipFiles.get(Handle.threadLocal((int) handle));
+	}
+
+	@Override
+	public synchronized ZipEntry getZipEntry(long handle) {
+		ZipFile zf = zipFiles.get(Handle.threadLocal((int) handle));
+		return zf == null ? null : zf.getEntry(handle);
+	}
+
+	@Override
+	public synchronized boolean freeZipEntry(long handle) {
+		ZipFile zf = zipFiles.get(Handle.threadLocal((int) handle));
+		return zf != null && zf.freeHandle(handle);
 	}
 
 	@Override
@@ -193,5 +199,19 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 			default:
 				throw new IllegalStateException("Unsupported stream: " + stream);
 		}
+	}
+
+	private long newFD0(long mask) {
+		ThreadLocalRandom rng = ThreadLocalRandom.current();
+		Map<Handle, InputStream> inputs = this.inputs;
+		Map<Handle, OutputStream> outputs = this.outputs;
+		Map<Handle, ZipFile> zipFiles = this.zipFiles;
+		long raw;
+		Handle h = Handle.threadLocal();
+		do {
+			raw = rng.nextLong() & mask;
+			h.set(raw);
+		} while(inputs.containsKey(h) || outputs.containsKey(h) || zipFiles.containsKey(h));
+		return raw;
 	}
 }

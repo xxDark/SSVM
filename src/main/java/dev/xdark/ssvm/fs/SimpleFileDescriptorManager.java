@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.LinkOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.zip.ZipEntry;
 
 /**
  * Simple implementation of file descriptor manager.
@@ -74,6 +75,16 @@ public class SimpleFileDescriptorManager implements FileDescriptorManager {
 	@Override
 	public ZipFile getZipFile(long handle) {
 		return null;
+	}
+
+	@Override
+	public ZipEntry getZipEntry(long handle) {
+		return null;
+	}
+
+	@Override
+	public boolean freeZipEntry(long handle) {
+		return false;
 	}
 
 	@Override

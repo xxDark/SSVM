@@ -398,7 +398,6 @@ public class VirtualMachine {
 		return classLoaders;
 	}
 
-
 	/**
 	 * Returns execution engine.
 	 *
@@ -524,6 +523,7 @@ public class VirtualMachine {
 			}
 			ctx.monitorEnter(lock);
 		}
+		boolean doCleanup = true;
 		try {
 			for (MethodInvocation invocation : vmi.getInvocationHooks(jm, true)) {
 				invocation.handle(ctx);
@@ -547,22 +547,28 @@ public class VirtualMachine {
 		} catch (VMException ex) {
 			throw ex;
 		} catch (Exception ex) {
-			throw new IllegalStateException("Uncaught VM error at: " + ctx.getOwner().getInternalName() + '.' + jm.getName() + jm.getDesc(), ex);
+			doCleanup = false;
+			throw new IllegalStateException("Uncaught VM error at: " + jm, ex);
 		} finally {
-			try {
+			if (doCleanup) {
 				try {
-					for (MethodInvocation invocation : vmi.getInvocationHooks(jm, false)) {
-						invocation.handle(ctx);
+					try {
+						for (MethodInvocation invocation : vmi.getInvocationHooks(jm, false)) {
+							invocation.handle(ctx);
+						}
+					} finally {
+						if (lock != null) {
+							ctx.monitorExit(lock);
+						}
+						try {
+							ctx.verifyMonitors();
+						} finally {
+							DisposeUtil.dispose(ctx);
+						}
 					}
 				} finally {
-					if (lock != null) {
-						ctx.monitorExit(lock);
-					}
-					ctx.verifyMonitors();
-					DisposeUtil.dispose(ctx);
+					backtrace.pop();
 				}
-			} finally {
-				backtrace.pop();
 			}
 		}
 	}

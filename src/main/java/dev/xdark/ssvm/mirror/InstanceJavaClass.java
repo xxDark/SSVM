@@ -347,4 +347,20 @@ public interface InstanceJavaClass extends JavaClass {
 	 * Loads hierarchy of classes without marking them as resolved.
 	 */
 	void loadNoResolve();
+
+	/**
+	 * @param slot
+	 * 		Method slot.
+	 *
+	 * @return method by it's slot.
+	 */
+	JavaMethod getMethodBySlot(int slot);
+
+	/**
+	 * @param slot
+	 * 		Field slot.
+	 *
+	 * @return field by it's slot.
+	 */
+	JavaField getFieldBySlot(int slot);
 }

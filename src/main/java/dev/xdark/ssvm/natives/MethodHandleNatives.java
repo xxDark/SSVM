@@ -143,34 +143,30 @@ public class MethodHandleNatives {
 			InstanceValue form = helper.checkNotNull(_this.getValue("form", "Ljava/lang/invoke/LambdaForm;"));
 			InstanceValue vmentry = helper.checkNotNull(form.getValue("vmentry", "Ljava/lang/invoke/MemberName;"));
 			InstanceValue resolved = helper.checkNotNull(vmentry.getValue("method", symbols.java_lang_invoke_ResolvedMethodName().getDescriptor()));
-			Object vmtarget = ((JavaValue<Object>) resolved.getValue(VM_TARGET, "Ljava/lang/Object;")).getValue();
-			if (vmtarget instanceof JavaMethod) {
-				JavaMethod jm = (JavaMethod) vmtarget;
-				String name = jm.getName();
-				if ("<init>".equals(name)) {
-					helper.throwException(symbols.java_lang_InternalError(), "Bad name " + name);
-				}
-				Value[] lvt = locals.getTable();
-
-				InstanceJavaClass owner = jm.getOwner();
-				Value result;
-				if ((jm.getAccess() & ACC_STATIC) == 0) {
-					int flags = vmentry.getInt("flags");
-					int refKind = (flags >> MN_REFERENCE_KIND_SHIFT) & MN_REFERENCE_KIND_MASK;
-					if (refKind == REF_invokeSpecial || refKind == REF_newInvokeSpecial) {
-						result = helper.invokeExact(owner, jm, new Value[0], lvt).getResult();
-					} else {
-						result = helper.invokeVirtual(name, jm.getDesc(), new Value[0], lvt).getResult();
-					}
-				} else {
-					result = helper.invokeStatic(owner, jm, new Value[0], lvt).getResult();
-				}
-				JavaMethod m = ctx.getMethod();
-				result = Util.convertInvokeDynamicArgument(helper, m.getReturnType(), result);
-				ctx.setResult(voidAsNull(result, m));
-			} else {
-				throw new PanicException("TODO: " + vmtarget);
+			InstanceJavaClass clazz = ((JavaValue<InstanceJavaClass>) vmentry.getValue("clazz", "Ljava/lang/Class;")).getValue();
+			JavaMethod vmtarget = helper.getMethodBySlot(clazz, ((InstanceValue) resolved.getValue(VM_TARGET, "Ljava/lang/Object;")).getInt("value"));
+			String name = vmtarget.getName();
+			if ("<init>".equals(name)) {
+				helper.throwException(symbols.java_lang_InternalError(), "Bad name " + name);
 			}
+			Value[] lvt = locals.getTable();
+
+			InstanceJavaClass owner = vmtarget.getOwner();
+			Value result;
+			if ((vmtarget.getAccess() & ACC_STATIC) == 0) {
+				int flags = vmentry.getInt("flags");
+				int refKind = (flags >> MN_REFERENCE_KIND_SHIFT) & MN_REFERENCE_KIND_MASK;
+				if (refKind == REF_invokeSpecial || refKind == REF_newInvokeSpecial) {
+					result = helper.invokeExact(owner, vmtarget, new Value[0], lvt).getResult();
+				} else {
+					result = helper.invokeVirtual(name, vmtarget.getDesc(), new Value[0], lvt).getResult();
+				}
+			} else {
+				result = helper.invokeStatic(owner, vmtarget, new Value[0], lvt).getResult();
+			}
+			JavaMethod m = ctx.getMethod();
+			result = Util.convertInvokeDynamicArgument(helper, m.getReturnType(), result);
+			ctx.setResult(voidAsNull(result, m));
 			return Result.ABORT;
 		};
 		vmi.setInvoker(mh, "invoke", "([Ljava/lang/Object;)Ljava/lang/Object;", invoke);
@@ -184,7 +180,8 @@ public class MethodHandleNatives {
 			int length = table.length;
 			InstanceValue memberName = locals.load(length - 1);
 			InstanceValue resolved = (InstanceValue) memberName.getValue("method", symbols.java_lang_invoke_ResolvedMethodName().getDescriptor());
-			JavaMethod vmtarget = ((JavaValue<JavaMethod>) resolved.getValue(VM_TARGET, "Ljava/lang/Object;")).getValue();
+			InstanceJavaClass clazz = ((JavaValue<InstanceJavaClass>) memberName.getValue("clazz", "Ljava/lang/Class;")).getValue();
+			JavaMethod vmtarget = helper.getMethodBySlot(clazz, ((InstanceValue) resolved.getValue(VM_TARGET, "Ljava/lang/Object;")).getInt("value"));
 
 			Value[] args = Arrays.copyOfRange(table, 0, length - 1);
 
@@ -310,8 +307,7 @@ public class MethodHandleNatives {
 		rmn.initialize();
 		InstanceValue resolvedName = memoryManager.newInstance(rmn);
 		resolvedName.initialize();
-		InstanceJavaClass jlo = symbols.java_lang_Object();
-		resolvedName.setValue(VM_TARGET, "Ljava/lang/Object;", memoryManager.newJavaInstance(jlo, handle));
+		resolvedName.setValue(VM_TARGET, "Ljava/lang/Object;", vm.getHelper().boxInt(IntValue.of(handle.getSlot())));
 		resolvedName.setValue(VM_HOLDER, "Ljava/lang/Object;", handle.getOwner().getOop());
 		memberName.setValue("method", symbols.java_lang_invoke_ResolvedMethodName().getDescriptor(), resolvedName);
 		// Inject flags
@@ -336,8 +332,7 @@ public class MethodHandleNatives {
 		rmn.initialize();
 		InstanceValue resolvedName = memoryManager.newInstance(rmn);
 		resolvedName.initialize();
-		InstanceJavaClass jlo = symbols.java_lang_Object();
-		resolvedName.setValue(VM_TARGET, "Ljava/lang/Object;", memoryManager.newJavaInstance(jlo, handle));
+		resolvedName.setValue(VM_TARGET, "Ljava/lang/Object;", vm.getHelper().boxInt(IntValue.of(handle.getSlot())));
 		resolvedName.setValue(VM_HOLDER, "Ljava/lang/Object;", owner.getOop());
 		memberName.setValue("method", symbols.java_lang_invoke_ResolvedMethodName().getDescriptor(), resolvedName);
 		// Inject flags

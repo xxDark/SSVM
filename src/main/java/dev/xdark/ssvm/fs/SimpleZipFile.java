@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -21,7 +22,9 @@ import java.util.zip.ZipEntry;
 public class SimpleZipFile implements ZipFile {
 
 	private final java.util.zip.ZipFile handle;
+	private final int rawHandle;
 	private final Map<ZipEntry, byte[]> contents = new HashMap<>();
+	private final Map<Handle, ZipEntry> handles = new HashMap<>();
 	private Map<String, ZipEntry> names;
 	private List<ZipEntry> entries;
 
@@ -31,7 +34,7 @@ public class SimpleZipFile implements ZipFile {
 	}
 
 	@Override
-	public ZipEntry getEntry(int index) {
+	public synchronized ZipEntry getEntry(int index) {
 		if (index < 0) {
 			return null;
 		}
@@ -43,7 +46,7 @@ public class SimpleZipFile implements ZipFile {
 	}
 
 	@Override
-	public ZipEntry getEntry(String name) {
+	public synchronized ZipEntry getEntry(String name) {
 		Map<String, ZipEntry> names = this.names;
 		if (names == null) {
 			names = new HashMap<>();
@@ -60,7 +63,7 @@ public class SimpleZipFile implements ZipFile {
 	}
 
 	@Override
-	public byte[] readEntry(ZipEntry entry) throws IOException {
+	public synchronized byte[] readEntry(ZipEntry entry) throws IOException {
 		Map<ZipEntry, byte[]> contents = this.contents;
 		byte[] content = contents.get(entry);
 		if (content == null) {
@@ -91,11 +94,39 @@ public class SimpleZipFile implements ZipFile {
 	}
 
 	@Override
+	public synchronized long makeHandle(ZipEntry entry) {
+		Map<Handle, ZipEntry> handles = this.handles;
+		Handle handle = Handle.threadLocal();
+		ThreadLocalRandom r = ThreadLocalRandom.current();
+		int value;
+		do {
+			value = r.nextInt();
+			handle.set(value);
+		} while(handles.containsKey(handle));
+		handles.put(handle.copy(), entry);
+		return (long) value << 32L | rawHandle & 0xffffffffL;
+	}
+
+	@Override
+	public synchronized ZipEntry getEntry(long handle) {
+		handle >>= 32;
+		return handles.get(Handle.threadLocal((int) handle));
+	}
+
+	@Override
+	public synchronized boolean freeHandle(long handle) {
+		handle >>= 32;
+		return handles.remove(Handle.threadLocal((int) handle)) != null;
+	}
+
+	@Override
 	public void close() throws IOException {
+		handles.clear();
+		contents.clear();
 		handle.close();
 	}
 
-	private List<ZipEntry> getEntries() {
+	private synchronized List<ZipEntry> getEntries() {
 		List<ZipEntry> entries = this.entries;
 		if (entries == null) {
 			return this.entries = handle.stream().collect(Collectors.toList());

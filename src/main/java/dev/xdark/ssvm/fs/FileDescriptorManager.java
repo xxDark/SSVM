@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.LinkOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.zip.ZipEntry;
 
 /**
  * Maps VM file descriptors to native descriptors.
@@ -159,6 +160,25 @@ public interface FileDescriptorManager {
 	 * if not found.
 	 */
 	ZipFile getZipFile(long handle);
+
+	/**
+	 * @param handle
+	 * 		Zip entry handle.
+	 *
+	 * @return zip entry by it's handle or {@code null},
+	 * if not found.
+	 */
+	ZipEntry getZipEntry(long handle);
+
+	/**
+	 * Deallocates zip entry handle.
+	 *
+	 * @param handle
+	 * 		Zip entry handle to deallocate.
+	 *
+	 * @return {@code true} if entry was deallocated.
+	 */
+	boolean freeZipEntry(long handle);
 
 	/**
 	 * @return current working directory.

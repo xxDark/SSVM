@@ -15,6 +15,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 /**
  * Interface to configure/adjust VM.
@@ -206,25 +207,25 @@ public final class VMInterface {
 	/**
 	 * Registers specific method exit hook.
 	 *
-	 * @param call
+	 * @param method
 	 * 		Method being hooked.
 	 * @param invocation
 	 * 		Hook to unregister.
 	 */
-	public void removeMethodEnter(JavaMethod call, MethodInvocation invocation) {
-		methodExit.put(call, invocation);
+	public void removeMethodEnter(JavaMethod method, MethodInvocation invocation) {
+		methodExit.put(Objects.requireNonNull(method, "method"), invocation);
 	}
 
 	/**
 	 * Registers specific method exit hook.
 	 *
-	 * @param call
+	 * @param method
 	 * 		Method being hooked.
 	 * @param invocation
 	 * 		Hook to register.
 	 */
-	public void registerMethodExit(JavaMethod call, MethodInvocation invocation) {
-		methodExit.put(call, invocation);
+	public void registerMethodExit(JavaMethod method, MethodInvocation invocation) {
+		methodExit.put(Objects.requireNonNull(method, "method"), invocation);
 	}
 
 	/**

@@ -135,7 +135,7 @@ public interface VolatileBufferAccess {
 
 		VolatileArrayAccess(ByteBuffer buffer) {
 			array = buffer.array();
-			offset = Unsafe.ARRAY_BYTE_BASE_OFFSET + buffer.arrayOffset();
+			offset = Unsafe.ARRAY_BYTE_BASE_OFFSET + + buffer.position() + buffer.arrayOffset();
 		}
 
 		@Override

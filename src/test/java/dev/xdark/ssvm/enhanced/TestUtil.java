@@ -29,6 +29,8 @@ public class TestUtil {
 		VirtualMachine vm = newVirtualMachine();
 		if (bootstrap) {
 			vm.bootstrap();
+		} else {
+			vm.initialize();
 		}
 		byte[] result;
 		try(InputStream in = TestUtil.class.getClassLoader().getResourceAsStream(klass.getName().replace('.', '/') + ".class")) {

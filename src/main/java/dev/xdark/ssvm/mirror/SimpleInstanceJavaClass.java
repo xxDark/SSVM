@@ -687,6 +687,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	/**
 	 * Loads hierarchy of classes without marking them as resolved.
 	 */
+	@Override
 	public void loadNoResolve() {
 		Lock lock = this.initializationLock;
 		lock.lock();

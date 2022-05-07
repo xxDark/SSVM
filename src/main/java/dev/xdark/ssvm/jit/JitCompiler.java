@@ -98,10 +98,10 @@ public final class JitCompiler {
 	private static final ClassType TOP = ClassType.of(TopValue.class);
 
 	// ctx methods
-	private static final Access GET_LOCALS = virtualCall(CTX, "getLocals", LOCALS);
-	private static final Access GET_HELPER = virtualCall(CTX, "getHelper", VM_HELPER);
-	private static final Access SET_RESULT = virtualCall(CTX, "setResult", J_VOID, VALUE);
-	private static final Access SET_LINE = virtualCall(CTX, "setLineNumber", J_VOID, J_INT);
+	private static final Access GET_LOCALS = interfaceCall(CTX, "getLocals", LOCALS);
+	private static final Access GET_HELPER = interfaceCall(CTX, "getHelper", VM_HELPER);
+	private static final Access SET_RESULT = interfaceCall(CTX, "setResult", J_VOID, VALUE);
+	private static final Access SET_LINE = interfaceCall(CTX, "setLineNumber", J_VOID, J_INT);
 
 	// locals methods
 	private static final Access LOAD = interfaceCall(LOCALS, "load", VALUE, J_INT);

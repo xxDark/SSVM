@@ -44,14 +44,7 @@ public class ConstructorAccessorNatives {
 			int slot = c.getInt("slot");
 			InstanceJavaClass declaringClass = (InstanceJavaClass) ((JavaValue<JavaClass>) c.getValue("clazz", "Ljava/lang/Class;")).getValue();
 			VMHelper helper = vm.getHelper();
-			List<JavaMethod> methods = declaringClass.getDeclaredConstructors(false);
-			JavaMethod mn = null;
-			for (JavaMethod m : methods) {
-				if (slot == m.getSlot()) {
-					mn = m;
-					break;
-				}
-			}
+			JavaMethod mn = helper.getMethodBySlot(declaringClass, slot);
 			if (mn == null || !"<init>".equals(mn.getName())) {
 				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 			}

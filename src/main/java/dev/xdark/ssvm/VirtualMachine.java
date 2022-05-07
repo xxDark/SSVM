@@ -5,8 +5,10 @@ import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.classloading.*;
 import dev.xdark.ssvm.execution.ExecutionContext;
+import dev.xdark.ssvm.execution.ExecutionEngine;
 import dev.xdark.ssvm.execution.Interpreter;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.execution.SimpleExecutionEngine;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.fs.FileDescriptorManager;
 import dev.xdark.ssvm.fs.SimpleFileDescriptorManager;
@@ -31,6 +33,7 @@ import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.thread.*;
 import dev.xdark.ssvm.tz.SimpleTimeManager;
 import dev.xdark.ssvm.tz.TimeManager;
+import dev.xdark.ssvm.util.DisposeUtil;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.*;
 import org.objectweb.asm.ClassReader;
@@ -64,6 +67,7 @@ public class VirtualMachine {
 	private final Properties properties;
 	private final Map<String, String> env;
 	private final VMInitializer initializer;
+	private final ExecutionEngine executionEngine;
 
 	public VirtualMachine(VMInitializer initializer) {
 		this.initializer = initializer;
@@ -86,6 +90,7 @@ public class VirtualMachine {
 		stringPool = createStringPool();
 		managementInterface = createManagementInterface();
 		timeManager = createTimeManager();
+		executionEngine = createExecutionEngine();
 
 		(properties = new Properties()).putAll(System.getProperties());
 		env = new HashMap<>(System.getenv());
@@ -393,6 +398,16 @@ public class VirtualMachine {
 		return classLoaders;
 	}
 
+
+	/**
+	 * Returns execution engine.
+	 *
+	 * @return execution engine.
+	 */
+	public ExecutionEngine getExecutionEngine() {
+		return executionEngine;
+	}
+
 	/**
 	 * Returns thread storage.
 	 *
@@ -544,7 +559,7 @@ public class VirtualMachine {
 						ctx.monitorExit(lock);
 					}
 					ctx.verifyMonitors();
-					ctx.dispose();
+					DisposeUtil.dispose(ctx);
 				}
 			} finally {
 				backtrace.pop();
@@ -661,8 +676,18 @@ public class VirtualMachine {
 	 *
 	 * @return class loaders.
 	 */
-	public ClassLoaders createClassLoaders() {
+	protected ClassLoaders createClassLoaders() {
 		return new SimpleClassLoaders(this);
+	}
+
+	/**
+	 * Creates execution engine.
+	 * One may override this method.
+	 *
+	 * @return execution engine.
+	 */
+	protected ExecutionEngine createExecutionEngine() {
+		return new SimpleExecutionEngine();
 	}
 
 	private InstanceJavaClass internalLink(String name) {

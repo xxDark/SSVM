@@ -286,12 +286,11 @@ public class UnsafeNatives {
 			InstanceValue field = helper.<InstanceValue>checkNotNull(ctx.getLocals().load(1));
 			InstanceJavaClass declaringClass = ((JavaValue<InstanceJavaClass>) field.getValue("clazz", "Ljava/lang/Class;")).getValue();
 			int slot = field.getInt("slot");
-			for (JavaField fn : declaringClass.getDeclaredFields(false)) {
-				if (slot == fn.getSlot()) {
-					long offset = vm.getMemoryManager().valueBaseOffset(declaringClass) + fn.getOffset();
-					ctx.setResult(LongValue.of(offset));
-					return Result.ABORT;
-				}
+			JavaField fn = helper.getFieldBySlot(declaringClass, slot);
+			if (fn != null) {
+				long offset = vm.getMemoryManager().valueBaseOffset(declaringClass) + fn.getOffset();
+				ctx.setResult(LongValue.of(offset));
+				return Result.ABORT;
 			}
 			ctx.setResult(LongValue.M_ONE);
 			return Result.ABORT;
@@ -301,12 +300,11 @@ public class UnsafeNatives {
 			InstanceValue field = helper.<InstanceValue>checkNotNull(ctx.getLocals().load(1));
 			InstanceJavaClass declaringClass = ((JavaValue<InstanceJavaClass>) field.getValue("clazz", "Ljava/lang/Class;")).getValue();
 			int slot = field.getInt("slot");
-			for (JavaField fn : declaringClass.getDeclaredFields(false)) {
-				if (slot == fn.getSlot()) {
-					long offset = vm.getMemoryManager().getStaticOffset(declaringClass) + fn.getOffset();
-					ctx.setResult(LongValue.of(offset));
-					return Result.ABORT;
-				}
+			JavaField fn = helper.getFieldBySlot(declaringClass, slot);
+			if (fn != null) {
+				long offset = vm.getMemoryManager().getStaticOffset(declaringClass) + fn.getOffset();
+				ctx.setResult(LongValue.of(offset));
+				return Result.ABORT;
 			}
 			ctx.setResult(LongValue.M_ONE);
 			return Result.ABORT;

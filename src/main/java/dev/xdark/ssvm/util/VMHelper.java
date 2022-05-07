@@ -2261,11 +2261,11 @@ public final class VMHelper {
 
 	private static ExecutionContext createContext(InstanceJavaClass jc, JavaMethod jm, Value[] locals) {
 		MethodNode mn = jm.getNode();
-		ThreadStorage storage = jc.getVM().getThreadStorage();
+		VirtualMachine vm = jc.getVM();
+		ThreadStorage storage = vm.getThreadStorage();
 		int maxStack = mn.maxStack;
 		int maxLocals = getMaxLocals(jm, locals);
-		return new ExecutionContext(
-				jc.getVM(),
+		return vm.getExecutionEngine().createContext(
 				jm,
 				storage.newStack(maxStack),
 				storage.newLocals(maxLocals)

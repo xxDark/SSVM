@@ -46,8 +46,10 @@ public interface FileDescriptorManager {
 	 *
 	 * @throws IOException
 	 * 		If any I/O error occurs.
+	 *
+	 * @return {@code true} if handle was closed.
 	 */
-	void close(long handle) throws IOException;
+	boolean close(long handle) throws IOException;
 
 	/**
 	 * Creates new VM file descriptor handle.

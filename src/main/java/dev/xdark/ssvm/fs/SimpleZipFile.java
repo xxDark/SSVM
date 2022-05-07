@@ -55,11 +55,7 @@ public class SimpleZipFile implements ZipFile {
 			}
 			this.names = names;
 		}
-		ZipEntry entry = names.get(name);
-		if (entry == null) {
-			entry = names.get(name + '/');
-		}
-		return entry;
+		return names.get(name);
 	}
 
 	@Override
@@ -121,6 +117,7 @@ public class SimpleZipFile implements ZipFile {
 
 	@Override
 	public void close() throws IOException {
+		entries = null;
 		handles.clear();
 		contents.clear();
 		handle.close();

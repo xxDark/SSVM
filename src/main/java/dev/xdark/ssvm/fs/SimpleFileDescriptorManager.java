@@ -15,21 +15,19 @@ import java.util.zip.ZipEntry;
  */
 public class SimpleFileDescriptorManager implements FileDescriptorManager {
 
-	private final InputStream in = new NullInputStream();
-	private final OutputStream out = new NullOutputStream();
-
 	@Override
 	public InputStream getFdIn(long handle) {
-		return in;
+		return null;
 	}
 
 	@Override
 	public OutputStream getFdOut(long handle) {
-		return out;
+		return null;
 	}
 
 	@Override
-	public void close(long handle) {
+	public boolean close(long handle) {
+		return false;
 	}
 
 	@Override
@@ -94,6 +92,6 @@ public class SimpleFileDescriptorManager implements FileDescriptorManager {
 
 	@Override
 	public OutputStream getStreamOut(int stream) {
-		return out;
+		return null;
 	}
 }

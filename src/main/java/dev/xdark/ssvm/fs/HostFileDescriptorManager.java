@@ -61,22 +61,24 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 	}
 
 	@Override
-	public synchronized void close(long handle) throws IOException {
+	public synchronized boolean close(long handle) throws IOException {
 		Handle h = Handle.threadLocal(handle);
 		InputStream in = inputs.remove(h);
 		if (in != null) {
 			in.close();
-			return;
+			return true;
 		}
 		OutputStream out = outputs.remove(h);
 		if (out != null) {
 			out.close();
-			return;
+			return true;
 		}
 		ZipFile zip = zipFiles.remove(h);
 		if (zip != null) {
 			zip.close();
+			return true;
 		}
+		return false;
 	}
 
 	@Override
@@ -211,7 +213,7 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 		do {
 			raw = rng.nextLong() & mask;
 			h.set(raw);
-		} while(inputs.containsKey(h) || outputs.containsKey(h) || zipFiles.containsKey(h));
+		} while(raw == 0L || inputs.containsKey(h) || outputs.containsKey(h) || zipFiles.containsKey(h));
 		return raw;
 	}
 }

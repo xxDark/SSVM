@@ -155,7 +155,7 @@ public class ZipFileNatives {
 				if (value == null) {
 					throw new PanicException("Segfault");
 				}
-				ctx.setResult(LongValue.of(value.getCompressedSize()));
+				ctx.setResult(LongValue.of(value.getSize()));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntryMethod", "(J)I", ctx -> {
@@ -241,7 +241,9 @@ public class ZipFileNatives {
 			});
 			vmi.setInvoker(zf, "close", "(J)V", ctx -> {
 				try {
-					vm.getFileDescriptorManager().close(ctx.getLocals().load(0).asLong());
+					if (!vm.getFileDescriptorManager().close(ctx.getLocals().load(0).asLong())) {
+						throw new PanicException("Segfault");
+					}
 				} catch(IOException ex) {
 					vm.getHelper().throwException(symbols.java_util_zip_ZipException(), ex.getMessage());
 				}

@@ -366,10 +366,15 @@ public class UnsafeNatives {
 			ctx.setResult(value instanceof InstanceJavaClass && ((InstanceJavaClass) value).shouldBeInitialized() ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
-		vmi.setInvoker(unsafe, uhelper.pageSize(), "()I", ctx -> {
+		MethodInvoker pageSize = ctx -> {
 			ctx.setResult(IntValue.of(vm.getMemoryManager().pageSize()));
 			return Result.ABORT;
-		});
+		};
+		for (String str : new String[] {"pageSize0", "pageSize"}) {
+			if (vmi.setInvoker(unsafe, str, "()I", pageSize)) {
+				break;
+			}
+		}
 		vmi.setInvoker(unsafe, "getLongVolatile", "(Ljava/lang/Object;J)J", ctx -> {
 			Locals locals = ctx.getLocals();
 			MemoryManager memoryManager = vm.getMemoryManager();
@@ -621,8 +626,6 @@ public class UnsafeNatives {
 
 		String shouldBeInitialized();
 
-		String pageSize();
-
 		String compareAndSetObject();
 
 		String copyMemory();
@@ -703,11 +706,6 @@ public class UnsafeNatives {
 		@Override
 		public String shouldBeInitialized() {
 			return "shouldBeInitialized";
-		}
-
-		@Override
-		public String pageSize() {
-			return "pageSize";
 		}
 
 		@Override
@@ -796,11 +794,6 @@ public class UnsafeNatives {
 		@Override
 		public String shouldBeInitialized() {
 			return "shouldBeInitialized0";
-		}
-
-		@Override
-		public String pageSize() {
-			return "pageSize0";
 		}
 
 		@Override

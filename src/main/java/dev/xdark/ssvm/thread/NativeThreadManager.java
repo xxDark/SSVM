@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.thread;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.InstanceValue;
 
 import java.util.Map;
@@ -72,6 +73,45 @@ public class NativeThreadManager implements ThreadManager {
 	}
 
 	@Override
+	public VMThread[] getVisibleThreads() {
+		return getThreads();
+	}
+
+	@Override
+	public VMThread createMainThread() {
+		VirtualMachine vm = this.vm;
+		Thread thread = Thread.currentThread();
+		// If we were previously detached, attach this thread
+		// using existing OOP if possible, there might be some
+		// code that already cached thread instance.
+		VMThread detached = systemThreads.remove(thread);
+		boolean callInitialize = true;
+		InstanceValue instance;
+		fromDetached: {
+			if (detached != null) {
+				DetachedVMThread dtvm = (DetachedVMThread) detached;
+				if (dtvm.isOopSet()) {
+					instance = dtvm.getOop();
+					callInitialize = false;
+					break fromDetached;
+				}
+			}
+			InstanceJavaClass klass = vm.getSymbols().java_lang_Thread();
+			klass.initialize();
+			instance = vm.getMemoryManager().newInstance(klass);
+			vm.getHelper().initializeDefaultValues(instance);
+		}
+		NativeVMThread vmThread = createMainThread(instance, thread);
+		vmThreads.put(instance, vmThread);
+		instance.setInt("threadStatus", ThreadState.JVMTI_THREAD_STATE_ALIVE | ThreadState.JVMTI_THREAD_STATE_RUNNABLE);
+		instance.setInt("priority", Thread.MAX_PRIORITY);
+		if (callInitialize) {
+			instance.initialize();
+		}
+		return vmThread;
+	}
+
+	@Override
 	public synchronized void suspendAll() {
 		vmThreads.values().forEach(NativeVMThread::suspend);
 	}
@@ -96,5 +136,19 @@ public class NativeThreadManager implements ThreadManager {
 	 */
 	protected NativeVMThread createThread(InstanceValue value) {
 		return new NativeVMThread(value);
+	}
+
+	/**
+	 * Creates new main thread.
+	 *
+	 * @param value
+	 * 		Thread oop.
+	 * @param thread
+	 * 		Java thread.
+	 *
+	 * @return main thread.
+	 */
+	protected NativeVMThread createMainThread(InstanceValue value, Thread thread) {
+		return new NativeVMThread(value, thread);
 	}
 }

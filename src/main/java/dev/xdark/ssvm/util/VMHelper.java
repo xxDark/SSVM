@@ -21,6 +21,7 @@ import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.thread.Backtrace;
 import dev.xdark.ssvm.thread.StackFrame;
+import dev.xdark.ssvm.thread.ThreadState;
 import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.thread.VMThread;
 import dev.xdark.ssvm.value.ArrayValue;
@@ -985,7 +986,7 @@ public final class VMHelper {
 		// Copy daemon status
 		oop.setBoolean("daemon", javaThread.isDaemon());
 		// Copy thread state (JVMTI_THREAD_STATE_RUNNABLE | JVMTI_THREAD_STATE_ALIVE)
-		oop.setInt("threadStatus", 0x0004 | 0x0001);
+		oop.setInt("threadStatus", ThreadState.JVMTI_THREAD_STATE_RUNNABLE | ThreadState.JVMTI_THREAD_STATE_ALIVE);
 	}
 
 	/**

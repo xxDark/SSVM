@@ -42,6 +42,12 @@ public final class NopThreadManager implements ThreadManager {
 				klass.initialize();
 				InstanceValue instance = vm.getMemoryManager().newInstance(klass);
 				current = new NopVMThread(instance, thread);
+				InstanceValue mainThreadGroup = vm.getMainThreadGroup();
+				if (mainThreadGroup != null) {
+					// Might be null if VM is still in boot state,
+					// will be set later.
+					instance.setValue("group", "Ljava/lang/ThreadGroup;", mainThreadGroup);
+				}
 				threadMap.put(thread, current);
 				vm.getHelper().screenVmThread(current);
 				instance.initialize();
@@ -63,6 +69,24 @@ public final class NopThreadManager implements ThreadManager {
 	@Override
 	public synchronized VMThread[] getThreads() {
 		return threadMap.values().toArray(new VMThread[0]);
+	}
+
+	@Override
+	public VMThread[] getVisibleThreads() {
+		return getThreads();
+	}
+
+	@Override
+	public VMThread createMainThread() {
+		VirtualMachine vm = this.vm;
+		InstanceJavaClass klass = vm.getSymbols().java_lang_Thread();
+		klass.initialize();
+		InstanceValue instance = vm.getMemoryManager().newInstance(klass);
+		VMThread vmThread = new NopVMThread(instance, Thread.currentThread());
+		threadMap.put(Thread.currentThread(), vmThread);
+		vm.getHelper().screenVmThread(vmThread);
+		instance.initialize();
+		return vmThread;
 	}
 
 	@Override

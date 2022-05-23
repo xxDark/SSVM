@@ -43,6 +43,14 @@ public class DetachedVMThread extends BaseVMThread {
 			vm.getHelper().initializeDefaultValues(oop);
 			oop.setInt("threadStatus", ThreadState.JVMTI_THREAD_STATE_ALIVE | ThreadState.JVMTI_THREAD_STATE_RUNNABLE);
 			oop.setInt("priority", Thread.NORM_PRIORITY);
+			// Though we set the group, detached threads
+			// wont be visible in a thread list.
+			InstanceValue mainThreadGroup = vm.getMainThreadGroup();
+			if (mainThreadGroup != null) {
+				// Might be null if VM is still in boot state,
+				// will be set later.
+				oop.setValue("group", "Ljava/lang/ThreadGroup;", mainThreadGroup);
+			}
 			oop.initialize();
 			return this.oop = oop;
 		}
@@ -85,5 +93,9 @@ public class DetachedVMThread extends BaseVMThread {
 
 	@Override
 	public void sleep(long millis) throws InterruptedException {
+	}
+
+	boolean isOopSet() {
+		return oop != null;
 	}
 }

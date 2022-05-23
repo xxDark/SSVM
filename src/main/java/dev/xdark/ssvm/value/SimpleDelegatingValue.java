@@ -1,8 +1,5 @@
 package dev.xdark.ssvm.value;
 
-import lombok.Getter;
-import lombok.Setter;
-
 /**
  * Simple delegating value.
  *
@@ -10,11 +7,19 @@ import lombok.Setter;
  */
 public class SimpleDelegatingValue<V extends Value> extends DelegatingValue<V> {
 
-	@Getter
-	@Setter
 	private V delegate;
 
 	public SimpleDelegatingValue(V delegate) {
+		this.delegate = delegate;
+	}
+
+	@Override
+	public V getDelegate() {
+		return delegate;
+	}
+
+	@Override
+	public void setDelegate(V delegate) {
 		this.delegate = delegate;
 	}
 }

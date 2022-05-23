@@ -69,7 +69,7 @@ public class ThreadNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "getThreads", "()[Ljava/lang/Thread;", ctx -> {
-			VMThread[] threads = vm.getThreadManager().getThreads();
+			VMThread[] threads = vm.getThreadManager().getVisibleThreads();
 			ArrayValue array = vm.getHelper().newArray(thread, threads.length);
 			for (int i = 0; i < threads.length; i++) {
 				array.setValue(i, threads[i].getOop());
@@ -80,7 +80,7 @@ public class ThreadNatives {
 		vmi.setInvoker(thread, "sleep", "(J)V", ctx -> {
 			long time = ctx.getLocals().load(0).asLong();
 			if (time < 0L) {
-				vm.getHelper().throwException(symbols.java_lang_IllegalArgumentException(), "millis < 0");
+				vm.getHelper().throwException(symbols.java_lang_IllegalArgumentException(), "timeout value is negative");
 			}
 			try {
 				vm.getThreadManager().sleep(time);

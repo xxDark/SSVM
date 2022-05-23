@@ -26,11 +26,11 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 
 	protected final Map<Handle, InputStream> inputs = new HashMap<>();
 	protected final Map<Handle, OutputStream> outputs = new HashMap<>();
-	private final Map<Handle, ZipFile> zipFiles = new HashMap<>();
+	protected final Map<Handle, ZipFile> zipFiles = new HashMap<>();
 
-	private final InputStream stdin;
-	private final OutputStream stdout;
-	private final OutputStream stderr;
+	protected final InputStream stdin;
+	protected final OutputStream stdout;
+	protected final OutputStream stderr;
 
 	/**
 	 * @param stdin

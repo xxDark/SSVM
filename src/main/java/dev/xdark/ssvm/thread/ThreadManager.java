@@ -36,9 +36,14 @@ public interface ThreadManager {
 	void setVmThread(VMThread thread);
 
 	/**
-	 * @return array of threads
+	 * @return array of threads.
 	 */
 	VMThread[] getThreads();
+
+	/**
+	 * @return array of visible threads.
+	 */
+	VMThread[] getVisibleThreads();
 
 	/**
 	 * Returns current VM thread.
@@ -48,6 +53,13 @@ public interface ThreadManager {
 	default VMThread currentThread() {
 		return getVmThread(Thread.currentThread());
 	}
+
+	/**
+	 * Creates main thread.
+	 *
+	 * @return main thread.
+	 */
+	VMThread createMainThread();
 
 	/**
 	 * Suspends all VM threads.

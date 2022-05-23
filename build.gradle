@@ -26,8 +26,8 @@ task sourcesJar(type: Jar) {
 }
 
 dependencies {
-    api 'org.ow2.asm:asm:9.2'
-    api 'org.ow2.asm:asm-tree:9.2'
+    api 'org.ow2.asm:asm:9.3'
+    api 'org.ow2.asm:asm-tree:9.3'
     api 'com.github.Col-E:CAFED00D:1.9.6'
     api 'org.slf4j:slf4j-api:1.7.36'
 

@@ -68,6 +68,8 @@ public class VirtualMachine {
 	private final Map<String, String> env;
 	private final VMInitializer initializer;
 	private final ExecutionEngine executionEngine;
+	private volatile InstanceValue systemThreadGroup;
+	private volatile InstanceValue mainThreadGroup;
 
 	public VirtualMachine(VMInitializer initializer) {
 		this.initializer = initializer;
@@ -196,10 +198,16 @@ public class VirtualMachine {
 				InstanceJavaClass groupClass = symbols.java_lang_ThreadGroup();
 				InstanceValue sysGroup = memoryManager.newInstance(groupClass);
 				helper.invokeExact(groupClass, "<init>", "()V", new Value[0], new Value[]{sysGroup});
+				systemThreadGroup = sysGroup;
+				// Initialize main group
+				InstanceValue mainGroup = memoryManager.newInstance(groupClass);
+				helper.invokeExact(groupClass, "<init>", "(Ljava/lang/ThreadGroup;Ljava/lang/String;)V", new Value[0],
+						new Value[]{mainGroup, sysGroup, helper.newUtf8("main")});
+				mainThreadGroup = mainGroup;
 				// Initialize main thread
-				VMThread mainThread = threadManager.currentThread();
+				VMThread mainThread = threadManager.createMainThread();
 				InstanceValue oop = mainThread.getOop();
-				oop.setValue("group", "Ljava/lang/ThreadGroup;", sysGroup);
+				oop.setValue("group", "Ljava/lang/ThreadGroup;", mainGroup);
 				sysClass.initialize();
 				findBootstrapClass("java/lang/reflect/Method", true);
 				findBootstrapClass("java/lang/reflect/Field", true);
@@ -215,7 +223,7 @@ public class VirtualMachine {
 					// Oracle had moved this to native code, do it here
 					// On JDK 8 this is invoked in initializeSystemClass
 					helper.invokeVirtual("add", "(Ljava/lang/Thread;)V", new Value[0], new Value[]{
-							sysGroup,
+							mainGroup,
 							mainThread.getOop()
 					});
 					helper.invokeStatic(sysClass, "initPhase1", "()V", new Value[0], new Value[0]);
@@ -405,6 +413,24 @@ public class VirtualMachine {
 	 */
 	public ExecutionEngine getExecutionEngine() {
 		return executionEngine;
+	}
+
+	/**
+	 * Returns system thread group.
+	 *
+	 * @return system thread group.
+	 */
+	public InstanceValue getSystemThreadGroup() {
+		return systemThreadGroup;
+	}
+
+	/**
+	 * Returns main thread group.
+	 *
+	 * @return system thread group.
+	 */
+	public InstanceValue getMainThreadGroup() {
+		return mainThreadGroup;
 	}
 
 	/**

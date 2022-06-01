@@ -31,20 +31,23 @@ public class Interpreter {
 	 *
 	 * @param ctx
 	 * 		Context to process.
+	 * @param options
+	 * 		Execution options.
 	 */
-	public void execute(ExecutionContext ctx) {
+	public void execute(ExecutionContext ctx, ExecutionContextOptions options) {
 		JavaMethod jm = ctx.getMethod();
 		VMInterface vmi = ctx.getVM().getInterface();
 		MethodNode mn = jm.getNode();
 		InsnList instructions = mn.instructions;
 		List<InstructionInterceptor> interceptors = vmi.getInterceptors();
+		boolean updateLineNumbers = options.setLineNumbers();
 		exec:
 		while (true) {
 			try {
 				int pos = ctx.getInsnPosition();
 				ctx.setInsnPosition(pos + 1);
 				AbstractInsnNode insn = instructions.get(pos);
-				if (insn instanceof LineNumberNode) ctx.setLineNumber(((LineNumberNode) insn).line);
+				if (updateLineNumbers && insn instanceof LineNumberNode) ctx.setLineNumber(((LineNumberNode) insn).line);
 				for (int i = 0; i < interceptors.size(); i++) {
 					if (interceptors.get(i).intercept(ctx, insn) == Result.ABORT)
 						break exec;

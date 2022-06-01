@@ -488,6 +488,14 @@ public class UnsafeNatives {
 			ctx.setResult(LongValue.of(data.readLong(0L)));
 			return Result.ABORT;
 		});
+		vmi.setInvoker(unsafe, "getByte", "(Ljava/lang/Object;J)J", ctx -> {
+			Locals locals = ctx.getLocals();
+			MemoryManager memoryManager = vm.getMemoryManager();
+			long offset = locals.load(2).asLong();
+			MemoryData data = getData(memoryManager, locals.load(1), offset);
+			ctx.setResult(IntValue.of(data.readByte(0L)));
+			return Result.ABORT;
+		});
 		vmi.setInvoker(unsafe, "allocateInstance", "(Ljava/lang/Class;)Ljava/lang/Object;", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();

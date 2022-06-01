@@ -90,7 +90,7 @@ public final class VMHelper {
 		javaClass.initialize();
 		ExecutionContext ctx = createContext(javaClass, method, locals);
 		contextPrepare(ctx, stack, locals);
-		vm.execute(ctx, true);
+		vm.execute(ctx);
 		return ctx;
 	}
 
@@ -201,7 +201,7 @@ public final class VMHelper {
 		javaClass.initialize();
 		ExecutionContext ctx = createContext(javaClass, method, locals);
 		contextPrepare(ctx, stack, locals);
-		vm.execute(ctx, true);
+		vm.execute(ctx);
 		return ctx;
 	}
 

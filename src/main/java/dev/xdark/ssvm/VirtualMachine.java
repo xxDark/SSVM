@@ -1,15 +1,11 @@
 package dev.xdark.ssvm;
 
-import dev.xdark.ssvm.api.MethodInvocation;
-import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.classloading.*;
 import dev.xdark.ssvm.execution.ExecutionContext;
+import dev.xdark.ssvm.execution.ExecutionContextOptions;
 import dev.xdark.ssvm.execution.ExecutionEngine;
-import dev.xdark.ssvm.execution.Interpreter;
-import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.SimpleExecutionEngine;
-import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.fs.FileDescriptorManager;
 import dev.xdark.ssvm.fs.SimpleFileDescriptorManager;
 import dev.xdark.ssvm.jvm.ManagementInterface;
@@ -33,11 +29,9 @@ import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.thread.*;
 import dev.xdark.ssvm.tz.SimpleTimeManager;
 import dev.xdark.ssvm.tz.TimeManager;
-import dev.xdark.ssvm.util.DisposeUtil;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.*;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 
 import java.nio.ByteOrder;
@@ -49,6 +43,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class VirtualMachine {
 
+	private static final ExecutionContextOptions USE_INVOKERS = ExecutionContextOptions.builder().build();
+	private static final ExecutionContextOptions NO_INVOKERS = ExecutionContextOptions.builder()
+			.useInvokers(false)
+			.build();
 	private final AtomicReference<InitializationState> state = new AtomicReference<>(InitializationState.UNINITIALIZED);
 	private final BootClassLoaderHolder bootClassLoader;
 	private final VMInterface vmInterface;
@@ -208,6 +206,7 @@ public class VirtualMachine {
 				VMThread mainThread = threadManager.createMainThread();
 				InstanceValue oop = mainThread.getOop();
 				oop.setValue("group", "Ljava/lang/ThreadGroup;", mainGroup);
+				oop.setValue("name", "Ljava/lang/String;", helper.newUtf8("main"));
 				sysClass.initialize();
 				findBootstrapClass("java/lang/reflect/Method", true);
 				findBootstrapClass("java/lang/reflect/Field", true);
@@ -525,78 +524,36 @@ public class VirtualMachine {
 	 *
 	 * @param ctx
 	 * 		Context to process.
+	 * @param options
+	 * 		Execution options.
+	 */
+	public void execute(ExecutionContext ctx, ExecutionContextOptions options) {
+		executionEngine.execute(ctx, options);
+	}
+
+	/**
+	 * Processes {@link ExecutionContext}.
+	 *
+	 * @param ctx
+	 * 		Context to process.
+	 */
+	public void execute(ExecutionContext ctx) {
+		ExecutionEngine executionEngine = this.executionEngine;
+		executionEngine.execute(ctx, executionEngine.defaultOptions());
+	}
+
+	/**
+	 * Processes {@link ExecutionContext}.
+	 *
+	 * @param ctx
+	 * 		Context to process.
 	 * @param useInvokers
 	 * 		Should VM search for VMI hooks.
+	 * @deprecated Use {@link VirtualMachine#execute(ExecutionContext, ExecutionContextOptions)} instead.
 	 */
+	@Deprecated
 	public void execute(ExecutionContext ctx, boolean useInvokers) {
-		JavaMethod jm = ctx.getMethod();
-		int access = jm.getAccess();
-		boolean isNative = (access & Opcodes.ACC_NATIVE) != 0;
-		if (isNative) {
-			ctx.setLineNumber(-2);
-		}
-		ThreadManager threadManager = this.threadManager;
-		Backtrace backtrace = threadManager.currentThread().getBacktrace();
-		backtrace.push(StackFrame.ofContext(ctx));
-		VMInterface vmi = vmInterface;
-		jm.increaseInvocation();
-		ObjectValue lock = null;
-		if ((access & Opcodes.ACC_SYNCHRONIZED) != 0) {
-			if (((access & Opcodes.ACC_STATIC)) == 0) {
-				lock = ctx.getLocals().load(0);
-			} else {
-				lock = jm.getOwner().getOop();
-			}
-			ctx.monitorEnter(lock);
-		}
-		boolean doCleanup = true;
-		try {
-			for (MethodInvocation invocation : vmi.getInvocationHooks(jm, true)) {
-				invocation.handle(ctx);
-			}
-			if (useInvokers) {
-				MethodInvoker invoker = vmi.getInvoker(jm);
-				if (invoker != null) {
-					Result result = invoker.intercept(ctx);
-					if (result == Result.ABORT) {
-						return;
-					}
-				}
-			}
-			if (isNative) {
-				helper.throwException(symbols.java_lang_UnsatisfiedLinkError(), ctx.getOwner().getInternalName() + '.' + jm.getName() + jm.getDesc());
-			}
-			if ((access & Opcodes.ACC_ABSTRACT) != 0) {
-				helper.throwException(symbols.java_lang_AbstractMethodError(), ctx.getOwner().getInternalName() + '.' + jm.getName() + jm.getDesc());
-			}
-			Interpreter.execute(ctx);
-		} catch (VMException ex) {
-			throw ex;
-		} catch (Exception ex) {
-			doCleanup = false;
-			throw new IllegalStateException("Uncaught VM error at: " + jm, ex);
-		} finally {
-			if (doCleanup) {
-				try {
-					try {
-						for (MethodInvocation invocation : vmi.getInvocationHooks(jm, false)) {
-							invocation.handle(ctx);
-						}
-					} finally {
-						if (lock != null) {
-							ctx.monitorExit(lock);
-						}
-						try {
-							ctx.verifyMonitors();
-						} finally {
-							DisposeUtil.dispose(ctx);
-						}
-					}
-				} finally {
-					backtrace.pop();
-				}
-			}
-		}
+		executionEngine.execute(ctx, useInvokers ? USE_INVOKERS : NO_INVOKERS);
 	}
 
 	/**
@@ -719,7 +676,7 @@ public class VirtualMachine {
 	 * @return execution engine.
 	 */
 	protected ExecutionEngine createExecutionEngine() {
-		return new SimpleExecutionEngine();
+		return new SimpleExecutionEngine(this);
 	}
 
 	private InstanceJavaClass internalLink(String name) {

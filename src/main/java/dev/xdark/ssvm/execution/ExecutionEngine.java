@@ -1,25 +1,24 @@
 package dev.xdark.ssvm.execution;
 
-import dev.xdark.ssvm.mirror.JavaMethod;
-
 /**
  * VM execution engine.
  *
  * @author xDark
  */
-public interface ExecutionEngine {
+public interface ExecutionEngine extends ExecutionContextManager {
 
 	/**
-	 * Creates new execution context.
+	 * Executes the context.
 	 *
-	 * @param method
-	 * 		Method to execute.
-	 * @param stack
-	 * 		Method stack.
-	 * @param locals
-	 * 		Method locals.
-	 *
-	 * @return new execution context.
+	 * @param ctx
+	 * 		Context to execute.
+	 * @param options
+	 * 		Context execution options.
 	 */
-	ExecutionContext createContext(JavaMethod method, Stack stack, Locals locals);
+	void execute(ExecutionContext ctx, ExecutionContextOptions options);
+
+	/**
+	 * @return Default execution options.
+	 */
+	ExecutionContextOptions defaultOptions();
 }

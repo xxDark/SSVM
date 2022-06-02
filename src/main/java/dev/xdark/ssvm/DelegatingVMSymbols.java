@@ -422,6 +422,11 @@ final class DelegatingVMSymbols implements VMSymbols {
 		return symbols.java_lang_Cloneable();
 	}
 
+	@Override
+	public InstanceJavaClass java_lang_IncompatibleClassChangeError() {
+		return symbols.java_lang_IncompatibleClassChangeError();
+	}
+
 	/**
 	 * @param symbols
 	 * 		New symbols.

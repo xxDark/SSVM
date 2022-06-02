@@ -3,8 +3,10 @@ package dev.xdark.ssvm.execution;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 
@@ -32,6 +34,20 @@ public interface ExecutionContext {
 	 */
 	default VMSymbols getSymbols() {
 		return getVM().getSymbols();
+	}
+
+	/**
+	 * @return VM primitives.
+	 */
+	default VMPrimitives getPrimitives() {
+		return getVM().getPrimitives();
+	}
+
+	/**
+	 * @return VM operations.
+	 */
+	default VMOperations getOperations() {
+		return getVM().getOperations();
 	}
 
 	/**

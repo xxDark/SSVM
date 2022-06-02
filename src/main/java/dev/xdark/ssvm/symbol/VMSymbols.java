@@ -91,4 +91,5 @@ public interface VMSymbols {
 	InstanceJavaClass java_lang_Module();
 	InstanceJavaClass java_io_Serializable();
 	InstanceJavaClass java_lang_Cloneable();
+	InstanceJavaClass java_lang_IncompatibleClassChangeError();
 }

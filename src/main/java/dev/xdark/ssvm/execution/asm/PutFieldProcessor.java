@@ -15,7 +15,7 @@ public final class PutFieldProcessor implements InstructionProcessor<FieldInsnNo
 
 	@Override
 	public Result execute(FieldInsnNode insn, ExecutionContext ctx) {
-		JitHelper.putField(insn.owner, insn.name, insn.desc, ctx);
+		JitHelper.putFieldGeneric(insn.owner, insn.name, insn.desc, ctx);
 		return Result.CONTINUE;
 	}
 }

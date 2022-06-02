@@ -37,6 +37,8 @@ import static org.objectweb.asm.Opcodes.*;
 @SuppressWarnings("unused")
 @UtilityClass
 public class JitHelper {
+	
+	private static final Value[] NO_VALUES = {};
 
 	public int arrayLoadInt(Value array, int index, ExecutionContext ctx) {
 		VMHelper helper = ctx.getHelper();
@@ -366,165 +368,98 @@ public class JitHelper {
 		putStaticA(ctx.getStack().popGeneric(), owner, name, desc, ctx);
 	}
 
-	public Value getFieldA(Value $instance, Object owner, String name, String desc, ExecutionContext ctx) {
-		VirtualMachine vm = ctx.getVM();
-		VMHelper helper = vm.getHelper();
-		InstanceJavaClass klass;
-		if (owner instanceof InstanceJavaClass) {
-			klass = (InstanceJavaClass) owner;
-		} else {
-			klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), (String) owner, true);
-		}
-		InstanceValue instance = helper.<InstanceValue>checkNotNull($instance);
-		long offset = helper.getFieldOffset(klass, instance.getJavaClass(), name, desc);
-		if (offset == -1L) {
-			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError(), name);
-		}
-		Value value;
-		MemoryManager manager = vm.getMemoryManager();
-		offset += manager.valueBaseOffset(instance);
-		switch(desc.charAt(0)) {
-			case 'J':
-				value = LongValue.of(manager.readLong(instance, offset));
-				break;
-			case 'D':
-				value = new DoubleValue(manager.readDouble(instance, offset));
-				break;
-			case 'I':
-				value = IntValue.of(manager.readInt(instance, offset));
-				break;
-			case 'F':
-				value = new FloatValue(manager.readFloat(instance, offset));
-				break;
-			case 'C':
-				value = IntValue.of(manager.readChar(instance, offset));
-				break;
-			case 'S':
-				value = IntValue.of(manager.readShort(instance, offset));
-				break;
-			case 'B':
-				value = IntValue.of(manager.readByte(instance, offset));
-				break;
-			case 'Z':
-				value = manager.readBoolean(instance, offset) ? IntValue.ONE : IntValue.ZERO;
-				break;
-			default:
-				value = manager.readValue(instance, offset);
-		}
-		return value;
+	public Value getFieldA(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		return ctx.getOperations().getField((ObjectValue) value, klass, name, desc);
 	}
 
 	public long getFieldJ(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
-		return getFieldA(value, owner, name, desc, ctx).asLong();
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		return ctx.getOperations().getLongField((ObjectValue) value, klass, name, desc);
 	}
 
 	public double getFieldD(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
-		return getFieldA(value, owner, name, desc, ctx).asDouble();
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		return ctx.getOperations().getDoubleField((ObjectValue) value, klass, name, desc);
 	}
 
 	public int getFieldI(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
-		return getFieldA(value, owner, name, desc, ctx).asInt();
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		return ctx.getOperations().getIntField((ObjectValue) value, klass, name, desc);
 	}
 
 	public float getFieldF(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
-		return getFieldA(value, owner, name, desc, ctx).asFloat();
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		return ctx.getOperations().getFloatField((ObjectValue) value, klass, name, desc);
 	}
 
 	public char getFieldC(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
-		return getFieldA(value, owner, name, desc, ctx).asChar();
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		return ctx.getOperations().getCharField((ObjectValue) value, klass, name, desc);
 	}
 
 	public short getFieldS(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
-		return getFieldA(value, owner, name, desc, ctx).asShort();
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		return ctx.getOperations().getShortField((ObjectValue) value, klass, name, desc);
 	}
 
 	public byte getFieldB(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
-		return getFieldA(value, owner, name, desc, ctx).asByte();
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		return ctx.getOperations().getByteField((ObjectValue) value, klass, name, desc);
 	}
 
-	public Value getField(String owner, String name, String desc, ExecutionContext ctx) {
-		return getFieldA(ctx.getStack().pop(), owner, name, desc, ctx);
+	public Value getFieldGeneric(String owner, String name, String desc, ExecutionContext ctx) {
+		ObjectValue value = ctx.getStack().pop();
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		return ctx.getOperations().getGenericField(value, klass, name, desc);
 	}
 
-	public void putFieldA(Value $instance, Value value, Object owner, String name, String desc, ExecutionContext ctx) {
-		VirtualMachine vm = ctx.getVM();
-		VMHelper helper = vm.getHelper();
-		InstanceJavaClass klass;
-		if (owner instanceof InstanceJavaClass) {
-			klass = (InstanceJavaClass) owner;
-		} else {
-			klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), (String) owner, true);
-		}
-		InstanceValue instance = helper.<InstanceValue>checkNotNull($instance);
-		long offset = helper.getFieldOffset(klass, instance.getJavaClass(), name, desc);
-		if (offset == -1L) {
-			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError(), name);
-		}
-		MemoryManager manager = vm.getMemoryManager();
-		offset += manager.valueBaseOffset(instance);
-		switch(desc.charAt(0)) {
-			case 'J':
-				manager.writeLong(instance, offset, value.asLong());
-				break;
-			case 'D':
-				manager.writeDouble(instance, offset, value.asDouble());
-				break;
-			case 'I':
-				manager.writeInt(instance, offset, value.asInt());
-				break;
-			case 'F':
-				manager.writeFloat(instance, offset, value.asFloat());
-				break;
-			case 'C':
-				manager.writeChar(instance, offset, value.asChar());
-				break;
-			case 'S':
-				manager.writeShort(instance, offset, value.asShort());
-				break;
-			case 'B':
-				manager.writeByte(instance, offset, value.asByte());
-				break;
-			case 'Z':
-				manager.writeBoolean(instance, offset, value.asBoolean());
-				break;
-			default:
-				manager.writeValue(instance, offset, (ObjectValue) value);
-		}
+	public void putFieldA(Value instance, Value value, Object owner, String name, String desc, ExecutionContext ctx) {
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		ctx.getOperations().putField((ObjectValue) instance, klass, name, desc, value);
 	}
 
 	public void putFieldJ(Value instance, long value, Object owner, String name, String desc, ExecutionContext ctx) {
-		putFieldA(instance, LongValue.of(value), owner, name, desc, ctx);
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		ctx.getOperations().putLongField((ObjectValue) instance, klass, name, desc, value);
 	}
 
 	public void putFieldD(Value instance, double value, Object owner, String name, String desc, ExecutionContext ctx) {
-		putFieldA(instance, new DoubleValue(value), owner, name, desc, ctx);
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		ctx.getOperations().putDoubleField((ObjectValue) instance, klass, name, desc, value);
 	}
 
 	public void putFieldI(Value instance, int value, Object owner, String name, String desc, ExecutionContext ctx) {
-		putFieldA(instance, IntValue.of(value), owner, name, desc, ctx);
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		ctx.getOperations().putIntField((ObjectValue) instance, klass, name, desc, value);
 	}
 
 	public void putFieldF(Value instance, float value, Object owner, String name, String desc, ExecutionContext ctx) {
-		putFieldA(instance, new FloatValue(value), owner, name, desc, ctx);
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		ctx.getOperations().putFloatField((ObjectValue) instance, klass, name, desc, value);
 	}
 
 	public void putFieldC(Value instance, char value, Object owner, String name, String desc, ExecutionContext ctx) {
-		putFieldA(instance, IntValue.of(value), owner, name, desc, ctx);
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		ctx.getOperations().putCharField((ObjectValue) instance, klass, name, desc, value);
 	}
 
 	public void putFieldS(Value instance, short value, Object owner, String name, String desc, ExecutionContext ctx) {
-		putFieldA(instance, IntValue.of(value), owner, name, desc, ctx);
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		ctx.getOperations().putShortField((ObjectValue) instance, klass, name, desc, value);
 	}
 
 	public void putFieldB(Value instance, byte value, Object owner, String name, String desc, ExecutionContext ctx) {
-		putFieldA(instance, IntValue.of(value), owner, name, desc, ctx);
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		ctx.getOperations().putByteField((ObjectValue) instance, klass, name, desc, value);
 	}
 
-	public void putField(String owner, String name, String desc, ExecutionContext ctx) {
+	public void putFieldGeneric(String owner, String name, String desc, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
 		Value value = stack.popGeneric();
 		Value instance = stack.pop();
-		putFieldA(instance, value, owner, name, desc, ctx);
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		ctx.getOperations().putGenericField((ObjectValue) instance, klass, name, desc, value);
 	}
 
 	public void invokeVirtual(String owner, String name, String desc, ExecutionContext ctx) {
@@ -539,7 +474,7 @@ public class JitHelper {
 		while(localsLength-- != 0) {
 			locals[localsLength] = stack.pop();
 		}
-		ExecutionContext result = vm.getHelper().invokeVirtual(name, desc, new Value[0], locals);
+		ExecutionContext result = vm.getHelper().invokeVirtual(name, desc, NO_VALUES, locals);
 		Value v = result.getResult();
 		if (!v.isVoid()) {
 			stack.pushGeneric(v);
@@ -550,7 +485,7 @@ public class JitHelper {
 		VirtualMachine vm = ctx.getVM();
 		VMHelper helper = vm.getHelper();
 		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
-		ExecutionContext result = helper.invokeExact(klass, name, desc, new Value[0], locals);
+		ExecutionContext result = helper.invokeExact(klass, name, desc, NO_VALUES, locals);
 		return result.getResult();
 	}
 
@@ -568,7 +503,7 @@ public class JitHelper {
 		while(localsLength-- != 0) {
 			locals[localsLength] = stack.pop();
 		}
-		ExecutionContext result = helper.invokeExact(klass, name, desc, new Value[0], locals);
+		ExecutionContext result = helper.invokeExact(klass, name, desc, NO_VALUES, locals);
 		Value v = result.getResult();
 		if (!v.isVoid()) {
 			stack.pushGeneric(v);
@@ -585,7 +520,7 @@ public class JitHelper {
 		}
 		VirtualMachine vm = ctx.getVM();
 		VMHelper helper = vm.getHelper();
-		ExecutionContext result = helper.invokeStatic(mn.getOwner(), mn, new Value[0], locals);
+		ExecutionContext result = helper.invokeStatic(mn.getOwner(), mn, NO_VALUES, locals);
 		Value v = result.getResult();
 		if (!v.isVoid()) {
 			stack.pushGeneric(v);
@@ -608,7 +543,7 @@ public class JitHelper {
 		VMHelper helper = ctx.getHelper();
 		JavaMethod mn = (JavaMethod) method;
 		Stack stack = ctx.getStack();
-		ExecutionContext result = helper.invokeStatic((InstanceJavaClass) owner, mn, new Value[0], locals);
+		ExecutionContext result = helper.invokeStatic((InstanceJavaClass) owner, mn, NO_VALUES, locals);
 		return result.getResult();
 	}
 
@@ -616,7 +551,7 @@ public class JitHelper {
 		VMHelper helper = ctx.getHelper();
 		JavaMethod mn = resolveStaticMethod(owner, name, desc, ctx);
 		Stack stack = ctx.getStack();
-		ExecutionContext result = helper.invokeStatic(mn.getOwner(), mn, new Value[0], locals);
+		ExecutionContext result = helper.invokeStatic(mn.getOwner(), mn, NO_VALUES, locals);
 		return result.getResult();
 	}
 
@@ -625,14 +560,14 @@ public class JitHelper {
 		VMHelper helper = vm.getHelper();
 		Stack stack = ctx.getStack();
 		JavaMethod mn = (JavaMethod) method;
-		ExecutionContext result = helper.invokeExact((InstanceJavaClass) owner, mn, new Value[0], locals);
+		ExecutionContext result = helper.invokeExact((InstanceJavaClass) owner, mn, NO_VALUES, locals);
 		return result.getResult();
 	}
 
 	public Value invokeVirtual(Value[] locals, Object name, Object desc, ExecutionContext ctx) {
 		VirtualMachine vm = ctx.getVM();
 		Stack stack = ctx.getStack();
-		ExecutionContext result = vm.getHelper().invokeVirtual((String) name, (String) desc, new Value[0], locals);
+		ExecutionContext result = vm.getHelper().invokeVirtual((String) name, (String) desc, NO_VALUES, locals);
 		return result.getResult();
 	}
 
@@ -640,7 +575,7 @@ public class JitHelper {
 		VirtualMachine vm = ctx.getVM();
 		VMHelper helper = vm.getHelper();
 		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
-		ExecutionContext result = helper.invokeInterface(klass, name, desc, new Value[0], locals);
+		ExecutionContext result = helper.invokeInterface(klass, name, desc, NO_VALUES, locals);
 		return result.getResult();
 	}
 
@@ -658,7 +593,7 @@ public class JitHelper {
 		while(localsLength-- != 0) {
 			locals[localsLength] = stack.pop();
 		}
-		ExecutionContext result = helper.invokeInterface(klass, name, desc, new Value[0], locals);
+		ExecutionContext result = helper.invokeInterface(klass, name, desc, NO_VALUES, locals);
 		Value v = result.getResult();
 		if (!v.isVoid()) {
 			stack.pushGeneric(v);
@@ -760,7 +695,7 @@ public class JitHelper {
 			InstanceJavaClass exceptionClass = vm.getSymbols().java_lang_NullPointerException();
 			exceptionClass.initialize();
 			exception = vm.getMemoryManager().newInstance(exceptionClass);
-			vm.getHelper().invokeExact(exceptionClass, "<init>", "()V", new Value[0], new Value[]{exception});
+			vm.getHelper().invokeExact(exceptionClass, "<init>", "()V", NO_VALUES, new Value[]{exception});
 		}
 		throw new VMException((InstanceValue) exception);
 	}
@@ -920,11 +855,14 @@ public class JitHelper {
 		VirtualMachine vm = ctx.getVM();
 		VMHelper helper = vm.getHelper();
 		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
+		/*
 		JavaMethod mn = klass.getStaticMethodRecursively(name, desc);
 		if (mn == null) {
 			helper.throwException(vm.getSymbols().java_lang_NoSuchMethodError(), owner + '.' + name + desc);
 		}
 		return mn;
+		*/
+		return vm.getLinkResolver().resolveStaticMethod(klass, name, desc);
 	}
 
 	public void tryMonitorExit(ObjectValue value, ExecutionContext ctx) {
@@ -934,6 +872,16 @@ public class JitHelper {
 			VirtualMachine vm = ctx.getVM();
 			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalMonitorStateException());
 		}
+	}
+
+	private static InstanceJavaClass getOrFindClass(Object owner, ExecutionContext ctx) {
+		InstanceJavaClass klass;
+		if (owner instanceof InstanceJavaClass) {
+			klass = (InstanceJavaClass) owner;
+		} else {
+			klass = (InstanceJavaClass) ctx.getHelper().tryFindClass(ctx.getOwner().getClassLoader(), (String) owner, true);
+		}
+		return klass;
 	}
 
 	@RequiredArgsConstructor(access = AccessLevel.PACKAGE)

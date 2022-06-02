@@ -33,7 +33,9 @@ public interface InstanceJavaClass extends JavaClass {
 	 * 		Descriptor of the method.
 	 *
 	 * @return class method or {@code null}, if not found.
+	 * @deprecated Use {@link dev.xdark.ssvm.LinkResolver} instead.
 	 */
+	@Deprecated
 	JavaMethod getVirtualMethodRecursively(String name, String desc);
 
 	/**
@@ -45,7 +47,9 @@ public interface InstanceJavaClass extends JavaClass {
 	 * 		Descriptor of the method.
 	 *
 	 * @return class method or {@code null}, if not found.
+	 * @deprecated Use {@link dev.xdark.ssvm.LinkResolver} instead.
 	 */
+	@Deprecated
 	JavaMethod getInterfaceMethodRecursively(String name, String desc);
 
 	/**
@@ -119,7 +123,9 @@ public interface InstanceJavaClass extends JavaClass {
 	 * 		Descriptor of the method.
 	 *
 	 * @return class method or {@code null}, if not found.
+	 * @deprecated Use {@link dev.xdark.ssvm.LinkResolver} instead.
 	 */
+	@Deprecated
 	JavaMethod getStaticMethodRecursively(String name, String desc);
 
 	/**

@@ -25,6 +25,7 @@ public final class JavaMethod {
 	private int maxArgs = -1;
 	private int invocationCount;
 	private Boolean callerSensitive;
+	private Boolean isConstructor;
 
 	/**
 	 * @param owner
@@ -206,7 +207,7 @@ public final class JavaMethod {
 	}
 
 	/**
-	 * @return {@code  true} if this method is caller sensitive,
+	 * @return {@code true} if this method is caller sensitive,
 	 * {@code false} otherwise.
 	 */
 	public boolean isCallerSensitive() {
@@ -217,6 +218,18 @@ public final class JavaMethod {
 					&& visibleAnnotations.stream().anyMatch(x -> "Lsun/reflect/CallerSensitive;".equals(x.desc));
 		}
 		return callerSensitive;
+	}
+
+	/**
+	 * @return {@code true} if this method is a constructor,
+	 * {@code false} otherwise.
+	 */
+	public boolean isConstructor() {
+		Boolean isConstructor = this.isConstructor;
+		if (isConstructor == null) {
+			return this.isConstructor = "<init>".equals(getName());
+		}
+		return isConstructor;
 	}
 
 	@Override

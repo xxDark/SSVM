@@ -33,7 +33,7 @@ public class AccessControllerNatives {
 			Value action = ctx.getLocals().load(0);
 			VMHelper helper = vm.getHelper();
 			helper.checkNotNull(action);
-			Value result = helper.invokeInterface(vm.getSymbols().java_security_PrivilegedAction(), "run", "()Ljava/lang/Object;", new Value[0], new Value[]{
+			Value result = helper.invokeVirtual("run", "()Ljava/lang/Object;", new Value[0], new Value[]{
 					action
 			}).getResult();
 			ctx.setResult(result);
@@ -43,7 +43,7 @@ public class AccessControllerNatives {
 			Value action = ctx.getLocals().load(0);
 			VMHelper helper = vm.getHelper();
 			helper.checkNotNull(action);
-			Value result = helper.invokeInterface(vm.getSymbols().java_security_PrivilegedExceptionAction(), "run", "()Ljava/lang/Object;", new Value[0], new Value[]{
+			Value result = helper.invokeVirtual("run", "()Ljava/lang/Object;", new Value[0], new Value[]{
 					action
 			}).getResult();
 			ctx.setResult(result);
@@ -53,7 +53,7 @@ public class AccessControllerNatives {
 			Value action = ctx.getLocals().load(0);
 			VMHelper helper = vm.getHelper();
 			helper.checkNotNull(action);
-			Value result = helper.invokeInterface(vm.getSymbols().java_security_PrivilegedExceptionAction(), "run", "()Ljava/lang/Object;", new Value[0], new Value[]{
+			Value result = helper.invokeVirtual("run", "()Ljava/lang/Object;", new Value[0], new Value[]{
 					action
 			}).getResult();
 			ctx.setResult(result);
@@ -63,7 +63,7 @@ public class AccessControllerNatives {
 			Value action = ctx.getLocals().load(0);
 			VMHelper helper = vm.getHelper();
 			helper.checkNotNull(action);
-			Value result = helper.invokeInterface(vm.getSymbols().java_security_PrivilegedAction(), "run", "()Ljava/lang/Object;", new Value[0], new Value[]{
+			Value result = helper.invokeVirtual("run", "()Ljava/lang/Object;", new Value[0], new Value[]{
 					action
 			}).getResult();
 			ctx.setResult(result);

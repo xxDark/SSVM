@@ -475,9 +475,9 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	@Override
 	public JavaMethod getMethod(String name, String desc) {
 		MemberKey key = new SimpleMemberKey(this, name, desc);
-		JavaMethod jm = getVirtualMethodLayout().getMethods().get(key);
+		JavaMethod jm = lookupMethodIn(getVirtualMethodLayout(), key);
 		if (jm == null) {
-			jm = getStaticMethodLayout().getMethods().get(key);
+			jm = lookupMethodIn(getStaticMethodLayout(), key);
 		}
 		return jm;
 	}
@@ -973,6 +973,22 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 			}
 		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
 		return count;
+	}
+
+	private JavaMethod lookupMethodIn(MethodLayout layout, MemberKey key) {
+		Map<MemberKey, JavaMethod> methods = layout.getMethods();
+		JavaMethod jm = methods.get(key);
+		if (jm == null) {
+			jm = methods.get(new SimpleMemberKey(this, key.getName(), POLYMORPHIC_DESC));
+			if (jm != null) {
+				if (!jm.isPolymorphic()) {
+					jm = null;
+				} else {
+					jm = new JavaMethod(this, jm.getNode(), key.getDesc(), jm.getSlot());
+				}
+			}
+		}
+		return jm;
 	}
 
 	private JavaMethod lookupMethodIn(MethodLayout layout, String name, String desc) {

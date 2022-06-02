@@ -420,6 +420,11 @@ public final class UninitializedVMSymbols implements VMSymbols {
 		return uninitialized();
 	}
 
+	@Override
+	public InstanceJavaClass java_lang_IncompatibleClassChangeError() {
+		return uninitialized();
+	}
+
 	private static InstanceJavaClass uninitialized() {
 		throw new IllegalStateException("VM is not initialized!");
 	}

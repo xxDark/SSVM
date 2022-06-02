@@ -1074,8 +1074,9 @@ public final class JitCompiler {
 			VirtualMachine vm = owner.getVM();
 			InstanceJavaClass jc = (InstanceJavaClass) vm.getHelper().findClass(owner.getClassLoader(), node.owner, false);
 			String name = node.name;
-			JavaMethod mn = jc.getStaticMethodRecursively(name, desc);
-			if (mn == null) {
+			JavaMethod mn = vm.getLinkResolver().resolveStaticMethod(jc, name, desc);
+			// JavaMethod mn = jc.getStaticMethodRecursively(name, desc);
+			if (false && mn == null) {
 				dropArgs(false, desc);
 				jit.visitInsn(ACONST_NULL);
 				jit.visitLdcInsn(node.owner + name + desc);
@@ -1124,11 +1125,14 @@ public final class JitCompiler {
 			VirtualMachine vm = owner.getVM();
 			InstanceJavaClass jc = (InstanceJavaClass) vm.getHelper().findClass(owner.getClassLoader(), node.owner, false);
 			String name = node.name;
+			JavaMethod mn = vm.getLinkResolver().resolveSpecialMethod(jc, name, desc);
+			/*
 			JavaMethod mn = jc.getVirtualMethodRecursively(name, desc);
 			if (mn == null && jc.isInterface()) {
 				mn = jc.getInterfaceMethodRecursively(name, desc);
 			}
-			if (mn == null) {
+			*/
+			if (false && mn == null) {
 				dropArgs(true, desc);
 				jit.visitInsn(ACONST_NULL);
 				jit.visitLdcInsn(node.owner + name + desc);

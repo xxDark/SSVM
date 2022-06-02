@@ -26,7 +26,7 @@ public abstract class DelegatingInsnNode<I extends AbstractInsnNode> extends Abs
 	 * @param delegate
 	 * 		Backing instruction.
 	 * @param virtualOpcode
-	 * 		Vm specific opcode.
+	 * 		VM specific opcode.
 	 */
 	protected DelegatingInsnNode(I delegate, int virtualOpcode) {
 		super(delegate.getOpcode());

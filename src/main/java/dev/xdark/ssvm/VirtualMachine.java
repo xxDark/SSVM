@@ -30,6 +30,7 @@ import dev.xdark.ssvm.thread.*;
 import dev.xdark.ssvm.tz.SimpleTimeManager;
 import dev.xdark.ssvm.tz.TimeManager;
 import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.*;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
@@ -66,6 +67,8 @@ public class VirtualMachine {
 	private final Map<String, String> env;
 	private final VMInitializer initializer;
 	private final ExecutionEngine executionEngine;
+	private final VMOperations operations;
+	private final LinkResolver linkResolver;
 	private volatile InstanceValue systemThreadGroup;
 	private volatile InstanceValue mainThreadGroup;
 
@@ -91,6 +94,8 @@ public class VirtualMachine {
 		managementInterface = createManagementInterface();
 		timeManager = createTimeManager();
 		executionEngine = createExecutionEngine();
+		operations = new VMOperations(this);
+		linkResolver = new LinkResolver(this);
 
 		(properties = new Properties()).putAll(System.getProperties());
 		env = new HashMap<>(System.getenv());
@@ -322,6 +327,24 @@ public class VirtualMachine {
 	 */
 	public VMPrimitives getPrimitives() {
 		return primitives;
+	}
+
+	/**
+	 * Returns VM operations.
+	 *
+	 * @return VM operations.
+	 */
+	public VMOperations getOperations() {
+		return operations;
+	}
+
+	/**
+	 * Returns link resolver.
+	 *
+	 * @return link resolver.
+	 */
+	public LinkResolver getLinkResolver() {
+		return linkResolver;
 	}
 
 	/**

@@ -360,6 +360,7 @@ public class MethodHandleNatives {
 			case REF_invokeInterface:
 				handle = clazz.getVirtualMethod(name, desc);
 				if (handle == null) {
+					//noinspection deprecation
 					handle = clazz.getInterfaceMethodRecursively(name, desc);
 				}
 				break;

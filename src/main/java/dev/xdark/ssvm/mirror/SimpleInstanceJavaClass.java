@@ -7,12 +7,8 @@ import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.util.UnsafeUtil;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
-import dev.xdark.ssvm.value.DoubleValue;
-import dev.xdark.ssvm.value.FloatValue;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.JavaValue;
-import dev.xdark.ssvm.value.LongValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 import me.coley.cafedude.InvalidClassException;
@@ -35,6 +31,7 @@ import java.util.Map;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
@@ -53,8 +50,8 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	private final Lock initializationLock;
 	private final Condition signal;
 
-	private final ClassReader classReader;
-	private final ClassNode node;
+	private ClassReader classReader;
+	private ClassNode node;
 	private ClassFile rawClassFile;
 
 	private InstanceValue oop;
@@ -833,6 +830,16 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	}
 
 	@Override
+	public synchronized void redefine(ClassReader reader, ClassNode node) {
+		ClassNode current = this.node;
+		verifyMembers(current.methods, node.methods, it -> it.name, it -> it.desc, it -> it.access);
+		verifyMembers(current.fields, node.fields, it -> it.name, it -> it.desc, it -> it.access);
+		classReader = reader;
+		this.node = node;
+		rawClassFile = null;
+	}
+
+	@Override
 	public String toString() {
 		return getName();
 	}
@@ -992,6 +999,25 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 
 	private static <T> Predicate<T> nonHidden(ToIntFunction<T> function) {
 		return x -> !Modifier.isHiddenMember(function.applyAsInt(x));
+	}
+
+	private static <T> void verifyMembers(List<T> current, List<T> redefined, Function<T, String> name, Function<T, String> desc, ToIntFunction<T> access) {
+		if (current.size() != redefined.size()) {
+			throw new IllegalStateException("Size mismatch");
+		}
+		for (int i = 0; i < current.size(); i++) {
+			T t1 = current.get(i);
+			T t2 = redefined.get(i);
+			if (!name.apply(t1).equals(name.apply(t2))) {
+				throw new IllegalStateException("Member name changed");
+			}
+			if (!desc.apply(t1).equals(desc.apply(t2))) {
+				throw new IllegalStateException("Member descriptor changed");
+			}
+			if ((access.applyAsInt(t1) & Opcodes.ACC_STATIC) != (access.applyAsInt(t2) & Opcodes.ACC_STATIC)) {
+				throw new IllegalStateException("Static access changed");
+			}
+		}
 	}
 
 	private enum State {

@@ -33,6 +33,7 @@ public interface InstanceJavaClass extends JavaClass {
 	 * 		Descriptor of the method.
 	 *
 	 * @return class method or {@code null}, if not found.
+	 *
 	 * @deprecated Use {@link dev.xdark.ssvm.LinkResolver} instead.
 	 */
 	@Deprecated
@@ -47,6 +48,7 @@ public interface InstanceJavaClass extends JavaClass {
 	 * 		Descriptor of the method.
 	 *
 	 * @return class method or {@code null}, if not found.
+	 *
 	 * @deprecated Use {@link dev.xdark.ssvm.LinkResolver} instead.
 	 */
 	@Deprecated
@@ -123,6 +125,7 @@ public interface InstanceJavaClass extends JavaClass {
 	 * 		Descriptor of the method.
 	 *
 	 * @return class method or {@code null}, if not found.
+	 *
 	 * @deprecated Use {@link dev.xdark.ssvm.LinkResolver} instead.
 	 */
 	@Deprecated
@@ -393,4 +396,18 @@ public interface InstanceJavaClass extends JavaClass {
 	 * @return field by it's slot.
 	 */
 	JavaField getFieldBySlot(int slot);
+
+	/**
+	 * Attempts to redefine this class.
+	 *
+	 * @param reader
+	 * 		Class source.
+	 * @param node
+	 * 		New class node.
+	 *
+	 * @throws IllegalStateException
+	 * 		If any methods or fields were added, removed, or order has changed.
+	 * 		If modifiers of fields or methods were changed (method/field became (non-) static).
+	 */
+	void redefine(ClassReader reader, ClassNode node);
 }

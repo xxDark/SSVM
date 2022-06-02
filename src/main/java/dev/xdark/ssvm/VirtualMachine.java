@@ -1,7 +1,14 @@
 package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.api.VMInterface;
-import dev.xdark.ssvm.classloading.*;
+import dev.xdark.ssvm.classloading.BootClassLoader;
+import dev.xdark.ssvm.classloading.ClassDefiner;
+import dev.xdark.ssvm.classloading.ClassLoaderData;
+import dev.xdark.ssvm.classloading.ClassLoaders;
+import dev.xdark.ssvm.classloading.ClassParseResult;
+import dev.xdark.ssvm.classloading.RuntimeBootClassLoader;
+import dev.xdark.ssvm.classloading.SimpleClassDefiner;
+import dev.xdark.ssvm.classloading.SimpleClassLoaders;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.ExecutionContextOptions;
 import dev.xdark.ssvm.execution.ExecutionEngine;
@@ -26,12 +33,20 @@ import dev.xdark.ssvm.symbol.UninitializedVMPrimitives;
 import dev.xdark.ssvm.symbol.UninitializedVMSymbols;
 import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.symbol.VMSymbols;
-import dev.xdark.ssvm.thread.*;
+import dev.xdark.ssvm.thread.NopThreadManager;
+import dev.xdark.ssvm.thread.ThreadManager;
+import dev.xdark.ssvm.thread.ThreadStorage;
+import dev.xdark.ssvm.thread.VMThread;
 import dev.xdark.ssvm.tz.SimpleTimeManager;
 import dev.xdark.ssvm.tz.TimeManager;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.util.VMOperations;
-import dev.xdark.ssvm.value.*;
+import dev.xdark.ssvm.value.InstanceValue;
+import dev.xdark.ssvm.value.IntValue;
+import dev.xdark.ssvm.value.JavaValue;
+import dev.xdark.ssvm.value.NullValue;
+import dev.xdark.ssvm.value.ObjectValue;
+import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -100,7 +115,7 @@ public class VirtualMachine {
 		(properties = new Properties()).putAll(System.getProperties());
 		env = new HashMap<>(System.getenv());
 	}
-	
+
 	public VirtualMachine() {
 		this(DummyVMInitializer.INSTANCE);
 	}
@@ -572,6 +587,7 @@ public class VirtualMachine {
 	 * 		Context to process.
 	 * @param useInvokers
 	 * 		Should VM search for VMI hooks.
+	 *
 	 * @deprecated Use {@link VirtualMachine#execute(ExecutionContext, ExecutionContextOptions)} instead.
 	 */
 	@Deprecated

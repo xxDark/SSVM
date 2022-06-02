@@ -111,14 +111,6 @@ public final class VMHelper {
 	 * @return invocation result.
 	 */
 	public ExecutionContext invokeStatic(InstanceJavaClass javaClass, String name, String desc, Value[] stack, Value[] locals) {
-		/*
-		JavaMethod mn = javaClass.getStaticMethodRecursively(name, desc);
-		if (mn == null) {
-			throwException(vm.getSymbols().java_lang_NoSuchMethodError(), javaClass.getInternalName() + '.' + name + desc);
-
-		}
-		return invokeStatic(javaClass, mn, stack, locals);
-		*/
 		JavaMethod m = vm.getLinkResolver().resolveStaticMethod(javaClass, name, desc);
 		return invokeStatic(javaClass, m, stack, locals);
 	}
@@ -148,14 +140,6 @@ public final class VMHelper {
 		}
 		JavaMethod m = vm.getLinkResolver().resolveVirtualMethod(javaClass, javaClass, name, desc);
 		return invokeExact(javaClass, m, stack, locals);
-		/*
-		JavaMethod m = javaClass.getVirtualMethodRecursively(name, desc);
-		if (m == null) {
-			// Perform invokeInterface call.
-			return invokeInterface(javaClass, name, desc, stack, locals);
-		}
-		return invokeExact(javaClass, m, stack, locals);
-		*/
 	}
 
 	/**
@@ -179,12 +163,6 @@ public final class VMHelper {
 		checkNotNull(instance);
 		InstanceJavaClass prioritized = ((InstanceValue) instance).getJavaClass();
 		JavaMethod mn = vm.getLinkResolver().resolveVirtualMethod(prioritized, javaClass, name, desc);
-		/*
-		JavaMethod mn = prioritized.getInterfaceMethodRecursively(name, desc);
-		if (mn == null) {
-			throwException(vm.getSymbols().java_lang_NoSuchMethodError(), javaClass.getInternalName() + '.' + name + desc);
-		}
-		*/
 		return invokeExact(mn.getOwner(), mn, stack, locals);
 	}
 

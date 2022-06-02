@@ -1094,17 +1094,10 @@ public final class JitCompiler {
 			String name = node.name;
 			JavaMethod mn = vm.getLinkResolver().resolveStaticMethod(jc, name, desc);
 			// JavaMethod mn = jc.getStaticMethodRecursively(name, desc);
-			if (false && mn == null) {
-				dropArgs(false, desc);
-				jit.visitInsn(ACONST_NULL);
-				jit.visitLdcInsn(node.owner + name + desc);
-				access = INVOKE_FAIL;
-			} else {
-				collectStaticCallArgs(desc);
-				loadCompilerConstant(jc);
-				loadCompilerConstant(mn);
-				access = INVOKE_STATIC_INTRINSIC;
-			}
+			collectStaticCallArgs(desc);
+			loadCompilerConstant(jc);
+			loadCompilerConstant(mn);
+			access = INVOKE_STATIC_INTRINSIC;
 		} catch(VMException ex) {
 			// Class was probably not found.
 			// We need to use fallback path
@@ -1144,23 +1137,10 @@ public final class JitCompiler {
 			InstanceJavaClass jc = (InstanceJavaClass) vm.getHelper().findClass(owner.getClassLoader(), node.owner, false);
 			String name = node.name;
 			JavaMethod mn = vm.getLinkResolver().resolveSpecialMethod(jc, name, desc);
-			/*
-			JavaMethod mn = jc.getVirtualMethodRecursively(name, desc);
-			if (mn == null && jc.isInterface()) {
-				mn = jc.getInterfaceMethodRecursively(name, desc);
-			}
-			*/
-			if (false && mn == null) {
-				dropArgs(true, desc);
-				jit.visitInsn(ACONST_NULL);
-				jit.visitLdcInsn(node.owner + name + desc);
-				access = INVOKE_FAIL;
-			} else {
-				collectVirtualCallArgs(desc);
-				loadCompilerConstant(jc);
-				loadCompilerConstant(mn);
-				access = INVOKE_SPECIAL_INTRINSIC;
-			}
+			collectVirtualCallArgs(desc);
+			loadCompilerConstant(jc);
+			loadCompilerConstant(mn);
+			access = INVOKE_SPECIAL_INTRINSIC;
 		} catch(VMException ex) {
 			// Class was probably not found.
 			// We need to use fallback path

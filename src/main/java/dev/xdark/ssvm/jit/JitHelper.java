@@ -318,39 +318,44 @@ public class JitHelper {
 		ctx.getOperations().putStaticField(klass, name, desc, (ObjectValue) value);
 	}
 
-	public void putStaticJ(long value, Object owner, String name, String desc, ExecutionContext ctx) {
+	public void putStaticJ(long value, Object owner, String name, ExecutionContext ctx) {
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putStaticLongField(klass, name, desc, value);
+		ctx.getOperations().putStaticLongField(klass, name, value);
 	}
 
-	public void putStaticD(double value, Object owner, String name, String desc, ExecutionContext ctx) {
+	public void putStaticD(double value, Object owner, String name, ExecutionContext ctx) {
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putStaticDoubleField(klass, name, desc, value);
+		ctx.getOperations().putStaticDoubleField(klass, name, value);
 	}
 
-	public void putStaticI(int value, Object owner, String name, String desc, ExecutionContext ctx) {
+	public void putStaticI(int value, Object owner, String name, ExecutionContext ctx) {
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putStaticIntField(klass, name, desc, value);
+		ctx.getOperations().putStaticIntField(klass, name, value);
 	}
 
-	public void putStaticF(float value, Object owner, String name, String desc, ExecutionContext ctx) {
+	public void putStaticF(float value, Object owner, String name, ExecutionContext ctx) {
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putStaticFloatField(klass, name, desc, value);
+		ctx.getOperations().putStaticFloatField(klass, name, value);
 	}
 
-	public void putStaticS(short value, Object owner, String name, String desc, ExecutionContext ctx) {
+	public void putStaticS(short value, Object owner, String name, ExecutionContext ctx) {
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putStaticShortField(klass, name, desc, value);
+		ctx.getOperations().putStaticShortField(klass, name, value);
 	}
 
-	public void putStaticC(char value, Object owner, String name, String desc, ExecutionContext ctx) {
+	public void putStaticC(char value, Object owner, String name, ExecutionContext ctx) {
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putStaticCharField(klass, name, desc, value);
+		ctx.getOperations().putStaticCharField(klass, name, value);
 	}
 
-	public void putStaticB(byte value, Object owner, String name, String desc, ExecutionContext ctx) {
+	public void putStaticB(byte value, Object owner, String name, ExecutionContext ctx) {
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putStaticByteField(klass, name, desc, value);
+		ctx.getOperations().putStaticByteField(klass, name, value);
+	}
+
+	public void putStaticZ(boolean value, Object owner, String name, ExecutionContext ctx) {
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		ctx.getOperations().putStaticBooleanField(klass, name, value);
 	}
 
 	public void putStatic(String owner, String name, String desc, ExecutionContext ctx) {
@@ -363,39 +368,44 @@ public class JitHelper {
 		return ctx.getOperations().getField((ObjectValue) value, klass, name, desc);
 	}
 
-	public long getFieldJ(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
+	public long getFieldJ(Value value, Object owner, String name, ExecutionContext ctx) {
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		return ctx.getOperations().getLongField((ObjectValue) value, klass, name, desc);
+		return ctx.getOperations().getLongField((ObjectValue) value, klass, name);
 	}
 
-	public double getFieldD(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
+	public double getFieldD(Value value, Object owner, String name, ExecutionContext ctx) {
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		return ctx.getOperations().getDoubleField((ObjectValue) value, klass, name, desc);
+		return ctx.getOperations().getDoubleField((ObjectValue) value, klass, name);
 	}
 
-	public int getFieldI(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
+	public int getFieldI(Value value, Object owner, String name, ExecutionContext ctx) {
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		return ctx.getOperations().getIntField((ObjectValue) value, klass, name, desc);
+		return ctx.getOperations().getIntField((ObjectValue) value, klass, name);
 	}
 
-	public float getFieldF(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
+	public float getFieldF(Value value, Object owner, String name, ExecutionContext ctx) {
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		return ctx.getOperations().getFloatField((ObjectValue) value, klass, name, desc);
+		return ctx.getOperations().getFloatField((ObjectValue) value, klass, name);
 	}
 
-	public char getFieldC(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
+	public char getFieldC(Value value, Object owner, String name, ExecutionContext ctx) {
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		return ctx.getOperations().getCharField((ObjectValue) value, klass, name, desc);
+		return ctx.getOperations().getCharField((ObjectValue) value, klass, name);
 	}
 
-	public short getFieldS(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
+	public short getFieldS(Value value, Object owner, String name, ExecutionContext ctx) {
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		return ctx.getOperations().getShortField((ObjectValue) value, klass, name, desc);
+		return ctx.getOperations().getShortField((ObjectValue) value, klass, name);
 	}
 
-	public byte getFieldB(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
+	public byte getFieldB(Value value, Object owner, String name, ExecutionContext ctx) {
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		return ctx.getOperations().getByteField((ObjectValue) value, klass, name, desc);
+		return ctx.getOperations().getByteField((ObjectValue) value, klass, name);
+	}
+
+	public boolean getFieldZ(Value value, Object owner, String name, ExecutionContext ctx) {
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		return ctx.getOperations().getBooleanField((ObjectValue) value, klass, name);
 	}
 
 	public Value getFieldGeneric(String owner, String name, String desc, ExecutionContext ctx) {
@@ -409,39 +419,44 @@ public class JitHelper {
 		ctx.getOperations().putField((ObjectValue) instance, klass, name, desc, (ObjectValue) value);
 	}
 
-	public void putFieldJ(Value instance, long value, Object owner, String name, String desc, ExecutionContext ctx) {
+	public void putFieldJ(Value instance, long value, Object owner, String name, ExecutionContext ctx) {
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putLongField((ObjectValue) instance, klass, name, desc, value);
+		ctx.getOperations().putLongField((ObjectValue) instance, klass, name, value);
 	}
 
-	public void putFieldD(Value instance, double value, Object owner, String name, String desc, ExecutionContext ctx) {
+	public void putFieldD(Value instance, double value, Object owner, String name, ExecutionContext ctx) {
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putDoubleField((ObjectValue) instance, klass, name, desc, value);
+		ctx.getOperations().putDoubleField((ObjectValue) instance, klass, name, value);
 	}
 
-	public void putFieldI(Value instance, int value, Object owner, String name, String desc, ExecutionContext ctx) {
+	public void putFieldI(Value instance, int value, Object owner, String name, ExecutionContext ctx) {
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putIntField((ObjectValue) instance, klass, name, desc, value);
+		ctx.getOperations().putIntField((ObjectValue) instance, klass, name, value);
 	}
 
-	public void putFieldF(Value instance, float value, Object owner, String name, String desc, ExecutionContext ctx) {
+	public void putFieldF(Value instance, float value, Object owner, String name, ExecutionContext ctx) {
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putFloatField((ObjectValue) instance, klass, name, desc, value);
+		ctx.getOperations().putFloatField((ObjectValue) instance, klass, name, value);
 	}
 
-	public void putFieldC(Value instance, char value, Object owner, String name, String desc, ExecutionContext ctx) {
+	public void putFieldC(Value instance, char value, Object owner, String name, ExecutionContext ctx) {
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putCharField((ObjectValue) instance, klass, name, desc, value);
+		ctx.getOperations().putCharField((ObjectValue) instance, klass, name, value);
 	}
 
-	public void putFieldS(Value instance, short value, Object owner, String name, String desc, ExecutionContext ctx) {
+	public void putFieldS(Value instance, short value, Object owner, String name, ExecutionContext ctx) {
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putShortField((ObjectValue) instance, klass, name, desc, value);
+		ctx.getOperations().putShortField((ObjectValue) instance, klass, name, value);
 	}
 
-	public void putFieldB(Value instance, byte value, Object owner, String name, String desc, ExecutionContext ctx) {
+	public void putFieldB(Value instance, byte value, Object owner, String name, ExecutionContext ctx) {
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putByteField((ObjectValue) instance, klass, name, desc, value);
+		ctx.getOperations().putByteField((ObjectValue) instance, klass, name, value);
+	}
+
+	public void putFieldZ(Value instance, boolean value, Object owner, String name, ExecutionContext ctx) {
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		ctx.getOperations().putBooleanField((ObjectValue) instance, klass, name, value);
 	}
 
 	public void putFieldGeneric(String owner, String name, String desc, ExecutionContext ctx) {

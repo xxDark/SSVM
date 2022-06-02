@@ -67,7 +67,7 @@ public class SystemNatives {
 			helper.checkEquals(start, memoryManager.arrayBaseOffset(dstComponent));
 
 			MemoryData srcData = src.getMemory().getData();
-			int dataStartPos = start + srcPos * scale;
+			long dataStartPos = start + srcPos * scale;
 			MemoryData dstData = dst.getMemory().getData();
 			srcData.copy(dataStartPos, dstData, start + (long) dstPos * scale, (long) length * scale);
 			return Result.ABORT;

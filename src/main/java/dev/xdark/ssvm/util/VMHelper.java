@@ -2223,7 +2223,7 @@ public final class VMHelper {
 	 * @throws IllegalStateException
 	 * 		If primitive descriptor is invalid.
 	 */
-	public long getDescriptorSize(String descriptor) {
+	public int getDescriptorSize(String descriptor) {
 		MemoryManager memoryManager = vm.getMemoryManager();
 		if (descriptor.isEmpty()) {
 			return memoryManager.objectSize();

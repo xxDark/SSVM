@@ -43,43 +43,43 @@ public class VMOperations {
 		memoryManager.writeValue(instance, offset, value);
 	}
 
-	public void putLongField(ObjectValue instance, InstanceJavaClass klass, String name, String desc, long value) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
+	public void putLongField(ObjectValue instance, InstanceJavaClass klass, String name, long value) {
+		long offset = getFieldOffsetForInstance(instance, klass, name, "J");
 		memoryManager.writeLong(instance, offset, value);
 	}
 
-	public void putDoubleField(ObjectValue instance, InstanceJavaClass klass, String name, String desc, double value) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
+	public void putDoubleField(ObjectValue instance, InstanceJavaClass klass, String name, double value) {
+		long offset = getFieldOffsetForInstance(instance, klass, name, "D");
 		memoryManager.writeDouble(instance, offset, value);
 	}
 
-	public void putIntField(ObjectValue instance, InstanceJavaClass klass, String name, String desc, int value) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
+	public void putIntField(ObjectValue instance, InstanceJavaClass klass, String name, int value) {
+		long offset = getFieldOffsetForInstance(instance, klass, name, "I");
 		memoryManager.writeInt(instance, offset, value);
 	}
 
-	public void putFloatField(ObjectValue instance, InstanceJavaClass klass, String name, String desc, float value) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
+	public void putFloatField(ObjectValue instance, InstanceJavaClass klass, String name, float value) {
+		long offset = getFieldOffsetForInstance(instance, klass, name, "F");
 		memoryManager.writeFloat(instance, offset, value);
 	}
 
-	public void putCharField(ObjectValue instance, InstanceJavaClass klass, String name, String desc, char value) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
+	public void putCharField(ObjectValue instance, InstanceJavaClass klass, String name, char value) {
+		long offset = getFieldOffsetForInstance(instance, klass, name, "C");
 		memoryManager.writeChar(instance, offset, value);
 	}
 
-	public void putShortField(ObjectValue instance, InstanceJavaClass klass, String name, String desc, short value) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
+	public void putShortField(ObjectValue instance, InstanceJavaClass klass, String name, short value) {
+		long offset = getFieldOffsetForInstance(instance, klass, name, "S");
 		memoryManager.writeShort(instance, offset, value);
 	}
 
-	public void putByteField(ObjectValue instance, InstanceJavaClass klass, String name, String desc, byte value) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
+	public void putByteField(ObjectValue instance, InstanceJavaClass klass, String name, byte value) {
+		long offset = getFieldOffsetForInstance(instance, klass, name, "B");
 		memoryManager.writeByte(instance, offset, value);
 	}
 
-	public void putBooleanField(ObjectValue instance, InstanceJavaClass klass, String name, String desc, boolean value) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
+	public void putBooleanField(ObjectValue instance, InstanceJavaClass klass, String name, boolean value) {
+		long offset = getFieldOffsetForInstance(instance, klass, name, "Z");
 		memoryManager.writeBoolean(instance, offset, value);
 	}
 
@@ -93,43 +93,43 @@ public class VMOperations {
 		return memoryManager.readValue(instance, offset);
 	}
 
-	public long getLongField(ObjectValue instance, InstanceJavaClass klass, String name, String desc) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
+	public long getLongField(ObjectValue instance, InstanceJavaClass klass, String name) {
+		long offset = getFieldOffsetForInstance(instance, klass, name, "J");
 		return memoryManager.readLong(instance, offset);
 	}
 
-	public double getDoubleField(ObjectValue instance, InstanceJavaClass klass, String name, String desc) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
+	public double getDoubleField(ObjectValue instance, InstanceJavaClass klass, String name) {
+		long offset = getFieldOffsetForInstance(instance, klass, name, "D");
 		return memoryManager.readDouble(instance, offset);
 	}
 
-	public int getIntField(ObjectValue instance, InstanceJavaClass klass, String name, String desc) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
+	public int getIntField(ObjectValue instance, InstanceJavaClass klass, String name) {
+		long offset = getFieldOffsetForInstance(instance, klass, name, "I");
 		return memoryManager.readInt(instance, offset);
 	}
 
-	public float getFloatField(ObjectValue instance, InstanceJavaClass klass, String name, String desc) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
+	public float getFloatField(ObjectValue instance, InstanceJavaClass klass, String name) {
+		long offset = getFieldOffsetForInstance(instance, klass, name, "F");
 		return memoryManager.readFloat(instance, offset);
 	}
 
-	public char getCharField(ObjectValue instance, InstanceJavaClass klass, String name, String desc) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
+	public char getCharField(ObjectValue instance, InstanceJavaClass klass, String name) {
+		long offset = getFieldOffsetForInstance(instance, klass, name, "C");
 		return memoryManager.readChar(instance, offset);
 	}
 
-	public short getShortField(ObjectValue instance, InstanceJavaClass klass, String name, String desc) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
+	public short getShortField(ObjectValue instance, InstanceJavaClass klass, String name) {
+		long offset = getFieldOffsetForInstance(instance, klass, name, "S");
 		return memoryManager.readShort(instance, offset);
 	}
 
-	public byte getByteField(ObjectValue instance, InstanceJavaClass klass, String name, String desc) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
+	public byte getByteField(ObjectValue instance, InstanceJavaClass klass, String name) {
+		long offset = getFieldOffsetForInstance(instance, klass, name, "B");
 		return memoryManager.readByte(instance, offset);
 	}
 
-	public boolean getBooleanField(ObjectValue instance, InstanceJavaClass klass, String name, String desc) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
+	public boolean getBooleanField(ObjectValue instance, InstanceJavaClass klass, String name) {
+		long offset = getFieldOffsetForInstance(instance, klass, name, "Z");
 		return memoryManager.readBoolean(instance, offset);
 	}
 
@@ -156,9 +156,9 @@ public class VMOperations {
 		return null;
 	}
 
-	public long getStaticLongField(InstanceJavaClass klass, String name, String desc) {
+	public long getStaticLongField(InstanceJavaClass klass, String name) {
 		while(klass != null) {
-			long offset = klass.getStaticFieldOffset(name, desc);
+			long offset = klass.getStaticFieldOffset(name, "J");
 			if (offset != -1L) {
 				MemoryManager memoryManager = this.memoryManager;
 				return memoryManager.readLong(klass.getOop(), offset + memoryManager.getStaticOffset(klass));
@@ -169,9 +169,9 @@ public class VMOperations {
 		return 0L;
 	}
 
-	public double getStaticDoubleField(InstanceJavaClass klass, String name, String desc) {
+	public double getStaticDoubleField(InstanceJavaClass klass, String name) {
 		while(klass != null) {
-			long offset = klass.getStaticFieldOffset(name, desc);
+			long offset = klass.getStaticFieldOffset(name, "D");
 			if (offset != -1L) {
 				MemoryManager memoryManager = this.memoryManager;
 				return memoryManager.readDouble(klass.getOop(), offset + memoryManager.getStaticOffset(klass));
@@ -182,9 +182,9 @@ public class VMOperations {
 		return 0.0D;
 	}
 
-	public int getStaticIntField(InstanceJavaClass klass, String name, String desc) {
+	public int getStaticIntField(InstanceJavaClass klass, String name) {
 		while(klass != null) {
-			long offset = klass.getStaticFieldOffset(name, desc);
+			long offset = klass.getStaticFieldOffset(name, "I");
 			if (offset != -1L) {
 				MemoryManager memoryManager = this.memoryManager;
 				return memoryManager.readInt(klass.getOop(), offset + memoryManager.getStaticOffset(klass));
@@ -195,9 +195,9 @@ public class VMOperations {
 		return 0;
 	}
 
-	public float getStaticFloatField(InstanceJavaClass klass, String name, String desc) {
+	public float getStaticFloatField(InstanceJavaClass klass, String name) {
 		while(klass != null) {
-			long offset = klass.getStaticFieldOffset(name, desc);
+			long offset = klass.getStaticFieldOffset(name, "F");
 			if (offset != -1L) {
 				MemoryManager memoryManager = this.memoryManager;
 				return memoryManager.readFloat(klass.getOop(), offset + memoryManager.getStaticOffset(klass));
@@ -208,9 +208,9 @@ public class VMOperations {
 		return 0.0F;
 	}
 
-	public char getStaticCharField(InstanceJavaClass klass, String name, String desc) {
+	public char getStaticCharField(InstanceJavaClass klass, String name) {
 		while(klass != null) {
-			long offset = klass.getStaticFieldOffset(name, desc);
+			long offset = klass.getStaticFieldOffset(name, "C");
 			if (offset != -1L) {
 				MemoryManager memoryManager = this.memoryManager;
 				return memoryManager.readChar(klass.getOop(), offset + memoryManager.getStaticOffset(klass));
@@ -221,9 +221,9 @@ public class VMOperations {
 		return '\0';
 	}
 
-	public short getStaticShortField(InstanceJavaClass klass, String name, String desc) {
+	public short getStaticShortField(InstanceJavaClass klass, String name) {
 		while(klass != null) {
-			long offset = klass.getStaticFieldOffset(name, desc);
+			long offset = klass.getStaticFieldOffset(name, "S");
 			if (offset != -1L) {
 				MemoryManager memoryManager = this.memoryManager;
 				return memoryManager.readShort(klass.getOop(), offset + memoryManager.getStaticOffset(klass));
@@ -234,9 +234,9 @@ public class VMOperations {
 		return 0;
 	}
 
-	public byte getStaticByteField(InstanceJavaClass klass, String name, String desc) {
+	public byte getStaticByteField(InstanceJavaClass klass, String name) {
 		while(klass != null) {
-			long offset = klass.getStaticFieldOffset(name, desc);
+			long offset = klass.getStaticFieldOffset(name, "B");
 			if (offset != -1L) {
 				MemoryManager memoryManager = this.memoryManager;
 				return memoryManager.readByte(klass.getOop(), offset + memoryManager.getStaticOffset(klass));
@@ -247,9 +247,9 @@ public class VMOperations {
 		return 0;
 	}
 
-	public boolean getStaticBooleanField(InstanceJavaClass klass, String name, String desc) {
+	public boolean getStaticBooleanField(InstanceJavaClass klass, String name) {
 		while(klass != null) {
-			long offset = klass.getStaticFieldOffset(name, desc);
+			long offset = klass.getStaticFieldOffset(name, "Z");
 			if (offset != -1L) {
 				MemoryManager memoryManager = this.memoryManager;
 				return memoryManager.readBoolean(klass.getOop(), offset + memoryManager.getStaticOffset(klass));
@@ -286,9 +286,9 @@ public class VMOperations {
 		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
 	}
 
-	public void putStaticLongField(InstanceJavaClass klass, String name, String desc, long value) {
+	public void putStaticLongField(InstanceJavaClass klass, String name, long value) {
 		while(klass != null) {
-			long offset = klass.getStaticFieldOffset(name, desc);
+			long offset = klass.getStaticFieldOffset(name, "J");
 			if (offset != -1L) {
 				MemoryManager memoryManager = this.memoryManager;
 				memoryManager.writeLong(klass.getOop(), offset + memoryManager.getStaticOffset(klass), value);
@@ -299,9 +299,9 @@ public class VMOperations {
 		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
 	}
 
-	public void putStaticDoubleField(InstanceJavaClass klass, String name, String desc, double value) {
+	public void putStaticDoubleField(InstanceJavaClass klass, String name, double value) {
 		while(klass != null) {
-			long offset = klass.getStaticFieldOffset(name, desc);
+			long offset = klass.getStaticFieldOffset(name, "D");
 			if (offset != -1L) {
 				MemoryManager memoryManager = this.memoryManager;
 				memoryManager.writeDouble(klass.getOop(), offset + memoryManager.getStaticOffset(klass), value);
@@ -312,9 +312,9 @@ public class VMOperations {
 		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
 	}
 
-	public void putStaticIntField(InstanceJavaClass klass, String name, String desc, int value) {
+	public void putStaticIntField(InstanceJavaClass klass, String name, int value) {
 		while(klass != null) {
-			long offset = klass.getStaticFieldOffset(name, desc);
+			long offset = klass.getStaticFieldOffset(name, "I");
 			if (offset != -1L) {
 				MemoryManager memoryManager = this.memoryManager;
 				memoryManager.writeInt(klass.getOop(), offset + memoryManager.getStaticOffset(klass), value);
@@ -325,9 +325,9 @@ public class VMOperations {
 		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
 	}
 
-	public void putStaticFloatField(InstanceJavaClass klass, String name, String desc, float value) {
+	public void putStaticFloatField(InstanceJavaClass klass, String name, float value) {
 		while(klass != null) {
-			long offset = klass.getStaticFieldOffset(name, desc);
+			long offset = klass.getStaticFieldOffset(name, "F");
 			if (offset != -1L) {
 				MemoryManager memoryManager = this.memoryManager;
 				memoryManager.writeFloat(klass.getOop(), offset + memoryManager.getStaticOffset(klass), value);
@@ -338,9 +338,9 @@ public class VMOperations {
 		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
 	}
 
-	public void putStaticCharField(InstanceJavaClass klass, String name, String desc, char value) {
+	public void putStaticCharField(InstanceJavaClass klass, String name, char value) {
 		while(klass != null) {
-			long offset = klass.getStaticFieldOffset(name, desc);
+			long offset = klass.getStaticFieldOffset(name, "C");
 			if (offset != -1L) {
 				MemoryManager memoryManager = this.memoryManager;
 				memoryManager.writeChar(klass.getOop(), offset + memoryManager.getStaticOffset(klass), value);
@@ -351,9 +351,9 @@ public class VMOperations {
 		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
 	}
 
-	public void putStaticShortField(InstanceJavaClass klass, String name, String desc, short value) {
+	public void putStaticShortField(InstanceJavaClass klass, String name, short value) {
 		while(klass != null) {
-			long offset = klass.getStaticFieldOffset(name, desc);
+			long offset = klass.getStaticFieldOffset(name, "S");
 			if (offset != -1L) {
 				MemoryManager memoryManager = this.memoryManager;
 				memoryManager.writeShort(klass.getOop(), offset + memoryManager.getStaticOffset(klass), value);
@@ -364,9 +364,9 @@ public class VMOperations {
 		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
 	}
 
-	public void putStaticByteField(InstanceJavaClass klass, String name, String desc, byte value) {
+	public void putStaticByteField(InstanceJavaClass klass, String name, byte value) {
 		while(klass != null) {
-			long offset = klass.getStaticFieldOffset(name, desc);
+			long offset = klass.getStaticFieldOffset(name, "B");
 			if (offset != -1L) {
 				MemoryManager memoryManager = this.memoryManager;
 				memoryManager.writeByte(klass.getOop(), offset + memoryManager.getStaticOffset(klass), value);
@@ -377,9 +377,9 @@ public class VMOperations {
 		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
 	}
 
-	public void putStaticBooleanField(InstanceJavaClass klass, String name, String desc, boolean value) {
+	public void putStaticBooleanField(InstanceJavaClass klass, String name, boolean value) {
 		while(klass != null) {
-			long offset = klass.getStaticFieldOffset(name, desc);
+			long offset = klass.getStaticFieldOffset(name, "Z");
 			if (offset != -1L) {
 				MemoryManager memoryManager = this.memoryManager;
 				memoryManager.writeBoolean(klass.getOop(), offset + memoryManager.getStaticOffset(klass), value);

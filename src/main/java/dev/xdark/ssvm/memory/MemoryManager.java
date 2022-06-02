@@ -574,47 +574,47 @@ public interface MemoryManager {
 	/**
 	 * @return Size of {@code long} type.
 	 */
-	long longSize();
+	int longSize();
 
 	/**
 	 * @return Size of {@code double} type.
 	 */
-	long doubleSize();
+	int doubleSize();
 
 	/**
 	 * @return Size of {@code int} type.
 	 */
-	long intSize();
+	int intSize();
 
 	/**
 	 * @return Size of {@code float} type.
 	 */
-	long floatSize();
+	int floatSize();
 
 	/**
 	 * @return Size of {@code char} type.
 	 */
-	long charSize();
+	int charSize();
 
 	/**
 	 * @return Size of {@code short} type.
 	 */
-	long shortSize();
+	int shortSize();
 
 	/**
 	 * @return Size of {@code byte} type.
 	 */
-	long byteSize();
+	int byteSize();
 
 	/**
 	 * @return Size of {@code boolean} type.
 	 */
-	long booleanSize();
+	int booleanSize();
 
 	/**
 	 * @return Size of {@link Object} type.
 	 */
-	long objectSize();
+	int objectSize();
 
 	/**
 	 * Returns memory block at location {@code 0}.

@@ -82,6 +82,9 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 		} catch (Exception ex) {
 			doCleanup = false;
 			throw new IllegalStateException("Uncaught VM error at: " + jm, ex);
+		} catch (Throwable t) {
+			doCleanup = false;
+			throw t;
 		} finally {
 			if (doCleanup) {
 				try {

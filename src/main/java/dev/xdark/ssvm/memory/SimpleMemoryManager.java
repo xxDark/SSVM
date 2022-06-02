@@ -386,48 +386,48 @@ public final class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public long longSize() {
-		return 8L;
+	public int longSize() {
+		return 8;
 	}
 
 	@Override
-	public long doubleSize() {
-		return 8L;
+	public int doubleSize() {
+		return 8;
 	}
 
 	@Override
-	public long intSize() {
-		return 4L;
+	public int intSize() {
+		return 4;
 	}
 
 	@Override
-	public long floatSize() {
-		return 4L;
+	public int floatSize() {
+		return 4;
 	}
 
 	@Override
-	public long charSize() {
-		return 2L;
+	public int charSize() {
+		return 2;
 	}
 
 	@Override
-	public long shortSize() {
-		return 2L;
+	public int shortSize() {
+		return 2;
 	}
 
 	@Override
-	public long byteSize() {
-		return 1L;
+	public int byteSize() {
+		return 1;
 	}
 
 	@Override
-	public long booleanSize() {
-		return 1L;
+	public int booleanSize() {
+		return 1;
 	}
 
 	@Override
-	public long objectSize() {
-		return 8L;
+	public int objectSize() {
+		return 8;
 	}
 
 	@Override

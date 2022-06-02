@@ -83,7 +83,7 @@ public class VirtualMachine {
 		threadManager = createThreadManager();
 		classDefiner = createClassDefiner();
 		DelegatingVMSymbols symbols = new DelegatingVMSymbols();
-		symbols.setSymbols(new UninitializedVMSymbols());
+		symbols.setSymbols(new UninitializedVMSymbols(this));
 		this.symbols = symbols;
 		DelegatingVMPrimitives primitives = new DelegatingVMPrimitives();
 		primitives.setPrimitives(new UninitializedVMPrimitives());
@@ -193,9 +193,9 @@ public class VirtualMachine {
 				InstanceJavaClass unsafeConstants = (InstanceJavaClass) findBootstrapClass("jdk/internal/misc/UnsafeConstants", true);
 				if (unsafeConstants != null) {
 					unsafeConstants.initialize();
-					unsafeConstants.setFieldValue("ADDRESS_SIZE0", "I", IntValue.of(memoryManager.addressSize()));
-					unsafeConstants.setFieldValue("PAGE_SIZE", "I", IntValue.of(memoryManager.pageSize()));
-					unsafeConstants.setFieldValue("BIG_ENDIAN", "Z", memoryManager.getByteOrder() == ByteOrder.BIG_ENDIAN ? IntValue.ONE : IntValue.ZERO);
+					unsafeConstants.setStaticFieldValue("ADDRESS_SIZE0", "I", IntValue.of(memoryManager.addressSize()));
+					unsafeConstants.setStaticFieldValue("PAGE_SIZE", "I", IntValue.of(memoryManager.pageSize()));
+					unsafeConstants.setStaticFieldValue("BIG_ENDIAN", "Z", memoryManager.getByteOrder() == ByteOrder.BIG_ENDIAN ? IntValue.ONE : IntValue.ZERO);
 				}
 				// Initialize system group
 				InstanceJavaClass groupClass = symbols.java_lang_ThreadGroup();

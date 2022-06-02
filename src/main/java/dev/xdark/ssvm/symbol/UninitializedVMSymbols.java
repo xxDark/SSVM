@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.symbol;
 
+import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 
 /**
@@ -10,14 +11,23 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
  */
 public final class UninitializedVMSymbols implements VMSymbols {
 
+	private final VirtualMachine vm;
+
+	public UninitializedVMSymbols(VirtualMachine vm) {
+		this.vm = vm;
+	}
+
+	// java/lang/Object and java/lang/Class are special cases
+	// when we want them to be accessible even when VM symbols
+	// are not yet initialized
 	@Override
 	public InstanceJavaClass java_lang_Object() {
-		return uninitialized();
+		return (InstanceJavaClass) vm.findBootstrapClass("java/lang/Object");
 	}
 
 	@Override
 	public InstanceJavaClass java_lang_Class() {
-		return uninitialized();
+		return (InstanceJavaClass) vm.findBootstrapClass("java/lang/Class");
 	}
 
 	@Override
@@ -422,6 +432,11 @@ public final class UninitializedVMSymbols implements VMSymbols {
 
 	@Override
 	public InstanceJavaClass java_lang_IncompatibleClassChangeError() {
+		return uninitialized();
+	}
+
+	@Override
+	public InstanceJavaClass java_io_FileNotFoundException() {
 		return uninitialized();
 	}
 

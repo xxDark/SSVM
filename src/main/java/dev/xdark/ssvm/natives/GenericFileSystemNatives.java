@@ -16,6 +16,7 @@ import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.LongValue;
 import lombok.experimental.UtilityClass;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -119,6 +120,8 @@ public class GenericFileSystemNatives {
 			try {
 				long handle = vm.getFileDescriptorManager().open(path, append ? FileDescriptorManager.APPEND : FileDescriptorManager.WRITE);
 				((InstanceValue) _this.getValue("fd", "Ljava/io/FileDescriptor;")).setLong("handle", handle);
+			} catch (FileNotFoundException ex) {
+				helper.throwException(vm.getSymbols().java_io_FileNotFoundException(), ex.getMessage());
 			} catch (IOException ex) {
 				helper.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 			}
@@ -208,6 +211,8 @@ public class GenericFileSystemNatives {
 			try {
 				long handle = vm.getFileDescriptorManager().open(path, FileDescriptorManager.READ);
 				((InstanceValue) _this.getValue("fd", "Ljava/io/FileDescriptor;")).setLong("handle", handle);
+			} catch (FileNotFoundException ex) {
+				helper.throwException(vm.getSymbols().java_io_FileNotFoundException(), ex.getMessage());
 			} catch (IOException ex) {
 				helper.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 			}

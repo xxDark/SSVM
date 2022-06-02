@@ -128,7 +128,7 @@ public class SimpleInstanceValue extends SimpleObjectValue implements InstanceVa
 
 	@Override
 	public long getFieldOffset(String name, String desc) {
-		long offset = getJavaClass().getFieldOffsetRecursively(name, desc);
+		long offset = getJavaClass().getVirtualFieldOffsetRecursively(name, desc);
 		return offset == -1L ? -1L : getMemoryManager().valueBaseOffset(this) + offset;
 	}
 

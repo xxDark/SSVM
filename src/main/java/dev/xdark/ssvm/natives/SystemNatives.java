@@ -97,17 +97,17 @@ public class SystemNatives {
 		});
 		vmi.setInvoker(sys, "setIn0", "(Ljava/io/InputStream;)V", ctx -> {
 			Value stream = ctx.getLocals().load(0);
-			sys.setFieldValue("in", "Ljava/io/InputStream;", stream);
+			sys.setStaticFieldValue("in", "Ljava/io/InputStream;", stream);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "setOut0", "(Ljava/io/PrintStream;)V", ctx -> {
 			Value stream = ctx.getLocals().load(0);
-			sys.setFieldValue("out", "Ljava/io/PrintStream;", stream);
+			sys.setStaticFieldValue("out", "Ljava/io/PrintStream;", stream);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "setErr0", "(Ljava/io/PrintStream;)V", ctx -> {
 			Value stream = ctx.getLocals().load(0);
-			sys.setFieldValue("err", "Ljava/io/PrintStream;", stream);
+			sys.setStaticFieldValue("err", "Ljava/io/PrintStream;", stream);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "mapLibraryName", "(Ljava/lang/String;)Ljava/lang/String;", ctx -> {

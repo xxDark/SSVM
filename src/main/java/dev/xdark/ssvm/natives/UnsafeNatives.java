@@ -159,7 +159,7 @@ public class UnsafeNatives {
 				ctx.setResult(LongValue.M_ONE);
 			} else {
 				String utf = vm.getHelper().readUtf8(locals.load(2));
-				long offset = ((InstanceJavaClass) wrapper).getFieldOffsetRecursively(utf);
+				long offset = ((InstanceJavaClass) wrapper).getVirtualFieldOffsetRecursively(utf);
 				if (offset != -1L) {
 					offset += vm.getMemoryManager().valueBaseOffset(klass);
 				}

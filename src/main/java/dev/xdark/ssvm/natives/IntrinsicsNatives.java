@@ -124,14 +124,14 @@ public class IntrinsicsNatives {
 		if (jc.hasVirtualField("value", "[C")) {
 			MemoryManager memoryManager = vm.getMemoryManager();
 			int offset = memoryManager.valueBaseOffset(jc);
-			long lengthOffset = offset + jc.getFieldOffset("value", "[C");
+			long lengthOffset = offset + jc.getVirtualFieldOffset("value", "[C");
 			vmi.setInvoker(jc, "length", "()I", ctx -> {
 				ArrayValue chars = (ArrayValue) memoryManager.readValue(ctx.getLocals().<InstanceValue>load(0), lengthOffset);
 				ctx.setResult(IntValue.of(chars.getLength()));
 				return Result.ABORT;
 			});
-			long hashOffset = offset + jc.getFieldOffset("hash", "I");
-			long valueOffset = offset + jc.getFieldOffset("value", "[C");
+			long hashOffset = offset + jc.getVirtualFieldOffset("hash", "I");
+			long valueOffset = offset + jc.getVirtualFieldOffset("value", "[C");
 			vmi.setInvoker(jc, "hashCode", "()I", ctx -> {
 				InstanceValue _this = ctx.getLocals().<InstanceValue>load(0);
 				int hc = memoryManager.readInt(_this, hashOffset);

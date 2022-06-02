@@ -92,4 +92,5 @@ public interface VMSymbols {
 	InstanceJavaClass java_io_Serializable();
 	InstanceJavaClass java_lang_Cloneable();
 	InstanceJavaClass java_lang_IncompatibleClassChangeError();
+	InstanceJavaClass java_io_FileNotFoundException();
 }

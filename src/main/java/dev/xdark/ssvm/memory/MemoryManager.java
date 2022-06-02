@@ -464,6 +464,18 @@ public interface MemoryManager {
 	<C extends JavaClass> JavaValue<C> createOopForClass(C javaClass);
 
 	/**
+	 * Creates and sets new class oop.
+	 *
+	 * @param javaLangClass
+	 * 		{@code java/lang/Class} class.
+	 * @param javaClass
+	 * 		Class to create oop for.
+	 *
+	 * @return oop.
+	 */
+	<C extends JavaClass> JavaValue<C> createOopForClass(InstanceJavaClass javaLangClass, C javaClass);
+
+	/**
 	 * Returns byte order of memory.
 	 *
 	 * @return byte order of memory.

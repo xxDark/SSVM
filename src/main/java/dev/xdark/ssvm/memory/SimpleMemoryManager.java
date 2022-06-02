@@ -295,10 +295,14 @@ public final class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public <C extends JavaClass> JavaValue<C> createOopForClass(C javaClass) {
-		JavaClass jlc = vm.findBootstrapClass("java/lang/Class");
-		MemoryRef ref = allocateClassMemory(jlc, javaClass);
+		return createOopForClass(vm.getSymbols().java_lang_Class(), javaClass);
+	}
+
+	@Override
+	public <C extends JavaClass> JavaValue<C> createOopForClass(InstanceJavaClass javaLangClass, C javaClass) {
+		MemoryRef ref = allocateClassMemory(javaLangClass, javaClass);
 		Memory memory = ref.memory;
-		setClass(memory, jlc);
+		setClass(memory, javaLangClass);
 		SimpleJavaValue<C> wrapper = new SimpleJavaValue<>(memory, javaClass);
 		synchronized (this) {
 			objects.put(ref.key, wrapper);
@@ -388,7 +392,7 @@ public final class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public long getStaticOffset(JavaClass jc) {
-		JavaClass jlc = vm.findBootstrapClass("java/lang/Class");
+		JavaClass jlc = vm.getSymbols().java_lang_Class();
 		return OBJECT_HEADER_SIZE + jlc.getVirtualFieldLayout().getSize();
 	}
 

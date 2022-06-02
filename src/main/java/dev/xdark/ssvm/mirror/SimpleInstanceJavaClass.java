@@ -483,6 +483,17 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	}
 
 	@Override
+	public long getStaticFieldOffset(MemberKey field) {
+		initialize();
+		return staticFieldLayout.getFieldOffset(field);
+	}
+
+	@Override
+	public long getStaticFieldOffset(String name, String desc) {
+		return getStaticFieldOffset(new SimpleMemberKey(this, name, desc));
+	}
+
+	@Override
 	public Value getStaticValue(MemberKey field) {
 		initialize();
 
@@ -490,29 +501,9 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		if (offset == -1L) {
 			return null;
 		}
-		InstanceValue oop = this.oop;
 		MemoryManager memoryManager = vm.getMemoryManager();
 		long resultingOffset = memoryManager.getStaticOffset(this) + offset;
-		switch(field.getDesc()) {
-			case "J":
-				return LongValue.of(memoryManager.readLong(oop, resultingOffset));
-			case "D":
-				return new DoubleValue(memoryManager.readDouble(oop, resultingOffset));
-			case "I":
-				return IntValue.of(memoryManager.readInt(oop, resultingOffset));
-			case "F":
-				return new FloatValue(memoryManager.readFloat(oop, resultingOffset));
-			case "C":
-				return IntValue.of(memoryManager.readChar(oop, resultingOffset));
-			case "S":
-				return IntValue.of(memoryManager.readShort(oop, resultingOffset));
-			case "B":
-				return IntValue.of(memoryManager.readByte(oop, resultingOffset));
-			case "Z":
-				return memoryManager.readBoolean(oop, resultingOffset) ? IntValue.ONE : IntValue.ZERO;
-			default:
-				return memoryManager.readValue(oop, resultingOffset);
-		}
+		return vm.getOperations().readGenericValue(field.getDesc(), resultingOffset, oop);
 	}
 
 	@Override
@@ -521,57 +512,31 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	}
 
 	@Override
-	public boolean setFieldValue(MemberKey field, Value value) {
+	public boolean setStaticFieldValue(MemberKey field, Value value) {
 		initialize();
 		long offset = staticFieldLayout.getFieldOffset(field);
 		if (offset == -1L) {
 			return false;
 		}
-		InstanceValue oop = this.oop;
 		MemoryManager memoryManager = vm.getMemoryManager();
 		long resultingOffset = memoryManager.getStaticOffset(this) + offset;
-		switch(field.getDesc()) {
-			case "J":
-				memoryManager.writeLong(oop, resultingOffset, value.asLong());
-				return true;
-			case "D":
-				memoryManager.writeDouble(oop, resultingOffset, value.asDouble());
-				return true;
-			case "I":
-				memoryManager.writeInt(oop, resultingOffset, value.asInt());
-				return true;
-			case "F":
-				memoryManager.writeFloat(oop, resultingOffset, value.asFloat());
-				return true;
-			case "C":
-				memoryManager.writeChar(oop, resultingOffset, value.asChar());
-				return true;
-			case "S":
-				memoryManager.writeShort(oop, resultingOffset, value.asShort());
-				return true;
-			case "B":
-			case "Z":
-				memoryManager.writeByte(oop, resultingOffset, value.asByte());
-				return true;
-			default:
-				memoryManager.writeValue(oop, resultingOffset, (ObjectValue) value);
-				return true;
-		}
+		vm.getOperations().writeGenericValue(oop, field.getDesc(), value, resultingOffset);
+		return true;
 	}
 
 	@Override
-	public boolean setFieldValue(String name, String desc, Value value) {
-		return setFieldValue(new SimpleMemberKey(this, name, desc), value);
+	public boolean setStaticFieldValue(String name, String desc, Value value) {
+		return setStaticFieldValue(new SimpleMemberKey(this, name, desc), value);
 	}
 
 	@Override
-	public long getFieldOffset(String name, String desc) {
+	public long getVirtualFieldOffset(String name, String desc) {
 		initialize();
 		return vrtFieldLayout.getFieldOffset(new SimpleMemberKey(this, name, desc));
 	}
 
 	@Override
-	public long getFieldOffsetRecursively(String name, String desc) {
+	public long getVirtualFieldOffsetRecursively(String name, String desc) {
 		initialize();
 		FieldLayout layout = this.vrtFieldLayout;
 		InstanceJavaClass jc = this;
@@ -585,7 +550,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	}
 
 	@Override
-	public long getFieldOffsetRecursively(String name) {
+	public long getVirtualFieldOffsetRecursively(String name) {
 		initialize();
 		FieldLayout layout = this.vrtFieldLayout;
 		InstanceJavaClass jc = this;

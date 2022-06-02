@@ -251,19 +251,14 @@ public class JitHelper {
 		VirtualMachine vm = ctx.getVM();
 		VMHelper helper = vm.getHelper();
 		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
-		while(klass != null) {
-			Value value = klass.getStaticValue(name, desc);
-			if (value != null) {
-				return value;
-			}
-			klass = klass.getSuperClass();
-		}
-		helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError(), name);
-		return null;
+		return vm.getOperations().getStaticField(klass, name, desc);
 	}
 
 	public void getStatic(String owner, String name, String desc, ExecutionContext ctx) {
-		ctx.getStack().pushGeneric(getStaticA(owner, name, desc, ctx));
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
+		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
+		ctx.getStack().pushGeneric(vm.getOperations().getGenericStaticField(klass, name, desc));
 	}
 
 	// special intrinsic versions.
@@ -319,53 +314,48 @@ public class JitHelper {
 	}
 
 	public void putStaticA(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
-		VirtualMachine vm = ctx.getVM();
-		VMHelper helper = vm.getHelper();
-		InstanceJavaClass klass;
-		if (owner instanceof InstanceJavaClass) {
-			klass = (InstanceJavaClass) owner;
-		} else {
-			klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), (String) owner, true);
-		}
-		if (!klass.setFieldValue(name, desc, value)) {
-			helper.throwException(vm.getSymbols().java_lang_NoSuchFieldError(), name);
-		}
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		ctx.getOperations().putStaticField(klass, name, desc, (ObjectValue) value);
 	}
 
 	public void putStaticJ(long value, Object owner, String name, String desc, ExecutionContext ctx) {
-		putStaticA(LongValue.of(value), owner, name, desc, ctx);
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		ctx.getOperations().putStaticLongField(klass, name, desc, value);
 	}
 
 	public void putStaticD(double value, Object owner, String name, String desc, ExecutionContext ctx) {
-		putStaticA(new DoubleValue(value), owner, name, desc, ctx);
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		ctx.getOperations().putStaticDoubleField(klass, name, desc, value);
 	}
 
 	public void putStaticI(int value, Object owner, String name, String desc, ExecutionContext ctx) {
-		putStaticA(IntValue.of(value), owner, name, desc, ctx);
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		ctx.getOperations().putStaticIntField(klass, name, desc, value);
 	}
 
 	public void putStaticF(float value, Object owner, String name, String desc, ExecutionContext ctx) {
-		putStaticA(new FloatValue(value), owner, name, desc, ctx);
-	}
-
-	public void putStaticF(char value, Object owner, String name, String desc, ExecutionContext ctx) {
-		putStaticA(IntValue.of(value), owner, name, desc, ctx);
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		ctx.getOperations().putStaticFloatField(klass, name, desc, value);
 	}
 
 	public void putStaticS(short value, Object owner, String name, String desc, ExecutionContext ctx) {
-		putStaticA(IntValue.of(value), owner, name, desc, ctx);
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		ctx.getOperations().putStaticShortField(klass, name, desc, value);
 	}
 
 	public void putStaticC(char value, Object owner, String name, String desc, ExecutionContext ctx) {
-		putStaticA(IntValue.of(value), owner, name, desc, ctx);
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		ctx.getOperations().putStaticCharField(klass, name, desc, value);
 	}
 
 	public void putStaticB(byte value, Object owner, String name, String desc, ExecutionContext ctx) {
-		putStaticA(IntValue.of(value), owner, name, desc, ctx);
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		ctx.getOperations().putStaticByteField(klass, name, desc, value);
 	}
 
 	public void putStatic(String owner, String name, String desc, ExecutionContext ctx) {
-		putStaticA(ctx.getStack().popGeneric(), owner, name, desc, ctx);
+		InstanceJavaClass klass = getOrFindClass(owner, ctx);
+		ctx.getOperations().putStaticGenericField(klass, name, desc, ctx.getStack().popGeneric());
 	}
 
 	public Value getFieldA(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
@@ -416,7 +406,7 @@ public class JitHelper {
 
 	public void putFieldA(Value instance, Value value, Object owner, String name, String desc, ExecutionContext ctx) {
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putField((ObjectValue) instance, klass, name, desc, value);
+		ctx.getOperations().putField((ObjectValue) instance, klass, name, desc, (ObjectValue) value);
 	}
 
 	public void putFieldJ(Value instance, long value, Object owner, String name, String desc, ExecutionContext ctx) {

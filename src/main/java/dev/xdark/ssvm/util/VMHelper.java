@@ -1967,10 +1967,10 @@ public final class VMHelper {
 	 * @return field offset or {@code -1L} if not found.
 	 */
 	public long getFieldOffset(InstanceJavaClass target, InstanceJavaClass javaClass, String name, String desc) {
-		long offset = target.getFieldOffset(name, desc);
+		long offset = target.getVirtualFieldOffset(name, desc);
 		if (offset == -1L) {
 			do {
-				offset = javaClass.getFieldOffset(name, desc);
+				offset = javaClass.getVirtualFieldOffset(name, desc);
 			} while(offset == -1L && (javaClass = javaClass.getSuperClass()) != null);
 		}
 		return offset;

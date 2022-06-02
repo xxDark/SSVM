@@ -153,6 +153,30 @@ public interface InstanceJavaClass extends JavaClass {
 	JavaMethod getMethod(String name, String desc);
 
 	/**
+	 * Returns static offset of a field.
+	 *
+	 * @param field
+	 * 		Field info.
+	 *
+	 * @return static offset of a field or {@code -1L},
+	 * if field was not found.
+	 */
+	long getStaticFieldOffset(MemberKey field);
+
+	/**
+	 * Returns static offset of a field.
+	 *
+	 * @param name
+	 * 		Field name.
+	 * @param desc
+	 * 		Field desc.
+	 *
+	 * @return static offset of a field or {@code -1L},
+	 * if field was not found.
+	 */
+	long getStaticFieldOffset(String name, String desc);
+
+	/**
 	 * Returns static value of a field.
 	 *
 	 * @param field
@@ -187,7 +211,7 @@ public interface InstanceJavaClass extends JavaClass {
 	 * @return whether the value was changed or not.
 	 * This method will return {@code false} if there is no such field.
 	 */
-	boolean setFieldValue(MemberKey field, Value value);
+	boolean setStaticFieldValue(MemberKey field, Value value);
 
 	/**
 	 * Sets static value for a field.
@@ -202,7 +226,7 @@ public interface InstanceJavaClass extends JavaClass {
 	 * @return whether the value was changed or not.
 	 * This method will return {@code false} if there is no such field.
 	 */
-	boolean setFieldValue(String name, String desc, Value value);
+	boolean setStaticFieldValue(String name, String desc, Value value);
 
 	/**
 	 * Searches for field offset.
@@ -214,7 +238,7 @@ public interface InstanceJavaClass extends JavaClass {
 	 *
 	 * @return field offset or {@code -1L} if not found.
 	 */
-	long getFieldOffset(String name, String desc);
+	long getVirtualFieldOffset(String name, String desc);
 
 	/**
 	 * Searches for field offset recursively.
@@ -226,7 +250,7 @@ public interface InstanceJavaClass extends JavaClass {
 	 *
 	 * @return field offset or {@code -1L} if not found.
 	 */
-	long getFieldOffsetRecursively(String name, String desc);
+	long getVirtualFieldOffsetRecursively(String name, String desc);
 
 	/**
 	 * Searches for field offset recursively.
@@ -236,7 +260,7 @@ public interface InstanceJavaClass extends JavaClass {
 	 *
 	 * @return field offset or {@code -1L} if not found.
 	 */
-	long getFieldOffsetRecursively(String name);
+	long getVirtualFieldOffsetRecursively(String name);
 
 	/**
 	 * Checks whether virtual field exists.

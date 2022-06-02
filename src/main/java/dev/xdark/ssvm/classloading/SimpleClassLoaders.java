@@ -88,7 +88,7 @@ public class SimpleClassLoaders implements ClassLoaders {
 	public void initializeBootOop(InstanceJavaClass javaClass, InstanceJavaClass javaLangClass) {
 		VirtualMachine vm = this.vm;
 		MemoryManager memoryManager = vm.getMemoryManager();
-		JavaValue<InstanceJavaClass> oop = javaLangClass == javaClass ? memoryManager.newJavaLangClass(javaClass) : memoryManager.createOopForClass(javaClass);
+		JavaValue<InstanceJavaClass> oop = javaLangClass == javaClass ? memoryManager.newJavaLangClass(javaClass) : memoryManager.createOopForClass(javaLangClass, javaClass);
 		javaClass.setOop(oop);
 		vm.getHelper().initializeDefaultValues(oop);
 	}

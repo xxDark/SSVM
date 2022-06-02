@@ -552,26 +552,69 @@ public interface MemoryManager {
 	int arrayBaseOffset(Class<?> javaClass);
 
 	/**
-	 * Reports the index scale for elements in
-	 * the storage allocation of a given array class.
+	 * Reports the size of the type.
 	 *
 	 * @param javaClass
 	 * 		Array component class.
 	 *
-	 * @return index scale for elements in the array.
+	 * @return size of the type.
 	 */
-	int arrayIndexScale(JavaClass javaClass);
+	int sizeOfType(JavaClass javaClass);
 
 	/**
-	 * Reports the index scale for elements in
-	 * the storage allocation of a given array class.
+	 * Reports the size of the type.
 	 *
 	 * @param javaClass
 	 * 		Array component class.
 	 *
-	 * @return index scale for elements in the array.
+	 * @return size of the type.
 	 */
-	int arrayIndexScale(Class<?> javaClass);
+	int sizeOfType(Class<?> javaClass);
+
+	/**
+	 * @return Size of {@code long} type.
+	 */
+	long longSize();
+
+	/**
+	 * @return Size of {@code double} type.
+	 */
+	long doubleSize();
+
+	/**
+	 * @return Size of {@code int} type.
+	 */
+	long intSize();
+
+	/**
+	 * @return Size of {@code float} type.
+	 */
+	long floatSize();
+
+	/**
+	 * @return Size of {@code char} type.
+	 */
+	long charSize();
+
+	/**
+	 * @return Size of {@code short} type.
+	 */
+	long shortSize();
+
+	/**
+	 * @return Size of {@code byte} type.
+	 */
+	long byteSize();
+
+	/**
+	 * @return Size of {@code boolean} type.
+	 */
+	long booleanSize();
+
+	/**
+	 * @return Size of {@link Object} type.
+	 */
+	long objectSize();
 
 	/**
 	 * Returns memory block at location {@code 0}.

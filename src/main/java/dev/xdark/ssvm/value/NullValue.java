@@ -43,4 +43,14 @@ public final class NullValue extends SimpleObjectValue {
 	public JavaClass getJavaClass() {
 		return null;
 	}
+
+	@Override
+	public void monitorEnter() {
+		throw new UnsupportedOperationException("Cannot call on null");
+	}
+
+	@Override
+	public void monitorExit() {
+		throw new UnsupportedOperationException("Cannot call on null");
+	}
 }

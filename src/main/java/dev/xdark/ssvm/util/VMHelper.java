@@ -2203,11 +2203,56 @@ public final class VMHelper {
 			return findClass(loader, name, initialize);
 		} catch(VMException ex) {
 			InstanceValue oop = ex.getOop();
-			if (oop.isNull() || !vm.getSymbols().java_lang_Error().isAssignableFrom(oop.getJavaClass())) {
-				InstanceValue cnfe = newException(vm.getSymbols().java_lang_NoClassDefFoundError(), name, oop);
+			VMSymbols symbols = vm.getSymbols();
+			if (oop.isNull() || !symbols.java_lang_Error().isAssignableFrom(oop.getJavaClass())) {
+				InstanceValue cnfe = newException(symbols.java_lang_NoClassDefFoundError(), name, oop);
 				throw new VMException(cnfe);
 			}
 			throw ex;
+		}
+	}
+
+	/**
+	 * Returns the size of the descriptor.
+	 *
+	 * @param descriptor
+	 * 		Descriptor to get size for.
+	 *
+	 * @return Descriptor size.
+	 *
+	 * @throws IllegalStateException
+	 * 		If primitive descriptor is invalid.
+	 */
+	public long getDescriptorSize(String descriptor) {
+		MemoryManager memoryManager = vm.getMemoryManager();
+		if (descriptor.isEmpty()) {
+			return memoryManager.objectSize();
+		}
+		char c;
+		switch (c = descriptor.charAt(0)) {
+			case 'J':
+				return memoryManager.longSize();
+			case 'D':
+				return memoryManager.doubleSize();
+			case 'I':
+				return memoryManager.intSize();
+			case 'F':
+				return memoryManager.floatSize();
+			case 'C':
+				return memoryManager.charSize();
+			case 'S':
+				return memoryManager.shortSize();
+			case 'B':
+				return memoryManager.byteSize();
+			case 'Z':
+				return memoryManager.booleanSize();
+			case 'L':
+				return memoryManager.objectSize();
+			default:
+				if (c == '[') {
+					return memoryManager.objectSize();
+				}
+				throw new IllegalArgumentException(descriptor);
 		}
 	}
 

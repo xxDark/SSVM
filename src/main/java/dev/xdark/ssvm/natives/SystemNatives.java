@@ -60,8 +60,8 @@ public class SystemNatives {
 			JavaClass srcComponent = src.getJavaClass().getComponentType();
 			JavaClass dstComponent = dst.getJavaClass().getComponentType();
 
-			int scale = memoryManager.arrayIndexScale(srcComponent);
-			helper.checkEquals(scale, memoryManager.arrayIndexScale(dstComponent));
+			int scale = memoryManager.sizeOfType(srcComponent);
+			helper.checkEquals(scale, memoryManager.sizeOfType(dstComponent));
 
 			int start = memoryManager.arrayBaseOffset(srcComponent);
 			helper.checkEquals(start, memoryManager.arrayBaseOffset(dstComponent));

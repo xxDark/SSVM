@@ -48,7 +48,7 @@ public class ObjectNatives {
 			if (!value.isHeldByCurrentThread()) {
 				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException());
 			}
-			value.vmNotify();
+			value.monitorNotify();
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "notifyAll", "()V", ctx -> {
@@ -56,7 +56,7 @@ public class ObjectNatives {
 			if (!value.isHeldByCurrentThread()) {
 				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException());
 			}
-			value.vmNotifyAll();
+			value.monitorNotifyAll();
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "wait", "(J)V", ctx -> {
@@ -66,7 +66,7 @@ public class ObjectNatives {
 				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException());
 			}
 			try {
-				value.vmWait(locals.load(1).asLong());
+				value.monitorWait(locals.load(1).asLong());
 			} catch(InterruptedException ex) {
 				vm.getHelper().throwException(symbols.java_lang_InterruptedException());
 			}

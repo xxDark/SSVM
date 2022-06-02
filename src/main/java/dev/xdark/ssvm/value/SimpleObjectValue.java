@@ -76,17 +76,17 @@ public class SimpleObjectValue implements ObjectValue {
 	}
 
 	@Override
-	public void vmWait(long timeoutMillis) throws InterruptedException {
+	public void monitorWait(long timeoutMillis) throws InterruptedException {
 		signal.await(timeoutMillis, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
-	public void vmNotify() {
+	public void monitorNotify() {
 		signal.signal();
 	}
 
 	@Override
-	public void vmNotifyAll() {
+	public void monitorNotifyAll() {
 		signal.signalAll();
 	}
 

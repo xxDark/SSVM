@@ -24,34 +24,6 @@ public class UnsafeUtil {
 	}
 
 	/**
-	 * Returns size of the type.
-	 *
-	 * @param desc
-	 * 		Type to get size from.
-	 *
-	 * @return Size of the type.
-	 */
-	@SuppressWarnings("DuplicateBranchesInSwitch")
-	public long getSizeFor(String desc) {
-		switch(desc) {
-			case "J":
-			case "D":
-				return 8L;
-			case "I":
-			case "F":
-				return 4L;
-			case "C":
-			case "S":
-				return 2L;
-			case "B":
-			case "Z":
-				return 1L;
-			default:
-				return 8L;
-		}
-	}
-
-	/**
 	 * Returns address of an object.
 	 *
 	 * @param value

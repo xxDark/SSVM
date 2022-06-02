@@ -163,7 +163,7 @@ public final class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public ArrayValue newArray(ArrayJavaClass javaClass, int length) {
-		MemoryRef ref = allocateArrayMemory(length, arrayIndexScale(javaClass.getComponentType()));
+		MemoryRef ref = allocateArrayMemory(length, sizeOfType(javaClass.getComponentType()));
 		Memory memory = ref.memory;
 		setClass(memory, javaClass);
 		memory.getData().writeInt(ARRAY_LENGTH, length);
@@ -351,7 +351,7 @@ public final class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public int arrayIndexScale(JavaClass javaClass) {
+	public int sizeOfType(JavaClass javaClass) {
 		VMPrimitives primitives = vm.getPrimitives();
 		if (javaClass == primitives.longPrimitive() || javaClass == primitives.doublePrimitive()) {
 			return 8;
@@ -369,7 +369,7 @@ public final class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public int arrayIndexScale(Class<?> javaClass) {
+	public int sizeOfType(Class<?> javaClass) {
 		if (javaClass == long.class || javaClass == double.class) {
 			return 8;
 		}
@@ -383,6 +383,51 @@ public final class SimpleMemoryManager implements MemoryManager {
 			return 1;
 		}
 		return 8;
+	}
+
+	@Override
+	public long longSize() {
+		return 8L;
+	}
+
+	@Override
+	public long doubleSize() {
+		return 8L;
+	}
+
+	@Override
+	public long intSize() {
+		return 4L;
+	}
+
+	@Override
+	public long floatSize() {
+		return 4L;
+	}
+
+	@Override
+	public long charSize() {
+		return 2L;
+	}
+
+	@Override
+	public long shortSize() {
+		return 2L;
+	}
+
+	@Override
+	public long byteSize() {
+		return 1L;
+	}
+
+	@Override
+	public long booleanSize() {
+		return 1L;
+	}
+
+	@Override
+	public long objectSize() {
+		return 8L;
 	}
 
 	@Override

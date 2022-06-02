@@ -52,10 +52,16 @@ public class MethodAccessorNatives {
 				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 			}
 			Value values = locals.load(2);
+			Value[] args;
 			Type[] types = mn.getArgumentTypes();
-			ArrayValue passedArgs = (ArrayValue) values;
-			helper.checkEquals(passedArgs.getLength(), types.length);
-			Value[] args = Util.convertReflectionArgs(vm, declaringClass.getClassLoader(), types, passedArgs);
+			if (!values.isNull()) {
+				ArrayValue passedArgs = (ArrayValue) values;
+				helper.checkEquals(passedArgs.getLength(), types.length);
+				args = Util.convertReflectionArgs(vm, declaringClass.getClassLoader(), types, passedArgs);
+			} else {
+				helper.checkEquals(types.length, 0);
+				args = new Value[0];
+			}
 			if (!isStatic) {
 				Value[] prev = args;
 				args = new Value[args.length + 1];

@@ -135,7 +135,7 @@ public class UnsafeNatives {
 			if (component == null) {
 				vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 			} else {
-				ctx.setResult(IntValue.of(vm.getMemoryManager().arrayIndexScale(component)));
+				ctx.setResult(IntValue.of(vm.getMemoryManager().sizeOfType(component)));
 			}
 			return Result.ABORT;
 		});

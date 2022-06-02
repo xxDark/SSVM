@@ -600,12 +600,13 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		Map<MemberKey, JavaField> map = new HashMap<>();
 		long offset = 0L;
 		int slot = getVirtualFieldCount();
+		VMHelper helper = vm.getHelper();
 		List<FieldNode> fields = node.fields;
 		for (FieldNode field : fields) {
 			if ((field.access & Opcodes.ACC_STATIC) != 0) {
 				String desc = field.desc;
 				map.put(new SimpleMemberKey(this, field.name, desc), new JavaField(this, field, slot++, offset));
-				offset += UnsafeUtil.getSizeFor(desc);
+				offset += helper.getDescriptorSize(desc);
 			}
 		}
 		return new FieldLayout(Collections.unmodifiableMap(map), offset);
@@ -625,6 +626,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 			deque.addFirst(javaClass);
 			javaClass = javaClass.getSuperclassWithoutResolving();
 		}
+		VMHelper helper = vm.getHelper();
 		int slot = 0;
 		while((javaClass = deque.pollFirst()) != null) {
 			List<FieldNode> fields = javaClass.getNode().fields;
@@ -632,7 +634,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 				if ((field.access & Opcodes.ACC_STATIC) == 0) {
 					String desc = field.desc;
 					map.put(new SimpleMemberKey(javaClass, field.name, desc), new JavaField(javaClass, field, slot++, offset));
-					offset += UnsafeUtil.getSizeFor(desc);
+					offset += helper.getDescriptorSize(desc);
 				}
 			}
 		}

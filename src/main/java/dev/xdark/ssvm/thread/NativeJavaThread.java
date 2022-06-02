@@ -73,7 +73,7 @@ public class NativeJavaThread extends Thread {
 			oop.setInt("threadStatus", ThreadState.JVMTI_THREAD_STATE_TERMINATED);
 			oop.monitorEnter();
 			try {
-				oop.vmNotifyAll();
+				oop.monitorNotifyAll();
 			} finally {
 				oop.monitorExit();
 			}

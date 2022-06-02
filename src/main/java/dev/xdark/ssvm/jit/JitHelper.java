@@ -707,6 +707,10 @@ public class JitHelper {
 	}
 
 	public Value checkCast(Value value, String desc, ExecutionContext ctx) {
+		// It seems like JVM can pass descriptors instead of internal names?
+		if (!desc.isEmpty() && desc.charAt(0) == 'L' && desc.charAt(desc.length() - 1) == ';') {
+			desc = desc.substring(1, desc.length() - 1);
+		}
 		JavaClass type = ctx.getHelper().tryFindClass(ctx.getOwner().getClassLoader(), desc, true);
 		return checkCast(value, type, ctx);
 	}

@@ -625,12 +625,67 @@ public class JitHelper {
 		return instance;
 	}
 
-	public Value allocatePrimitiveArray(int length, int operand, ExecutionContext ctx) {
-		Stack stack = ctx.getStack();
+	public Value allocateLongArray(int length, ExecutionContext ctx) {
 		VirtualMachine vm = ctx.getVM();
-		vm.getHelper().checkArrayLength(length);
-		VMPrimitives primitives = vm.getPrimitives();
 		VMHelper helper = vm.getHelper();
+		helper.checkArrayLength(length);
+		return helper.newArray(vm.getPrimitives().longPrimitive(), length);
+	}
+
+	public Value allocateDoubleArray(int length, ExecutionContext ctx) {
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
+		helper.checkArrayLength(length);
+		return helper.newArray(vm.getPrimitives().doublePrimitive(), length);
+	}
+
+	public Value allocateIntArray(int length, ExecutionContext ctx) {
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
+		helper.checkArrayLength(length);
+		return helper.newArray(vm.getPrimitives().intPrimitive(), length);
+	}
+
+	public Value allocateFloatArray(int length, ExecutionContext ctx) {
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
+		helper.checkArrayLength(length);
+		return helper.newArray(vm.getPrimitives().floatPrimitive(), length);
+	}
+
+	public Value allocateCharArray(int length, ExecutionContext ctx) {
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
+		helper.checkArrayLength(length);
+		return helper.newArray(vm.getPrimitives().charPrimitive(), length);
+	}
+
+	public Value allocateShortArray(int length, ExecutionContext ctx) {
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
+		helper.checkArrayLength(length);
+		return helper.newArray(vm.getPrimitives().shortPrimitive(), length);
+	}
+
+	public Value allocateByteArray(int length, ExecutionContext ctx) {
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
+		helper.checkArrayLength(length);
+		return helper.newArray(vm.getPrimitives().bytePrimitive(), length);
+	}
+
+	public Value allocateBooleanArray(int length, ExecutionContext ctx) {
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
+		helper.checkArrayLength(length);
+		return helper.newArray(vm.getPrimitives().booleanPrimitive(), length);
+	}
+
+	public Value allocatePrimitiveArray(int length, int operand, ExecutionContext ctx) {
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
+		helper.checkArrayLength(length);
+		VMPrimitives primitives = vm.getPrimitives();
 		ArrayValue array;
 		switch(operand) {
 			case T_LONG:

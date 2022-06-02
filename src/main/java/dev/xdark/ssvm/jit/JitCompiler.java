@@ -148,7 +148,14 @@ public final class JitCompiler {
 	private static final Access NEW_INSTANCE = staticCall(JIT_HELPER, "allocateInstance", VALUE, J_OBJECT, CTX);
 	private static final Access NEW_INSTANCE_SLOW = staticCall(JIT_HELPER, "allocateInstance", VALUE, J_STRING, CTX);
 
-	private static final Access NEW_PRIMITIVE_ARRAY = staticCall(JIT_HELPER, "allocatePrimitiveArray", VALUE, J_INT, J_INT, CTX);
+	private static final Access NEW_PRIMITIVE_ARRAY_LONG = staticCall(JIT_HELPER, "allocateLongArray", VALUE, J_INT, CTX);
+	private static final Access NEW_PRIMITIVE_ARRAY_DOUBLE = staticCall(JIT_HELPER, "allocateDoubleArray", VALUE, J_INT, CTX);
+	private static final Access NEW_PRIMITIVE_ARRAY_INT = staticCall(JIT_HELPER, "allocateIntArray", VALUE, J_INT, CTX);
+	private static final Access NEW_PRIMITIVE_ARRAY_FLOAT = staticCall(JIT_HELPER, "allocateFloatArray", VALUE, J_INT, CTX);
+	private static final Access NEW_PRIMITIVE_ARRAY_CHAR = staticCall(JIT_HELPER, "allocateCharArray", VALUE, J_INT, CTX);
+	private static final Access NEW_PRIMITIVE_ARRAY_SHORT = staticCall(JIT_HELPER, "allocateShortArray", VALUE, J_INT, CTX);
+	private static final Access NEW_PRIMITIVE_ARRAY_BYTE = staticCall(JIT_HELPER, "allocateByteArray", VALUE, J_INT, CTX);
+	private static final Access NEW_PRIMITIVE_ARRAY_BOOLEAN = staticCall(JIT_HELPER, "allocateBooleanArray", VALUE, J_INT, CTX);
 
 	private static final Access NEW_INSTANCE_ARRAY = staticCall(JIT_HELPER, "allocateValueArray", VALUE, J_INT, J_OBJECT, CTX);
 	private static final Access NEW_INSTANCE_ARRAY_SLOW = staticCall(JIT_HELPER, "allocateValueArray", VALUE, J_INT, J_STRING, CTX);
@@ -673,9 +680,8 @@ public final class JitCompiler {
 					newInstance(((TypeInsnNode) insn).desc);
 					break;
 				case NEWARRAY:
-					jit.visitLdcInsn(((IntInsnNode) insn).operand);
 					loadCtx();
-					NEW_PRIMITIVE_ARRAY.emit(jit);
+					newPrimitiveArray(((IntInsnNode) insn).operand);
 					break;
 				case ANEWARRAY:
 					newArray(((TypeInsnNode) insn).desc);
@@ -1302,6 +1308,38 @@ public final class JitCompiler {
 			jit.visitLdcInsn(type);
 			loadCtx();
 			NEW_INSTANCE_SLOW.emit(jit);
+		}
+	}
+
+	private void newPrimitiveArray(int type) {
+		MethodVisitor jit = this.jit;
+		switch (type) {
+			case T_LONG:
+				NEW_PRIMITIVE_ARRAY_LONG.emit(jit);
+				break;
+			case T_DOUBLE:
+				NEW_PRIMITIVE_ARRAY_DOUBLE.emit(jit);
+				break;
+			case T_INT:
+				NEW_PRIMITIVE_ARRAY_INT.emit(jit);
+				break;
+			case T_FLOAT:
+				NEW_PRIMITIVE_ARRAY_FLOAT.emit(jit);
+				break;
+			case T_CHAR:
+				NEW_PRIMITIVE_ARRAY_CHAR.emit(jit);
+				break;
+			case T_SHORT:
+				NEW_PRIMITIVE_ARRAY_SHORT.emit(jit);
+				break;
+			case T_BYTE:
+				NEW_PRIMITIVE_ARRAY_BYTE.emit(jit);
+				break;
+			case T_BOOLEAN:
+				NEW_PRIMITIVE_ARRAY_BOOLEAN.emit(jit);
+				break;
+			default:
+				throw new IllegalStateException("Unknown array type " + type);
 		}
 	}
 

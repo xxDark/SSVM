@@ -1312,7 +1312,6 @@ public final class VMHelper {
 		InstanceJavaClass javaClass = classLoaders.constructClass(loader, reader, node);
 		classLoaders.setClassOop(javaClass);
 		InstanceValue oop = javaClass.getOop();
-		initializeDefaultValues(oop);
 		setClassFields(oop, loader, protectionDomain);
 		if (!loader.isNull()) {
 			ObjectValue classes = ((InstanceValue) loader).getValue("classes", "Ljava/util/Vector;");

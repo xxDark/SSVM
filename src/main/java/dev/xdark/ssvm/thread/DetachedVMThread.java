@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.thread;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.InstanceValue;
 
@@ -39,8 +40,8 @@ public class DetachedVMThread extends BaseVMThread {
 			VirtualMachine vm = this.vm;
 			InstanceJavaClass klass = vm.getSymbols().java_lang_Thread();
 			klass.initialize();
-			oop = vm.getMemoryManager().newInstance(klass);
-			vm.getHelper().initializeDefaultValues(oop);
+			MemoryManager memoryManager = vm.getMemoryManager();
+			oop = memoryManager.newInstance(klass);
 			oop.setInt("threadStatus", ThreadState.JVMTI_THREAD_STATE_ALIVE | ThreadState.JVMTI_THREAD_STATE_RUNNABLE);
 			oop.setInt("priority", Thread.NORM_PRIORITY);
 			// Though we set the group, detached threads

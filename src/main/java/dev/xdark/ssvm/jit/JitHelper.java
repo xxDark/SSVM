@@ -605,24 +605,21 @@ public class JitHelper {
 		}
 	}
 
-	public Value allocateInstance(Object type, ExecutionContext ctx) {
+	public Value allocateInstance(InstanceJavaClass klass, ExecutionContext ctx) {
 		VirtualMachine vm = ctx.getVM();
 		// TODO checks like in UnsafeNatives
-		InstanceJavaClass klass = (InstanceJavaClass) type;
+		MemoryManager memoryManager = vm.getMemoryManager();
 		klass.initialize();
-		InstanceValue instance = vm.getMemoryManager().newInstance(klass);
-		vm.getHelper().initializeDefaultValues(instance);
-		return instance;
+		return memoryManager.newInstance(klass);
+	}
+
+	// For JIT to avoid checkcasts in generated code, do not use
+	public Value allocateInstance(Object type, ExecutionContext ctx) {
+		return allocateInstance((InstanceJavaClass) type, ctx);
 	}
 
 	public Value allocateInstance(String desc, ExecutionContext ctx) {
-		VirtualMachine vm = ctx.getVM();
-		VMHelper helper = vm.getHelper();
-		JavaClass type = helper.tryFindClass(ctx.getOwner().getClassLoader(), desc, true);
-		// TODO checks like in UnsafeNatives
-		InstanceValue instance = vm.getMemoryManager().newInstance((InstanceJavaClass) type);
-		helper.initializeDefaultValues(instance);
-		return instance;
+		return allocateInstance(getOrFindClass(desc, ctx), ctx);
 	}
 
 	public Value allocateLongArray(int length, ExecutionContext ctx) {
@@ -942,6 +939,7 @@ public class JitHelper {
 		InstanceJavaClass klass;
 		if (owner instanceof InstanceJavaClass) {
 			klass = (InstanceJavaClass) owner;
+			klass.initialize();
 		} else {
 			klass = (InstanceJavaClass) ctx.getHelper().tryFindClass(ctx.getOwner().getClassLoader(), (String) owner, true);
 		}

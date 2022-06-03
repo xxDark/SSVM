@@ -507,8 +507,8 @@ public class UnsafeNatives {
 				helper.throwException(vm.getSymbols().java_lang_InstantiationException(), klass.getName());
 			}
 			klass.initialize();
-			InstanceValue instance = vm.getMemoryManager().newInstance((InstanceJavaClass) klass);
-			helper.initializeDefaultValues(instance);
+			MemoryManager memoryManager = vm.getMemoryManager();
+			InstanceValue instance = memoryManager.newInstance((InstanceJavaClass) klass);
 			ctx.setResult(instance);
 			return Result.ABORT;
 		});

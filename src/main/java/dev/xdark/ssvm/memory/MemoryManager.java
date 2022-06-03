@@ -665,4 +665,13 @@ public interface MemoryManager {
 	 * 		Block to claim.
 	 */
 	void claim(Memory memory);
+
+	/**
+	 * Writes default memory data into
+	 * the object.
+	 *
+	 * @param value
+	 * 		Object to write data into.
+	 */
+	void writeDefaults(ObjectValue value);
 }

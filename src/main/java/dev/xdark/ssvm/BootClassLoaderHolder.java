@@ -60,7 +60,6 @@ final class BootClassLoaderHolder {
 				jc = classLoaders.constructClass(NullValue.INSTANCE, result.getClassReader(), result.getNode());
 				classLoaders.setClassOop(jc);
 				data.linkClass(jc);
-				vm.getHelper().initializeDefaultValues(jc.getOop());
 			}
 			res = jc;
 		}

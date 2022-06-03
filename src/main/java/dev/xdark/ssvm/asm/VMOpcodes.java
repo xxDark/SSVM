@@ -12,10 +12,10 @@ public class VMOpcodes {
 
 	public static final int DYNAMIC_CALL = 257;
 	public static final int LDC = DYNAMIC_CALL + 1;
-	/*
+	// Reserved for future optimizations
 	public static final int INVOKEVIRTUAL = LDC + 1;
 	public static final int INVOKESPECIAL = INVOKEVIRTUAL + 1;
 	public static final int INVOKESTATIC = INVOKESPECIAL + 1;
 	public static final int INVOKEINTERFACE = INVOKESTATIC + 1;
-	*/
+	public static final int NEW = INVOKEINTERFACE + 1;
 }

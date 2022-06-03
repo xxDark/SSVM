@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.mirror;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.Value;
 import me.coley.cafedude.classfile.ClassFile;

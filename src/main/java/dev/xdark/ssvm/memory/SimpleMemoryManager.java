@@ -166,8 +166,8 @@ public final class SimpleMemoryManager implements MemoryManager {
 		MemoryRef ref = allocateArrayMemory(length, sizeOfType(javaClass.getComponentType()));
 		Memory memory = ref.memory;
 		setClass(memory, javaClass);
-		memory.getData().writeInt(ARRAY_LENGTH, length);
 		SimpleArrayValue value = new SimpleArrayValue(memory);
+		memory.getData().writeInt(ARRAY_LENGTH, length);
 		synchronized (this) {
 			objects.put(ref.key, value);
 		}
@@ -472,6 +472,16 @@ public final class SimpleMemoryManager implements MemoryManager {
 		Memory newMemory = copy.memory;
 		memory.getData().transferTo(newMemory.getData());
 		memoryBlocks.put(copy.key, copy);
+	}
+
+	@Override
+	public void writeDefaults(ObjectValue value) {
+		if (value.isNull()) {
+			throw new PanicException("Segfault");
+		}
+		Memory memory = value.getMemory();
+		MemoryData data = memory.getData();
+		data.set(ARRAY_LENGTH, data.length() - ARRAY_LENGTH, (byte) 0);
 	}
 
 	private synchronized MemoryRef newMemoryBlock(long size, boolean isDirect) {

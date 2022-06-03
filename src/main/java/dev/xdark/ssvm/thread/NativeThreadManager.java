@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.thread;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.InstanceValue;
 
@@ -98,8 +99,8 @@ public class NativeThreadManager implements ThreadManager {
 			}
 			InstanceJavaClass klass = vm.getSymbols().java_lang_Thread();
 			klass.initialize();
-			instance = vm.getMemoryManager().newInstance(klass);
-			vm.getHelper().initializeDefaultValues(instance);
+			MemoryManager memoryManager = vm.getMemoryManager();
+			instance = memoryManager.newInstance(klass);
 		}
 		NativeVMThread vmThread = createMainThread(instance, thread);
 		vmThreads.put(instance, vmThread);

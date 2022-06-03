@@ -90,7 +90,6 @@ public class SimpleClassLoaders implements ClassLoaders {
 		MemoryManager memoryManager = vm.getMemoryManager();
 		JavaValue<InstanceJavaClass> oop = javaLangClass == javaClass ? memoryManager.newJavaLangClass(javaClass) : memoryManager.createOopForClass(javaLangClass, javaClass);
 		javaClass.setOop(oop);
-		vm.getHelper().initializeDefaultValues(oop);
 	}
 
 	@Override

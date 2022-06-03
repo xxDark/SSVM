@@ -10,6 +10,7 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.symbol.VMPrimitives;
+import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.util.InvokeDynamicLinker;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
@@ -761,11 +762,10 @@ public class JitHelper {
 		throwException(ctx.getStack().pop(), ctx);
 	}
 
-	public Value checkCast(Value value, Object type, ExecutionContext ctx) {
-		VirtualMachine vm = ctx.getVM();
+	public Value checkCast(Value value, JavaClass jc, ExecutionContext ctx) {
 		if (!value.isNull()) {
+			VirtualMachine vm = ctx.getVM();
 			JavaClass against = ((ObjectValue) value).getJavaClass();
-			JavaClass jc = (JavaClass) type;
 			if (!jc.isAssignableFrom(against)) {
 				vm.getHelper().throwException(vm.getSymbols().java_lang_ClassCastException(), against.getName() + " cannot be cast to " + jc.getName());
 			}
@@ -773,11 +773,13 @@ public class JitHelper {
 		return value;
 	}
 
+	// For JIT to avoid checkcasts in generated code, do not use
+	public Value checkCast(Value value, Object type, ExecutionContext ctx) {
+		return checkCast(value, (JavaClass) type, ctx);
+	}
+
 	public Value checkCast(Value value, String desc, ExecutionContext ctx) {
-		// It seems like JVM can pass descriptors instead of internal names?
-		if (!desc.isEmpty() && desc.charAt(0) == 'L' && desc.charAt(desc.length() - 1) == ';') {
-			desc = desc.substring(1, desc.length() - 1);
-		}
+		desc = AsmUtil.normalizeDescriptor(desc);
 		JavaClass type = ctx.getHelper().tryFindClass(ctx.getOwner().getClassLoader(), desc, true);
 		return checkCast(value, type, ctx);
 	}
@@ -882,7 +884,7 @@ public class JitHelper {
 		VMHelper helper = ctx.getHelper();
 		Object[] classes = (Object[]) $classes;
 		for (int i = 0, j = classes.length; i < j; i++) {
-			Object $type = classes[0];
+			Object $type = classes[i];
 			InstanceJavaClass type;
 			if ($type instanceof InstanceJavaClass) {
 				type = (InstanceJavaClass) $type;

@@ -27,6 +27,24 @@ public class AsmUtil {
 	private final String[] INSN_NAMES;
 
 	/**
+	 * Normalizes descriptors.
+	 * {@code Ljava/lang/Class; => java/lang/Class}.
+	 * {@code [Ljava/lang/String; => identity}.
+	 *
+	 * @param descriptor
+	 * 		Descriptor to normalize.
+	 *
+	 * @return Normalized descriptor.
+	 */
+	public String normalizeDescriptor(String descriptor) {
+		// It seems like JVM can pass descriptors instead of internal names?
+		if (!descriptor.isEmpty() && descriptor.charAt(0) == 'L' && descriptor.charAt(descriptor.length() - 1) == ';') {
+			return descriptor.substring(1, descriptor.length() - 1);
+		}
+		return descriptor;
+	}
+
+	/**
 	 * Returns maximum amount of local variable slots.
 	 *
 	 * @param mn
@@ -83,7 +101,7 @@ public class AsmUtil {
 	 * 		Type descriptor.
 	 */
 	public Object getDefaultValue(String desc) {
-		switch(desc) {
+		switch (desc) {
 			case "J":
 				return DEFAULT_LONG;
 			case "D":
@@ -107,7 +125,7 @@ public class AsmUtil {
 		try {
 			new InsnNode(0);
 			INSN_INDEX = unsafe.objectFieldOffset(AbstractInsnNode.class.getDeclaredField("index"));
-		} catch(NoSuchFieldException ex) {
+		} catch (NoSuchFieldException ex) {
 			throw new ExceptionInInitializerError(ex);
 		}
 		String[] insnNames = new String[Opcodes.IFNONNULL + 1];
@@ -121,7 +139,7 @@ public class AsmUtil {
 					insnNames[value] = f.getName();
 				}
 			}
-		} catch(IllegalAccessException ex) {
+		} catch (IllegalAccessException ex) {
 			throw new ExceptionInInitializerError(ex);
 		}
 		INSN_NAMES = insnNames;

@@ -225,6 +225,9 @@ public final class JitCompiler {
 
 	private static final Access DYNAMIC_CALL = staticCall(JIT_HELPER, "invokeDynamic", VALUE, VALUES, J_OBJECT, J_INT, CTX);
 
+	private static final Access MONITOR_ENTER = staticCall(JIT_HELPER, "monitorEnter", J_VOID, VALUE, CTX);
+	private static final Access MONITOR_EXIT = staticCall(JIT_HELPER, "monitorExit", J_VOID, VALUE, CTX);
+
 	private static final Access GET_TOP = getStatic(TOP, "INSTANCE", TOP);
 
 	private static final int CTX_SLOT = 1;
@@ -249,19 +252,7 @@ public final class JitCompiler {
 	 * {@code false} otherwise.
 	 */
 	public static boolean isCompilable(JavaMethod jm) {
-		MethodNode node = jm.getNode();
-		InsnList list = node.instructions;
-		if (list.size() == 0) {
-			return false;
-		}
-		for (AbstractInsnNode insn : list) {
-			insn = unmask(insn);
-			int opc = insn.getOpcode();
-			if (opc == MONITORENTER || opc == MONITOREXIT) {
-				return false;
-			}
-		}
-		return true;
+		return jm.getNode().instructions.size() != 0;
 	}
 
 	/**
@@ -610,10 +601,8 @@ public final class JitCompiler {
 				case IF_ICMPLE:
 				case IF_ACMPEQ:
 				case IF_ACMPNE:
-					jit.visitJumpInsn(opcode, labels.get(((JumpInsnNode) insn).label));
-					break;
 				case GOTO:
-					jit.visitJumpInsn(GOTO, labels.get(((JumpInsnNode) insn).label));
+					jit.visitJumpInsn(opcode, labels.get(((JumpInsnNode) insn).label));
 					break;
 				case JSR:
 				case RET:
@@ -702,8 +691,13 @@ public final class JitCompiler {
 					instanceofCheck(((TypeInsnNode) insn).desc);
 					break;
 				case MONITORENTER:
+					loadCtx();
+					MONITOR_ENTER.emit(jit);
+					break;
 				case MONITOREXIT:
-					throw new IllegalStateException("JIT does not support MonitorEnter/MonitorExit");
+					loadCtx();
+					MONITOR_EXIT.emit(jit);
+					break;
 				case MULTIANEWARRAY:
 					MultiANewArrayInsnNode array = (MultiANewArrayInsnNode) insn;
 					jit.visitLdcInsn(array.desc);

@@ -102,6 +102,7 @@ public class JitTest {
 	private static void jitCall(long a, int b, String c, long d, int e) {
 		jitCallInner(a, b, c, d, e);
 		testThrowInInvokeDynamic();
+		testThrow();
 	}
 
 	private static void jitCallInner(long a, int b, String c, long d, int e) {
@@ -121,6 +122,17 @@ public class JitTest {
 			throw new IllegalStateException();
 		} catch (IllegalArgumentException ignored) {
 		}
+	}
+
+	private static void testThrow() {
+		try {
+			throwInner();
+		} catch (IllegalStateException | IllegalArgumentException ignored) {
+		}
+	}
+
+	private static void throwInner() {
+		throw new IllegalArgumentException();
 	}
 
 	private static final class JitClassLoader extends ClassLoader

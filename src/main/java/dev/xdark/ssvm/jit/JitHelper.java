@@ -314,49 +314,56 @@ public class JitHelper {
 		return memoryManager.readValue(((InstanceJavaClass) owner).getOop(), offset);
 	}
 
-	public void putStaticA(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
-		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putStaticField(klass, name, desc, (ObjectValue) value);
+	public void getStaticA(Value value, String owner, String name, String desc, ExecutionContext ctx) {
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
+		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
+		vm.getOperations().putStaticGenericField(klass, name, desc, value);
 	}
 
-	public void putStaticJ(long value, Object owner, String name, ExecutionContext ctx) {
-		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putStaticLongField(klass, name, value);
+	public void putStaticA(Value value, Object owner, long offset, ExecutionContext ctx) {
+		MemoryManager memoryManager = ctx.getVM().getMemoryManager();
+		memoryManager.writeValue(((InstanceJavaClass) owner).getOop(), offset, (ObjectValue) value);
 	}
 
-	public void putStaticD(double value, Object owner, String name, ExecutionContext ctx) {
-		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putStaticDoubleField(klass, name, value);
+	public void putStaticJ(long value, Object owner, long offset, ExecutionContext ctx) {
+		MemoryManager memoryManager = ctx.getVM().getMemoryManager();
+		memoryManager.writeLong(((InstanceJavaClass) owner).getOop(), offset, value);
 	}
 
-	public void putStaticI(int value, Object owner, String name, ExecutionContext ctx) {
-		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putStaticIntField(klass, name, value);
+	public void putStaticD(double value, Object owner, long offset, ExecutionContext ctx) {
+		MemoryManager memoryManager = ctx.getVM().getMemoryManager();
+		memoryManager.writeDouble(((InstanceJavaClass) owner).getOop(), offset, value);
 	}
 
-	public void putStaticF(float value, Object owner, String name, ExecutionContext ctx) {
-		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putStaticFloatField(klass, name, value);
+	public void putStaticI(int value, Object owner, long offset, ExecutionContext ctx) {
+		MemoryManager memoryManager = ctx.getVM().getMemoryManager();
+		memoryManager.writeInt(((InstanceJavaClass) owner).getOop(), offset, value);
 	}
 
-	public void putStaticS(short value, Object owner, String name, ExecutionContext ctx) {
-		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putStaticShortField(klass, name, value);
+	public void putStaticF(float value, Object owner, long offset, ExecutionContext ctx) {
+		MemoryManager memoryManager = ctx.getVM().getMemoryManager();
+		memoryManager.writeFloat(((InstanceJavaClass) owner).getOop(), offset, value);
 	}
 
-	public void putStaticC(char value, Object owner, String name, ExecutionContext ctx) {
-		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putStaticCharField(klass, name, value);
+	public void putStaticS(short value, Object owner, long offset, ExecutionContext ctx) {
+		MemoryManager memoryManager = ctx.getVM().getMemoryManager();
+		memoryManager.writeShort(((InstanceJavaClass) owner).getOop(), offset, value);
 	}
 
-	public void putStaticB(byte value, Object owner, String name, ExecutionContext ctx) {
-		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putStaticByteField(klass, name, value);
+	public void putStaticC(char value, Object owner, long offset, ExecutionContext ctx) {
+		MemoryManager memoryManager = ctx.getVM().getMemoryManager();
+		memoryManager.writeChar(((InstanceJavaClass) owner).getOop(), offset, value);
 	}
 
-	public void putStaticZ(boolean value, Object owner, String name, ExecutionContext ctx) {
-		InstanceJavaClass klass = getOrFindClass(owner, ctx);
-		ctx.getOperations().putStaticBooleanField(klass, name, value);
+	public void putStaticB(byte value, Object owner, long offset, ExecutionContext ctx) {
+		MemoryManager memoryManager = ctx.getVM().getMemoryManager();
+		memoryManager.writeByte(((InstanceJavaClass) owner).getOop(), offset, value);
+	}
+
+	public void putStaticZ(boolean value, Object owner, long offset, ExecutionContext ctx) {
+		MemoryManager memoryManager = ctx.getVM().getMemoryManager();
+		memoryManager.writeBoolean(((InstanceJavaClass) owner).getOop(), offset, value);
 	}
 
 	public void putStatic(String owner, String name, String desc, ExecutionContext ctx) {
@@ -409,6 +416,51 @@ public class JitHelper {
 		return ctx.getOperations().getBooleanField((ObjectValue) value, klass, name);
 	}
 
+	public Value getFieldA(Value value, long offset, ExecutionContext ctx) {
+		ObjectValue o = nonNull(value, ctx);
+		return ctx.getVM().getMemoryManager().readValue(o, offset);
+	}
+
+	public long getFieldJ(Value value, long offset, ExecutionContext ctx) {
+		ObjectValue o = nonNull(value, ctx);
+		return ctx.getVM().getMemoryManager().readLong(o, offset);
+	}
+
+	public double getFieldD(Value value, long offset, ExecutionContext ctx) {
+		ObjectValue o = nonNull(value, ctx);
+		return ctx.getVM().getMemoryManager().readDouble(o, offset);
+	}
+
+	public int getFieldI(Value value, long offset, ExecutionContext ctx) {
+		ObjectValue o = nonNull(value, ctx);
+		return ctx.getVM().getMemoryManager().readInt(o, offset);
+	}
+
+	public float getFieldF(Value value, long offset, ExecutionContext ctx) {
+		ObjectValue o = nonNull(value, ctx);
+		return ctx.getVM().getMemoryManager().readFloat(o, offset);
+	}
+
+	public char getFieldC(Value value, long offset, ExecutionContext ctx) {
+		ObjectValue o = nonNull(value, ctx);
+		return ctx.getVM().getMemoryManager().readChar(o, offset);
+	}
+
+	public short getFieldS(Value value, long offset, ExecutionContext ctx) {
+		ObjectValue o = nonNull(value, ctx);
+		return ctx.getVM().getMemoryManager().readShort(o, offset);
+	}
+
+	public byte getFieldB(Value value, long offset, ExecutionContext ctx) {
+		ObjectValue o = nonNull(value, ctx);
+		return ctx.getVM().getMemoryManager().readByte(o, offset);
+	}
+
+	public boolean getFieldZ(Value value, long offset, ExecutionContext ctx) {
+		ObjectValue o = nonNull(value, ctx);
+		return ctx.getVM().getMemoryManager().readBoolean(o, offset);
+	}
+
 	public Value getFieldGeneric(String owner, String name, String desc, ExecutionContext ctx) {
 		ObjectValue value = ctx.getStack().pop();
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
@@ -458,6 +510,51 @@ public class JitHelper {
 	public void putFieldZ(Value instance, boolean value, Object owner, String name, ExecutionContext ctx) {
 		InstanceJavaClass klass = getOrFindClass(owner, ctx);
 		ctx.getOperations().putBooleanField((ObjectValue) instance, klass, name, value);
+	}
+
+	public void putFieldA(Value instance, Value value, long offset, ExecutionContext ctx) {
+		ObjectValue o = nonNull(instance, ctx);
+		ctx.getVM().getMemoryManager().writeValue(o, offset, (ObjectValue) value);
+	}
+
+	public void putFieldJ(Value instance, long value, long offset, ExecutionContext ctx) {
+		ObjectValue o = nonNull(instance, ctx);
+		ctx.getVM().getMemoryManager().writeLong(o, offset, value);
+	}
+
+	public void putFieldD(Value instance, double value, long offset, ExecutionContext ctx) {
+		ObjectValue o = nonNull(instance, ctx);
+		ctx.getVM().getMemoryManager().writeDouble(o, offset, value);
+	}
+
+	public void putFieldI(Value instance, int value, long offset, ExecutionContext ctx) {
+		ObjectValue o = nonNull(instance, ctx);
+		ctx.getVM().getMemoryManager().writeInt(o, offset, value);
+	}
+
+	public void putFieldF(Value instance, float value, long offset, ExecutionContext ctx) {
+		ObjectValue o = nonNull(instance, ctx);
+		ctx.getVM().getMemoryManager().writeFloat(o, offset, value);
+	}
+
+	public void putFieldC(Value instance, char value, long offset, ExecutionContext ctx) {
+		ObjectValue o = nonNull(instance, ctx);
+		ctx.getVM().getMemoryManager().writeChar(o, offset, value);
+	}
+
+	public void putFieldS(Value instance, short value, long offset, ExecutionContext ctx) {
+		ObjectValue o = nonNull(instance, ctx);
+		ctx.getVM().getMemoryManager().writeShort(o, offset, value);
+	}
+
+	public void putFieldB(Value instance, byte value, long offset, ExecutionContext ctx) {
+		ObjectValue o = nonNull(instance, ctx);
+		ctx.getVM().getMemoryManager().writeByte(o, offset, value);
+	}
+
+	public void putFieldZ(Value instance, boolean value, long offset, ExecutionContext ctx) {
+		ObjectValue o = nonNull(instance, ctx);
+		ctx.getVM().getMemoryManager().writeBoolean(o, offset, value);
 	}
 
 	public void putFieldGeneric(String owner, String name, String desc, ExecutionContext ctx) {
@@ -946,6 +1043,10 @@ public class JitHelper {
 			klass = (InstanceJavaClass) ctx.getHelper().tryFindClass(ctx.getOwner().getClassLoader(), (String) owner, true);
 		}
 		return klass;
+	}
+
+	private static ObjectValue nonNull(Value value, ExecutionContext ctx) {
+		return ctx.getHelper().checkNotNull(value);
 	}
 
 	@RequiredArgsConstructor(access = AccessLevel.PACKAGE)

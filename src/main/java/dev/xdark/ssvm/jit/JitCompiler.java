@@ -5,6 +5,7 @@ import dev.xdark.ssvm.asm.DelegatingInsnNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.VMException;
+import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaField;
@@ -174,16 +175,17 @@ public final class JitCompiler {
 	private static final Access NEW_MULTI_ARRAY = staticCall(JIT_HELPER, "multiNewArray", VALUE, J_STRING, J_INT, CTX);
 	private static final Access CLASS_LDC = staticCall(JIT_HELPER, "classLdc", VALUE, J_STRING, CTX);
 	private static final Access METHOD_LDC = staticCall(JIT_HELPER, "methodLdc", VALUE, J_STRING, CTX);
-
-	private static final Access PUT_STATIC_LONG = staticCall(JIT_HELPER, "putStaticJ", J_VOID, J_LONG, J_OBJECT, J_STRING, CTX);
-	private static final Access PUT_STATIC_DOUBLE = staticCall(JIT_HELPER, "putStaticD", J_VOID, J_DOUBLE, J_OBJECT, J_STRING, CTX);
-	private static final Access PUT_STATIC_INT = staticCall(JIT_HELPER, "putStaticI", J_VOID, J_INT, J_OBJECT, J_STRING, CTX);
-	private static final Access PUT_STATIC_FLOAT = staticCall(JIT_HELPER, "putStaticF", J_VOID, J_FLOAT, J_OBJECT, J_STRING, CTX);
-	private static final Access PUT_STATIC_CHAR = staticCall(JIT_HELPER, "putStaticC", J_VOID, J_CHAR, J_OBJECT, J_STRING, CTX);
-	private static final Access PUT_STATIC_SHORT = staticCall(JIT_HELPER, "putStaticS", J_VOID, J_SHORT, J_OBJECT, J_STRING, CTX);
-	private static final Access PUT_STATIC_BYTE = staticCall(JIT_HELPER, "putStaticB", J_VOID, J_BYTE, J_OBJECT, J_STRING, CTX);
-	private static final Access PUT_STATIC_BOOLEAN = staticCall(JIT_HELPER, "putStaticZ", J_VOID, J_BOOLEAN, J_OBJECT, J_STRING, CTX);
-	private static final Access PUT_STATIC_VALUE = staticCall(JIT_HELPER, "putStaticA", J_VOID, VALUE, J_OBJECT, J_STRING, J_STRING, CTX);
+	
+	private static final Access PUT_STATIC_LONG = staticCall(JIT_HELPER, "putStaticJ", J_VOID, J_LONG, J_OBJECT, J_LONG, CTX);
+	private static final Access PUT_STATIC_DOUBLE = staticCall(JIT_HELPER, "putStaticD", J_VOID, J_DOUBLE, J_OBJECT, J_LONG, CTX);
+	private static final Access PUT_STATIC_INT = staticCall(JIT_HELPER, "putStaticI", J_VOID, J_INT, J_OBJECT, J_LONG, CTX);
+	private static final Access PUT_STATIC_FLOAT = staticCall(JIT_HELPER, "putStaticF", J_VOID, J_FLOAT, J_OBJECT, J_LONG, CTX);
+	private static final Access PUT_STATIC_CHAR = staticCall(JIT_HELPER, "putStaticC", J_VOID, J_CHAR, J_OBJECT, J_LONG, CTX);
+	private static final Access PUT_STATIC_SHORT = staticCall(JIT_HELPER, "putStaticS", J_VOID, J_SHORT, J_OBJECT, J_LONG, CTX);
+	private static final Access PUT_STATIC_BYTE = staticCall(JIT_HELPER, "putStaticB", J_VOID, J_BYTE, J_OBJECT, J_LONG, CTX);
+	private static final Access PUT_STATIC_VALUE = staticCall(JIT_HELPER, "putStaticA", J_VOID, VALUE, J_OBJECT, J_LONG, CTX);
+	private static final Access PUT_STATIC_FAIL = staticCall(JIT_HELPER, "putStaticFail", J_VOID, J_OBJECT, J_OBJECT, CTX);
+	private static final Access PUT_STATIC_SLOW = staticCall(JIT_HELPER, "putStaticA", J_VOID, VALUE, J_STRING, J_STRING, J_STRING, CTX);
 
 	private static final Access GET_STATIC_LONG = staticCall(JIT_HELPER, "getStaticJ", J_LONG, J_OBJECT, J_LONG, CTX);
 	private static final Access GET_STATIC_DOUBLE = staticCall(JIT_HELPER, "getStaticD", J_DOUBLE, J_OBJECT, J_LONG, CTX);
@@ -206,6 +208,16 @@ public final class JitCompiler {
 	private static final Access GET_FIELD_BOOLEAN = staticCall(JIT_HELPER, "getFieldZ", J_BOOLEAN, VALUE, J_OBJECT, J_STRING, CTX);
 	private static final Access GET_FIELD_VALUE = staticCall(JIT_HELPER, "getFieldA", VALUE, VALUE, J_OBJECT, J_STRING, J_STRING, CTX);
 
+	private static final Access GET_FIELD_LONG_DIRECT = staticCall(JIT_HELPER, "getFieldJ", J_LONG, VALUE, J_LONG, CTX);
+	private static final Access GET_FIELD_DOUBLE_DIRECT = staticCall(JIT_HELPER, "getFieldD", J_DOUBLE, VALUE, J_LONG, CTX);
+	private static final Access GET_FIELD_INT_DIRECT = staticCall(JIT_HELPER, "getFieldI", J_INT, VALUE, J_LONG, CTX);
+	private static final Access GET_FIELD_FLOAT_DIRECT = staticCall(JIT_HELPER, "getFieldF", J_FLOAT, VALUE, J_LONG, CTX);
+	private static final Access GET_FIELD_CHAR_DIRECT = staticCall(JIT_HELPER, "getFieldC", J_CHAR, VALUE, J_LONG, CTX);
+	private static final Access GET_FIELD_SHORT_DIRECT = staticCall(JIT_HELPER, "getFieldS", J_SHORT, VALUE, J_LONG, CTX);
+	private static final Access GET_FIELD_BYTE_DIRECT = staticCall(JIT_HELPER, "getFieldB", J_BYTE, VALUE, J_LONG, CTX);
+	private static final Access GET_FIELD_BOOLEAN_DIRECT = staticCall(JIT_HELPER, "getFieldZ", J_BOOLEAN, VALUE, J_LONG, CTX);
+	private static final Access GET_FIELD_VALUE_DIRECT = staticCall(JIT_HELPER, "getFieldA", VALUE, VALUE, J_LONG, CTX);
+
 	private static final Access PUT_FIELD_LONG = staticCall(JIT_HELPER, "putFieldJ", J_VOID, VALUE, J_LONG, J_OBJECT, J_STRING, CTX);
 	private static final Access PUT_FIELD_DOUBLE = staticCall(JIT_HELPER, "putFieldD", J_VOID, VALUE, J_DOUBLE, J_OBJECT, J_STRING, CTX);
 	private static final Access PUT_FIELD_INT = staticCall(JIT_HELPER, "putFieldI", J_VOID, VALUE, J_INT, J_OBJECT, J_STRING, CTX);
@@ -215,6 +227,18 @@ public final class JitCompiler {
 	private static final Access PUT_FIELD_BYTE = staticCall(JIT_HELPER, "putFieldB", J_VOID, VALUE, J_BYTE, J_OBJECT, J_STRING, CTX);
 	private static final Access PUT_FIELD_BOOLEAN = staticCall(JIT_HELPER, "putFieldZ", J_VOID, VALUE, J_BOOLEAN, J_OBJECT, J_STRING, CTX);
 	private static final Access PUT_FIELD_VALUE = staticCall(JIT_HELPER, "putFieldA", J_VOID, VALUE, VALUE, J_OBJECT, J_STRING, J_STRING, CTX);
+
+
+	private static final Access PUT_FIELD_LONG_DIRECT = staticCall(JIT_HELPER, "putFieldJ", J_VOID, VALUE, J_LONG, J_LONG, CTX);
+	private static final Access PUT_FIELD_DOUBLE_DIRECT = staticCall(JIT_HELPER, "putFieldD", J_VOID, VALUE, J_DOUBLE, J_LONG, CTX);
+	private static final Access PUT_FIELD_INT_DIRECT = staticCall(JIT_HELPER, "putFieldI", J_VOID, VALUE, J_INT, J_LONG, CTX);
+	private static final Access PUT_FIELD_FLOAT_DIRECT = staticCall(JIT_HELPER, "putFieldF", J_VOID, VALUE, J_FLOAT, J_LONG, CTX);
+	private static final Access PUT_FIELD_CHAR_DIRECT = staticCall(JIT_HELPER, "putFieldC", J_VOID, VALUE, J_CHAR, J_LONG, CTX);
+	private static final Access PUT_FIELD_SHORT_DIRECT = staticCall(JIT_HELPER, "putFieldS", J_VOID, VALUE, J_SHORT, J_LONG, CTX);
+	private static final Access PUT_FIELD_BYTE_DIRECT = staticCall(JIT_HELPER, "putFieldB", J_VOID, VALUE, J_BYTE, J_LONG, CTX);
+	private static final Access PUT_FIELD_BOOLEAN_DIRECT = staticCall(JIT_HELPER, "putFieldZ", J_VOID, VALUE, J_BOOLEAN, J_LONG, CTX);
+	private static final Access PUT_FIELD_VALUE_DIRECT = staticCall(JIT_HELPER, "putFieldA", J_VOID, VALUE, VALUE, J_LONG, CTX);
+
 
 	private static final Access INVOKE_FAIL = staticCall(JIT_HELPER, "invokeFail", VALUE, J_OBJECT, J_OBJECT, CTX);
 	private static final Access INVOKE_STATIC_INTRINSIC = staticCall(JIT_HELPER, "invokeStatic", VALUE, VALUES, J_OBJECT, J_OBJECT, CTX);
@@ -911,42 +935,40 @@ public final class JitCompiler {
 				InstanceJavaClass jc = (InstanceJavaClass) vm.getHelper().findClass(owner.getClassLoader(), node.owner, false);
 				String name = node.name;
 				String desc = node.desc;
-				while(jc != null) {
-					JavaField field = jc.getStaticField(name, desc);
-					if (field != null) {
-						long offset = vm.getMemoryManager().getStaticOffset(jc) + field.getOffset();
-						loadCompilerConstant(jc);
-						jit.visitLdcInsn(offset);
-						switch(field.getType().getSort()) {
-							case Type.LONG:
-								access = GET_STATIC_LONG;
-								break;
-							case Type.DOUBLE:
-								access = GET_STATIC_DOUBLE;
-								break;
-							case Type.INT:
-								access = GET_STATIC_INT;
-								break;
-							case Type.FLOAT:
-								access = GET_STATIC_FLOAT;
-								break;
-							case Type.CHAR:
-								access = GET_STATIC_CHAR;
-								break;
-							case Type.SHORT:
-								access = GET_STATIC_SHORT;
-								break;
-							case Type.BYTE:
-							case Type.BOOLEAN:
-								access = GET_STATIC_BYTE;
-								break;
-							default:
-								access = GET_STATIC_VALUE;
-								break;
-						}
-						break lookup;
+				JavaField field = jc.getStaticFieldRecursively(name, desc);
+				if (field != null) {
+					jc = field.getOwner();
+					long offset = vm.getMemoryManager().getStaticOffset(jc) + field.getOffset();
+					loadCompilerConstant(jc);
+					jit.visitLdcInsn(offset);
+					switch(field.getType().getSort()) {
+						case Type.LONG:
+							access = GET_STATIC_LONG;
+							break;
+						case Type.DOUBLE:
+							access = GET_STATIC_DOUBLE;
+							break;
+						case Type.INT:
+							access = GET_STATIC_INT;
+							break;
+						case Type.FLOAT:
+							access = GET_STATIC_FLOAT;
+							break;
+						case Type.CHAR:
+							access = GET_STATIC_CHAR;
+							break;
+						case Type.SHORT:
+							access = GET_STATIC_SHORT;
+							break;
+						case Type.BYTE:
+						case Type.BOOLEAN:
+							access = GET_STATIC_BYTE;
+							break;
+						default:
+							access = GET_STATIC_VALUE;
+							break;
 					}
-					jc = jc.getSuperclassWithoutResolving();
+					break lookup;
 				}
 				// Field was not found.
 				jit.visitInsn(ACONST_NULL);
@@ -975,43 +997,122 @@ public final class JitCompiler {
 		toJava(Type.getType(node.desc));
 	}
 
-	private void putStatic(FieldInsnNode node) {
-		int sort = Type.getType(node.desc).getSort();
-		pushField(node, sort >= Type.ARRAY);
+	private void putStaticSlow(FieldInsnNode node) {
+		toVM(Type.getType(node.desc));
+		pushField(node);
 		loadCtx();
+		PUT_STATIC_SLOW.emit(jit);
+	}
+
+	private void putStatic(FieldInsnNode node) {
 		MethodVisitor jit = this.jit;
-		switch(sort) {
-			case Type.LONG:
-				PUT_STATIC_LONG.emit(jit);
-				break;
-			case Type.DOUBLE:
-				PUT_STATIC_DOUBLE.emit(jit);
-				break;
-			case Type.INT:
-				PUT_STATIC_INT.emit(jit);
-				break;
-			case Type.FLOAT:
-				PUT_STATIC_FLOAT.emit(jit);
-				break;
-			case Type.CHAR:
-				PUT_STATIC_CHAR.emit(jit);
-				break;
-			case Type.SHORT:
-				PUT_STATIC_SHORT.emit(jit);
-				break;
-			case Type.BYTE:
-				PUT_STATIC_BYTE.emit(jit);
-				break;
-			case Type.BOOLEAN:
-				PUT_STATIC_BOOLEAN.emit(jit);
-				break;
-			default:
-				PUT_STATIC_VALUE.emit(jit);
+		Access access;
+		lookup:
+		{
+			try {
+				JavaMethod target = this.target;
+				InstanceJavaClass owner = target.getOwner();
+				VirtualMachine vm = owner.getVM();
+				InstanceJavaClass jc = (InstanceJavaClass) vm.getHelper().findClass(owner.getClassLoader(), node.owner, false);
+				String name = node.name;
+				String desc = node.desc;
+				JavaField field = jc.getStaticFieldRecursively(name, desc);
+				if (field != null) {
+					jc = field.getOwner();
+					long offset = vm.getMemoryManager().getStaticOffset(jc) + field.getOffset();
+					loadCompilerConstant(jc);
+					jit.visitLdcInsn(offset);
+					switch(field.getType().getSort()) {
+						case Type.LONG:
+							access = PUT_STATIC_LONG;
+							break;
+						case Type.DOUBLE:
+							access = PUT_STATIC_DOUBLE;
+							break;
+						case Type.INT:
+							access = PUT_STATIC_INT;
+							break;
+						case Type.FLOAT:
+							access = PUT_STATIC_FLOAT;
+							break;
+						case Type.CHAR:
+							access = PUT_STATIC_CHAR;
+							break;
+						case Type.SHORT:
+							access = PUT_STATIC_SHORT;
+							break;
+						case Type.BYTE:
+						case Type.BOOLEAN:
+							access = PUT_STATIC_BYTE;
+							break;
+						default:
+							access = PUT_STATIC_VALUE;
+							break;
+					}
+					break lookup;
+				}
+				// Field was not found.
+				jit.visitInsn(ACONST_NULL);
+				jit.visitLdcInsn(node.name);
+				access = PUT_STATIC_FAIL;
+			} catch(VMException ex) {
+				// Class was probably not found.
+				// We need to use fallback path
+				// because the class may be defined right in the code
+				// we are JITting.
+				putStaticSlow(node);
+				return;
+			}
+		}
+		loadCtx();
+		access.emit(jit);
+		if (access == PUT_STATIC_FAIL) {
+			dummyValue(Type.getType(node.desc));
 		}
 	}
 
 	private void getField(FieldInsnNode node) {
 		int sort = Type.getType(node.desc).getSort();
+		Object jc = tryLoadClass(node.owner);
+		if (jc instanceof InstanceJavaClass) {
+			InstanceJavaClass klass = (InstanceJavaClass) jc;
+			JavaField field = klass.getVirtualField(node.name, node.desc);
+			if (field != null) {
+				long offset = getMemoryManager().valueBaseOffset(klass) + field.getOffset();
+				MethodVisitor jit = this.jit;
+				jit.visitLdcInsn(offset);
+				loadCtx();
+				switch(sort) {
+					case Type.LONG:
+						GET_FIELD_LONG_DIRECT.emit(jit);
+						break;
+					case Type.DOUBLE:
+						GET_FIELD_DOUBLE_DIRECT.emit(jit);
+						break;
+					case Type.INT:
+						GET_FIELD_INT_DIRECT.emit(jit);
+						break;
+					case Type.FLOAT:
+						GET_FIELD_FLOAT_DIRECT.emit(jit);
+						break;
+					case Type.CHAR:
+						GET_FIELD_CHAR_DIRECT.emit(jit);
+						break;
+					case Type.SHORT:
+						GET_FIELD_SHORT_DIRECT.emit(jit);
+						break;
+					case Type.BYTE:
+						GET_FIELD_BYTE_DIRECT.emit(jit);
+						break;
+					case Type.BOOLEAN:
+						GET_FIELD_BOOLEAN_DIRECT.emit(jit);
+						break;
+					default:
+						GET_FIELD_VALUE_DIRECT.emit(jit);
+				}
+				return;
+			}
+		}
 		pushField(node, sort >= Type.ARRAY);
 		loadCtx();
 		MethodVisitor jit = this.jit;
@@ -1047,6 +1148,46 @@ public final class JitCompiler {
 
 	private void putField(FieldInsnNode node) {
 		int sort = Type.getType(node.desc).getSort();
+		Object jc = tryLoadClass(node.owner);
+		if (jc instanceof InstanceJavaClass) {
+			InstanceJavaClass klass = (InstanceJavaClass) jc;
+			JavaField field = klass.getVirtualField(node.name, node.desc);
+			if (field != null) {
+				long offset = getMemoryManager().valueBaseOffset(klass) + field.getOffset();
+				MethodVisitor jit = this.jit;
+				jit.visitLdcInsn(offset);
+				loadCtx();
+				switch(sort) {
+					case Type.LONG:
+						PUT_FIELD_LONG_DIRECT.emit(jit);
+						break;
+					case Type.DOUBLE:
+						PUT_FIELD_DOUBLE_DIRECT.emit(jit);
+						break;
+					case Type.INT:
+						PUT_FIELD_INT_DIRECT.emit(jit);
+						break;
+					case Type.FLOAT:
+						PUT_FIELD_FLOAT_DIRECT.emit(jit);
+						break;
+					case Type.CHAR:
+						PUT_FIELD_CHAR_DIRECT.emit(jit);
+						break;
+					case Type.SHORT:
+						PUT_FIELD_SHORT_DIRECT.emit(jit);
+						break;
+					case Type.BYTE:
+						PUT_FIELD_BYTE_DIRECT.emit(jit);
+						break;
+					case Type.BOOLEAN:
+						PUT_FIELD_BOOLEAN_DIRECT.emit(jit);
+						break;
+					default:
+						PUT_FIELD_VALUE_DIRECT.emit(jit);
+				}
+				return;
+			}
+		}
 		pushField(node, sort >= Type.ARRAY);
 		loadCtx();
 		MethodVisitor jit = this.jit;
@@ -1092,7 +1233,6 @@ public final class JitCompiler {
 			InstanceJavaClass jc = (InstanceJavaClass) vm.getHelper().findClass(owner.getClassLoader(), node.owner, false);
 			String name = node.name;
 			JavaMethod mn = vm.getLinkResolver().resolveStaticMethod(jc, name, desc);
-			// JavaMethod mn = jc.getStaticMethodRecursively(name, desc);
 			collectStaticCallArgs(desc);
 			loadCompilerConstant(jc);
 			loadCompilerConstant(mn);
@@ -1397,6 +1537,14 @@ public final class JitCompiler {
 		} catch(VMException ex) {
 			return type;
 		}
+	}
+
+	private MemoryManager getMemoryManager() {
+		return target.getOwner().getVM().getMemoryManager();
+	}
+
+	private VMHelper getHelper() {
+		return target.getOwner().getVM().getHelper();
 	}
 
 	private void collectArgs(int extra, String desc) {

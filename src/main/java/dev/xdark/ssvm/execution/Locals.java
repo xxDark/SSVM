@@ -42,6 +42,14 @@ public interface Locals {
 	<V extends Value> V load(int index);
 
 	/**
+	 * Copies contents into this locals.
+	 *
+	 * @param locals
+	 * 		Content to copy.
+	 */
+	void copyFrom(Value[] locals);
+
+	/**
 	 * @return underlying content of this LVT.
 	 */
 	Value[] getTable();

@@ -2259,7 +2259,8 @@ public final class VMHelper {
 	}
 
 	private static void contextPrepare(ExecutionContext ctx, Value[] stack, Value[] locals) {
-		Locals lvt = ctx.getLocals();
+		ctx.getLocals().copyFrom(locals);
+		/*
 		for (int i = 0, j = locals.length; i < j; i++) {
 			Value arg = locals[i];
 			Objects.requireNonNull(arg, "Null argument");
@@ -2270,9 +2271,10 @@ public final class VMHelper {
 				}
 			}
 		}
+		*/
 		Stack $stack = ctx.getStack();
 		for (Value value : stack) {
-			$stack.pushGeneric(value);
+			$stack.pushRaw(value);
 		}
 	}
 

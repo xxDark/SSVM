@@ -3,7 +3,6 @@ package dev.xdark.ssvm.util;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import lombok.experimental.UtilityClass;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnNode;
 import sun.misc.Unsafe;
@@ -55,14 +54,7 @@ public class AsmUtil {
 	public int getMaxLocals(JavaMethod mn) {
 		int access = mn.getAccess();
 		if ((access & Opcodes.ACC_NATIVE) != 0 || (access & Opcodes.ACC_ABSTRACT) != 0) {
-			int max = 0;
-			if ((access & Opcodes.ACC_STATIC) == 0) {
-				max++;
-			}
-			for (Type type : mn.getArgumentTypes()) {
-				max += type.getSize();
-			}
-			return max;
+			return mn.getMaxArgs();
 		}
 		return mn.getNode().maxLocals;
 	}

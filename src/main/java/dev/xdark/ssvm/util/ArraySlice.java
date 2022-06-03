@@ -70,7 +70,20 @@ public class ArraySlice<V> {
 		return new ArraySlice<>(array, map(fromIndex), toIndex + this.fromIndex);
 	}
 
-	protected int map(int index) {
+	/**
+	 * @return raw array.
+	 */
+	public V[] getArray() {
+		return array;
+	}
+
+	/**
+	 * @param index
+	 * 		Index to map.
+	 *
+	 * @return new index.
+	 */
+	public int map(int index) {
 		if (index < 0) {
 			throw new IndexOutOfBoundsException();
 		}

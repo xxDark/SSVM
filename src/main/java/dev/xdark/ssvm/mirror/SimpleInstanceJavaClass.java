@@ -334,6 +334,12 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 
 	@Override
 	public FieldLayout getVirtualFieldLayout() {
+		FieldLayout vrtFieldLayout = this.vrtFieldLayout;
+		// Build class layout
+		// VM might've set it already, do not override.
+		if (vrtFieldLayout == null) {
+			return this.vrtFieldLayout = createVirtualFieldLayout();
+		}
 		return vrtFieldLayout;
 	}
 

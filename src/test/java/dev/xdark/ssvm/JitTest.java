@@ -9,7 +9,11 @@ import dev.xdark.ssvm.jit.JitInstaller;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.value.*;
+import dev.xdark.ssvm.value.IntValue;
+import dev.xdark.ssvm.value.LongValue;
+import dev.xdark.ssvm.value.NullValue;
+import dev.xdark.ssvm.value.TopValue;
+import dev.xdark.ssvm.value.Value;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.Type;
 
@@ -65,6 +69,9 @@ public class JitTest {
 		JitClassLoader loader = new JitClassLoader();
 		try {
 			for (JavaMethod toCompile : jc.getStaticMethodLayout().getAll()) {
+				if ("testJit".equals(toCompile.getName())) {
+					continue;
+				}
 				JitClass compiled = JitCompiler.compile(toCompile, 3);
 				JitInstaller.install(toCompile, loader, compiled);
 			}
@@ -73,13 +80,13 @@ public class JitTest {
 		}
 		try {
 			helper.invokeStatic(jc, m, new Value[0], new Value[]{
-				LongValue.of(a),
-				TopValue.INSTANCE,
-				IntValue.of(b),
-				helper.newUtf8(c),
-				LongValue.of(d),
-				TopValue.INSTANCE,
-				IntValue.of(e)
+					LongValue.of(a),
+					TopValue.INSTANCE,
+					IntValue.of(b),
+					helper.newUtf8(c),
+					LongValue.of(d),
+					TopValue.INSTANCE,
+					IntValue.of(e)
 			});
 		} catch (VMException ex) {
 			helper.invokeVirtual("printStackTrace", "()V", new Value[0], new Value[]{ex.getOop()});

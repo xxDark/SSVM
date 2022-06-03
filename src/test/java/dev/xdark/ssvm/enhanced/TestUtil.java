@@ -6,8 +6,6 @@ import dev.xdark.ssvm.fs.FileDescriptorManager;
 import dev.xdark.ssvm.fs.HostFileDescriptorManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
-import dev.xdark.ssvm.thread.NativeThreadManager;
-import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.Value;
@@ -88,11 +86,6 @@ public class TestUtil {
 			@Override
 			protected FileDescriptorManager createFileDescriptorManager() {
 				return new HostFileDescriptorManager();
-			}
-
-			@Override
-			protected ThreadManager createThreadManager() {
-				return new NativeThreadManager(this);
 			}
 		};
 	}

@@ -4,7 +4,6 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.memory.MemoryManager;
-import dev.xdark.ssvm.util.UnsafeUtil;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.InstanceValue;
@@ -39,7 +38,8 @@ import java.util.stream.Stream;
 
 public class SimpleInstanceJavaClass implements InstanceJavaClass {
 
-	private static final ClassFileReader READER = new ClassFileReader();
+	// Need to make this TLC because cafedude stores the stream it is parsing
+	private static final ThreadLocal<ClassFileReader> READER_TLC = ThreadLocal.withInitial(ClassFileReader::new);
 	private static final String POLYMORPHIC_DESC = "([Ljava/lang/Object;)Ljava/lang/Object;";
 	private static final Predicate<JavaField> NON_HIDDEN_FIELD = nonHidden(JavaField::getAccess);
 	private static final Predicate<JavaMethod> NON_HIDDEN_METHOD = nonHidden(JavaMethod::getAccess);
@@ -766,7 +766,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		ClassFile rawClassFile = this.rawClassFile;
 		if (rawClassFile == null) {
 			try {
-				return this.rawClassFile = READER.read(classReader.b);
+				return this.rawClassFile = READER_TLC.get().read(classReader.b);
 			} catch(InvalidClassException ex) {
 				// Should not happen.
 				// unless??

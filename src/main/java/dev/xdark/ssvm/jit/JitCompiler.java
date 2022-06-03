@@ -1128,7 +1128,6 @@ public final class JitCompiler {
 		pushMethod(node);
 		loadCtx();
 		INVOKE_STATIC_SLOW.emit(jit);
-		toJava(Type.getReturnType(desc));
 	}
 
 	private void invokeSpecial(MethodInsnNode node) {
@@ -1171,7 +1170,6 @@ public final class JitCompiler {
 		pushMethod(node);
 		loadCtx();
 		INVOKE_SPECIAL_SLOW.emit(jit);
-		toJava(Type.getReturnType(desc));
 	}
 
 	private void invokeVirtual(MethodInsnNode node) {

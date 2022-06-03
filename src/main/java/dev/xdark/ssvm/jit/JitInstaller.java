@@ -1,7 +1,6 @@
 package dev.xdark.ssvm.jit;
 
 import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.UnsafeUtil;
@@ -10,7 +9,6 @@ import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
 import java.util.List;
-import java.util.function.Consumer;
 
 /**
  * Installs "JIT" compiled code.
@@ -45,10 +43,10 @@ public class JitInstaller {
 			Unsafe u = UnsafeUtil.get();
 			u.putObject(u.staticFieldBase(field), u.staticFieldOffset(field), constants.toArray());
 		}
-		Consumer<ExecutionContext> cons = (Consumer<ExecutionContext>) c.getConstructor().newInstance();
+		JitInvoker cons = (JitInvoker) c.getConstructor().newInstance();
 		VirtualMachine vm = method.getOwner().getVM();
 		vm.getInterface().setInvoker(method, ctx -> {
-			cons.accept(ctx);
+			cons.invoke(ctx);
 			return Result.ABORT;
 		});
 	}

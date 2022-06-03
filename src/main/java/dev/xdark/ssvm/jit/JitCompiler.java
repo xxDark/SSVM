@@ -70,6 +70,10 @@ import static org.objectweb.asm.Opcodes.*;
 public final class JitCompiler {
 
 	private static final AtomicInteger CLASS_ID = new AtomicInteger();
+	private static final ClassType JIT_INVOKER = ClassType.of(JitInvoker.class);
+	private static final ClassType CTX = ClassType.of(ExecutionContext.class);
+	private static final String INVOKE_SIGNATURE = "(" + CTX.desc + ")V";
+
 	private static final ClassType J_VOID = ClassType.of(void.class);
 	private static final ClassType J_LONG = ClassType.of(long.class);
 	private static final ClassType J_INT = ClassType.of(int.class);
@@ -82,7 +86,6 @@ public final class JitCompiler {
 	private static final ClassType J_OBJECT = ClassType.of(Object.class);
 	private static final ClassType J_STRING = ClassType.of(String.class);
 
-	private static final ClassType CTX = ClassType.of(ExecutionContext.class);
 	private static final ClassType LOCALS = ClassType.of(Locals.class);
 	private static final ClassType VALUE = ClassType.of(Value.class);
 	private static final ClassType NULL = ClassType.of(NullValue.class);
@@ -268,15 +271,15 @@ public final class JitCompiler {
 	public static JitClass compile(JavaMethod jm, int flags) {
 		ClassWriter writer = new ClassWriter(flags);
 		String className = "dev/xdark/ssvm/jit/JitCode" + CLASS_ID.getAndIncrement();
-		writer.visit(V1_8, ACC_PUBLIC | ACC_FINAL, className, null, "java/lang/Object", new String[]{"java/util/function/Consumer"});
+		writer.visit(V1_8, ACC_PUBLIC | ACC_FINAL, className, null, JIT_INVOKER.internalName, null);
 		MethodVisitor init = writer.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
 		init.visitCode();
 		init.visitVarInsn(ALOAD, 0);
-		init.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
+		init.visitMethodInsn(INVOKESPECIAL, JIT_INVOKER.internalName, "<init>", "()V", false);
 		init.visitInsn(RETURN);
 		init.visitEnd();
 		init.visitMaxs(1, 1);
-		MethodVisitor jit = writer.visitMethod(ACC_PUBLIC, "accept", "(Ljava/lang/Object;)V", null, null);
+		MethodVisitor jit = writer.visitMethod(ACC_PUBLIC, "invoke", INVOKE_SIGNATURE, null, null);
 		jit.visitCode();
 		JitCompiler compiler = new JitCompiler(className, jm, writer, jit, new LinkedHashMap<>(), CTX_SLOT);
 		compiler.compileInner();
@@ -300,10 +303,6 @@ public final class JitCompiler {
 
 	private void compileInner() {
 		MethodVisitor jit = this.jit;
-		// Setup locals.
-		loadCtx();
-		cast(CTX);
-		jit.visitVarInsn(ASTORE, ctxIndex);
 		// Load locals.
 		loadCtx();
 		GET_LOCALS.emit(jit);

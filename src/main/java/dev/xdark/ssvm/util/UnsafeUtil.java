@@ -16,6 +16,7 @@ public class UnsafeUtil {
 	private final Unsafe UNSAFE;
 	private final int ADDRESS_SIZE;
 	private final int ARRAY_OBJECT_BASE_OFFSET;
+	public final int ARRAY_BYTE_BASE_OFFSET;
 
 	/**
 	 * @return unsafe instance.
@@ -82,6 +83,7 @@ public class UnsafeUtil {
 			}
 			ADDRESS_SIZE = unsafe.addressSize() >> 2;;
 			ARRAY_OBJECT_BASE_OFFSET = unsafe.arrayBaseOffset(Object[].class);
+			ARRAY_BYTE_BASE_OFFSET = unsafe.arrayBaseOffset(byte[].class);
 			UNSAFE = unsafe;
 		} catch(IllegalAccessException ex) {
 			throw new ExceptionInInitializerError(ex);

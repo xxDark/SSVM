@@ -999,16 +999,17 @@ public class JitHelper {
 	public Value invokeDynamic(Value[] args, Object constants, int index, ExecutionContext ctx) {
 		Object[] arr = (Object[]) constants;
 		Object operand = arr[index];
+		InvokeDynamicLinker invokeDynamicLinker = ctx.getInvokeDynamicLinker();
 		DynamicLinkResult result;
 		if (operand instanceof InvokeDynamicInsnNode) {
 			InvokeDynamicInsnNode insn = (InvokeDynamicInsnNode) operand;
-			InstanceValue linked = InvokeDynamicLinker.linkCall(insn, ctx);
+			InstanceValue linked = invokeDynamicLinker.linkCall(insn, ctx.getOwner());
 			result = new DynamicLinkResult(linked, insn.desc);
 			arr[index] = result;
 		} else {
 			result = (DynamicLinkResult) operand;
 		}
-		return InvokeDynamicLinker.dynamicCall(args, result.desc, result.handle, ctx);
+		return invokeDynamicLinker.dynamicCall(args, result.desc, result.handle);
 	}
 
 	private static JavaMethod resolveStaticMethod(String owner, String name, String desc, ExecutionContext ctx) {

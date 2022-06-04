@@ -5,6 +5,7 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.util.InvokeDynamicLinker;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -48,6 +49,13 @@ public interface ExecutionContext {
 	 */
 	default VMOperations getOperations() {
 		return getVM().getOperations();
+	}
+
+	/**
+	 * @return invokedynamic linker.
+	 */
+	default InvokeDynamicLinker getInvokeDynamicLinker() {
+		return getVM().getInvokeDynamicLinker();
 	}
 
 	/**

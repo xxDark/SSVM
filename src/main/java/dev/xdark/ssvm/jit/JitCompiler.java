@@ -1076,7 +1076,12 @@ public final class JitCompiler {
 		Object jc = tryLoadClass(node.owner);
 		if (jc instanceof InstanceJavaClass) {
 			InstanceJavaClass klass = (InstanceJavaClass) jc;
-			JavaField field = klass.getVirtualField(node.name, node.desc);
+			JavaField field;
+			if ((klass.getModifiers() & ACC_FINAL) != 0) {
+				field = klass.getVirtualFieldRecursively(node.name, node.desc);
+			} else {
+				field = klass.getVirtualField(node.name, node.desc);
+			}
 			if (field != null) {
 				long offset = getMemoryManager().valueBaseOffset(klass) + field.getOffset();
 				MethodVisitor jit = this.jit;
@@ -1151,7 +1156,12 @@ public final class JitCompiler {
 		Object jc = tryLoadClass(node.owner);
 		if (jc instanceof InstanceJavaClass) {
 			InstanceJavaClass klass = (InstanceJavaClass) jc;
-			JavaField field = klass.getVirtualField(node.name, node.desc);
+			JavaField field;
+			if ((klass.getModifiers() & ACC_FINAL) != 0) {
+				field = klass.getVirtualFieldRecursively(node.name, node.desc);
+			} else {
+				field = klass.getVirtualField(node.name, node.desc);
+			}
 			if (field != null) {
 				long offset = getMemoryManager().valueBaseOffset(klass) + field.getOffset();
 				MethodVisitor jit = this.jit;

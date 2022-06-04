@@ -39,6 +39,7 @@ import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.thread.VMThread;
 import dev.xdark.ssvm.tz.SimpleTimeManager;
 import dev.xdark.ssvm.tz.TimeManager;
+import dev.xdark.ssvm.util.InvokeDynamicLinker;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.InstanceValue;
@@ -84,6 +85,7 @@ public class VirtualMachine {
 	private final ExecutionEngine executionEngine;
 	private final VMOperations operations;
 	private final LinkResolver linkResolver;
+	private final InvokeDynamicLinker invokeDynamicLinker;
 	private volatile InstanceValue systemThreadGroup;
 	private volatile InstanceValue mainThreadGroup;
 
@@ -111,6 +113,7 @@ public class VirtualMachine {
 		executionEngine = createExecutionEngine();
 		operations = new VMOperations(this);
 		linkResolver = new LinkResolver(this);
+		invokeDynamicLinker = new InvokeDynamicLinker(this);
 
 		(properties = new Properties()).putAll(System.getProperties());
 		env = new HashMap<>(System.getenv());
@@ -360,6 +363,15 @@ public class VirtualMachine {
 	 */
 	public LinkResolver getLinkResolver() {
 		return linkResolver;
+	}
+
+	/**
+	 * Returns invokedynamic linker.
+	 *
+	 * @return invokedynamic linker.
+	 */
+	public InvokeDynamicLinker getInvokeDynamicLinker() {
+		return invokeDynamicLinker;
 	}
 
 	/**

@@ -26,7 +26,7 @@ public final class DynamicCallProcessor implements InstructionProcessor<LinkedDy
 		while (descriptorSize-- != 0) {
 			locals[--x] = stack.pop();
 		}
-		Value invoked = InvokeDynamicLinker.dynamicCall(locals, delegate.desc, insn.getMethodHandle(), ctx);
+		Value invoked = ctx.getInvokeDynamicLinker().dynamicCall(locals, delegate.desc, insn.getMethodHandle());
 		if (!invoked.isVoid()) {
 			stack.pushGeneric(invoked);
 		}

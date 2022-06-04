@@ -4,11 +4,8 @@ import dev.xdark.ssvm.NativeJava;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
-import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.Locals;
-import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaField;
@@ -22,6 +19,7 @@ import org.objectweb.asm.Type;
 import java.util.Arrays;
 
 import static org.objectweb.asm.Opcodes.*;
+import static dev.xdark.ssvm.util.InvokeDynamicLinker.*;
 
 /**
  * Initializes JSR 292 related components.
@@ -34,32 +32,6 @@ public class MethodHandleNatives {
 	private final String VM_INDEX = NativeJava.VM_INDEX;
 	private final String VM_TARGET = NativeJava.VM_TARGET;
 	private final String VM_HOLDER = NativeJava.VM_HOLDER;
-
-	private final int MN_IS_METHOD = 0x00010000,
-			MN_IS_CONSTRUCTOR = 0x00020000,
-			MN_IS_FIELD = 0x00040000,
-			MN_IS_TYPE = 0x00080000,
-			MN_CALLER_SENSITIVE = 0x00100000,
-			MN_REFERENCE_KIND_SHIFT = 24,
-			MN_REFERENCE_KIND_MASK = 0x0F000000 >> MN_REFERENCE_KIND_SHIFT,
-			MN_SEARCH_SUPERCLASSES = 0x00100000,
-			MN_SEARCH_INTERFACES = 0x00200000;
-	private final byte
-			REF_getField = 1,
-			REF_getStatic = 2,
-			REF_putField = 3,
-			REF_putStatic = 4,
-			REF_invokeVirtual = 5,
-			REF_invokeStatic = 6,
-			REF_invokeSpecial = 7,
-			REF_newInvokeSpecial = 8,
-			REF_invokeInterface = 9;
-	private final int
-			IS_METHOD = MN_IS_METHOD,
-			IS_CONSTRUCTOR = MN_IS_CONSTRUCTOR,
-			IS_FIELD = MN_IS_FIELD,
-			IS_TYPE = MN_IS_TYPE;
-	static final int ALL_KINDS = IS_METHOD | IS_CONSTRUCTOR | IS_FIELD | IS_TYPE;
 
 	/**
 	 * @param vm
@@ -142,9 +114,7 @@ public class MethodHandleNatives {
 			InstanceValue _this = locals.load(0);
 			InstanceValue form = helper.checkNotNull(_this.getValue("form", "Ljava/lang/invoke/LambdaForm;"));
 			InstanceValue vmentry = helper.checkNotNull(form.getValue("vmentry", "Ljava/lang/invoke/MemberName;"));
-			InstanceValue resolved = helper.checkNotNull(vmentry.getValue("method", symbols.java_lang_invoke_ResolvedMethodName().getDescriptor()));
-			InstanceJavaClass clazz = ((JavaValue<InstanceJavaClass>) vmentry.getValue("clazz", "Ljava/lang/Class;")).getValue();
-			JavaMethod vmtarget = helper.getMethodBySlot(clazz, ((InstanceValue) resolved.getValue(VM_TARGET, "Ljava/lang/Object;")).getInt("value"));
+			JavaMethod vmtarget = vm.getInvokeDynamicLinker().readVMTarget(_this);
 			String name = vmtarget.getName();
 			if ("<init>".equals(name)) {
 				helper.throwException(symbols.java_lang_InternalError(), "Bad name " + name);
@@ -262,7 +232,7 @@ public class MethodHandleNatives {
 		} else {
 			refKind = REF_invokeStatic;
 		}
-		initMethodMember(refKind, vm, memberName, method, IS_METHOD);
+		vm.getInvokeDynamicLinker().initMethodMember(refKind, memberName, method, IS_METHOD);
 	}
 
 	private void initMemberNameConstructor(VirtualMachine vm, InstanceValue memberName, InstanceValue obj) {
@@ -276,7 +246,7 @@ public class MethodHandleNatives {
 		memberName.setValue("name", "Ljava/lang/String;", vm.getStringPool().intern(method.getName()));
 		InstanceValue mt = helper.methodType(clazz.getClassLoader(), method.getType());
 		memberName.setValue("type", "Ljava/lang/Object;", mt);
-		initMethodMember(REF_newInvokeSpecial, vm, memberName, method, IS_CONSTRUCTOR);
+		vm.getInvokeDynamicLinker().initMethodMember(REF_newInvokeSpecial, memberName, method, IS_CONSTRUCTOR);
 	}
 
 	private void initMemberNameField(VirtualMachine vm, InstanceValue memberName, InstanceValue obj) {
@@ -295,50 +265,7 @@ public class MethodHandleNatives {
 		} else {
 			refKind = REF_getStatic;
 		} // JDK code will change that later on.
-		initFieldMember(refKind, vm, memberName, field);
-	}
-
-	private void initMethodMember(int refKind, VirtualMachine vm, InstanceValue memberName, JavaMethod handle, int mnType) {
-		VMSymbols symbols = vm.getSymbols();
-		// Inject vmholder & vmtarget into resolved name
-		memberName.setInt(VM_INDEX, handle.getSlot());
-		MemoryManager memoryManager = vm.getMemoryManager();
-		InstanceJavaClass rmn = symbols.java_lang_invoke_ResolvedMethodName();
-		rmn.initialize();
-		InstanceValue resolvedName = memoryManager.newInstance(rmn);
-		resolvedName.initialize();
-		resolvedName.setValue(VM_TARGET, "Ljava/lang/Object;", vm.getHelper().boxInt(IntValue.of(handle.getSlot())));
-		resolvedName.setValue(VM_HOLDER, "Ljava/lang/Object;", handle.getOwner().getOop());
-		memberName.setValue("method", symbols.java_lang_invoke_ResolvedMethodName().getDescriptor(), resolvedName);
-		// Inject flags
-		int flags = handle.getAccess() & Modifier.RECOGNIZED_METHOD_MODIFIERS;
-		flags |= mnType | (refKind << MN_REFERENCE_KIND_SHIFT);
-		memberName.setInt("flags", flags);
-	}
-
-	private void initFieldMember(int refKind, VirtualMachine vm, InstanceValue memberName, JavaField handle) {
-		VMSymbols symbols = vm.getSymbols();
-		// Inject vmholder & vmtarget into resolved name
-		MemoryManager memoryManager = vm.getMemoryManager();
-		InstanceJavaClass owner = handle.getOwner();
-		long offset = handle.getOffset();
-		if ((handle.getAccess() & ACC_STATIC) == 0) {
-			offset += memoryManager.valueBaseOffset(owner);
-		} else {
-			offset += memoryManager.getStaticOffset(owner);
-		}
-		memberName.setInt(VM_INDEX, (int) offset);
-		InstanceJavaClass rmn = symbols.java_lang_invoke_ResolvedMethodName();
-		rmn.initialize();
-		InstanceValue resolvedName = memoryManager.newInstance(rmn);
-		resolvedName.initialize();
-		resolvedName.setValue(VM_TARGET, "Ljava/lang/Object;", vm.getHelper().boxInt(IntValue.of(handle.getSlot())));
-		resolvedName.setValue(VM_HOLDER, "Ljava/lang/Object;", owner.getOop());
-		memberName.setValue("method", symbols.java_lang_invoke_ResolvedMethodName().getDescriptor(), resolvedName);
-		// Inject flags
-		int flags = handle.getAccess() & Modifier.RECOGNIZED_FIELD_MODIFIERS;
-		flags |= IS_FIELD | (refKind << MN_REFERENCE_KIND_SHIFT);
-		memberName.setInt("flags", flags);
+		vm.getInvokeDynamicLinker().initFieldMember(refKind, memberName, field);
 	}
 
 	private void initMethodMember(int refKind, VirtualMachine vm, InstanceValue memberName, InstanceJavaClass clazz, String name, Value methodType, int type, boolean speculativeResolve0) {
@@ -374,7 +301,7 @@ public class MethodHandleNatives {
 			}
 			helper.throwException(symbols.java_lang_NoSuchMethodError(), clazz.getInternalName() + '.' + name + desc);
 		}
-		initMethodMember(refKind, vm, memberName, handle, type);
+		vm.getInvokeDynamicLinker().initMethodMember(refKind, memberName, handle, type);
 	}
 
 	private void initFieldMember(int refKind, VirtualMachine vm, InstanceValue memberName, InstanceJavaClass clazz, String name, Value type, boolean speculativeResolve0) {
@@ -406,7 +333,7 @@ public class MethodHandleNatives {
 			}
 			helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
 		}
-		initFieldMember(refKind, vm, memberName, handle);
+		vm.getInvokeDynamicLinker().initFieldMember(refKind, memberName, handle);
 	}
 
 	private Value voidAsNull(Value v, JavaMethod jm) {

@@ -18,7 +18,7 @@ public final class InvokeDynamicLinkerProcessor implements InstructionProcessor<
 
 	@Override
 	public Result execute(InvokeDynamicInsnNode insn, ExecutionContext ctx) {
-		InstanceValue linked = InvokeDynamicLinker.linkCall(insn, ctx);
+		InstanceValue linked = ctx.getInvokeDynamicLinker().linkCall(insn, ctx.getOwner());
 		// Rewrite instruction
 		InsnList list = ctx.getMethod().getNode().instructions;
 		list.set(insn, new LinkedDynamicCallNode(insn, linked));

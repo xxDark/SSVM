@@ -7,6 +7,7 @@ import dev.xdark.ssvm.execution.asm.*;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.natives.*;
 import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.util.InvokeDynamicLinker;
 import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.tree.FieldNode;
@@ -135,32 +136,7 @@ public final class NativeJava {
 				null
 		));
 
-		inject:
-		{
-			InstanceJavaClass memberName = symbols.java_lang_invoke_MemberName();
-			List<FieldNode> fields = memberName.getNode().fields;
-			fields.add(new FieldNode(
-					ACC_PRIVATE | ACC_VM_HIDDEN,
-					VM_INDEX,
-					"I",
-					null,
-					null
-			));
-			for (int i = 0; i < fields.size(); i++) {
-				FieldNode fn = fields.get(i);
-				if ("method".equals(fn.name) && "Ljava/lang/invoke/ResolvedMethodName;".equals(fn.desc)) {
-					break inject;
-				}
-			}
-			fields.add(new FieldNode(
-					ACC_PRIVATE | ACC_VM_HIDDEN,
-					"method",
-					"Ljava/lang/invoke/ResolvedMethodName;",
-					null,
-					null
-			));
-		}
-
+		vm.getInvokeDynamicLinker().setupMethodHandles();
 		{
 			InstanceJavaClass resolvedMethodName = symbols.java_lang_invoke_ResolvedMethodName();
 			List<FieldNode> fields = resolvedMethodName.getNode().fields;

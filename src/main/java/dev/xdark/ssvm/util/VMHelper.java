@@ -7,7 +7,6 @@ import dev.xdark.ssvm.classloading.ClassLoaderData;
 import dev.xdark.ssvm.classloading.ClassLoaders;
 import dev.xdark.ssvm.classloading.ClassParseResult;
 import dev.xdark.ssvm.execution.ExecutionContext;
-import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.memory.MemoryManager;
@@ -48,7 +47,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.StreamSupport;
 
 /**
@@ -211,18 +209,6 @@ public final class VMHelper {
 	 * @return invocation result.
 	 */
 	public ExecutionContext invokeExact(InstanceJavaClass javaClass, String name, String desc, Value[] stack, Value[] locals) {
-		/*
-		JavaMethod mn = javaClass.getVirtualMethodRecursively(name, desc);
-		if (mn == null) {
-			mn = javaClass.getInterfaceMethodRecursively(name, desc);
-			if (mn != null && (mn.getAccess() & Opcodes.ACC_ABSTRACT) != 0) {
-				mn = null;
-			}
-		}
-		if (mn == null) {
-			throwException(vm.getSymbols().java_lang_NoSuchMethodError(), javaClass.getInternalName() + '.' + name + desc);
-		}
-		*/
 		JavaMethod mn = vm.getLinkResolver().resolveSpecialMethod(javaClass, name, desc);
 		return invokeExact(javaClass, mn, stack, locals);
 	}
@@ -1806,11 +1792,7 @@ public final class VMHelper {
 		JavaClass[] classes = new JavaClass[types.length];
 		for (int i = 0; i < types.length; i++) {
 			String name = types[i].getInternalName();
-			JavaClass klass = findClass(loader, name, initialize);
-			if (klass == null) {
-				throwException(vm.getSymbols().java_lang_NoClassDefFoundError(), name);
-			}
-			classes[i] = klass;
+			classes[i] = findClass(loader, name, initialize);
 		}
 		return classes;
 	}

@@ -6,7 +6,7 @@
   - Class loading
   - File system (part of it)
   - Mapped I/O streams between VM & host OS
-  - sun/misc/Unsafe implementation (part of it)
+  - sun/misc/Unsafe implementation
   - JDK 8/9 bootstrapping
   - Multi-threading (see ThreadManager)
   - Interface to modify VM behaviour, similar to JVM TI

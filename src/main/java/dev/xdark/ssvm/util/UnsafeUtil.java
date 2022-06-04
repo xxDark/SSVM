@@ -14,7 +14,8 @@ import java.lang.reflect.Field;
 public class UnsafeUtil {
 
 	private final Unsafe UNSAFE;
-	private final int ADDRESS_SIZE = Unsafe.ADDRESS_SIZE >> 2;
+	private final int ADDRESS_SIZE;
+	private final int ARRAY_OBJECT_BASE_OFFSET;
 
 	/**
 	 * @return unsafe instance.
@@ -35,11 +36,11 @@ public class UnsafeUtil {
 		Object[] helper = new Object[]{value};
 		switch(ADDRESS_SIZE) {
 			case 1:
-				return UNSAFE.getInt(helper, Unsafe.ARRAY_OBJECT_BASE_OFFSET);
+				return UNSAFE.getInt(helper, ARRAY_OBJECT_BASE_OFFSET);
 			case 2:
-				return UNSAFE.getLong(helper, Unsafe.ARRAY_OBJECT_BASE_OFFSET);
+				return UNSAFE.getLong(helper, ARRAY_OBJECT_BASE_OFFSET);
 			default:
-				throw new RuntimeException("Unsupported address size: " + Unsafe.ADDRESS_SIZE);
+				throw new RuntimeException("Unsupported address size: " + ADDRESS_SIZE);
 		}
 	}
 
@@ -61,17 +62,28 @@ public class UnsafeUtil {
 				UNSAFE.putLong(helper, Unsafe.ARRAY_OBJECT_BASE_OFFSET, address);
 				break;
 			default:
-				throw new RuntimeException("Unsupported address size: " + Unsafe.ADDRESS_SIZE);
+				throw new RuntimeException("Unsupported address size: " + ADDRESS_SIZE);
 		}
 		return UNSAFE.getObject(helper, Unsafe.ARRAY_OBJECT_BASE_OFFSET);
 	}
 
 	static {
 		try {
-			Field field = Unsafe.class.getDeclaredField("theUnsafe");
-			field.setAccessible(true);
-			UNSAFE = (Unsafe) field.get(null);
-		} catch(NoSuchFieldException | IllegalAccessException ex) {
+			Unsafe unsafe = null;
+			for (Field field : Unsafe.class.getDeclaredFields()) {
+				if (Unsafe.class == field.getType()) {
+					field.setAccessible(true);
+					unsafe = (Unsafe) field.get(null);
+					break;
+				}
+			}
+			if (unsafe == null) {
+				throw new IllegalStateException("Unable to locate unsafe instance");
+			}
+			ADDRESS_SIZE = unsafe.addressSize() >> 2;;
+			ARRAY_OBJECT_BASE_OFFSET = unsafe.arrayBaseOffset(Object[].class);
+			UNSAFE = unsafe;
+		} catch(IllegalAccessException ex) {
 			throw new ExceptionInInitializerError(ex);
 		}
 	}

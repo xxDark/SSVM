@@ -8,6 +8,7 @@ import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ArrayValue;
+import dev.xdark.ssvm.value.IntValue;
 import lombok.experimental.UtilityClass;
 
 import java.nio.charset.StandardCharsets;
@@ -35,6 +36,10 @@ public class FileSystemNativeDispatcherNatives {
 				return Result.ABORT;
 			});
 			vmi.setInvoker(unixDispatcher, "init", "()V", MethodInvoker.noop());
+			vmi.setInvoker(unixDispatcher, "init", "()I", ctx -> {
+				ctx.setResult(IntValue.ZERO);
+				return Result.ABORT;
+			});
 			InstanceJavaClass linuxDispatcher = (InstanceJavaClass) vm.findBootstrapClass("sun/nio/fs/LinuxNativeDispatcher");
 			if (linuxDispatcher != null) {
 				vmi.setInvoker(linuxDispatcher, "init", "()V", MethodInvoker.noop());

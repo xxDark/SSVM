@@ -10,6 +10,7 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaField;
 import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.util.UnsafeUtil;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.DoubleValue;
 import dev.xdark.ssvm.value.FloatValue;
@@ -70,6 +71,7 @@ import static org.objectweb.asm.Opcodes.*;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public final class JitCompiler {
 
+	static final boolean CAN_USE_STATIC_FINAL;
 	private static final AtomicInteger CLASS_ID = new AtomicInteger();
 	private static final ClassType JIT_INVOKER = ClassType.of(JitInvoker.class);
 	private static final ClassType CTX = ClassType.of(ExecutionContext.class);
@@ -318,7 +320,11 @@ public final class JitCompiler {
 		writer.visitSource(jm.toString(), null);
 		Set<Object> constants = compiler.constants.keySet();
 		if (!constants.isEmpty()) {
-			writer.visitField(ACC_PRIVATE | ACC_STATIC | ACC_FINAL, "constants", "[Ljava/lang/Object;", null, null);
+			int constantsAcc = ACC_PRIVATE | ACC_STATIC;
+			if (CAN_USE_STATIC_FINAL) {
+				constantsAcc |= ACC_FINAL;
+			}
+			writer.visitField(constantsAcc, "constants", "[Ljava/lang/Object;", null, null);
 		}
 
 		byte[] bc = writer.toByteArray();
@@ -1757,6 +1763,19 @@ public final class JitCompiler {
 
 	private static Access getStatic(ClassType owner, String name, ClassType rt) {
 		return new Access(GETSTATIC, owner, name, rt);
+	}
+
+	static {
+		boolean canUseStaticFinal;
+		try {
+			UnsafeUtil.get().staticFieldBase(JitCompiler.class.getDeclaredField("CAN_USE_STATIC_FINAL"));
+			canUseStaticFinal = true;
+		} catch (NoSuchFieldException ex) {
+			throw new ExceptionInInitializerError(ex);
+		} catch (NoSuchMethodError ex) {
+			canUseStaticFinal = false;
+		}
+		CAN_USE_STATIC_FINAL = canUseStaticFinal;
 	}
 
 	private static final class ClassType {

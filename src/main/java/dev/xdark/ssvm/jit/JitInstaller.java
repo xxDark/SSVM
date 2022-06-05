@@ -40,8 +40,14 @@ public class JitInstaller {
 				Class.forName(c.getName(), true, c.getClassLoader());
 			} catch(ClassNotFoundException ignored) {
 			}
-			Unsafe u = UnsafeUtil.get();
-			u.putObject(u.staticFieldBase(field), u.staticFieldOffset(field), constants.toArray());
+			Object[] constantsArray = constants.toArray();
+			if (JitCompiler.CAN_USE_STATIC_FINAL) {
+				Unsafe unsafe = UnsafeUtil.get();
+				unsafe.putObject(unsafe.staticFieldBase(field), unsafe.staticFieldOffset(field), constantsArray);
+			} else {
+				field.setAccessible(true);
+				field.set(null, constantsArray);
+			}
 		}
 		JitInvoker cons = (JitInvoker) c.getConstructor().newInstance();
 		VirtualMachine vm = method.getOwner().getVM();

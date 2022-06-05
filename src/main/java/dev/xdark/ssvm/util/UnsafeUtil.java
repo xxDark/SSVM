@@ -81,7 +81,7 @@ public class UnsafeUtil {
 			if (unsafe == null) {
 				throw new IllegalStateException("Unable to locate unsafe instance");
 			}
-			ADDRESS_SIZE = unsafe.addressSize() >> 2;;
+			ADDRESS_SIZE = unsafe.addressSize() >> 2;
 			ARRAY_OBJECT_BASE_OFFSET = unsafe.arrayBaseOffset(Object[].class);
 			ARRAY_BYTE_BASE_OFFSET = unsafe.arrayBaseOffset(byte[].class);
 			UNSAFE = unsafe;

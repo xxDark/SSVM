@@ -1,0 +1,32 @@
+{
+  "tagFormat": "${version}",
+  "branches": [
+    {
+      "name": "master"
+    },
+    {
+      "name": "develop",
+      "prerelease": true
+    }
+  ],
+  "plugins": [
+    ["@semantic-release/commit-analyzer", {
+      "releaseRules": [
+        {"type": "minor", "release": "patch"}
+      ]
+    }],
+    "@semantic-release/release-notes-generator",
+    [
+      "@semantic-release/github",
+      {
+        "successComment": false,
+        "failComment": false,
+        "assets": [
+          {
+            "path": "build/libs/*.jar"
+          }
+        ]
+      }
+    ]
+  ]
+}

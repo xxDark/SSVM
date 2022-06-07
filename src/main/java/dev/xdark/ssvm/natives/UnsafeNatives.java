@@ -188,7 +188,7 @@ public class UnsafeNatives {
 			ctx.setResult(result ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
-		MethodInvoker getObjectVolatile = (MethodInvoker) ctx -> {
+		MethodInvoker getObjectVolatile = ctx -> {
 			Locals locals = ctx.getLocals();
 			MemoryManager memoryManager = vm.getMemoryManager();
 			long offset = locals.load(2).asLong();

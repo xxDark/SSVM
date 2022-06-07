@@ -127,12 +127,12 @@ public class MethodHandleNatives {
 				int flags = vmentry.getInt("flags");
 				int refKind = (flags >> MN_REFERENCE_KIND_SHIFT) & MN_REFERENCE_KIND_MASK;
 				if (refKind == REF_invokeSpecial || refKind == REF_newInvokeSpecial) {
-					result = helper.invokeExact(owner, vmtarget, new Value[0], lvt).getResult();
+					result = helper.invokeExact(vmtarget, new Value[0], lvt).getResult();
 				} else {
 					result = helper.invokeVirtual(name, vmtarget.getDesc(), new Value[0], lvt).getResult();
 				}
 			} else {
-				result = helper.invokeStatic(owner, vmtarget, new Value[0], lvt).getResult();
+				result = helper.invokeStatic(vmtarget, new Value[0], lvt).getResult();
 			}
 			JavaMethod m = ctx.getMethod();
 			result = Util.convertInvokeDynamicArgument(helper, m.getReturnType(), result);
@@ -160,12 +160,12 @@ public class MethodHandleNatives {
 				int flags = memberName.getInt("flags");
 				int refKind = (flags >> MN_REFERENCE_KIND_SHIFT) & MN_REFERENCE_KIND_MASK;
 				if (refKind == REF_invokeSpecial) {
-					result = helper.invokeExact(vmtarget.getOwner(), vmtarget, new Value[0], args).getResult();
+					result = helper.invokeExact(vmtarget, new Value[0], args).getResult();
 				} else {
 					result = helper.invokeVirtual(vmtarget.getName(), vmtarget.getDesc(), new Value[0], args).getResult();
 				}
 			} else {
-				result = helper.invokeStatic(vmtarget.getOwner(), vmtarget, new Value[0], args).getResult();
+				result = helper.invokeStatic(vmtarget, new Value[0], args).getResult();
 			}
 			JavaMethod m = ctx.getMethod();
 			result = Util.convertInvokeDynamicArgument(helper, m.getReturnType(), result);

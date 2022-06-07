@@ -67,7 +67,7 @@ public class SystemNatives {
 			helper.checkEquals(start, memoryManager.arrayBaseOffset(dstComponent));
 
 			MemoryData srcData = src.getMemory().getData();
-			long dataStartPos = start + srcPos * scale;
+			long dataStartPos = start + srcPos * (long) scale;
 			MemoryData dstData = dst.getMemory().getData();
 			srcData.copy(dataStartPos, dstData, start + (long) dstPos * scale, (long) length * scale);
 			return Result.ABORT;
@@ -78,15 +78,15 @@ public class SystemNatives {
 		});
 		vmi.setInvoker(sys, "initProperties", "(Ljava/util/Properties;)Ljava/util/Properties;", ctx -> {
 			InstanceValue value = ctx.getLocals().<InstanceValue>load(0);
-			InstanceJavaClass jc = (InstanceJavaClass) value.getJavaClass();
-			JavaMethod mn = jc.getVirtualMethod("setProperty", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;");
+			InstanceJavaClass jc = value.getJavaClass();
+			JavaMethod mn = vm.getLinkResolver().resolveVirtualMethod(jc, value.getJavaClass(), "setProperty", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;");
 			Properties properties = vm.getProperties();
 			VMHelper helper = vm.getHelper();
 
 			for (Map.Entry<Object, Object> entry : properties.entrySet()) {
 				Object key = entry.getKey();
 				Object property = entry.getValue();
-				helper.invokeExact(jc, mn, new Value[0], new Value[]{
+				helper.invokeExact(mn, new Value[0], new Value[]{
 						value,
 						helper.newUtf8(key.toString()),
 						helper.newUtf8(property.toString())

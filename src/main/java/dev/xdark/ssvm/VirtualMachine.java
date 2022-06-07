@@ -238,7 +238,7 @@ public class VirtualMachine {
 				JavaMethod initializeSystemClass = sysClass.getStaticMethod("initializeSystemClass", "()V");
 				if (initializeSystemClass != null) {
 					// pre JDK 9 boot
-					helper.invokeStatic(sysClass, initializeSystemClass, new Value[0], new Value[0]);
+					helper.invokeStatic(initializeSystemClass, new Value[0], new Value[0]);
 				} else {
 					findBootstrapClass("java/lang/StringUTF16", true);
 

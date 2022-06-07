@@ -59,7 +59,7 @@ public class TestUtil {
 				continue;
 			}
 			try {
-				helper.invokeStatic(res, m, new Value[0], new Value[0]);
+				helper.invokeStatic(m, new Value[0], new Value[0]);
 			} catch(VMException ex) {
 				System.err.println(ex.getOop());
 				try {

@@ -212,7 +212,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		JavaMethod clinit = getStaticMethod("<clinit>", "()V");
 		try {
 			if (clinit != null) {
-				helper.invokeStatic(this, clinit, new Value[0], new Value[0]);
+				helper.invokeStatic(clinit, new Value[0], new Value[0]);
 			}
 			state = State.COMPLETE;
 		} catch(VMException ex) {

@@ -71,52 +71,52 @@ final class BufferMemoryData implements MemoryData {
 
 	@Override
 	public long readLongVolatile(long offset) {
-		return volatileAccess().getLong(validate(offset));
+		return volatileAccess().getLong(checkIndex(offset));
 	}
 
 	@Override
 	public int readIntVolatile(long offset) {
-		return volatileAccess().getInt(validate(offset));
+		return volatileAccess().getInt(checkIndex(offset));
 	}
 
 	@Override
 	public char readCharVolatile(long offset) {
-		return volatileAccess().getChar(validate(offset));
+		return volatileAccess().getChar(checkIndex(offset));
 	}
 
 	@Override
 	public short readShortVolatile(long offset) {
-		return volatileAccess().getShort(validate(offset));
+		return volatileAccess().getShort(checkIndex(offset));
 	}
 
 	@Override
 	public byte readByteVolatile(long offset) {
-		return volatileAccess().getByte(validate(offset));
+		return volatileAccess().getByte(checkIndex(offset));
 	}
 
 	@Override
 	public void writeLongVolatile(long offset, long value) {
-		volatileAccess().putLong(validate(offset), value);
+		volatileAccess().putLong(checkIndex(offset), value);
 	}
 
 	@Override
 	public void writeIntVolatile(long offset, int value) {
-		volatileAccess().putInt(validate(offset), value);
+		volatileAccess().putInt(checkIndex(offset), value);
 	}
 
 	@Override
 	public void writeCharVolatile(long offset, char value) {
-		volatileAccess().putChar(validate(offset), value);
+		volatileAccess().putChar(checkIndex(offset), value);
 	}
 
 	@Override
 	public void writeShortVolatile(long offset, short value) {
-		volatileAccess().putShort(validate(offset), value);
+		volatileAccess().putShort(checkIndex(offset), value);
 	}
 
 	@Override
 	public void writeByteVolatile(long offset, byte value) {
-		volatileAccess().putByte(validate(offset), value);
+		volatileAccess().putByte(checkIndex(offset), value);
 	}
 
 	@Override
@@ -210,8 +210,15 @@ final class BufferMemoryData implements MemoryData {
 		return volatileAccess;
 	}
 
+	private int checkIndex(long offset) {
+		if (offset > buffer.limit() || offset < 0L) {
+			throw new PanicException("Segfault");
+		}
+		return (int) offset;
+	}
+
 	private static int validate(long offset) {
-		if (offset > Integer.MAX_VALUE || offset < 0) {
+		if (offset > Integer.MAX_VALUE || offset < 0L) {
 			throw new PanicException("Segfault");
 		}
 		return (int) offset;

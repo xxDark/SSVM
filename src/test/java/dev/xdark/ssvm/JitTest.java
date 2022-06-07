@@ -79,7 +79,7 @@ public class JitTest {
 			throw new IllegalStateException(ex);
 		}
 		try {
-			helper.invokeStatic(jc, m, new Value[0], new Value[]{
+			helper.invokeStatic(m, new Value[0], new Value[]{
 					LongValue.of(a),
 					TopValue.INSTANCE,
 					IntValue.of(b),
@@ -103,6 +103,7 @@ public class JitTest {
 		jitCallInner(a, b, c, d, e);
 		testThrowInInvokeDynamic();
 		testThrow();
+		testMultiArray();
 	}
 
 	private static void jitCallInner(long a, int b, String c, long d, int e) {
@@ -133,6 +134,16 @@ public class JitTest {
 
 	private static void throwInner() {
 		throw new IllegalArgumentException();
+	}
+
+	private static void testMultiArray() {
+		int[][][] array = new int[1][1][1];
+		array[0] = new int[1][1];
+		array[0][0] = new int[1];
+		array[0][0][0] = 5;
+		if (array[0][0][0] != 5) {
+			throw new IllegalStateException();
+		}
 	}
 
 	private static final class JitClassLoader extends ClassLoader

@@ -124,7 +124,7 @@ public final class InvokeDynamicLinker {
 			};
 		}
 
-		helper.invokeStatic(natives, method, new Value[0], linkArgs);
+		helper.invokeStatic(method, new Value[0], linkArgs);
 		return (InstanceValue) appendix.getValue(0);
 	}
 

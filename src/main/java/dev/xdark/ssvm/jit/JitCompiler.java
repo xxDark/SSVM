@@ -88,6 +88,7 @@ public final class JitCompiler {
 	private static final ClassType J_BOOLEAN = ClassType.of(boolean.class);
 	private static final ClassType J_OBJECT = ClassType.of(Object.class);
 	private static final ClassType J_STRING = ClassType.of(String.class);
+	private static final ClassType J_INT_ARRAY = ClassType.of(int[].class);
 
 	private static final ClassType LOCALS = ClassType.of(Locals.class);
 	private static final ClassType VALUE = ClassType.of(Value.class);
@@ -174,10 +175,9 @@ public final class JitCompiler {
 	private static final Access INSTANCEOF = staticCall(JIT_HELPER, "instanceofResult", J_BOOLEAN, VALUE, J_OBJECT, CTX);
 	private static final Access INSTANCEOF_SLOW = staticCall(JIT_HELPER, "instanceofResult", J_BOOLEAN, VALUE, J_STRING, CTX);
 
-	private static final Access NEW_MULTI_ARRAY = staticCall(JIT_HELPER, "multiNewArray", VALUE, J_STRING, J_INT, CTX);
 	private static final Access CLASS_LDC = staticCall(JIT_HELPER, "classLdc", VALUE, J_STRING, CTX);
 	private static final Access METHOD_LDC = staticCall(JIT_HELPER, "methodLdc", VALUE, J_STRING, CTX);
-	
+
 	private static final Access PUT_STATIC_LONG = staticCall(JIT_HELPER, "putStaticJ", J_VOID, J_LONG, J_OBJECT, J_LONG, CTX);
 	private static final Access PUT_STATIC_DOUBLE = staticCall(JIT_HELPER, "putStaticD", J_VOID, J_DOUBLE, J_OBJECT, J_LONG, CTX);
 	private static final Access PUT_STATIC_INT = staticCall(JIT_HELPER, "putStaticI", J_VOID, J_INT, J_OBJECT, J_LONG, CTX);
@@ -241,10 +241,8 @@ public final class JitCompiler {
 	private static final Access PUT_FIELD_BOOLEAN_DIRECT = staticCall(JIT_HELPER, "putFieldZ", J_VOID, VALUE, J_BOOLEAN, J_LONG, CTX);
 	private static final Access PUT_FIELD_VALUE_DIRECT = staticCall(JIT_HELPER, "putFieldA", J_VOID, VALUE, VALUE, J_LONG, CTX);
 
-
-	private static final Access INVOKE_FAIL = staticCall(JIT_HELPER, "invokeFail", VALUE, J_OBJECT, J_OBJECT, CTX);
-	private static final Access INVOKE_STATIC_INTRINSIC = staticCall(JIT_HELPER, "invokeStatic", VALUE, VALUES, J_OBJECT, J_OBJECT, CTX);
-	private static final Access INVOKE_SPECIAL_INTRINSIC = staticCall(JIT_HELPER, "invokeSpecial", VALUE, VALUES, J_OBJECT, J_OBJECT, CTX);
+	private static final Access INVOKE_STATIC_INTRINSIC = staticCall(JIT_HELPER, "invokeStatic", VALUE, VALUES, J_OBJECT, CTX);
+	private static final Access INVOKE_SPECIAL_INTRINSIC = staticCall(JIT_HELPER, "invokeSpecial", VALUE, VALUES, J_OBJECT, CTX);
 	private static final Access INVOKE_VIRTUAL_INTRINSIC = staticCall(JIT_HELPER, "invokeVirtual", VALUE, VALUES, J_OBJECT, J_OBJECT, CTX);
 	private static final Access INVOKE_STATIC_SLOW = staticCall(JIT_HELPER, "invokeStatic", VALUE, VALUES, J_STRING, J_STRING, J_STRING, CTX);
 	private static final Access INVOKE_SPECIAL_SLOW = staticCall(JIT_HELPER, "invokeSpecial", VALUE, VALUES, J_STRING, J_STRING, J_STRING, CTX);
@@ -256,6 +254,9 @@ public final class JitCompiler {
 
 	private static final Access MONITOR_ENTER = staticCall(JIT_HELPER, "monitorEnter", J_VOID, VALUE, CTX);
 	private static final Access MONITOR_EXIT = staticCall(JIT_HELPER, "monitorExit", J_VOID, VALUE, CTX);
+
+	private static final Access NEW_MULTI_ARRAY_INTRINSIC = staticCall(JIT_HELPER, "multiNewArray", VALUE, J_OBJECT, J_INT_ARRAY, CTX);
+	private static final Access NEW_MULTI_ARRAY = staticCall(JIT_HELPER, "multiNewArray", VALUE, J_STRING, J_INT_ARRAY, CTX);
 
 	private static final Access GET_TOP = getStatic(TOP, "INSTANCE", TOP);
 
@@ -272,6 +273,7 @@ public final class JitCompiler {
 	int ctxIndex;
 	Map<DynamicCallInfo, MethodInsnNode> invokeDynamicCalls = new HashMap<>();
 	Map<MethodCallInfo, MethodInsnNode> methodCalls = new HashMap<>();
+	Map<NewMultiArrayInfo, MethodInsnNode> multiArrays = new HashMap<>();
 
 	/**
 	 * @param jm
@@ -359,7 +361,7 @@ public final class JitCompiler {
 			if (arg.getSize() == 2) {
 				local++;
 			}
-			switch(arg.getSort()) {
+			switch (arg.getSort()) {
 				case Type.LONG:
 					AS_LONG.emit(jit);
 					jvm_var(LSTORE, x);
@@ -409,7 +411,7 @@ public final class JitCompiler {
 			insn = unmask(insn);
 			int opcode = insn.getOpcode();
 
-			switch(opcode) {
+			switch (opcode) {
 				case -1:
 					if (insn instanceof LabelNode) {
 						Label label = labels.get(insn);
@@ -728,11 +730,7 @@ public final class JitCompiler {
 					MONITOR_EXIT.emit(jit);
 					break;
 				case MULTIANEWARRAY:
-					MultiANewArrayInsnNode array = (MultiANewArrayInsnNode) insn;
-					jit.visitLdcInsn(array.desc);
-					jit.visitLdcInsn(array.dims);
-					loadCtx();
-					NEW_MULTI_ARRAY.emit(jit);
+					multiNewArray((MultiANewArrayInsnNode) insn);
 					break;
 				case IFNULL:
 					IS_NULL.emit(jit);
@@ -943,11 +941,13 @@ public final class JitCompiler {
 				String desc = node.desc;
 				JavaField field = jc.getStaticFieldRecursively(name, desc);
 				if (field != null) {
+					// We will be reading from a field directly at this point,
+					// force class initialization
 					jc = field.getOwner();
 					long offset = vm.getMemoryManager().getStaticOffset(jc) + field.getOffset();
 					loadCompilerConstant(jc);
 					jit.visitLdcInsn(offset);
-					switch(field.getType().getSort()) {
+					switch (field.getType().getSort()) {
 						case Type.LONG:
 							access = GET_STATIC_LONG;
 							break;
@@ -980,7 +980,7 @@ public final class JitCompiler {
 				jit.visitInsn(ACONST_NULL);
 				jit.visitLdcInsn(node.name);
 				access = GET_STATIC_FAIL;
-			} catch(VMException ex) {
+			} catch (VMException ex) {
 				// Class was probably not found.
 				// We need to use fallback path
 				// because the class may be defined right in the code
@@ -1028,7 +1028,7 @@ public final class JitCompiler {
 					long offset = vm.getMemoryManager().getStaticOffset(jc) + field.getOffset();
 					loadCompilerConstant(jc);
 					jit.visitLdcInsn(offset);
-					switch(field.getType().getSort()) {
+					switch (field.getType().getSort()) {
 						case Type.LONG:
 							access = PUT_STATIC_LONG;
 							break;
@@ -1061,7 +1061,7 @@ public final class JitCompiler {
 				jit.visitInsn(ACONST_NULL);
 				jit.visitLdcInsn(node.name);
 				access = PUT_STATIC_FAIL;
-			} catch(VMException ex) {
+			} catch (VMException ex) {
 				// Class was probably not found.
 				// We need to use fallback path
 				// because the class may be defined right in the code
@@ -1093,7 +1093,7 @@ public final class JitCompiler {
 				MethodVisitor jit = this.jit;
 				jit.visitLdcInsn(offset);
 				loadCtx();
-				switch(sort) {
+				switch (sort) {
 					case Type.LONG:
 						GET_FIELD_LONG_DIRECT.emit(jit);
 						break;
@@ -1127,7 +1127,7 @@ public final class JitCompiler {
 		pushField(node, sort >= Type.ARRAY);
 		loadCtx();
 		MethodVisitor jit = this.jit;
-		switch(sort) {
+		switch (sort) {
 			case Type.LONG:
 				GET_FIELD_LONG.emit(jit);
 				break;
@@ -1173,7 +1173,7 @@ public final class JitCompiler {
 				MethodVisitor jit = this.jit;
 				jit.visitLdcInsn(offset);
 				loadCtx();
-				switch(sort) {
+				switch (sort) {
 					case Type.LONG:
 						PUT_FIELD_LONG_DIRECT.emit(jit);
 						break;
@@ -1207,7 +1207,7 @@ public final class JitCompiler {
 		pushField(node, sort >= Type.ARRAY);
 		loadCtx();
 		MethodVisitor jit = this.jit;
-		switch(sort) {
+		switch (sort) {
 			case Type.LONG:
 				PUT_FIELD_LONG.emit(jit);
 				break;
@@ -1250,25 +1250,17 @@ public final class JitCompiler {
 			String name = node.name;
 			JavaMethod mn = vm.getLinkResolver().resolveStaticMethod(jc, name, desc);
 			collectStaticCallArgs(desc);
-			loadCompilerConstant(jc);
 			loadCompilerConstant(mn);
-			access = INVOKE_STATIC_INTRINSIC;
-		} catch(VMException ex) {
+			loadCtx();
+			INVOKE_STATIC_INTRINSIC.emit(jit);
+		} catch (VMException ex) {
 			// Class was probably not found.
 			// We need to use fallback path
 			// because the class may be defined right in the code
 			// we are JITting.
 			invokeStaticSlow(node);
-			toJava(rt);
-			return;
 		}
-		loadCtx();
-		access.emit(jit);
-		if (access == INVOKE_FAIL) {
-			dummyValue(rt);
-		} else {
-			toJava(rt);
-		}
+		toJava(rt);
 	}
 
 	private void invokeStaticSlow(MethodInsnNode node) {
@@ -1283,7 +1275,6 @@ public final class JitCompiler {
 		MethodVisitor jit = this.jit;
 		String desc = node.desc;
 		Type rt = Type.getReturnType(desc);
-		Access access;
 		try {
 			JavaMethod target = this.target;
 			InstanceJavaClass owner = target.getOwner();
@@ -1292,25 +1283,17 @@ public final class JitCompiler {
 			String name = node.name;
 			JavaMethod mn = vm.getLinkResolver().resolveSpecialMethod(jc, name, desc);
 			collectVirtualCallArgs(desc);
-			loadCompilerConstant(jc);
 			loadCompilerConstant(mn);
-			access = INVOKE_SPECIAL_INTRINSIC;
-		} catch(VMException ex) {
+			loadCtx();
+			INVOKE_SPECIAL_INTRINSIC.emit(jit);
+		} catch (VMException ex) {
 			// Class was probably not found.
 			// We need to use fallback path
 			// because the class may be defined right in the code
 			// we are JITting.
 			invokeSpecialSlow(node);
-			toJava(rt);
-			return;
 		}
-		loadCtx();
-		access.emit(jit);
-		if (access == INVOKE_FAIL) {
-			dummyValue(rt);
-		} else {
-			toJava(rt);
-		}
+		toJava(rt);
 	}
 
 	private void invokeSpecialSlow(MethodInsnNode node) {
@@ -1375,7 +1358,7 @@ public final class JitCompiler {
 			// Need to create new jit compiler for temporary usage
 			// because calling invokeXX uses method that is being compiled
 			JitCompiler jit = new JitCompiler(className, target, writer, split, constants, loadIndex);
-			switch(opcode) {
+			switch (opcode) {
 				case INVOKEVIRTUAL:
 					jit.invokeVirtual(node);
 					break;
@@ -1505,6 +1488,50 @@ public final class JitCompiler {
 		}
 	}
 
+	private void multiNewArray(MultiANewArrayInsnNode node) {
+		MethodInsnNode call = multiArrays.computeIfAbsent(new NewMultiArrayInfo(node.desc, node.dims), k -> {
+			int dimensions = k.dimensions;
+			Object klass = tryLoadClass(k.desc);
+			String methodName = "multiNewArray" + multiArrays.size();
+			StringBuilder callDesc = new StringBuilder();
+			callDesc.append('(');
+			for (int i = 0; i < dimensions; i++) {
+				callDesc.append('I');
+			}
+			callDesc.append(CTX.desc);
+			String desc = callDesc.append(')').append(VALUE.desc).toString();
+			int loadIndex = dimensions;
+			MethodVisitor split = writer.visitMethod(ACC_PRIVATE | ACC_STATIC, methodName, desc, null, null);
+			split.visitCode();
+			JitCompiler jit = new JitCompiler(className, target, writer, split, constants, loadIndex);
+			if (klass instanceof JavaClass) {
+				jit.loadCompilerConstant(klass);
+			} else {
+				split.visitLdcInsn(k.desc);
+			}
+			emitInt(dimensions, split);
+			split.visitIntInsn(NEWARRAY, T_INT);
+			for (int i = 0; i < dimensions; i++) {
+				split.visitInsn(DUP);
+				emitInt(i, split);
+				split.visitVarInsn(ILOAD, i);
+				split.visitInsn(IASTORE);
+			}
+			jit.loadCtx();
+			if (klass instanceof JavaClass) {
+				NEW_MULTI_ARRAY_INTRINSIC.emit(split);
+			} else {
+				NEW_MULTI_ARRAY.emit(split);
+			}
+			split.visitInsn(ARETURN);
+			split.visitEnd();
+			split.visitMaxs(-1, -1);
+			return new MethodInsnNode(INVOKESTATIC, className, methodName, desc);
+		});
+		loadCtx();
+		call.accept(jit);
+	}
+
 	private void checkCast(String type) {
 		Object jc = tryLoadClass(type);
 		MethodVisitor jit = this.jit;
@@ -1540,7 +1567,7 @@ public final class JitCompiler {
 		VMHelper helper = owner.getVM().getHelper();
 		try {
 			return helper.findClass(owner.getClassLoader(), type, false);
-		} catch(VMException ex) {
+		} catch (VMException ex) {
 			return type;
 		}
 	}
@@ -1550,7 +1577,7 @@ public final class JitCompiler {
 		VMHelper helper = owner.getVM().getHelper();
 		try {
 			return helper.methodType(owner.getClassLoader(), type);
-		} catch(VMException ex) {
+		} catch (VMException ex) {
 			return type;
 		}
 	}
@@ -1571,7 +1598,7 @@ public final class JitCompiler {
 		jit.visitTypeInsn(ANEWARRAY, VALUE.internalName);
 		int idx = args.length;
 		count--;
-		while(idx-- != 0) {
+		while (idx-- != 0) {
 			Type arg = args[idx];
 			if (arg.getSize() == 2) {
 				loadTopTo(count--);
@@ -1621,7 +1648,7 @@ public final class JitCompiler {
 	}
 
 	private void toVM(Type type) {
-		switch(type.getSort()) {
+		switch (type.getSort()) {
 			case Type.LONG:
 				longOf();
 				break;
@@ -1643,7 +1670,7 @@ public final class JitCompiler {
 
 	private void dummyValue(Type type) {
 		MethodVisitor jit = this.jit;
-		switch(type.getSort()) {
+		switch (type.getSort()) {
 			case Type.LONG:
 				jit.visitInsn(LCONST_0);
 				break;
@@ -1705,7 +1732,7 @@ public final class JitCompiler {
 	}
 
 	private static void toJava(Type type, MethodVisitor mv) {
-		switch(type.getSort()) {
+		switch (type.getSort()) {
 			case Type.LONG:
 				AS_LONG.emit(mv);
 				break;
@@ -1850,5 +1877,13 @@ public final class JitCompiler {
 		MethodCallInfo(MethodInsnNode node) {
 			this(node.getOpcode(), node.owner, node.name, node.desc);
 		}
+	}
+
+	@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+	@EqualsAndHashCode(callSuper = false, doNotUseGetters = true)
+	@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+	private static final class NewMultiArrayInfo {
+		String desc;
+		int dimensions;
 	}
 }

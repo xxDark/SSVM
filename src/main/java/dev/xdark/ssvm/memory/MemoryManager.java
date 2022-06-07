@@ -674,4 +674,12 @@ public interface MemoryManager {
 	 * 		Object to write data into.
 	 */
 	void writeDefaults(ObjectValue value);
+
+	/**
+	 * Marks an object as ready for deallocation.
+	 *
+	 * @param value
+	 * 		Object to deallocate.
+	 */
+	void readyForDeallocation(ObjectValue value);
 }

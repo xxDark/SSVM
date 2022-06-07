@@ -70,8 +70,6 @@ public final class VMHelper {
 	/**
 	 * Invokes static method.
 	 *
-	 * @param javaClass
-	 * 		Class to search method in.
 	 * @param method
 	 * 		Method to invoke.
 	 * @param stack
@@ -81,12 +79,11 @@ public final class VMHelper {
 	 *
 	 * @return invocation result.
 	 */
-	public ExecutionContext invokeStatic(InstanceJavaClass javaClass, JavaMethod method, Value[] stack, Value[] locals) {
+	public ExecutionContext invokeStatic(JavaMethod method, Value[] stack, Value[] locals) {
 		if ((method.getAccess() & Opcodes.ACC_STATIC) == 0) {
 			throw new IllegalStateException("Method is not static");
 		}
-		javaClass.initialize();
-		ExecutionContext ctx = createContext(javaClass, method, locals);
+		ExecutionContext ctx = createContext(method, locals);
 		contextPrepare(ctx, stack, locals);
 		vm.execute(ctx);
 		return ctx;
@@ -110,7 +107,7 @@ public final class VMHelper {
 	 */
 	public ExecutionContext invokeStatic(InstanceJavaClass javaClass, String name, String desc, Value[] stack, Value[] locals) {
 		JavaMethod m = vm.getLinkResolver().resolveStaticMethod(javaClass, name, desc);
-		return invokeStatic(javaClass, m, stack, locals);
+		return invokeStatic(m, stack, locals);
 	}
 
 	/**
@@ -137,7 +134,7 @@ public final class VMHelper {
 			javaClass = ((InstanceValue) instance).getJavaClass();
 		}
 		JavaMethod m = vm.getLinkResolver().resolveVirtualMethod(javaClass, javaClass, name, desc);
-		return invokeExact(javaClass, m, stack, locals);
+		return invokeExact(m, stack, locals);
 	}
 
 	/**
@@ -161,14 +158,12 @@ public final class VMHelper {
 		checkNotNull(instance);
 		InstanceJavaClass prioritized = ((InstanceValue) instance).getJavaClass();
 		JavaMethod mn = vm.getLinkResolver().resolveVirtualMethod(prioritized, javaClass, name, desc);
-		return invokeExact(mn.getOwner(), mn, stack, locals);
+		return invokeExact(mn, stack, locals);
 	}
 
 	/**
 	 * Invokes exact method.
 	 *
-	 * @param javaClass
-	 * 		Class to search method in.
 	 * @param method
 	 * 		Method to invoke.
 	 * @param stack
@@ -178,15 +173,14 @@ public final class VMHelper {
 	 *
 	 * @return invocation result.
 	 */
-	public ExecutionContext invokeExact(InstanceJavaClass javaClass, JavaMethod method, Value[] stack, Value[] locals) {
+	public ExecutionContext invokeExact(JavaMethod method, Value[] stack, Value[] locals) {
 		if (locals[0].isNull()) {
 			throwException(vm.getSymbols().java_lang_NullPointerException());
 		}
 		if ((method.getAccess() & Opcodes.ACC_STATIC) != 0) {
 			throw new IllegalStateException("Method is static");
 		}
-		javaClass.initialize();
-		ExecutionContext ctx = createContext(javaClass, method, locals);
+		ExecutionContext ctx = createContext(method, locals);
 		contextPrepare(ctx, stack, locals);
 		vm.execute(ctx);
 		return ctx;
@@ -210,7 +204,7 @@ public final class VMHelper {
 	 */
 	public ExecutionContext invokeExact(InstanceJavaClass javaClass, String name, String desc, Value[] stack, Value[] locals) {
 		JavaMethod mn = vm.getLinkResolver().resolveSpecialMethod(javaClass, name, desc);
-		return invokeExact(javaClass, mn, stack, locals);
+		return invokeExact(mn, stack, locals);
 	}
 
 	/**
@@ -2241,6 +2235,7 @@ public final class VMHelper {
 	}
 
 	private static void contextPrepare(ExecutionContext ctx, Value[] stack, Value[] locals) {
+		ctx.getOwner().initialize();
 		ctx.getLocals().copyFrom(locals);
 		/*
 		for (int i = 0, j = locals.length; i < j; i++) {
@@ -2260,9 +2255,9 @@ public final class VMHelper {
 		}
 	}
 
-	private static ExecutionContext createContext(InstanceJavaClass jc, JavaMethod jm, Value[] locals) {
+	private static ExecutionContext createContext(JavaMethod jm, Value[] locals) {
 		MethodNode mn = jm.getNode();
-		VirtualMachine vm = jc.getVM();
+		VirtualMachine vm = jm.getOwner().getVM();
 		ThreadStorage storage = vm.getThreadStorage();
 		int maxStack = mn.maxStack;
 		int maxLocals = getMaxLocals(jm, locals);

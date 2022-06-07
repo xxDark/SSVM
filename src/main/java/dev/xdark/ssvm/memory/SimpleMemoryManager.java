@@ -22,9 +22,9 @@ import lombok.RequiredArgsConstructor;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.WeakHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
@@ -41,7 +41,7 @@ public final class SimpleMemoryManager implements MemoryManager {
 	private static final long OBJECT_HEADER_SIZE = ADDRESS_SIZE + 4L;
 	private static final long ARRAY_LENGTH = ADDRESS_SIZE;
 	private final TreeMap<MemoryKey, MemoryRef> memoryBlocks = new TreeMap<>();
-	private final Map<MemoryKey, ObjectValue> objects = new WeakHashMap<>();
+	private final Map<MemoryKey, ObjectValue> objects = new HashMap<>();
 
 	private final VirtualMachine vm;
 
@@ -482,6 +482,13 @@ public final class SimpleMemoryManager implements MemoryManager {
 		Memory memory = value.getMemory();
 		MemoryData data = memory.getData();
 		data.set(ARRAY_LENGTH, data.length() - ARRAY_LENGTH, (byte) 0);
+	}
+
+	@Override
+	public synchronized void readyForDeallocation(ObjectValue value) {
+		MemoryKey key = keyAddress(value.getMemory().getAddress());
+		objects.remove(key);
+		memoryBlocks.remove(key);
 	}
 
 	private synchronized MemoryRef newMemoryBlock(long size, boolean isDirect) {

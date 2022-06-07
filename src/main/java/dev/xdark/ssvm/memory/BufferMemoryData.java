@@ -71,52 +71,52 @@ final class BufferMemoryData implements MemoryData {
 
 	@Override
 	public long readLongVolatile(long offset) {
-		return volatileAccess().getLong(checkIndex(offset));
+		return volatileAccess().getLong(checkIndex(offset, 8));
 	}
 
 	@Override
 	public int readIntVolatile(long offset) {
-		return volatileAccess().getInt(checkIndex(offset));
+		return volatileAccess().getInt(checkIndex(offset, 4));
 	}
 
 	@Override
 	public char readCharVolatile(long offset) {
-		return volatileAccess().getChar(checkIndex(offset));
+		return volatileAccess().getChar(checkIndex(offset, 2));
 	}
 
 	@Override
 	public short readShortVolatile(long offset) {
-		return volatileAccess().getShort(checkIndex(offset));
+		return volatileAccess().getShort(checkIndex(offset, 2));
 	}
 
 	@Override
 	public byte readByteVolatile(long offset) {
-		return volatileAccess().getByte(checkIndex(offset));
+		return volatileAccess().getByte(checkIndex(offset, 1));
 	}
 
 	@Override
 	public void writeLongVolatile(long offset, long value) {
-		volatileAccess().putLong(checkIndex(offset), value);
+		volatileAccess().putLong(checkIndex(offset, 8), value);
 	}
 
 	@Override
 	public void writeIntVolatile(long offset, int value) {
-		volatileAccess().putInt(checkIndex(offset), value);
+		volatileAccess().putInt(checkIndex(offset, 4), value);
 	}
 
 	@Override
 	public void writeCharVolatile(long offset, char value) {
-		volatileAccess().putChar(checkIndex(offset), value);
+		volatileAccess().putChar(checkIndex(offset, 2), value);
 	}
 
 	@Override
 	public void writeShortVolatile(long offset, short value) {
-		volatileAccess().putShort(checkIndex(offset), value);
+		volatileAccess().putShort(checkIndex(offset, 2), value);
 	}
 
 	@Override
 	public void writeByteVolatile(long offset, byte value) {
-		volatileAccess().putByte(checkIndex(offset), value);
+		volatileAccess().putByte(checkIndex(offset, 1), value);
 	}
 
 	@Override
@@ -210,8 +210,8 @@ final class BufferMemoryData implements MemoryData {
 		return volatileAccess;
 	}
 
-	private int checkIndex(long offset) {
-		if (offset > buffer.limit() || offset < 0L) {
+	private int checkIndex(long offset, int count) {
+		if (offset + count > buffer.limit() || offset < 0L) {
 			throw new PanicException("Segfault");
 		}
 		return (int) offset;

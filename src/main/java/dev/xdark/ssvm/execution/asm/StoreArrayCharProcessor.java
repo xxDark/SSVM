@@ -4,8 +4,7 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.Stack;
-import dev.xdark.ssvm.jit.JitHelper;
-import dev.xdark.ssvm.value.Value;
+import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 /**
@@ -18,10 +17,10 @@ public final class StoreArrayCharProcessor implements InstructionProcessor<Abstr
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
-		Value value = stack.pop();
-		Value index = stack.pop();
-		Value array = stack.pop();
-		JitHelper.arrayStoreChar(array, index, value, ctx);
+		char value = stack.popChar();
+		int index = stack.popInt();
+		ObjectValue array = stack.pop();
+		ctx.getOperations().arrayStoreChar(array, index, value);
 		return Result.CONTINUE;
 	}
 }

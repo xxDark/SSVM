@@ -7,7 +7,6 @@ import dev.xdark.ssvm.execution.asm.*;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.natives.*;
 import dev.xdark.ssvm.symbol.VMSymbols;
-import dev.xdark.ssvm.util.InvokeDynamicLinker;
 import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.tree.FieldNode;

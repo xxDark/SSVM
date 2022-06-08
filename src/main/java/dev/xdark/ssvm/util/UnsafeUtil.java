@@ -14,8 +14,6 @@ import java.lang.reflect.Field;
 public class UnsafeUtil {
 
 	private final Unsafe UNSAFE;
-	private final int ADDRESS_SIZE;
-	private final int ARRAY_OBJECT_BASE_OFFSET;
 	public final int ARRAY_BYTE_BASE_OFFSET;
 
 	/**
@@ -23,49 +21,6 @@ public class UnsafeUtil {
 	 */
 	public Unsafe get() {
 		return UNSAFE;
-	}
-
-	/**
-	 * Returns address of an object.
-	 *
-	 * @param value
-	 * 		Object to get address from.
-	 *
-	 * @return address of an object.
-	 */
-	public long addressOf(Object value) {
-		Object[] helper = new Object[]{value};
-		switch(ADDRESS_SIZE) {
-			case 1:
-				return UNSAFE.getInt(helper, ARRAY_OBJECT_BASE_OFFSET);
-			case 2:
-				return UNSAFE.getLong(helper, ARRAY_OBJECT_BASE_OFFSET);
-			default:
-				throw new RuntimeException("Unsupported address size: " + ADDRESS_SIZE);
-		}
-	}
-
-	/**
-	 * Gets object by it's address.
-	 *
-	 * @param address
-	 * 		Address of an object.
-	 *
-	 * @return object at the specific address.
-	 */
-	public Object byAddress(long address) {
-		Object[] helper = new Object[]{null};
-		switch(ADDRESS_SIZE) {
-			case 1:
-				UNSAFE.putInt(helper, Unsafe.ARRAY_OBJECT_BASE_OFFSET, (int) address);
-				break;
-			case 2:
-				UNSAFE.putLong(helper, Unsafe.ARRAY_OBJECT_BASE_OFFSET, address);
-				break;
-			default:
-				throw new RuntimeException("Unsupported address size: " + ADDRESS_SIZE);
-		}
-		return UNSAFE.getObject(helper, Unsafe.ARRAY_OBJECT_BASE_OFFSET);
 	}
 
 	static {
@@ -81,8 +36,6 @@ public class UnsafeUtil {
 			if (unsafe == null) {
 				throw new IllegalStateException("Unable to locate unsafe instance");
 			}
-			ADDRESS_SIZE = unsafe.addressSize() >> 2;
-			ARRAY_OBJECT_BASE_OFFSET = unsafe.arrayBaseOffset(Object[].class);
 			ARRAY_BYTE_BASE_OFFSET = unsafe.arrayBaseOffset(byte[].class);
 			UNSAFE = unsafe;
 		} catch(IllegalAccessException ex) {

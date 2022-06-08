@@ -432,6 +432,11 @@ final class DelegatingVMSymbols implements VMSymbols {
 		return symbols.java_io_FileNotFoundException();
 	}
 
+	@Override
+	public InstanceJavaClass java_lang_InstantiationError() {
+		return symbols.java_lang_InstantiationError();
+	}
+
 	/**
 	 * @param symbols
 	 * 		New symbols.

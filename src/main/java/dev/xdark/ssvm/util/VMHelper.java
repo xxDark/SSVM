@@ -1119,32 +1119,18 @@ public final class VMHelper {
 	}
 
 	/**
-	 * Checks whether array is nonnull.
-	 *
-	 * @param value
-	 * 		Array to check.
-	 */
-	public ArrayValue checkNotNullArray(ObjectValue value) {
-		checkNotNull(value);
-		return checkArray(value);
-	}
-
-	/**
-	 * Performs array check.
+	 * Performs null check on an array.
 	 *
 	 * @param value
 	 * 		Value to check.
 	 *
-	 * @return array value if cast succeeds.
+	 * @return array value.
 	 */
-	public ArrayValue checkArray(Value value) {
+	public <V extends ArrayValue> V checkNotNullArray(Value value) {
 		if (value.isNull()) {
 			throwException(vm.getSymbols().java_lang_NullPointerException());
 		}
-		if (!(value instanceof ArrayValue)) {
-			throwException(vm.getSymbols().java_lang_InternalError(), "not an array");
-		}
-		return (ArrayValue) value;
+		return (V) value;
 	}
 
 	/**
@@ -1312,7 +1298,9 @@ public final class VMHelper {
 		InstanceValue oop = javaClass.getOop();
 		long offset = oop.getFieldOffset("componentType", "Ljava/lang/Class;");
 		if (offset != -1L) {
-			vm.getMemoryManager().writeValue(oop, offset, componentType.getOop());
+			InstanceValue typeOop = componentType.getOop();
+			typeOop.retain();
+			vm.getMemoryManager().writeValue(oop, offset, typeOop);
 		}
 	}
 
@@ -1389,7 +1377,9 @@ public final class VMHelper {
 		});
 		long offset;
 		if (injectDeclaringClass && (offset = element.getFieldOffset("declaringClassObject", "Ljava/lang/Class;")) != -1L) {
-			memoryManager.writeValue(element, offset, owner.getOop());
+			InstanceValue oop = owner.getOop();
+			oop.retain();
+			memoryManager.writeValue(element, offset, oop);
 		}
 		return element;
 	}

@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.execution;
 
+import dev.xdark.ssvm.LinkResolver;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
@@ -22,6 +23,13 @@ public interface ExecutionContext {
 	 * @return VM instance.
 	 */
 	VirtualMachine getVM();
+
+	/**
+	 * @return owner's class loader.
+	 */
+	default ObjectValue getClassLoader() {
+		return getOwner().getClassLoader();
+	}
 
 	/**
 	 * @return VM helper.
@@ -56,6 +64,13 @@ public interface ExecutionContext {
 	 */
 	default InvokeDynamicLinker getInvokeDynamicLinker() {
 		return getVM().getInvokeDynamicLinker();
+	}
+
+	/**
+	 * @return link resolver.
+	 */
+	default LinkResolver getLinkResolver() {
+		return getVM().getLinkResolver();
 	}
 
 	/**

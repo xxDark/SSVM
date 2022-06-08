@@ -83,6 +83,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	private List<JavaMethod> publicMethods;
 	private List<JavaField> declaredFields;
 	private List<JavaField> publicFields;
+	private Boolean allocationStatus;
 
 	/**
 	 * This constructor must be invoked ONLY
@@ -506,7 +507,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		}
 		MemoryManager memoryManager = vm.getMemoryManager();
 		long resultingOffset = memoryManager.getStaticOffset(this) + offset;
-		return vm.getOperations().readGenericValue(field.getDesc(), resultingOffset, oop);
+		return vm.getOperations().readGenericValue(oop, field.getDesc(), resultingOffset);
 	}
 
 	@Override
@@ -848,8 +849,26 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	}
 
 	@Override
+	public boolean canAllocateInstance() {
+		// Its okay if this gets computed multiple times
+		Boolean allocationStatus = this.allocationStatus;
+		if (allocationStatus == null) {
+			return this.allocationStatus = checkAllocationStatus();
+		}
+		return allocationStatus;
+	}
+
+	@Override
 	public String toString() {
 		return getName();
+	}
+
+	private boolean checkAllocationStatus() {
+		int acc = getModifiers();
+		if ((acc & Opcodes.ACC_ABSTRACT) == 0 && (acc & Opcodes.ACC_INTERFACE) == 0) {
+			return this != vm.getSymbols().java_lang_Class();
+		}
+		return false;
 	}
 
 	private List<JavaMethod> getDeclaredMethods0(boolean publicOnly, boolean constructors) {

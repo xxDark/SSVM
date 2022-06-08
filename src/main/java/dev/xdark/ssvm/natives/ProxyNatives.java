@@ -39,7 +39,7 @@ public class ProxyNatives {
 			VMHelper helper = vm.getHelper();
 			ObjectValue loader = locals.<ObjectValue>load(0);
 			Value name = locals.load(1);
-			ArrayValue bytes = helper.checkNotNullArray(locals.load(2));
+			ArrayValue bytes = helper.checkNotNull(locals.<ObjectValue>load(2));
 			Value off = locals.load(3);
 			Value len = locals.load(4);
 			InstanceJavaClass result;

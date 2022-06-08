@@ -13,7 +13,7 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * @author xDark
  */
-public class SimpleObjectValue implements ObjectValue {
+public class SimpleObjectValue extends AbstractReferenceCounted implements ObjectValue {
 
 	private final ReentrantLock lock;
 	private final Condition signal;
@@ -93,6 +93,11 @@ public class SimpleObjectValue implements ObjectValue {
 	@Override
 	public boolean isHeldByCurrentThread() {
 		return lock.isHeldByCurrentThread();
+	}
+
+	@Override
+	protected void deallocate() {
+		getMemoryManager().readyForDeallocation(this);
 	}
 
 	protected MemoryManager getMemoryManager() {

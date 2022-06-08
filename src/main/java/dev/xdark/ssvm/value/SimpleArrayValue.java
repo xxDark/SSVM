@@ -58,7 +58,7 @@ public final class SimpleArrayValue extends SimpleObjectValue implements ArrayVa
 	}
 
 	@Override
-	public Value getValue(int index) {
+	public ObjectValue getValue(int index) {
 		return getMemoryManager().readValue(this, dataOffset(validate(index) * (long) getMemoryManager().objectSize()));
 	}
 

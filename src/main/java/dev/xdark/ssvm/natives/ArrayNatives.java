@@ -32,7 +32,7 @@ public class ArrayNatives {
 		InstanceJavaClass array = symbols.java_lang_reflect_Array();
 		vmi.setInvoker(array, "getLength", "(Ljava/lang/Object;)I", ctx -> {
 			Value value = ctx.getLocals().load(0);
-			vm.getHelper().checkArray(value);
+			vm.getHelper().checkNotNull(value);
 			ctx.setResult(IntValue.of(((ArrayValue) value).getLength()));
 			return Result.ABORT;
 		});

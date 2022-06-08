@@ -68,8 +68,8 @@ public class VirtualMachine {
 	private final BootClassLoaderHolder bootClassLoader;
 	private final VMInterface vmInterface;
 	private final MemoryManager memoryManager;
-	private final DelegatingVMSymbols symbols;
-	private final DelegatingVMPrimitives primitives;
+	private VMSymbols symbols;
+	private VMPrimitives primitives;
 	private final VMHelper helper;
 	private final ClassDefiner classDefiner;
 	private final ThreadManager threadManager;
@@ -170,8 +170,12 @@ public class VirtualMachine {
 				classLoaders.initializeBootOop(object, klass);
 				object.link();
 				klass.link();
-				symbols.setSymbols(new InitializedVMSymbols(this));
-				primitives.setPrimitives(new InitializedVMPrimitives(this));
+				InitializedVMSymbols initializedVMSymbols = new InitializedVMSymbols(this);
+				((DelegatingVMSymbols) symbols).setSymbols(initializedVMSymbols);
+				symbols = initializedVMSymbols;
+				InitializedVMPrimitives initializedVMPrimitives = new InitializedVMPrimitives(this);
+				((DelegatingVMPrimitives) primitives).setPrimitives(initializedVMPrimitives);
+				primitives = initializedVMPrimitives;
 				NativeJava.init(this);
 				initializer.nativeInit(this);
 				InstanceJavaClass groupClass = symbols.java_lang_ThreadGroup();

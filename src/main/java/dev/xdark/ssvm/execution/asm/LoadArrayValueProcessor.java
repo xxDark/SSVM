@@ -4,8 +4,7 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.Stack;
-import dev.xdark.ssvm.jit.JitHelper;
-import dev.xdark.ssvm.value.Value;
+import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 /**
@@ -18,9 +17,9 @@ public final class LoadArrayValueProcessor implements InstructionProcessor<Abstr
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
-		Value index = stack.pop();
-		Value array = stack.pop();
-		stack.push(JitHelper.arrayLoadValue(array, index, ctx));
+		int index = stack.popInt();
+		ObjectValue array = stack.pop();
+		stack.push(ctx.getOperations().arrayLoadReference(array, index));
 		return Result.CONTINUE;
 	}
 }

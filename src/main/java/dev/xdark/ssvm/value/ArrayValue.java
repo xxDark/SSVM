@@ -95,7 +95,7 @@ public interface ArrayValue extends ObjectValue {
 	 *
 	 * @return VM value.
 	 */
-	Value getValue(int index);
+	ObjectValue getValue(int index);
 
 	/**
 	 * Sets long value of an array.

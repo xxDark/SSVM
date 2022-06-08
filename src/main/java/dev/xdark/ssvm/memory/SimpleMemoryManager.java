@@ -215,11 +215,6 @@ public final class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public Object readOop(ObjectValue object, long offset) {
-		return UnsafeUtil.byAddress(object.getMemory().getData().readLong(offset));
-	}
-
-	@Override
 	public synchronized ObjectValue readValue(ObjectValue object, long offset) {
 		long address = object.getMemory().getData().readLong(offset);
 		return objects.get(keyAddress(address));
@@ -284,13 +279,16 @@ public final class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public void writeOop(ObjectValue object, long offset, Object value) {
-		object.getMemory().getData().writeLong(offset, UnsafeUtil.addressOf(value));
+	public void writeValue(ObjectValue object, long offset, ObjectValue value) {
+		object.getMemory().getData().writeLong(offset, value.getMemory().getAddress());
 	}
 
 	@Override
-	public void writeValue(ObjectValue object, long offset, ObjectValue value) {
-		object.getMemory().getData().writeLong(offset, value.getMemory().getAddress());
+	public synchronized ObjectValue getAndWriteValue(ObjectValue object, long offset, ObjectValue value) {
+		MemoryData data = object.getMemory().getData();
+		ObjectValue old = objects.get(keyAddress(data.readLong(offset)));
+		data.writeLong(offset, value.getMemory().getAddress());
+		return old;
 	}
 
 	@Override

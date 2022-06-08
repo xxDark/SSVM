@@ -8,6 +8,7 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.IntValue;
+import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 
 import java.security.SecureRandom;
@@ -29,7 +30,7 @@ public class NativeSeedGeneratorNatives {
 		VMSymbols symbols = vm.getSymbols();
 		InstanceJavaClass jc = symbols.sun_security_provider_NativeSeedGenerator();
 		vmi.setInvoker(jc, "nativeGenerateSeed", "([B)Z", ctx -> {
-			ArrayValue array = vm.getHelper().checkNotNullArray(ctx.getLocals().load(0));
+			ArrayValue array = vm.getHelper().checkNotNull(ctx.getLocals().<ObjectValue>load(0));
 			int len = array.getLength();
 			SecureRandom rng = new SecureRandom();
 			byte[] tmp = new byte[1];

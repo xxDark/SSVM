@@ -1,7 +1,6 @@
 package dev.xdark.ssvm.mirror;
 
 import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.Value;
 import me.coley.cafedude.classfile.ClassFile;
@@ -411,4 +410,10 @@ public interface InstanceJavaClass extends JavaClass {
 	 * 		If modifiers of fields or methods were changed (method/field became (non-) static).
 	 */
 	void redefine(ClassReader reader, ClassNode node);
+
+	/**
+	 * @return {@code true} if an instance of a type of
+	 * this class can be allocated.
+	 */
+	boolean canAllocateInstance();
 }

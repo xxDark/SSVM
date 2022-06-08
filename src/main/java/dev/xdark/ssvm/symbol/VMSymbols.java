@@ -93,4 +93,5 @@ public interface VMSymbols {
 	InstanceJavaClass java_lang_Cloneable();
 	InstanceJavaClass java_lang_IncompatibleClassChangeError();
 	InstanceJavaClass java_io_FileNotFoundException();
+	InstanceJavaClass java_lang_InstantiationError();
 }

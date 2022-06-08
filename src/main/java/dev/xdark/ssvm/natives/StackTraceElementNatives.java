@@ -32,7 +32,7 @@ public class StackTraceElementNatives {
 		vmi.setInvoker(stackTraceElement, "initStackTraceElements", "([Ljava/lang/StackTraceElement;Ljava/lang/Throwable;)V", ctx -> {
 			VMHelper helper = vm.getHelper();
 			Locals locals = ctx.getLocals();
-			ArrayValue arr = helper.checkArray(locals.load(0));
+			ArrayValue arr = helper.checkNotNull(locals.load(0));
 			InstanceValue ex = helper.checkNotNull(locals.load(1));
 			Backtrace backtrace = ((JavaValue<Backtrace>) ex.getValue("backtrace", "Ljava/lang/Object;")).getValue();
 

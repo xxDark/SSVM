@@ -51,8 +51,8 @@ public class SystemNatives {
 		vmi.setInvoker(sys, "arraycopy", "(Ljava/lang/Object;ILjava/lang/Object;II)V", ctx -> {
 			VMHelper helper = vm.getHelper();
 			Locals locals = ctx.getLocals();
-			ArrayValue src = helper.checkNotNullArray(locals.load(0));
-			ArrayValue dst = helper.checkNotNullArray(locals.load(2));
+			ArrayValue src = helper.checkNotNull(locals.<ObjectValue>load(0));
+			ArrayValue dst = helper.checkNotNull(locals.<ObjectValue>load(2));
 			int srcPos = locals.load(1).asInt();
 			int dstPos = locals.load(3).asInt();
 			int length = locals.load(4).asInt();

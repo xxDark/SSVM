@@ -9,6 +9,7 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.IntValue;
+import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 
 import java.nio.charset.StandardCharsets;
@@ -51,7 +52,7 @@ public class FileSystemNativeDispatcherNatives {
 					vmi.setInvoker(macDispatcher, "normalizepath", "([CI)[C", ctx -> {
 						Locals locals = ctx.getLocals();
 						VMHelper helper = vm.getHelper();
-						ArrayValue path = helper.checkNotNullArray(locals.load(0));
+						ArrayValue path = helper.checkNotNull(locals.<ObjectValue>load(0));
 						// int form = locals.load(1).asInt();
 						ctx.setResult(path);
 						return Result.ABORT;

@@ -1,5 +1,9 @@
 package dev.xdark.ssvm.execution;
 
+import dev.xdark.ssvm.value.DoubleValue;
+import dev.xdark.ssvm.value.FloatValue;
+import dev.xdark.ssvm.value.IntValue;
+import dev.xdark.ssvm.value.LongValue;
 import dev.xdark.ssvm.value.Value;
 
 import java.util.List;
@@ -18,6 +22,38 @@ public interface Stack {
 	 * 		Value to push.
 	 */
 	void push(Value value);
+
+	/**
+	 * @param value
+	 * 		Value to push.
+	 */
+	default void pushLong(long value) {
+		pushWide(LongValue.of(value));
+	}
+
+	/**
+	 * @param value
+	 * 		Value to push.
+	 */
+	default void pushDouble(double value) {
+		pushWide(new DoubleValue(value));
+	}
+
+	/**
+	 * @param value
+	 * 		Value to push.
+	 */
+	default void pushInt(int value) {
+		push(IntValue.of(value));
+	}
+
+	/**
+	 * @param value
+	 * 		Value to push.
+	 */
+	default void pushFloat(float value) {
+		push(new FloatValue(value));
+	}
 
 	/**
 	 * Pushes wide value onto the stack.
@@ -56,6 +92,69 @@ public interface Stack {
 	 * @return value popped off the stack.
 	 */
 	<V extends Value> V pop();
+
+	/**
+	 * Pops long off the stack.
+	 *
+	 * @return long value.
+	 */
+	default long popLong() {
+		return popWide().asLong();
+	}
+
+	/**
+	 * Pops double off the stack.
+	 *
+	 * @return double value.
+	 */
+	default double popDouble() {
+		return popWide().asDouble();
+	}
+
+	/**
+	 * Pops int off the stack.
+	 *
+	 * @return int value.
+	 */
+	default int popInt() {
+		return pop().asInt();
+	}
+
+	/**
+	 * Pops float off the stack.
+	 *
+	 * @return float value.
+	 */
+	default float popFloat() {
+		return pop().asFloat();
+	}
+
+	/**
+	 * Pops char off the stack.
+	 *
+	 * @return char value.
+	 */
+	default char popChar() {
+		return pop().asChar();
+	}
+
+	/**
+	 * Pops short off the stack.
+	 *
+	 * @return short value.
+	 */
+	default short popShort() {
+		return pop().asShort();
+	}
+
+	/**
+	 * Pops byte off the stack.
+	 *
+	 * @return int value.
+	 */
+	default byte popByte() {
+		return pop().asByte();
+	}
 
 	/**
 	 * Pops wide value off the stack.

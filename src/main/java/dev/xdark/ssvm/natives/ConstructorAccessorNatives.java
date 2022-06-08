@@ -15,8 +15,6 @@ import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
 import org.objectweb.asm.Type;
 
-import java.util.List;
-
 /**
  * Initializes reflect/NativeConstructorAccessorImpl.
  *

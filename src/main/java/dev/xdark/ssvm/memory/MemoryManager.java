@@ -252,21 +252,6 @@ public interface MemoryManager {
 	boolean readBoolean(ObjectValue object, long offset);
 
 	/**
-	 * Reads an object from an object.
-	 *
-	 * @param object
-	 * 		Object to read object from.
-	 * @param offset
-	 * 		Field offset.
-	 *
-	 * @return read object value.
-	 *
-	 * @throws IllegalStateException
-	 * 		if {@code offset} is negative.
-	 */
-	Object readOop(ObjectValue object, long offset);
-
-	/**
 	 * Reads VM value from an object.
 	 *
 	 * @param object
@@ -416,17 +401,19 @@ public interface MemoryManager {
 	void writeBoolean(ObjectValue object, long offset, boolean value);
 
 	/**
-	 * Writes oop into the object.
+	 * Writes VM value to the object.
 	 *
 	 * @param object
 	 * 		Object to write to.
 	 * @param offset
 	 * 		Field offset.
+	 * @param value
+	 * 		Value to write.
 	 *
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	void writeOop(ObjectValue object, long offset, Object value);
+	void writeValue(ObjectValue object, long offset, ObjectValue value);
 
 	/**
 	 * Writes VM value to the object.
@@ -441,7 +428,7 @@ public interface MemoryManager {
 	 * @throws IllegalStateException
 	 * 		if {@code offset} is negative.
 	 */
-	void writeValue(ObjectValue object, long offset, ObjectValue value);
+	ObjectValue getAndWriteValue(ObjectValue object, long offset, ObjectValue value);
 
 	/**
 	 * Reads array length.

@@ -123,7 +123,7 @@ public class ClassLoaderNatives {
 			Locals locals = ctx.getLocals();
 			ObjectValue loader = locals.<ObjectValue>load(0);
 			ObjectValue name = locals.<ObjectValue>load(argOffset + 1);
-			ArrayValue b = helper.checkArray(locals.load(argOffset + 2));
+			ArrayValue b = helper.checkNotNull(locals.load(argOffset + 2));
 			int off = locals.load(argOffset + 3).asInt();
 			int length = locals.load(argOffset + 4).asInt();
 			ObjectValue pd = locals.<ObjectValue>load(argOffset + 5);

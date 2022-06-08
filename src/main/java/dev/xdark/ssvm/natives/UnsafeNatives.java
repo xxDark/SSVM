@@ -13,6 +13,7 @@ import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaField;
+import dev.xdark.ssvm.util.ReferenceCountUtil;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
@@ -201,7 +202,7 @@ public class UnsafeNatives {
 				break;
 			}
 		}
-		MethodInvoker compareAndSetReference = (MethodInvoker) ctx -> {
+		MethodInvoker compareAndSetReference = ctx -> {
 			Locals locals = ctx.getLocals();
 			Value obj = locals.load(1);
 			if (obj.isNull()) {
@@ -212,9 +213,12 @@ public class UnsafeNatives {
 			ObjectValue expected = locals.<ObjectValue>load(4);
 			ObjectValue x = locals.<ObjectValue>load(5);
 			MemoryManager memoryManager = vm.getMemoryManager();
-			boolean result = memoryManager.readValue(value, offset) == expected;
+			ObjectValue oldValue = memoryManager.readValue(value, offset);
+			boolean result = oldValue == expected;
 			if (result) {
 				memoryManager.writeValue(value, offset, x);
+				ReferenceCountUtil.tryRetain(x);
+				ReferenceCountUtil.tryRelease(oldValue);
 			}
 			ctx.setResult(result ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
@@ -352,7 +356,7 @@ public class UnsafeNatives {
 			VMHelper helper = ctx.getHelper();
 			ObjectValue loader = locals.<ObjectValue>load(5);
 			ObjectValue name = locals.<ObjectValue>load(1);
-			ArrayValue b = helper.checkArray(locals.load(2));
+			ArrayValue b = helper.checkNotNull(locals.load(2));
 			int off = locals.load(3).asInt();
 			int length = locals.load(4).asInt();
 			ObjectValue pd = locals.<ObjectValue>load(6);
@@ -393,7 +397,7 @@ public class UnsafeNatives {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
 			JavaValue<JavaClass> host = helper.<JavaValue<JavaClass>>checkNotNull(locals.load(1));
-			ArrayValue bytes = helper.checkArray(locals.load(2));
+			ArrayValue bytes = helper.checkNotNull(locals.load(2));
 			JavaClass klass = host.getValue();
 			byte[] array = helper.toJavaBytes(bytes);
 			ClassParseResult result = vm.getClassDefiner().parseClass(null, array, 0, array.length, "JVM_DefineClass");

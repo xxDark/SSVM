@@ -188,7 +188,7 @@ public class IntrinsicsNatives {
 				{
 					Locals locals = ctx.getLocals();
 					ObjectValue other = locals.<ObjectValue>load(1);
-					if (other.getJavaClass() != jc) {
+					if (other.isNull() || other.getJavaClass() != jc) {
 						ctx.setResult(IntValue.ZERO);
 					} else {
 						InstanceValue _this = locals.<InstanceValue>load(0);
@@ -633,7 +633,7 @@ public class IntrinsicsNatives {
 		vmi.setInvoker(jc, "fill", "([JJ)V", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
-			ArrayValue arr = helper.checkNotNullArray(locals.load(0));
+			ArrayValue arr = helper.checkNotNull(locals.<ObjectValue>load(0));
 			long v = locals.load(1).asLong();
 			for (int j = arr.getLength(); j != 0; ) {
 				arr.setLong(--j, v);
@@ -643,7 +643,7 @@ public class IntrinsicsNatives {
 		vmi.setInvoker(jc, "fill", "([DD)V", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
-			ArrayValue arr = helper.checkNotNullArray(locals.load(0));
+			ArrayValue arr = helper.checkNotNull(locals.<ObjectValue>load(0));
 			double v = locals.load(1).asDouble();
 			for (int j = arr.getLength(); j != 0; ) {
 				arr.setDouble(--j, v);
@@ -653,7 +653,7 @@ public class IntrinsicsNatives {
 		vmi.setInvoker(jc, "fill", "([II)V", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
-			ArrayValue arr = helper.checkNotNullArray(locals.load(0));
+			ArrayValue arr = helper.checkNotNull(locals.<ObjectValue>load(0));
 			int v = locals.load(1).asInt();
 			for (int j = arr.getLength(); j != 0; ) {
 				arr.setInt(--j, v);
@@ -663,7 +663,7 @@ public class IntrinsicsNatives {
 		vmi.setInvoker(jc, "fill", "([FF)V", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
-			ArrayValue arr = helper.checkNotNullArray(locals.load(0));
+			ArrayValue arr = helper.checkNotNull(locals.<ObjectValue>load(0));
 			float v = locals.load(1).asFloat();
 			for (int j = arr.getLength(); j != 0; ) {
 				arr.setFloat(--j, v);
@@ -673,7 +673,7 @@ public class IntrinsicsNatives {
 		vmi.setInvoker(jc, "fill", "([CC)V", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
-			ArrayValue arr = helper.checkNotNullArray(locals.load(0));
+			ArrayValue arr = helper.checkNotNull(locals.<ObjectValue>load(0));
 			char v = locals.load(1).asChar();
 			for (int j = arr.getLength(); j != 0; ) {
 				arr.setChar(--j, v);
@@ -683,7 +683,7 @@ public class IntrinsicsNatives {
 		vmi.setInvoker(jc, "fill", "([SS)V", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
-			ArrayValue arr = helper.checkNotNullArray(locals.load(0));
+			ArrayValue arr = helper.checkNotNull(locals.<ObjectValue>load(0));
 			short v = locals.load(1).asShort();
 			for (int j = arr.getLength(); j != 0; ) {
 				arr.setShort(--j, v);
@@ -693,7 +693,7 @@ public class IntrinsicsNatives {
 		vmi.setInvoker(jc, "fill", "([BB)V", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
-			ArrayValue arr = helper.checkNotNullArray(locals.load(0));
+			ArrayValue arr = helper.checkNotNull(locals.<ObjectValue>load(0));
 			byte v = locals.load(1).asByte();
 			for (int j = arr.getLength(); j != 0; ) {
 				arr.setByte(--j, v);
@@ -703,7 +703,7 @@ public class IntrinsicsNatives {
 		vmi.setInvoker(jc, "fill", "([ZZ)V", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
-			ArrayValue arr = helper.checkNotNullArray(locals.load(0));
+			ArrayValue arr = helper.checkNotNull(locals.<ObjectValue>load(0));
 			boolean v = locals.load(1).asBoolean();
 			for (int j = arr.getLength(); j != 0; ) {
 				arr.setBoolean(--j, v);

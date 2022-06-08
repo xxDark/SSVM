@@ -98,6 +98,7 @@ public  final class InitializedVMSymbols implements VMSymbols {
 	private final InstanceJavaClass java_lang_Cloneable;
 	private final InstanceJavaClass java_lang_IncompatibleClassChangeError;
 	private final InstanceJavaClass java_io_FileNotFoundException;
+	private final InstanceJavaClass java_lang_InstantiationError;
 
 	/**
 	 * @param vm
@@ -206,6 +207,7 @@ public  final class InitializedVMSymbols implements VMSymbols {
 		java_lang_Cloneable = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Cloneable");
 		java_lang_IncompatibleClassChangeError = (InstanceJavaClass) vm.findBootstrapClass("java/lang/IncompatibleClassChangeError");
 		java_io_FileNotFoundException = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileNotFoundException");
+		java_lang_InstantiationError = (InstanceJavaClass) vm.findBootstrapClass("java/lang/InstantiationError");
 	}
 
 	@Override
@@ -626,6 +628,11 @@ public  final class InitializedVMSymbols implements VMSymbols {
 	@Override
 	public InstanceJavaClass java_io_FileNotFoundException() {
 		return java_io_FileNotFoundException;
+	}
+
+	@Override
+	public InstanceJavaClass java_lang_InstantiationError() {
+		return java_lang_InstantiationError;
 	}
 
 	private static InstanceJavaClass resolvedMemberName(VirtualMachine vm) {

@@ -43,7 +43,7 @@ public class JitHelper {
 
 	public int arrayLoadInt(Value array, int index, ExecutionContext ctx) {
 		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
+		ArrayValue arr = helper.checkNotNull(array);
 		helper.rangeCheck(arr, index);
 		return arr.getInt(index);
 	}
@@ -54,7 +54,7 @@ public class JitHelper {
 
 	public long arrayLoadLong(Value array, int index, ExecutionContext ctx) {
 		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
+		ArrayValue arr = helper.checkNotNull(array);
 		helper.rangeCheck(arr, index);
 		return arr.getLong(index);
 	}
@@ -65,7 +65,7 @@ public class JitHelper {
 
 	public float arrayLoadFloat(Value array, int index, ExecutionContext ctx) {
 		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
+		ArrayValue arr = helper.checkNotNull(array);
 		helper.rangeCheck(arr, index);
 		return arr.getFloat(index);
 	}
@@ -76,7 +76,7 @@ public class JitHelper {
 
 	public double arrayLoadDouble(Value array, int index, ExecutionContext ctx) {
 		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
+		ArrayValue arr = helper.checkNotNull(array);
 		helper.rangeCheck(arr, index);
 		return arr.getDouble(index);
 	}
@@ -87,7 +87,7 @@ public class JitHelper {
 
 	public char arrayLoadChar(Value array, int index, ExecutionContext ctx) {
 		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
+		ArrayValue arr = helper.checkNotNull(array);
 		helper.rangeCheck(arr, index);
 		return arr.getChar(index);
 	}
@@ -98,7 +98,7 @@ public class JitHelper {
 
 	public short arrayLoadShort(Value array, int index, ExecutionContext ctx) {
 		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
+		ArrayValue arr = helper.checkNotNull(array);
 		helper.rangeCheck(arr, index);
 		return arr.getShort(index);
 	}
@@ -109,7 +109,7 @@ public class JitHelper {
 
 	public byte arrayLoadByte(Value array, int index, ExecutionContext ctx) {
 		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
+		ArrayValue arr = helper.checkNotNull(array);
 		helper.rangeCheck(arr, index);
 		return arr.getByte(index);
 	}
@@ -120,7 +120,7 @@ public class JitHelper {
 
 	public Value arrayLoadValue(Value array, int index, ExecutionContext ctx) {
 		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
+		ArrayValue arr = helper.checkNotNull(array);
 		helper.rangeCheck(arr, index);
 		return arr.getValue(index);
 	}
@@ -131,7 +131,7 @@ public class JitHelper {
 
 	public void arrayStoreLong(Value array, int index, long value, ExecutionContext ctx) {
 		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
+		ArrayValue arr = helper.checkNotNull(array);
 		helper.rangeCheck(arr, index);
 		arr.setLong(index, value);
 	}
@@ -142,7 +142,7 @@ public class JitHelper {
 
 	public void arrayStoreDouble(Value array, int index, double value, ExecutionContext ctx) {
 		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
+		ArrayValue arr = helper.checkNotNull(array);
 		helper.rangeCheck(arr, index);
 		arr.setDouble(index, value);
 	}
@@ -153,7 +153,7 @@ public class JitHelper {
 
 	public void arrayStoreFloat(Value array, int index, float value, ExecutionContext ctx) {
 		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
+		ArrayValue arr = helper.checkNotNull(array);
 		helper.rangeCheck(arr, index);
 		arr.setFloat(index, value);
 	}
@@ -164,7 +164,7 @@ public class JitHelper {
 
 	public void arrayStoreInt(Value array, int index, int value, ExecutionContext ctx) {
 		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
+		ArrayValue arr = helper.checkNotNull(array);
 		helper.rangeCheck(arr, index);
 		arr.setInt(index, value);
 	}
@@ -175,7 +175,7 @@ public class JitHelper {
 
 	public void arrayStoreChar(Value array, int index, char value, ExecutionContext ctx) {
 		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
+		ArrayValue arr = helper.checkNotNull(array);
 		helper.rangeCheck(arr, index);
 		arr.setChar(index, value);
 	}
@@ -186,7 +186,7 @@ public class JitHelper {
 
 	public void arrayStoreShort(Value array, int index, short value, ExecutionContext ctx) {
 		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
+		ArrayValue arr = helper.checkNotNull(array);
 		helper.rangeCheck(arr, index);
 		arr.setShort(index, value);
 	}
@@ -197,7 +197,7 @@ public class JitHelper {
 
 	public void arrayStoreByte(Value array, int index, byte value, ExecutionContext ctx) {
 		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
+		ArrayValue arr = helper.checkNotNull(array);
 		helper.rangeCheck(arr, index);
 		arr.setByte(index, value);
 	}
@@ -208,7 +208,7 @@ public class JitHelper {
 
 	public void arrayStoreValue(Value array, int index, Value value, ExecutionContext ctx) {
 		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNullArray((ObjectValue) array);
+		ArrayValue arr = helper.checkNotNull(array);
 		helper.rangeCheck(arr, index);
 
 		ObjectValue o = (ObjectValue) value;
@@ -253,13 +253,6 @@ public class JitHelper {
 		VMHelper helper = vm.getHelper();
 		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
 		return vm.getOperations().getStaticField(klass, name, desc);
-	}
-
-	public void getStatic(String owner, String name, String desc, ExecutionContext ctx) {
-		VirtualMachine vm = ctx.getVM();
-		VMHelper helper = vm.getHelper();
-		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
-		ctx.getStack().pushGeneric(vm.getOperations().getGenericStaticField(klass, name, desc));
 	}
 
 	// special intrinsic versions.
@@ -364,11 +357,6 @@ public class JitHelper {
 	public void putStaticZ(boolean value, Object owner, long offset, ExecutionContext ctx) {
 		MemoryManager memoryManager = ctx.getVM().getMemoryManager();
 		memoryManager.writeBoolean(getClassOop(owner), offset, value);
-	}
-
-	public void putStatic(String owner, String name, String desc, ExecutionContext ctx) {
-		InstanceJavaClass klass = getOrFindInstanceClass(owner, ctx);
-		ctx.getOperations().putStaticGenericField(klass, name, desc, ctx.getStack().popGeneric());
 	}
 
 	public Value getFieldA(Value value, Object owner, String name, String desc, ExecutionContext ctx) {
@@ -512,6 +500,7 @@ public class JitHelper {
 		ctx.getOperations().putBooleanField((ObjectValue) instance, klass, name, value);
 	}
 
+	// TODO GC
 	public void putFieldA(Value instance, Value value, long offset, ExecutionContext ctx) {
 		ObjectValue o = nonNull(instance, ctx);
 		ctx.getVM().getMemoryManager().writeValue(o, offset, (ObjectValue) value);
@@ -557,77 +546,12 @@ public class JitHelper {
 		ctx.getVM().getMemoryManager().writeBoolean(o, offset, value);
 	}
 
-	public void putFieldGeneric(String owner, String name, String desc, ExecutionContext ctx) {
-		Stack stack = ctx.getStack();
-		Value value = stack.popGeneric();
-		Value instance = stack.pop();
-		InstanceJavaClass klass = getOrFindInstanceClass(owner, ctx);
-		ctx.getOperations().putGenericField((ObjectValue) instance, klass, name, desc, value);
-	}
-
-	public void invokeVirtual(String owner, String name, String desc, ExecutionContext ctx) {
-		VirtualMachine vm = ctx.getVM();
-		Stack stack = ctx.getStack();
-		Type[] args = Type.getArgumentTypes(desc);
-		int localsLength = 1;
-		for (Type arg : args) {
-			localsLength += arg.getSize();
-		}
-		Value[] locals = new Value[localsLength];
-		while(localsLength-- != 0) {
-			locals[localsLength] = stack.pop();
-		}
-		ExecutionContext result = vm.getHelper().invokeVirtual(name, desc, NO_VALUES, locals);
-		Value v = result.getResult();
-		if (!v.isVoid()) {
-			stack.pushGeneric(v);
-		}
-	}
-
 	public Value invokeSpecial(Value[] locals, String owner, String name, String desc, ExecutionContext ctx) {
 		VirtualMachine vm = ctx.getVM();
 		VMHelper helper = vm.getHelper();
 		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
 		ExecutionContext result = helper.invokeExact(klass, name, desc, NO_VALUES, locals);
 		return result.getResult();
-	}
-
-	public void invokeSpecial(String owner, String name, String desc, ExecutionContext ctx) {
-		VirtualMachine vm = ctx.getVM();
-		VMHelper helper = vm.getHelper();
-		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
-		Stack stack = ctx.getStack();
-		Type[] args = Type.getArgumentTypes(desc);
-		int localsLength = 1;
-		for (Type arg : args) {
-			localsLength += arg.getSize();
-		}
-		Value[] locals = new Value[localsLength];
-		while(localsLength-- != 0) {
-			locals[localsLength] = stack.pop();
-		}
-		ExecutionContext result = helper.invokeExact(klass, name, desc, NO_VALUES, locals);
-		Value v = result.getResult();
-		if (!v.isVoid()) {
-			stack.pushGeneric(v);
-		}
-	}
-
-	public void invokeStatic(String owner, String name, String desc, ExecutionContext ctx) {
-		JavaMethod mn = resolveStaticMethod(owner, name, desc, ctx);
-		Stack stack = ctx.getStack();
-		int localsLength = mn.getMaxArgs();
-		Value[] locals = new Value[localsLength];
-		while(localsLength-- != 0) {
-			locals[localsLength] = stack.pop();
-		}
-		VirtualMachine vm = ctx.getVM();
-		VMHelper helper = vm.getHelper();
-		ExecutionContext result = helper.invokeStatic(mn, NO_VALUES, locals);
-		Value v = result.getResult();
-		if (!v.isVoid()) {
-			stack.pushGeneric(v);
-		}
 	}
 
 	public Value invokeStatic(Value[] locals, Object method, ExecutionContext ctx) {
@@ -670,28 +594,7 @@ public class JitHelper {
 		return result.getResult();
 	}
 
-	public void invokeInterface(String owner, String name, String desc, ExecutionContext ctx) {
-		VirtualMachine vm = ctx.getVM();
-		VMHelper helper = vm.getHelper();
-		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
-		Stack stack = ctx.getStack();
-		Type[] args = Type.getArgumentTypes(desc);
-		int localsLength = 1;
-		for (Type arg : args) {
-			localsLength += arg.getSize();
-		}
-		Value[] locals = new Value[localsLength];
-		while(localsLength-- != 0) {
-			locals[localsLength] = stack.pop();
-		}
-		ExecutionContext result = helper.invokeInterface(klass, name, desc, NO_VALUES, locals);
-		Value v = result.getResult();
-		if (!v.isVoid()) {
-			stack.pushGeneric(v);
-		}
-	}
-
-	public Value allocateInstance(InstanceJavaClass klass, ExecutionContext ctx) {
+	public ObjectValue allocateInstance(InstanceJavaClass klass, ExecutionContext ctx) {
 		VirtualMachine vm = ctx.getVM();
 		// TODO checks like in UnsafeNatives
 		MemoryManager memoryManager = vm.getMemoryManager();
@@ -708,14 +611,14 @@ public class JitHelper {
 		return allocateInstance(getOrFindInstanceClass(desc, ctx), ctx);
 	}
 
-	public Value allocateLongArray(int length, ExecutionContext ctx) {
+	public ArrayValue allocateLongArray(int length, ExecutionContext ctx) {
 		VirtualMachine vm = ctx.getVM();
 		VMHelper helper = vm.getHelper();
 		helper.checkArrayLength(length);
 		return helper.newArray(vm.getPrimitives().longPrimitive(), length);
 	}
 
-	public Value allocateDoubleArray(int length, ExecutionContext ctx) {
+	public ArrayValue allocateDoubleArray(int length, ExecutionContext ctx) {
 		VirtualMachine vm = ctx.getVM();
 		VMHelper helper = vm.getHelper();
 		helper.checkArrayLength(length);
@@ -822,55 +725,23 @@ public class JitHelper {
 		return allocateValueArray(ctx.getStack().pop().asInt(), desc, ctx);
 	}
 
-	public int getArrayLength(Value value, ExecutionContext ctx) {
-		ArrayValue array = ctx.getHelper().checkNotNullArray((ObjectValue) value);
+	public int getArrayLength(ObjectValue value, ExecutionContext ctx) {
+		ArrayValue array = ctx.getHelper().checkNotNull(value);
 		return array.getLength();
 	}
 
-	public int getArrayLength(ExecutionContext ctx) {
-		return getArrayLength(ctx.getStack().pop(), ctx);
-	}
-
 	public void throwException(Value exception, ExecutionContext ctx) {
-		if (exception.isNull()) {
-			// NPE it is then.
-			VirtualMachine vm = ctx.getVM();
-			InstanceJavaClass exceptionClass = vm.getSymbols().java_lang_NullPointerException();
-			exceptionClass.initialize();
-			exception = vm.getMemoryManager().newInstance(exceptionClass);
-			vm.getHelper().invokeExact(exceptionClass, "<init>", "()V", NO_VALUES, new Value[]{exception});
-		}
-		throw new VMException((InstanceValue) exception);
+		ctx.getOperations().throwException((ObjectValue) exception);
 	}
 
-	public void throwException(ExecutionContext ctx) {
-		throwException(ctx.getStack().pop(), ctx);
+	public ObjectValue checkCast(Value value, JavaClass jc, ExecutionContext ctx) {
+		return ctx.getOperations().checkCast((ObjectValue) value, jc);
 	}
 
-	public Value checkCast(Value value, JavaClass jc, ExecutionContext ctx) {
-		if (!value.isNull()) {
-			VirtualMachine vm = ctx.getVM();
-			JavaClass against = ((ObjectValue) value).getJavaClass();
-			if (!jc.isAssignableFrom(against)) {
-				vm.getHelper().throwException(vm.getSymbols().java_lang_ClassCastException(), against.getName() + " cannot be cast to " + jc.getName());
-			}
-		}
-		return value;
-	}
-
-	// For JIT to avoid checkcasts in generated code, do not use
-	public Value checkCast(Value value, Object type, ExecutionContext ctx) {
-		return checkCast(value, (JavaClass) type, ctx);
-	}
-
-	public Value checkCast(Value value, String desc, ExecutionContext ctx) {
-		desc = AsmUtil.normalizeDescriptor(desc);
-		JavaClass type = ctx.getHelper().tryFindClass(ctx.getOwner().getClassLoader(), desc, true);
-		return checkCast(value, type, ctx);
-	}
-
-	public void checkCast(String desc, ExecutionContext ctx) {
-		checkCast(ctx.getStack().peek(), desc, ctx);
+	public Value checkCast(Value value, Object rawDesc, ExecutionContext ctx) {
+		String desc = AsmUtil.normalizeDescriptor((String) rawDesc);
+		JavaClass type = ctx.getHelper().tryFindClass(ctx.getClassLoader(), desc, true);
+		return ctx.getOperations().checkCast((ObjectValue) value, type);
 	}
 
 	public boolean instanceofResult(Value value, Object javaClass, ExecutionContext ctx) {
@@ -894,7 +765,7 @@ public class JitHelper {
 	public void instanceofResult(String desc, ExecutionContext ctx) {
 		VirtualMachine vm = ctx.getVM();
 		Stack stack = ctx.getStack();
-		ObjectValue value = stack.<ObjectValue>pop();
+		ObjectValue value = stack.pop();
 		stack.push(instanceofResult(value, desc, ctx) ? IntValue.ONE : IntValue.ZERO);
 	}
 
@@ -1016,13 +887,6 @@ public class JitHelper {
 		VirtualMachine vm = ctx.getVM();
 		VMHelper helper = vm.getHelper();
 		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
-		/*
-		JavaMethod mn = klass.getStaticMethodRecursively(name, desc);
-		if (mn == null) {
-			helper.throwException(vm.getSymbols().java_lang_NoSuchMethodError(), owner + '.' + name + desc);
-		}
-		return mn;
-		*/
 		return vm.getLinkResolver().resolveStaticMethod(klass, name, desc);
 	}
 

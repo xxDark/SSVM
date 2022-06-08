@@ -3,8 +3,7 @@ package dev.xdark.ssvm.execution.asm;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.jit.JitHelper;
-import dev.xdark.ssvm.value.IntValue;
+import dev.xdark.ssvm.execution.Stack;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 /**
@@ -16,7 +15,8 @@ public final class ArrayLengthProcessor implements InstructionProcessor<Abstract
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
-		ctx.getStack().push(IntValue.of(JitHelper.getArrayLength(ctx)));
+		Stack stack = ctx.getStack();
+		stack.pushInt(ctx.getHelper().checkNotNullArray(stack.pop()).getLength());
 		return Result.CONTINUE;
 	}
 }

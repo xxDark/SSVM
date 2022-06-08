@@ -5,6 +5,7 @@ import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.memory.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.DoubleValue;
@@ -24,6 +25,7 @@ public class VMOperations {
 
 	private static final Value[] NO_VALUES = {};
 	private final VMSymbols symbols;
+	private final VMPrimitives primitives;
 	private final VMHelper helper;
 	private final MemoryManager memoryManager;
 
@@ -33,6 +35,7 @@ public class VMOperations {
 	 */
 	public VMOperations(VirtualMachine vm) {
 		symbols = vm.getSymbols();
+		primitives = vm.getPrimitives();
 		helper = vm.getHelper();
 		memoryManager = vm.getMemoryManager();
 	}
@@ -53,6 +56,142 @@ public class VMOperations {
 			helper.throwException(symbols.java_lang_InstantiationError());
 		}
 		return memoryManager.newInstance(klass);
+	}
+
+	/**
+	 * Allocates new array with a specific length.
+	 * Throws VM exception if length is invalid.
+	 *
+	 * @param componentType
+	 * 		Array component type.
+	 * @param length
+	 * 		Array length.
+	 *
+	 * @return new array.
+	 */
+	public ArrayValue allocateArray(JavaClass componentType, int length) {
+		VMHelper helper = this.helper;
+		helper.checkArrayLength(length);
+		return helper.newArray(componentType, length);
+	}
+
+	/**
+	 * Allocates new reference array with a specific length.
+	 * Throws VM exception if length is invalid.
+	 *
+	 * @param componentType
+	 * 		Array component type.
+	 * @param length
+	 * 		Array length.
+	 *
+	 * @return new array.
+	 */
+	public ArrayValue allocateReferenceArray(InstanceJavaClass componentType, int length) {
+		return allocateArray(componentType, length);
+	}
+
+	/**
+	 * Allocates new long array with a specific length.
+	 * Throws VM exception if length is invalid.
+	 *
+	 * @param length
+	 * 		Array length.
+	 *
+	 * @return new array.
+	 */
+	public ArrayValue allocateLongArray(int length) {
+		return allocateArray(primitives.longPrimitive(), length);
+	}
+
+	/**
+	 * Allocates new double array with a specific length.
+	 * Throws VM exception if length is invalid.
+	 *
+	 * @param length
+	 * 		Array length.
+	 *
+	 * @return new array.
+	 */
+	public ArrayValue allocateDoubleArray(int length) {
+		return allocateArray(primitives.doublePrimitive(), length);
+	}
+
+	/**
+	 * Allocates new int array with a specific length.
+	 * Throws VM exception if length is invalid.
+	 *
+	 * @param length
+	 * 		Array length.
+	 *
+	 * @return new array.
+	 */
+	public ArrayValue allocateIntArray(int length) {
+		return allocateArray(primitives.intPrimitive(), length);
+	}
+
+	/**
+	 * Allocates new float array with a specific length.
+	 * Throws VM exception if length is invalid.
+	 *
+	 * @param length
+	 * 		Array length.
+	 *
+	 * @return new array.
+	 */
+	public ArrayValue allocateFloatArray(int length) {
+		return allocateArray(primitives.floatPrimitive(), length);
+	}
+
+	/**
+	 * Allocates new char array with a specific length.
+	 * Throws VM exception if length is invalid.
+	 *
+	 * @param length
+	 * 		Array length.
+	 *
+	 * @return new array.
+	 */
+	public ArrayValue allocateCharArray(int length) {
+		return allocateArray(primitives.charPrimitive(), length);
+	}
+
+	/**
+	 * Allocates new short array with a specific length.
+	 * Throws VM exception if length is invalid.
+	 *
+	 * @param length
+	 * 		Array length.
+	 *
+	 * @return new array.
+	 */
+	public ArrayValue allocateShortArray(int length) {
+		return allocateArray(primitives.shortPrimitive(), length);
+	}
+
+	/**
+	 * Allocates new byte array with a specific length.
+	 * Throws VM exception if length is invalid.
+	 *
+	 * @param length
+	 * 		Array length.
+	 *
+	 * @return new array.
+	 */
+	public ArrayValue allocateByteArray(int length) {
+		return allocateArray(primitives.bytePrimitive(), length);
+	}
+
+	/**
+	 * Allocates new boolean array with a specific length.
+	 * Throws VM exception if length is invalid.
+	 *
+	 * @param length
+	 * 		Array length.
+	 *
+	 * @return new array.
+	 */
+	public ArrayValue allocateBooleanArray(int length) {
+		return allocateArray(primitives.booleanPrimitive(), length);
 	}
 
 	/**

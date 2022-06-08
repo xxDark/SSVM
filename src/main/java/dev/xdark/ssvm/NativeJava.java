@@ -357,7 +357,7 @@ public final class NativeJava {
 
 		vmi.setProcessor(INVOKEDYNAMIC, new InvokeDynamicLinkerProcessor());
 		vmi.setProcessor(NEW, new NewProcessor());
-		vmi.setProcessor(ANEWARRAY, new InstanceArrayProcessor());
+		vmi.setProcessor(ANEWARRAY, new ObjectArrayProcessor());
 		vmi.setProcessor(NEWARRAY, new PrimitiveArrayProcessor());
 		vmi.setProcessor(ARRAYLENGTH, new ArrayLengthProcessor());
 

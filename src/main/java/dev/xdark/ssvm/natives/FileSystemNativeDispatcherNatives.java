@@ -16,21 +16,20 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Initializes sun/nio/fs/WindowsNativeDispatcher.
- * 
+ *
  * @author xDark
  */
 @UtilityClass
 public class FileSystemNativeDispatcherNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
 		InstanceJavaClass windowsDispatcher = (InstanceJavaClass) vm.findBootstrapClass("sun/nio/fs/WindowsNativeDispatcher");
 		if (windowsDispatcher == null) {
-			InstanceJavaClass unixDispatcher = (InstanceJavaClass) vm.findBootstrapClass("sun/nio/fs/UnixNativeDispatcher") ;
+			InstanceJavaClass unixDispatcher = (InstanceJavaClass) vm.findBootstrapClass("sun/nio/fs/UnixNativeDispatcher");
 			vmi.setInvoker(unixDispatcher, "getcwd", "()[B", ctx -> {
 				byte[] cwd = vm.getFileDescriptorManager().getCurrentWorkingDirectory().getBytes(StandardCharsets.UTF_8);
 				ctx.setResult(vm.getHelper().toVMBytes(cwd));

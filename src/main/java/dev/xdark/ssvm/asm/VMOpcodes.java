@@ -19,12 +19,13 @@ public class VMOpcodes {
 	public static final int INVOKEINTERFACE = INVOKESTATIC + 1;
 	public static final int NEW = INVOKEINTERFACE + 1;
 	public static final int ANEWARRAY = NEW + 1;
-	public static final int LONG_NEW_ARRAY = ANEWARRAY + 1;
-	public static final int DOUBLE_NEW_ARRAY = LONG_NEW_ARRAY + 1;
-	public static final int INT_NEW_ARRAY = DOUBLE_NEW_ARRAY + 1;
-	public static final int FLOAT_NEW_ARRAY = INT_NEW_ARRAY + 1;
-	public static final int CHAR_NEW_ARRAY = FLOAT_NEW_ARRAY + 1;
-	public static final int SHORT_NEW_ARRAY = CHAR_NEW_ARRAY + 1;
-	public static final int BYTE_NEW_ARRAY = SHORT_NEW_ARRAY + 1;
-	public static final int BOOLEAN_NEW_ARRAY = BYTE_NEW_ARRAY + 1;
+	public static final int BOOLEAN_NEW_ARRAY = ANEWARRAY + 1;
+	public static final int CHAR_NEW_ARRAY = BOOLEAN_NEW_ARRAY + 1;
+	public static final int FLOAT_NEW_ARRAY = CHAR_NEW_ARRAY + 1;
+	public static final int DOUBLE_NEW_ARRAY = FLOAT_NEW_ARRAY + 1;
+	public static final int BYTE_NEW_ARRAY = DOUBLE_NEW_ARRAY + 1;
+	public static final int SHORT_NEW_ARRAY = BYTE_NEW_ARRAY + 1;
+	public static final int INT_NEW_ARRAY = SHORT_NEW_ARRAY + 1;
+	public static final int LONG_NEW_ARRAY = INT_NEW_ARRAY + 1;
+	public static final int REFERENCE_NEW_ARRAY = LONG_NEW_ARRAY + 1;
 }

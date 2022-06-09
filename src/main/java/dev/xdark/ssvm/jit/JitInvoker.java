@@ -13,8 +13,7 @@ public abstract class JitInvoker {
 	/**
 	 * Invokes the context.
 	 *
-	 * @param ctx
-	 * 		Context to be invoked.
+	 * @param ctx Context to be invoked.
 	 */
 	public abstract void invoke(ExecutionContext ctx);
 }

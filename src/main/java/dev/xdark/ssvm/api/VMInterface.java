@@ -37,11 +37,8 @@ public final class VMInterface {
 	/**
 	 * Gets an instruction processor.
 	 *
-	 * @param <I>
-	 * 		Type of the instruction.
-	 * @param insn
-	 * 		Instruction to get processor for.
-	 *
+	 * @param <I>  Type of the instruction.
+	 * @param insn Instruction to get processor for.
 	 * @return instruction processor.
 	 */
 	public <I extends AbstractInsnNode> InstructionProcessor<I> getProcessor(I insn) {
@@ -51,11 +48,8 @@ public final class VMInterface {
 	/**
 	 * Gets an instruction processor by opcode.
 	 *
-	 * @param opcode
-	 * 		Instruction opcode.
-	 * @param <I>
-	 * 		Instruction type.
-	 *
+	 * @param opcode Instruction opcode.
+	 * @param <I>    Instruction type.
 	 * @return instruction processor.
 	 */
 	public <I extends AbstractInsnNode> InstructionProcessor<I> getProcessor(int opcode) {
@@ -65,10 +59,8 @@ public final class VMInterface {
 	/**
 	 * Sets an instruction processor.
 	 *
-	 * @param opcode
-	 * 		Opcode of the instruction.
-	 * @param processor
-	 * 		Processor of the opcode.
+	 * @param opcode    Opcode of the instruction.
+	 * @param processor Processor of the opcode.
 	 */
 	public void setProcessor(int opcode, InstructionProcessor<?> processor) {
 		processors[opcode] = processor;
@@ -77,9 +69,7 @@ public final class VMInterface {
 	/**
 	 * Returns method invoker based off call info.
 	 *
-	 * @param call
-	 * 		Call info.
-	 *
+	 * @param call Call info.
 	 * @return method invoker.
 	 */
 	public MethodInvoker getInvoker(JavaMethod call) {
@@ -89,11 +79,8 @@ public final class VMInterface {
 	/**
 	 * Sets an invoker for the method.
 	 *
-	 * @param call
-	 * 		Call information.
-	 * @param invoker
-	 * 		Method invoker.
-	 *
+	 * @param call    Call information.
+	 * @param invoker Method invoker.
 	 * @see Modifier#ACC_JIT
 	 */
 	public void setInvoker(JavaMethod call, MethodInvoker invoker) {
@@ -105,18 +92,12 @@ public final class VMInterface {
 	/**
 	 * Sets an invoker for the method.
 	 *
-	 * @param jc
-	 * 		Instance class.
-	 * @param name
-	 * 		Name of the method.
-	 * @param desc
-	 * 		Descriptor of the method.
-	 * @param invoker
-	 * 		Method invoker.
-	 *
+	 * @param jc      Instance class.
+	 * @param name    Name of the method.
+	 * @param desc    Descriptor of the method.
+	 * @param invoker Method invoker.
 	 * @return {@code true} if method was registered,
 	 * {@code false} otherwise.
-	 *
 	 * @see Modifier#ACC_JIT
 	 */
 	public boolean setInvoker(InstanceJavaClass jc, String name, String desc, MethodInvoker invoker) {
@@ -131,8 +112,7 @@ public final class VMInterface {
 	/**
 	 * Registers global method enter hook.
 	 *
-	 * @param invocation
-	 * 		Hook to register.
+	 * @param invocation Hook to register.
 	 */
 	public void registerMethodEnter(MethodInvocation invocation) {
 		globalEnter.add(invocation);
@@ -141,8 +121,7 @@ public final class VMInterface {
 	/**
 	 * Registers global method enter hook.
 	 *
-	 * @param invocation
-	 * 		Hook to register.
+	 * @param invocation Hook to register.
 	 */
 	public void registerMethodExit(MethodInvocation invocation) {
 		globalExit.add(invocation);
@@ -151,8 +130,7 @@ public final class VMInterface {
 	/**
 	 * Registers global method exit hook.
 	 *
-	 * @param invocation
-	 * 		Hook to unregister.
+	 * @param invocation Hook to unregister.
 	 */
 	public void removeMethodEnter(MethodInvocation invocation) {
 		globalEnter.remove(invocation);
@@ -161,8 +139,7 @@ public final class VMInterface {
 	/**
 	 * Registers global method exit hook.
 	 *
-	 * @param invocation
-	 * 		Hook to unregister.
+	 * @param invocation Hook to unregister.
 	 */
 	public void removeMethodExit(MethodInvocation invocation) {
 		globalExit.remove(invocation);
@@ -171,10 +148,8 @@ public final class VMInterface {
 	/**
 	 * Registers specific method enter hook.
 	 *
-	 * @param call
-	 * 		Method being hooked.
-	 * @param invocation
-	 * 		Hook to register.
+	 * @param call       Method being hooked.
+	 * @param invocation Hook to register.
 	 */
 	public void registerMethodEnter(JavaMethod call, MethodInvocation invocation) {
 		methodEnter.put(call, invocation);
@@ -183,15 +158,10 @@ public final class VMInterface {
 	/**
 	 * Registers specific method enter hook.
 	 *
-	 * @param jc
-	 * 		Instance class.
-	 * @param name
-	 * 		Name of the method.
-	 * @param desc
-	 * 		Descriptor of the method.
-	 * @param invocation
-	 * 		Hook to register.
-	 *
+	 * @param jc         Instance class.
+	 * @param name       Name of the method.
+	 * @param desc       Descriptor of the method.
+	 * @param invocation Hook to register.
 	 * @return {@code true} if method was registered,
 	 * {@code false} otherwise.
 	 */
@@ -207,10 +177,8 @@ public final class VMInterface {
 	/**
 	 * Registers specific method exit hook.
 	 *
-	 * @param method
-	 * 		Method being hooked.
-	 * @param invocation
-	 * 		Hook to unregister.
+	 * @param method     Method being hooked.
+	 * @param invocation Hook to unregister.
 	 */
 	public void removeMethodEnter(JavaMethod method, MethodInvocation invocation) {
 		methodExit.put(Objects.requireNonNull(method, "method"), invocation);
@@ -219,10 +187,8 @@ public final class VMInterface {
 	/**
 	 * Registers specific method exit hook.
 	 *
-	 * @param method
-	 * 		Method being hooked.
-	 * @param invocation
-	 * 		Hook to register.
+	 * @param method     Method being hooked.
+	 * @param invocation Hook to register.
 	 */
 	public void registerMethodExit(JavaMethod method, MethodInvocation invocation) {
 		methodExit.put(Objects.requireNonNull(method, "method"), invocation);
@@ -231,15 +197,10 @@ public final class VMInterface {
 	/**
 	 * Registers specific method exit hook.
 	 *
-	 * @param jc
-	 * 		Instance class.
-	 * @param name
-	 * 		Name of the method.
-	 * @param desc
-	 * 		Descriptor of the method.
-	 * @param invocation
-	 * 		Hook to register.
-	 *
+	 * @param jc         Instance class.
+	 * @param name       Name of the method.
+	 * @param desc       Descriptor of the method.
+	 * @param invocation Hook to register.
 	 * @return {@code true} if method was registered,
 	 * {@code false} otherwise.
 	 */
@@ -255,8 +216,7 @@ public final class VMInterface {
 	/**
 	 * Registers instruction interceptor.
 	 *
-	 * @param interceptor
-	 * 		Interceptor to register.
+	 * @param interceptor Interceptor to register.
 	 */
 	public void registerInstructionInterceptor(InstructionInterceptor interceptor) {
 		interceptors.add(interceptor);
@@ -265,8 +225,7 @@ public final class VMInterface {
 	/**
 	 * Removes instruction interceptor.
 	 *
-	 * @param interceptor
-	 * 		Interceptor to remove.
+	 * @param interceptor Interceptor to remove.
 	 */
 	public void removeInstructionInterceptor(InstructionInterceptor interceptor) {
 		interceptors.remove(interceptor);
@@ -275,11 +234,8 @@ public final class VMInterface {
 	/**
 	 * Returns stream of invocation hooks.
 	 *
-	 * @param call
-	 * 		Call info.
-	 * @param enter
-	 * 		True if called upon method entering, method exit otherwise.
-	 *
+	 * @param call  Call info.
+	 * @param enter True if called upon method entering, method exit otherwise.
 	 * @return iterable of invocation hooks.
 	 */
 	public Iterable<MethodInvocation> getInvocationHooks(JavaMethod call, boolean enter) {

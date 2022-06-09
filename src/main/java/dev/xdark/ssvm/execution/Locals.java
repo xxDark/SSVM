@@ -12,31 +12,24 @@ public interface Locals {
 	/**
 	 * Sets value at specific index.
 	 *
-	 * @param index
-	 * 		Index of local variable.
-	 * @param value
-	 * 		Value to set.
+	 * @param index Index of local variable.
+	 * @param value Value to set.
 	 */
 	void set(int index, Value value);
 
 	/**
 	 * Sets wide value at specific index.
 	 *
-	 * @param index
-	 * 		Index of local variable.
-	 * @param value
-	 * 		Value to set.
+	 * @param index Index of local variable.
+	 * @param value Value to set.
 	 */
 	void setWide(int index, Value value);
 
 	/**
 	 * Loads value from local variable.
 	 *
-	 * @param index
-	 * 		Index of local variable.
-	 * @param <V>
-	 * 		Type of the value to load.
-	 *
+	 * @param index Index of local variable.
+	 * @param <V>   Type of the value to load.
 	 * @return value at {@code index}.
 	 */
 	<V extends Value> V load(int index);
@@ -44,8 +37,7 @@ public interface Locals {
 	/**
 	 * Copies contents into this locals.
 	 *
-	 * @param locals
-	 * 		Content to copy.
+	 * @param locals Content to copy.
 	 */
 	void copyFrom(Value[] locals);
 

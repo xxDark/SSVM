@@ -23,8 +23,7 @@ public class ConstantPoolNatives {
 	/**
 	 * Sets up xx/reflect/ConstantPool
 	 *
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		InstanceJavaClass cpClass = vm.getSymbols().reflect_ConstantPool();
@@ -61,7 +60,7 @@ public class ConstantPoolNatives {
 			String className = ((CpUtf8) cf.getCp(((CpClass) item).getIndex())).getText();
 			JavaClass result = vm.getClassLoaders().getClassLoaderData(ctx.getOwner().getClassLoader()).getClass(className);
 			if (result == null) {
-				ctx.setResult(NullValue.INSTANCE);
+				ctx.setResult(vm.getMemoryManager().nullValue());
 			} else {
 				ctx.setResult(result.getOop());
 			}

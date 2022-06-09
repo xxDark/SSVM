@@ -24,8 +24,7 @@ import lombok.experimental.UtilityClass;
 public class ReflectionNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
@@ -59,7 +58,9 @@ public class ReflectionNatives {
 				while (true) {
 					StackFrame frame = backtrace.get(count - callerOffset);
 					ExecutionContext frameCtx = frame.getExecutionContext();
-					if (frameCtx == null) break;
+					if (frameCtx == null) {
+						break;
+					}
 					JavaMethod method = frameCtx.getMethod();
 					if (Modifier.isCallerSensitive(method.getAccess())) {
 						callerOffset++;

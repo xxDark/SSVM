@@ -7,10 +7,8 @@ public class NativeVMThread extends BaseVMThread {
 	private final Thread thread;
 
 	/**
-	 * @param oop
-	 * 		VM thread oop.
-	 * @param thread
-	 * 		Java thread.
+	 * @param oop    VM thread oop.
+	 * @param thread Java thread.
 	 */
 	public NativeVMThread(InstanceValue oop, Thread thread) {
 		super(oop);
@@ -18,8 +16,7 @@ public class NativeVMThread extends BaseVMThread {
 	}
 
 	/**
-	 * @param oop
-	 * 		VM thread oop.
+	 * @param oop VM thread oop.
 	 */
 	public NativeVMThread(InstanceValue oop) {
 		super(oop);

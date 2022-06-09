@@ -9,13 +9,21 @@ import dev.xdark.ssvm.mirror.PrimitiveClass;
  */
 public interface VMPrimitives {
 
-	 PrimitiveClass longPrimitive();
-	 PrimitiveClass doublePrimitive();
-	 PrimitiveClass intPrimitive();
-	 PrimitiveClass floatPrimitive();
-	 PrimitiveClass charPrimitive();
-	 PrimitiveClass shortPrimitive();
-	 PrimitiveClass bytePrimitive();
-	 PrimitiveClass booleanPrimitive();
-	 PrimitiveClass voidPrimitive();
+	PrimitiveClass longPrimitive();
+
+	PrimitiveClass doublePrimitive();
+
+	PrimitiveClass intPrimitive();
+
+	PrimitiveClass floatPrimitive();
+
+	PrimitiveClass charPrimitive();
+
+	PrimitiveClass shortPrimitive();
+
+	PrimitiveClass bytePrimitive();
+
+	PrimitiveClass booleanPrimitive();
+
+	PrimitiveClass voidPrimitive();
 }

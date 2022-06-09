@@ -23,8 +23,7 @@ import java.util.zip.ZipEntry;
 public class JarFileNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
@@ -38,10 +37,10 @@ public class JarFileNatives {
 				helper.throwException(symbols.java_lang_IllegalStateException(), "zip closed");
 			}
 			ObjectValue[] paths = zip.stream()
-					.map(ZipEntry::getName)
-					.filter(name -> name.toUpperCase(Locale.ENGLISH).startsWith("META-INF/"))
-					.map(helper::newUtf8)
-					.toArray(ObjectValue[]::new);
+				.map(ZipEntry::getName)
+				.filter(name -> name.toUpperCase(Locale.ENGLISH).startsWith("META-INF/"))
+				.map(helper::newUtf8)
+				.toArray(ObjectValue[]::new);
 			ctx.setResult(helper.toVMValues(paths));
 			return Result.ABORT;
 		});

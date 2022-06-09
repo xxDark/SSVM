@@ -18,38 +18,33 @@ public interface Stack {
 	/**
 	 * Pushes value onto the stack.
 	 *
-	 * @param value
-	 * 		Value to push.
+	 * @param value Value to push.
 	 */
 	void push(Value value);
 
 	/**
-	 * @param value
-	 * 		Value to push.
+	 * @param value Value to push.
 	 */
 	default void pushLong(long value) {
 		pushWide(LongValue.of(value));
 	}
 
 	/**
-	 * @param value
-	 * 		Value to push.
+	 * @param value Value to push.
 	 */
 	default void pushDouble(double value) {
 		pushWide(new DoubleValue(value));
 	}
 
 	/**
-	 * @param value
-	 * 		Value to push.
+	 * @param value Value to push.
 	 */
 	default void pushInt(int value) {
 		push(IntValue.of(value));
 	}
 
 	/**
-	 * @param value
-	 * 		Value to push.
+	 * @param value Value to push.
 	 */
 	default void pushFloat(float value) {
 		push(new FloatValue(value));
@@ -59,8 +54,7 @@ public interface Stack {
 	 * Pushes wide value onto the stack.
 	 * Inserts TOP after.
 	 *
-	 * @param value
-	 * 		Value to push.
+	 * @param value Value to push.
 	 */
 	void pushWide(Value value);
 
@@ -68,8 +62,7 @@ public interface Stack {
 	 * Pushes generic value onto the stack.
 	 * If the value is wide, TOP will also be pushed.
 	 *
-	 * @param value
-	 * 		Value to push.
+	 * @param value Value to push.
 	 */
 	void pushGeneric(Value value);
 
@@ -78,17 +71,14 @@ public interface Stack {
 	 * Does not check whether the value
 	 * is wide or not.
 	 *
-	 * @param value
-	 * 		Value to push.
+	 * @param value Value to push.
 	 */
 	void pushRaw(Value value);
 
 	/**
 	 * Pops value off the stack.
 	 *
-	 * @param <V>
-	 * 		Type of the value.
-	 *
+	 * @param <V> Type of the value.
 	 * @return value popped off the stack.
 	 */
 	<V extends Value> V pop();
@@ -159,22 +149,16 @@ public interface Stack {
 	/**
 	 * Pops wide value off the stack.
 	 *
-	 * @param <V>
-	 * 		Type of the value.
-	 *
+	 * @param <V> Type of the value.
 	 * @return wide value popped off the stack.
-	 *
-	 * @throws IllegalStateException
-	 * 		If wide value does not occupy two slots.
+	 * @throws IllegalStateException If wide value does not occupy two slots.
 	 */
 	<V extends Value> V popWide();
 
 	/**
 	 * Pops generic value off the stack.
 	 *
-	 * @param <V>
-	 * 		Type of the value.
-	 *
+	 * @param <V> Type of the value.
 	 * @return generic value popped off the stack.
 	 */
 	<V extends Value> V popGeneric();
@@ -182,9 +166,7 @@ public interface Stack {
 	/**
 	 * Peeks value from the stack.
 	 *
-	 * @param <V>
-	 * 		Type of the value.
-	 *
+	 * @param <V> Type of the value.
 	 * @return value peeked from the stack.
 	 */
 	<V extends Value> V peek();
@@ -192,9 +174,7 @@ public interface Stack {
 	/**
 	 * Polls value from the stack.
 	 *
-	 * @param <V>
-	 * 		Value tpye.
-	 *
+	 * @param <V> Value tpye.
 	 * @return tail value of the stack or {@code null},
 	 * if stack is empty.
 	 */
@@ -309,9 +289,7 @@ public interface Stack {
 	/**
 	 * Gets value on the stack by an index.
 	 *
-	 * @param index
-	 * 		Value position.
-	 *
+	 * @param index Value position.
 	 * @return value at the specific position.
 	 */
 	Value getAt(int index);

@@ -9,7 +9,7 @@ import dev.xdark.ssvm.classloading.ClassParseResult;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.execution.VMException;
-import dev.xdark.ssvm.memory.MemoryManager;
+import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
@@ -30,7 +30,6 @@ import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.LongValue;
-import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.TopValue;
 import dev.xdark.ssvm.value.Value;
@@ -60,8 +59,7 @@ public final class VMHelper {
 	private final VirtualMachine vm;
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public VMHelper(VirtualMachine vm) {
 		this.vm = vm;
@@ -70,13 +68,9 @@ public final class VMHelper {
 	/**
 	 * Invokes static method.
 	 *
-	 * @param method
-	 * 		Method to invoke.
-	 * @param stack
-	 * 		Execution stack.
-	 * @param locals
-	 * 		Local variable table.
-	 *
+	 * @param method Method to invoke.
+	 * @param stack  Execution stack.
+	 * @param locals Local variable table.
 	 * @return invocation result.
 	 */
 	public ExecutionContext invokeStatic(JavaMethod method, Value[] stack, Value[] locals) {
@@ -92,17 +86,11 @@ public final class VMHelper {
 	/**
 	 * Invokes static method.
 	 *
-	 * @param javaClass
-	 * 		Class to search method in.
-	 * @param name
-	 * 		Method name.
-	 * @param desc
-	 * 		Method descriptor.
-	 * @param stack
-	 * 		Execution stack.
-	 * @param locals
-	 * 		Local variable table.
-	 *
+	 * @param javaClass Class to search method in.
+	 * @param name      Method name.
+	 * @param desc      Method descriptor.
+	 * @param stack     Execution stack.
+	 * @param locals    Local variable table.
 	 * @return invocation result.
 	 */
 	public ExecutionContext invokeStatic(InstanceJavaClass javaClass, String name, String desc, Value[] stack, Value[] locals) {
@@ -113,15 +101,10 @@ public final class VMHelper {
 	/**
 	 * Invokes virtual method.
 	 *
-	 * @param name
-	 * 		Method name.
-	 * @param desc
-	 * 		Method descriptor.
-	 * @param stack
-	 * 		Execution stack.
-	 * @param locals
-	 * 		Local variable table.
-	 *
+	 * @param name   Method name.
+	 * @param desc   Method descriptor.
+	 * @param stack  Execution stack.
+	 * @param locals Local variable table.
 	 * @return invocation result.
 	 */
 	public ExecutionContext invokeVirtual(String name, String desc, Value[] stack, Value[] locals) {
@@ -140,17 +123,11 @@ public final class VMHelper {
 	/**
 	 * Invokes interface method.
 	 *
-	 * @param javaClass
-	 * 		Class to search method in.
-	 * @param name
-	 * 		Method name.
-	 * @param desc
-	 * 		Method descriptor.
-	 * @param stack
-	 * 		Execution stack.
-	 * @param locals
-	 * 		Local variable table.
-	 *
+	 * @param javaClass Class to search method in.
+	 * @param name      Method name.
+	 * @param desc      Method descriptor.
+	 * @param stack     Execution stack.
+	 * @param locals    Local variable table.
 	 * @return invocation result.
 	 */
 	public ExecutionContext invokeInterface(InstanceJavaClass javaClass, String name, String desc, Value[] stack, Value[] locals) {
@@ -164,13 +141,9 @@ public final class VMHelper {
 	/**
 	 * Invokes exact method.
 	 *
-	 * @param method
-	 * 		Method to invoke.
-	 * @param stack
-	 * 		Execution stack.
-	 * @param locals
-	 * 		Local variable table.
-	 *
+	 * @param method Method to invoke.
+	 * @param stack  Execution stack.
+	 * @param locals Local variable table.
 	 * @return invocation result.
 	 */
 	public ExecutionContext invokeExact(JavaMethod method, Value[] stack, Value[] locals) {
@@ -189,17 +162,11 @@ public final class VMHelper {
 	/**
 	 * Invokes exact method.
 	 *
-	 * @param javaClass
-	 * 		Class to search method in.
-	 * @param name
-	 * 		Method name.
-	 * @param desc
-	 * 		Method descriptor.
-	 * @param stack
-	 * 		Execution stack.
-	 * @param locals
-	 * 		Local variable table.
-	 *
+	 * @param javaClass Class to search method in.
+	 * @param name      Method name.
+	 * @param desc      Method descriptor.
+	 * @param stack     Execution stack.
+	 * @param locals    Local variable table.
 	 * @return invocation result.
 	 */
 	public ExecutionContext invokeExact(InstanceJavaClass javaClass, String name, String desc, Value[] stack, Value[] locals) {
@@ -211,9 +178,7 @@ public final class VMHelper {
 	 * Creates VM vales from constant.
 	 *
 	 * @return VM value.
-	 *
-	 * @throws IllegalStateException
-	 * 		If constant value cannot be created.
+	 * @throws IllegalStateException If constant value cannot be created.
 	 */
 	public Value valueFromLdc(Object cst) {
 		VirtualMachine vm = this.vm;
@@ -242,9 +207,9 @@ public final class VMHelper {
 			Type type = (Type) cst;
 			StackFrame ctx = vm.currentThread().getBacktrace().last();
 			InstanceJavaClass caller = ctx == null ? null : ctx.getDeclaringClass();
-			ObjectValue loader = caller == null ? NullValue.INSTANCE : caller.getClassLoader();
+			ObjectValue loader = caller == null ? vm.getMemoryManager().nullValue() : caller.getClassLoader();
 			int sort = type.getSort();
-			switch(sort) {
+			switch (sort) {
 				case Type.OBJECT:
 					String internalName = type.getInternalName();
 					if (caller != null && Modifier.isHiddenMember(caller.getModifiers()) && internalName.equals(caller.getInternalName())) {
@@ -269,15 +234,13 @@ public final class VMHelper {
 	/**
 	 * Converts an array to {@code long[]} array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 *
+	 * @param array Array to convert.
 	 * @return native Java array.
 	 */
 	public long[] toJavaLongs(ArrayValue array) {
 		int length = array.getLength();
 		long[] result = new long[length];
-		while(length-- != 0) {
+		while (length-- != 0) {
 			result[length] = array.getLong(length);
 		}
 		return result;
@@ -286,15 +249,13 @@ public final class VMHelper {
 	/**
 	 * Converts an array to {@code double[]} array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 *
+	 * @param array Array to convert.
 	 * @return native Java array.
 	 */
 	public double[] toJavaDoubles(ArrayValue array) {
 		int length = array.getLength();
 		double[] result = new double[length];
-		while(length-- != 0) {
+		while (length-- != 0) {
 			result[length] = array.getDouble(length);
 		}
 		return result;
@@ -303,15 +264,13 @@ public final class VMHelper {
 	/**
 	 * Converts an array to {@code int[]} array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 *
+	 * @param array Array to convert.
 	 * @return native Java array.
 	 */
 	public int[] toJavaInts(ArrayValue array) {
 		int length = array.getLength();
 		int[] result = new int[length];
-		while(length-- != 0) {
+		while (length-- != 0) {
 			result[length] = array.getInt(length);
 		}
 		return result;
@@ -320,15 +279,13 @@ public final class VMHelper {
 	/**
 	 * Converts an array to {@code float[]} array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 *
+	 * @param array Array to convert.
 	 * @return native Java array.
 	 */
 	public float[] toJavaFloats(ArrayValue array) {
 		int length = array.getLength();
 		float[] result = new float[length];
-		while(length-- != 0) {
+		while (length-- != 0) {
 			result[length] = array.getFloat(length);
 		}
 		return result;
@@ -337,15 +294,13 @@ public final class VMHelper {
 	/**
 	 * Converts an array to {@code char[]} array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 *
+	 * @param array Array to convert.
 	 * @return native Java array.
 	 */
 	public char[] toJavaChars(ArrayValue array) {
 		int length = array.getLength();
 		char[] result = new char[length];
-		while(length-- != 0) {
+		while (length-- != 0) {
 			result[length] = array.getChar(length);
 		}
 		return result;
@@ -354,15 +309,13 @@ public final class VMHelper {
 	/**
 	 * Converts an array to {@code short[]} array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 *
+	 * @param array Array to convert.
 	 * @return native Java array.
 	 */
 	public short[] toJavaShorts(ArrayValue array) {
 		int length = array.getLength();
 		short[] result = new short[length];
-		while(length-- != 0) {
+		while (length-- != 0) {
 			result[length] = array.getShort(length);
 		}
 		return result;
@@ -371,15 +324,13 @@ public final class VMHelper {
 	/**
 	 * Converts an array to {@code byte[]} array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 *
+	 * @param array Array to convert.
 	 * @return native Java array.
 	 */
 	public byte[] toJavaBytes(ArrayValue array) {
 		int length = array.getLength();
 		byte[] result = new byte[length];
-		while(length-- != 0) {
+		while (length-- != 0) {
 			result[length] = array.getByte(length);
 		}
 		return result;
@@ -388,15 +339,13 @@ public final class VMHelper {
 	/**
 	 * Converts an array to {@code boolean[]} array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 *
+	 * @param array Array to convert.
 	 * @return native Java array.
 	 */
 	public boolean[] toJavaBooleans(ArrayValue array) {
 		int length = array.getLength();
 		boolean[] result = new boolean[length];
-		while(length-- != 0) {
+		while (length-- != 0) {
 			result[length] = array.getBoolean(length);
 		}
 		return result;
@@ -405,15 +354,13 @@ public final class VMHelper {
 	/**
 	 * Converts an array to {@code Value[]} array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 *
+	 * @param array Array to convert.
 	 * @return native Java array.
 	 */
 	public Value[] toJavaValues(ArrayValue array) {
 		int length = array.getLength();
 		Value[] result = new Value[length];
-		while(length-- != 0) {
+		while (length-- != 0) {
 			result[length] = array.getValue(length);
 		}
 		return result;
@@ -422,13 +369,9 @@ public final class VMHelper {
 	/**
 	 * Converts Java array to VM array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 * @param startIndex
-	 * 		The initial index of the range to be converted, inclusive.
-	 * @param endIndex
-	 * 		The final index of the range to be converted, exclusive.
-	 *
+	 * @param array      Array to convert.
+	 * @param startIndex The initial index of the range to be converted, inclusive.
+	 * @param endIndex   The final index of the range to be converted, exclusive.
 	 * @return VM array.
 	 */
 	public ArrayValue toVMLongs(long[] array, int startIndex, int endIndex) {
@@ -444,9 +387,7 @@ public final class VMHelper {
 	/**
 	 * Converts Java array to VM array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 *
+	 * @param array Array to convert.
 	 * @return VM array.
 	 */
 	public ArrayValue toVMLongs(long[] array) {
@@ -456,13 +397,9 @@ public final class VMHelper {
 	/**
 	 * Converts Java array to VM array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 * @param startIndex
-	 * 		The initial index of the range to be converted, inclusive.
-	 * @param endIndex
-	 * 		The final index of the range to be converted, exclusive.
-	 *
+	 * @param array      Array to convert.
+	 * @param startIndex The initial index of the range to be converted, inclusive.
+	 * @param endIndex   The final index of the range to be converted, exclusive.
 	 * @return VM array.
 	 */
 	public ArrayValue toVMDoubles(double[] array, int startIndex, int endIndex) {
@@ -478,9 +415,7 @@ public final class VMHelper {
 	/**
 	 * Converts Java array to VM array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 *
+	 * @param array Array to convert.
 	 * @return VM array.
 	 */
 	public ArrayValue toVMDoubles(double[] array) {
@@ -490,13 +425,9 @@ public final class VMHelper {
 	/**
 	 * Converts Java array to VM array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 * @param startIndex
-	 * 		The initial index of the range to be converted, inclusive.
-	 * @param endIndex
-	 * 		The final index of the range to be converted, exclusive.
-	 *
+	 * @param array      Array to convert.
+	 * @param startIndex The initial index of the range to be converted, inclusive.
+	 * @param endIndex   The final index of the range to be converted, exclusive.
 	 * @return VM array.
 	 */
 	public ArrayValue toVMInts(int[] array, int startIndex, int endIndex) {
@@ -512,9 +443,7 @@ public final class VMHelper {
 	/**
 	 * Converts Java array to VM array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 *
+	 * @param array Array to convert.
 	 * @return VM array.
 	 */
 	public ArrayValue toVMInts(int[] array) {
@@ -524,13 +453,9 @@ public final class VMHelper {
 	/**
 	 * Converts Java array to VM array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 * @param startIndex
-	 * 		The initial index of the range to be converted, inclusive.
-	 * @param endIndex
-	 * 		The final index of the range to be converted, exclusive.
-	 *
+	 * @param array      Array to convert.
+	 * @param startIndex The initial index of the range to be converted, inclusive.
+	 * @param endIndex   The final index of the range to be converted, exclusive.
 	 * @return VM array.
 	 */
 	public ArrayValue toVMFloats(float[] array, int startIndex, int endIndex) {
@@ -546,9 +471,7 @@ public final class VMHelper {
 	/**
 	 * Converts Java array to VM array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 *
+	 * @param array Array to convert.
 	 * @return VM array.
 	 */
 	public ArrayValue toVMFloats(float[] array) {
@@ -558,13 +481,9 @@ public final class VMHelper {
 	/**
 	 * Converts Java array to VM array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 * @param startIndex
-	 * 		The initial index of the range to be converted, inclusive.
-	 * @param endIndex
-	 * 		The final index of the range to be converted, exclusive.
-	 *
+	 * @param array      Array to convert.
+	 * @param startIndex The initial index of the range to be converted, inclusive.
+	 * @param endIndex   The final index of the range to be converted, exclusive.
 	 * @return VM array.
 	 */
 	public ArrayValue toVMChars(char[] array, int startIndex, int endIndex) {
@@ -580,9 +499,7 @@ public final class VMHelper {
 	/**
 	 * Converts Java array to VM array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 *
+	 * @param array Array to convert.
 	 * @return VM array.
 	 */
 	public ArrayValue toVMChars(char[] array) {
@@ -592,13 +509,9 @@ public final class VMHelper {
 	/**
 	 * Converts Java array to VM array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 * @param startIndex
-	 * 		The initial index of the range to be converted, inclusive.
-	 * @param endIndex
-	 * 		The final index of the range to be converted, exclusive.
-	 *
+	 * @param array      Array to convert.
+	 * @param startIndex The initial index of the range to be converted, inclusive.
+	 * @param endIndex   The final index of the range to be converted, exclusive.
 	 * @return VM array.
 	 */
 	public ArrayValue toVMShorts(short[] array, int startIndex, int endIndex) {
@@ -614,9 +527,7 @@ public final class VMHelper {
 	/**
 	 * Converts Java array to VM array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 *
+	 * @param array Array to convert.
 	 * @return VM array.
 	 */
 	public ArrayValue toVMShorts(short[] array) {
@@ -626,13 +537,9 @@ public final class VMHelper {
 	/**
 	 * Converts Java array to VM array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 * @param startIndex
-	 * 		The initial index of the range to be converted, inclusive.
-	 * @param endIndex
-	 * 		The final index of the range to be converted, exclusive.
-	 *
+	 * @param array      Array to convert.
+	 * @param startIndex The initial index of the range to be converted, inclusive.
+	 * @param endIndex   The final index of the range to be converted, exclusive.
 	 * @return VM array.
 	 */
 	public ArrayValue toVMBytes(byte[] array, int startIndex, int endIndex) {
@@ -648,9 +555,7 @@ public final class VMHelper {
 	/**
 	 * Converts Java array to VM array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 *
+	 * @param array Array to convert.
 	 * @return VM array.
 	 */
 	public ArrayValue toVMBytes(byte[] array) {
@@ -660,13 +565,9 @@ public final class VMHelper {
 	/**
 	 * Converts Java array to VM array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 * @param startIndex
-	 * 		The initial index of the range to be converted, inclusive.
-	 * @param endIndex
-	 * 		The final index of the range to be converted, exclusive.
-	 *
+	 * @param array      Array to convert.
+	 * @param startIndex The initial index of the range to be converted, inclusive.
+	 * @param endIndex   The final index of the range to be converted, exclusive.
 	 * @return VM array.
 	 */
 	public ArrayValue toVMBooleans(boolean[] array, int startIndex, int endIndex) {
@@ -682,9 +583,7 @@ public final class VMHelper {
 	/**
 	 * Converts Java array to VM array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 *
+	 * @param array Array to convert.
 	 * @return VM array.
 	 */
 	public ArrayValue toVMBooleans(boolean[] array) {
@@ -694,13 +593,9 @@ public final class VMHelper {
 	/**
 	 * Converts Java array to VM array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 * @param startIndex
-	 * 		The initial index of the range to be converted, inclusive.
-	 * @param endIndex
-	 * 		The final index of the range to be converted, exclusive.
-	 *
+	 * @param array      Array to convert.
+	 * @param startIndex The initial index of the range to be converted, inclusive.
+	 * @param endIndex   The final index of the range to be converted, exclusive.
 	 * @return VM array.
 	 */
 	public ArrayValue toVMValues(ObjectValue[] array, int startIndex, int endIndex) {
@@ -716,9 +611,7 @@ public final class VMHelper {
 	/**
 	 * Converts Java array to VM array.
 	 *
-	 * @param array
-	 * 		Array to convert.
-	 *
+	 * @param array Array to convert.
 	 * @return VM array.
 	 */
 	public ArrayValue toVMValues(ObjectValue[] array) {
@@ -728,9 +621,7 @@ public final class VMHelper {
 	/**
 	 * Converts VM string to Java string.
 	 *
-	 * @param value
-	 * 		VM string.
-	 *
+	 * @param value VM string.
 	 * @return Java string.
 	 */
 	public String readUtf8(InstanceValue value) {
@@ -752,9 +643,7 @@ public final class VMHelper {
 	/**
 	 * Converts VM string to Java string.
 	 *
-	 * @param value
-	 * 		VM string.
-	 *
+	 * @param value VM string.
 	 * @return Java string.
 	 */
 	public String readUtf8(Value value) {
@@ -767,18 +656,15 @@ public final class VMHelper {
 	/**
 	 * Allocates VM string.
 	 *
-	 * @param str
-	 * 		Java string.
-	 * @param pool
-	 * 		True if string should be pooled.
-	 *
+	 * @param str  Java string.
+	 * @param pool True if string should be pooled.
 	 * @return VM string.
 	 */
 	public ObjectValue newUtf8(String str, boolean pool) {
-		if (str == null) {
-			return NullValue.INSTANCE;
-		}
 		VirtualMachine vm = this.vm;
+		if (str == null) {
+			return vm.getMemoryManager().nullValue();
+		}
 		InstanceJavaClass jc = vm.getSymbols().java_lang_String();
 		jc.initialize();
 		if (pool) {
@@ -813,9 +699,7 @@ public final class VMHelper {
 	/**
 	 * Allocates VM string.
 	 *
-	 * @param str
-	 * 		Java string.
-	 *
+	 * @param str Java string.
 	 * @return VM string.
 	 */
 	public ObjectValue newUtf8(String str) {
@@ -825,9 +709,7 @@ public final class VMHelper {
 	/**
 	 * Allocates VM string.
 	 *
-	 * @param chars
-	 * 		String chars.
-	 *
+	 * @param chars String chars.
 	 * @return VM string.
 	 */
 	public ObjectValue newUtf8(ArrayValue chars) {
@@ -850,8 +732,7 @@ public final class VMHelper {
 	/**
 	 * Initializes default static values of the class.
 	 *
-	 * @param javaClass
-	 * 		Class to set fields for.
+	 * @param javaClass Class to set fields for.
 	 */
 	public void initializeStaticFields(InstanceJavaClass javaClass) {
 		MemoryManager memoryManager = vm.getMemoryManager();
@@ -869,7 +750,7 @@ public final class VMHelper {
 			}
 			long offset = jf.getOffset();
 			long resultingOffset = baseOffset + offset;
-			switch(desc.charAt(0)) {
+			switch (desc.charAt(0)) {
 				case 'J':
 					memoryManager.writeLong(oop, resultingOffset, (Long) cst);
 					break;
@@ -893,51 +774,7 @@ public final class VMHelper {
 					memoryManager.writeByte(oop, resultingOffset, ((Integer) cst).byteValue());
 					break;
 				default:
-					memoryManager.writeValue(oop, resultingOffset, cst == null ? NullValue.INSTANCE : (ObjectValue) valueFromLdc(cst));
-			}
-		}
-	}
-
-	/**
-	 * Initializes default values of the class.
-	 *
-	 * @param value
-	 * 		Value to set fields for.
-	 */
-	public void initializeDefaultValues(InstanceValue value) {
-		VirtualMachine vm = this.vm;
-		MemoryManager memoryManager = vm.getMemoryManager();
-		long baseOffset = memoryManager.valueBaseOffset(value);
-		for (JavaField entry : value.getJavaClass().getVirtualFieldLayout().getAll()) {
-			String field = entry.getNode().desc;
-			long offset = baseOffset + entry.getOffset();
-			switch(field) {
-				case "J":
-					memoryManager.writeLong(value, offset, 0L);
-					break;
-				case "D":
-					memoryManager.writeDouble(value, offset, 0.0D);
-					break;
-				case "I":
-					memoryManager.writeInt(value, offset, 0);
-					break;
-				case "F":
-					memoryManager.writeFloat(value, offset, 0.0F);
-					break;
-				case "C":
-					memoryManager.writeChar(value, offset, '\0');
-					break;
-				case "S":
-					memoryManager.writeShort(value, offset, (short) 0);
-					break;
-				case "B":
-					memoryManager.writeByte(value, offset, (byte) 0);
-					break;
-				case "Z":
-					memoryManager.writeBoolean(value, offset, false);
-					break;
-				default:
-					memoryManager.writeValue(value, offset, NullValue.INSTANCE);
+					memoryManager.writeValue(oop, resultingOffset, cst == null ? memoryManager.nullValue() : (ObjectValue) valueFromLdc(cst));
 			}
 		}
 	}
@@ -945,8 +782,7 @@ public final class VMHelper {
 	/**
 	 * Modifies VM oop according to native thread.
 	 *
-	 * @param vmThread
-	 * 		Thread to modify.
+	 * @param vmThread Thread to modify.
 	 */
 	public void screenVmThread(VMThread vmThread) {
 		Thread javaThread = vmThread.getJavaThread();
@@ -964,13 +800,9 @@ public final class VMHelper {
 	/**
 	 * Creates new exception.
 	 *
-	 * @param javaClass
-	 * 		Exception class.
-	 * @param message
-	 * 		Exception message.
-	 * @param cause
-	 * 		Exception cause.
-	 *
+	 * @param javaClass Exception class.
+	 * @param message   Exception message.
+	 * @param cause     Exception cause.
 	 * @return new exception instance.
 	 */
 	public InstanceValue newException(InstanceJavaClass javaClass, String message, ObjectValue cause) {
@@ -990,11 +822,8 @@ public final class VMHelper {
 	/**
 	 * Creates new exception.
 	 *
-	 * @param javaClass
-	 * 		Exception class.
-	 * @param message
-	 * 		Exception message.
-	 *
+	 * @param javaClass Exception class.
+	 * @param message   Exception message.
 	 * @return new exception instance.
 	 */
 	public InstanceValue newException(InstanceJavaClass javaClass, String message) {
@@ -1004,11 +833,8 @@ public final class VMHelper {
 	/**
 	 * Creates new exception.
 	 *
-	 * @param javaClass
-	 * 		Exception class.
-	 * @param cause
-	 * 		Exception cause.
-	 *
+	 * @param javaClass Exception class.
+	 * @param cause     Exception cause.
 	 * @return new exception instance.
 	 */
 	public InstanceValue newException(InstanceJavaClass javaClass, ObjectValue cause) {
@@ -1018,9 +844,7 @@ public final class VMHelper {
 	/**
 	 * Creates new exception.
 	 *
-	 * @param javaClass
-	 * 		Exception class.
-	 *
+	 * @param javaClass Exception class.
 	 * @return new exception instance.
 	 */
 	public InstanceValue newException(InstanceJavaClass javaClass) {
@@ -1030,12 +854,9 @@ public final class VMHelper {
 	/**
 	 * Throws exception.
 	 *
-	 * @param javaClass
-	 * 		Exception class.
-	 * @param message
-	 * 		Message.
-	 * @param cause
-	 * 		Exception cause.
+	 * @param javaClass Exception class.
+	 * @param message   Message.
+	 * @param cause     Exception cause.
 	 */
 	public void throwException(InstanceJavaClass javaClass, String message, ObjectValue cause) {
 		throw new VMException(newException(javaClass, message, cause));
@@ -1044,10 +865,8 @@ public final class VMHelper {
 	/**
 	 * Throws exception.
 	 *
-	 * @param javaClass
-	 * 		Exception class.
-	 * @param message
-	 * 		Exception Message.
+	 * @param javaClass Exception class.
+	 * @param message   Exception Message.
 	 */
 	public void throwException(InstanceJavaClass javaClass, String message) {
 		throwException(javaClass, message, null);
@@ -1056,10 +875,8 @@ public final class VMHelper {
 	/**
 	 * Throws exception.
 	 *
-	 * @param javaClass
-	 * 		Exception class.
-	 * @param cause
-	 * 		Exception cause.
+	 * @param javaClass Exception class.
+	 * @param cause     Exception cause.
 	 */
 	public void throwException(InstanceJavaClass javaClass, ObjectValue cause) {
 		throwException(javaClass, null, cause);
@@ -1068,8 +885,7 @@ public final class VMHelper {
 	/**
 	 * Throws exception.
 	 *
-	 * @param javaClass
-	 * 		Exception class.
+	 * @param javaClass Exception class.
 	 */
 	public void throwException(InstanceJavaClass javaClass) {
 		throwException(javaClass, null, null);
@@ -1078,10 +894,8 @@ public final class VMHelper {
 	/**
 	 * Performs array bounds check.
 	 *
-	 * @param array
-	 * 		Array to check in.
-	 * @param index
-	 * 		Index to check.
+	 * @param array Array to check in.
+	 * @param index Index to check.
 	 */
 	public void rangeCheck(ArrayValue array, int index) {
 		if (index < 0 || index >= array.getLength()) {
@@ -1092,8 +906,7 @@ public final class VMHelper {
 	/**
 	 * Performs array length check.
 	 *
-	 * @param length
-	 * 		Length to check.
+	 * @param length Length to check.
 	 */
 	public void checkArrayLength(int length) {
 		if (length < 0) {
@@ -1104,11 +917,8 @@ public final class VMHelper {
 	/**
 	 * Performs null check.
 	 *
-	 * @param value
-	 * 		Value to check.
-	 * @param <V>
-	 * 		New value type after null check.
-	 *
+	 * @param value Value to check.
+	 * @param <V>   New value type after null check.
 	 * @return value.
 	 */
 	public <V extends ObjectValue> V checkNotNull(Value value) {
@@ -1121,9 +931,7 @@ public final class VMHelper {
 	/**
 	 * Performs null check on an array.
 	 *
-	 * @param value
-	 * 		Value to check.
-	 *
+	 * @param value Value to check.
 	 * @return array value.
 	 */
 	public <V extends ArrayValue> V checkNotNullArray(Value value) {
@@ -1136,12 +944,9 @@ public final class VMHelper {
 	/**
 	 * Performs bounds check.
 	 *
-	 * @param value
-	 * 		Value to check.
-	 * @param from
-	 * 		Minimmm value.
-	 * @param to
-	 * 		Maximum value.
+	 * @param value Value to check.
+	 * @param from  Minimmm value.
+	 * @param to    Maximum value.
 	 */
 	public void rangeCheck(int value, int from, int to) {
 		if (value < from || value >= to) {
@@ -1152,10 +957,8 @@ public final class VMHelper {
 	/**
 	 * Performs equality check.
 	 *
-	 * @param a
-	 * 		Left value.
-	 * @param b
-	 * 		Right value.
+	 * @param a Left value.
+	 * @param b Right value.
 	 */
 	public void checkEquals(int a, int b) {
 		if (a != b) {
@@ -1166,12 +969,9 @@ public final class VMHelper {
 	/**
 	 * Sets class fields, just like normal JVM.
 	 *
-	 * @param oop
-	 * 		Class to set fields for.
-	 * @param classLoader
-	 * 		Class loader.
-	 * @param protectionDomain
-	 * 		Protection domain of the class.
+	 * @param oop              Class to set fields for.
+	 * @param classLoader      Class loader.
+	 * @param protectionDomain Protection domain of the class.
 	 */
 	public void setClassFields(InstanceValue oop, ObjectValue classLoader, ObjectValue protectionDomain) {
 		if (!classLoader.isNull()) {
@@ -1183,23 +983,14 @@ public final class VMHelper {
 	/**
 	 * Defines class.
 	 *
-	 * @param classLoader
-	 * 		Class loader to define class in.
-	 * @param name
-	 * 		Class name.
-	 * @param b
-	 * 		Class bytes.
-	 * @param off
-	 * 		Class bytes offset.
-	 * @param len
-	 * 		Class bytes length.
-	 * @param protectionDomain
-	 * 		Protection domain.
-	 * @param source
-	 * 		Class source, e.g. it's location
-	 * @param linkToLoader
-	 * 		Whether the class should be linked.
-	 *
+	 * @param classLoader      Class loader to define class in.
+	 * @param name             Class name.
+	 * @param b                Class bytes.
+	 * @param off              Class bytes offset.
+	 * @param len              Class bytes length.
+	 * @param protectionDomain Protection domain.
+	 * @param source           Class source, e.g. it's location
+	 * @param linkToLoader     Whether the class should be linked.
 	 * @return defined class.
 	 */
 	public InstanceJavaClass defineClass(ObjectValue classLoader, String name, byte[] b, int off, int len, ObjectValue protectionDomain, String source, boolean linkToLoader) {
@@ -1226,7 +1017,7 @@ public final class VMHelper {
 			javaClass.link();
 			return javaClass;
 		}
-		synchronized(classLoaderData) {
+		synchronized (classLoaderData) {
 			if (classLoaderData.getClass(name) != null) {
 				throwException(vm.getSymbols().java_lang_ClassNotFoundException(), "Duplicate class name: " + name);
 			}
@@ -1239,21 +1030,13 @@ public final class VMHelper {
 	/**
 	 * Defines class.
 	 *
-	 * @param classLoader
-	 * 		Class loader to define class in.
-	 * @param name
-	 * 		Class name.
-	 * @param b
-	 * 		Class bytes.
-	 * @param off
-	 * 		Class bytes offset.
-	 * @param len
-	 * 		Class bytes length.
-	 * @param protectionDomain
-	 * 		Protection domain.
-	 * @param source
-	 * 		Class source, e.g. it's location
-	 *
+	 * @param classLoader      Class loader to define class in.
+	 * @param name             Class name.
+	 * @param b                Class bytes.
+	 * @param off              Class bytes offset.
+	 * @param len              Class bytes length.
+	 * @param protectionDomain Protection domain.
+	 * @param source           Class source, e.g. it's location
 	 * @return defined class.
 	 */
 	public InstanceJavaClass defineClass(ObjectValue classLoader, String name, byte[] b, int off, int len, ObjectValue protectionDomain, String source) {
@@ -1263,14 +1046,10 @@ public final class VMHelper {
 	/**
 	 * Creates new {@link InstanceJavaClass}.
 	 *
-	 * @param loader
-	 * 		Class loader.
-	 * @param protectionDomain
-	 * 		Protection domain.
-	 * @param reader
-	 * 		Class source.
-	 * @param node
-	 * 		Class node
+	 * @param loader           Class loader.
+	 * @param protectionDomain Protection domain.
+	 * @param reader           Class source.
+	 * @param node             Class node
 	 */
 	public InstanceJavaClass newInstanceClass(ObjectValue loader, ObjectValue protectionDomain, ClassReader reader, ClassNode node) {
 		VirtualMachine vm = this.vm;
@@ -1289,17 +1068,14 @@ public final class VMHelper {
 	/**
 	 * Sets array class component type.
 	 *
-	 * @param javaClass
-	 * 		Class to set component for.
-	 * @param componentType
-	 * 		Type of the component.
+	 * @param javaClass     Class to set component for.
+	 * @param componentType Type of the component.
 	 */
 	public void setComponentType(ArrayJavaClass javaClass, JavaClass componentType) {
 		InstanceValue oop = javaClass.getOop();
 		long offset = oop.getFieldOffset("componentType", "Ljava/lang/Class;");
 		if (offset != -1L) {
 			InstanceValue typeOop = componentType.getOop();
-			typeOop.retain();
 			vm.getMemoryManager().writeValue(oop, offset, typeOop);
 		}
 	}
@@ -1307,9 +1083,7 @@ public final class VMHelper {
 	/**
 	 * Converts VM exception to Java exception.
 	 *
-	 * @param oop
-	 * 		VM exception to convert.
-	 *
+	 * @param oop VM exception to convert.
 	 * @return Java exception.
 	 */
 	public Exception toJavaException(InstanceValue oop) {
@@ -1319,15 +1093,15 @@ public final class VMHelper {
 		if (!backtrace.isNull()) {
 			Backtrace unmarshalled = ((JavaValue<Backtrace>) backtrace).getValue();
 			StackTraceElement[] stackTrace = StreamSupport.stream(unmarshalled.spliterator(), false)
-					.map(frame -> {
-						String methodName = frame.getMethodName();
-						InstanceJavaClass owner = frame.getDeclaringClass();
-						String className = owner.getName();
-						String sourceFile = frame.getSourceFile();
-						int lineNumber = frame.getLineNumber();
-						return new StackTraceElement(className, methodName, sourceFile, lineNumber);
-					})
-					.toArray(StackTraceElement[]::new);
+				.map(frame -> {
+					String methodName = frame.getMethodName();
+					InstanceJavaClass owner = frame.getDeclaringClass();
+					String className = owner.getName();
+					String sourceFile = frame.getSourceFile();
+					int lineNumber = frame.getLineNumber();
+					return new StackTraceElement(className, methodName, sourceFile, lineNumber);
+				})
+				.toArray(StackTraceElement[]::new);
 			Collections.reverse(Arrays.asList(stackTrace));
 			exception.setStackTrace(stackTrace);
 		}
@@ -1350,11 +1124,8 @@ public final class VMHelper {
 	/**
 	 * Constructs new VM StackTraceElement from backtrace frame.
 	 *
-	 * @param frame
-	 * 		Java frame.
-	 * @param injectDeclaringClass
-	 * 		See {@link StackTraceElement#declaringClassObject} description.
-	 *
+	 * @param frame                Java frame.
+	 * @param injectDeclaringClass See {@link StackTraceElement#declaringClassObject} description.
 	 * @return VM StackTraceElement.
 	 */
 	public InstanceValue newStackTraceElement(StackFrame frame, boolean injectDeclaringClass) {
@@ -1369,16 +1140,15 @@ public final class VMHelper {
 		MemoryManager memoryManager = vm.getMemoryManager();
 		InstanceValue element = memoryManager.newInstance(jc);
 		invokeExact(jc, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V", new Value[0], new Value[]{
-				element,
-				newUtf8(className),
-				newUtf8(methodName),
-				newUtf8(sourceFile),
-				IntValue.of(lineNumber)
+			element,
+			newUtf8(className),
+			newUtf8(methodName),
+			newUtf8(sourceFile),
+			IntValue.of(lineNumber)
 		});
 		long offset;
 		if (injectDeclaringClass && (offset = element.getFieldOffset("declaringClassObject", "Ljava/lang/Class;")) != -1L) {
 			InstanceValue oop = owner.getOop();
-			oop.retain();
 			memoryManager.writeValue(element, offset, oop);
 		}
 		return element;
@@ -1386,7 +1156,7 @@ public final class VMHelper {
 
 	public JavaClass findClass(ObjectValue loader, String name, boolean initialize) {
 		int dimensions = 0;
-		while(name.charAt(dimensions) == '[') {
+		while (name.charAt(dimensions) == '[') {
 			dimensions++;
 		}
 		if (dimensions != 0) {
@@ -1395,7 +1165,7 @@ public final class VMHelper {
 		JavaClass klass;
 		if (name.length() == 1) {
 			VMPrimitives primitives = vm.getPrimitives();
-			switch(name.charAt(0)) {
+			switch (name.charAt(0)) {
 				case 'J':
 					klass = primitives.longPrimitive();
 					break;
@@ -1443,7 +1213,7 @@ public final class VMHelper {
 				klass = vm.findClass(loader, name, initialize);
 			}
 		}
-		while(dimensions-- != 0) {
+		while (dimensions-- != 0) {
 			klass = klass.newArrayClass();
 		}
 		return klass;
@@ -1452,9 +1222,7 @@ public final class VMHelper {
 	/**
 	 * Unwraps long value.
 	 *
-	 * @param value
-	 * 		Wrapper to unwrap.
-	 *
+	 * @param value Wrapper to unwrap.
 	 * @return primitive value.
 	 */
 	public LongValue unboxLong(ObjectValue value) {
@@ -1465,9 +1233,7 @@ public final class VMHelper {
 	/**
 	 * Unwraps double value.
 	 *
-	 * @param value
-	 * 		Wrapper to unwrap.
-	 *
+	 * @param value Wrapper to unwrap.
 	 * @return primitive value.
 	 */
 	public DoubleValue unboxDouble(ObjectValue value) {
@@ -1478,9 +1244,7 @@ public final class VMHelper {
 	/**
 	 * Unwraps int value.
 	 *
-	 * @param value
-	 * 		Wrapper to unwrap.
-	 *
+	 * @param value Wrapper to unwrap.
 	 * @return primitive value.
 	 */
 	public IntValue unboxInt(ObjectValue value) {
@@ -1491,9 +1255,7 @@ public final class VMHelper {
 	/**
 	 * Unwraps float value.
 	 *
-	 * @param value
-	 * 		Wrapper to unwrap.
-	 *
+	 * @param value Wrapper to unwrap.
 	 * @return primitive value.
 	 */
 	public FloatValue unboxFloat(ObjectValue value) {
@@ -1504,9 +1266,7 @@ public final class VMHelper {
 	/**
 	 * Unwraps char value.
 	 *
-	 * @param value
-	 * 		Wrapper to unwrap.
-	 *
+	 * @param value Wrapper to unwrap.
 	 * @return primitive value.
 	 */
 	public IntValue unboxChar(ObjectValue value) {
@@ -1517,9 +1277,7 @@ public final class VMHelper {
 	/**
 	 * Unwraps short value.
 	 *
-	 * @param value
-	 * 		Wrapper to unwrap.
-	 *
+	 * @param value Wrapper to unwrap.
 	 * @return primitive value.
 	 */
 	public IntValue unboxShort(ObjectValue value) {
@@ -1530,9 +1288,7 @@ public final class VMHelper {
 	/**
 	 * Unwraps byte value.
 	 *
-	 * @param value
-	 * 		Wrapper to unwrap.
-	 *
+	 * @param value Wrapper to unwrap.
 	 * @return primitive value.
 	 */
 	public IntValue unboxByte(ObjectValue value) {
@@ -1543,9 +1299,7 @@ public final class VMHelper {
 	/**
 	 * Unwraps boolean value.
 	 *
-	 * @param value
-	 * 		Wrapper to unwrap.
-	 *
+	 * @param value Wrapper to unwrap.
 	 * @return primitive value.
 	 */
 	public IntValue unboxBoolean(ObjectValue value) {
@@ -1556,11 +1310,8 @@ public final class VMHelper {
 	/**
 	 * Attempts to unbox generic object value.
 	 *
-	 * @param value
-	 * 		Wrapper to unwrap.
-	 * @param jc
-	 * 		Primitive class.
-	 *
+	 * @param value Wrapper to unwrap.
+	 * @param jc    Primitive class.
 	 * @return unwrapped value or itself.
 	 */
 	public Value unboxGeneric(ObjectValue value, JavaClass jc) {
@@ -1595,9 +1346,7 @@ public final class VMHelper {
 	/**
 	 * Boxes long value.
 	 *
-	 * @param value
-	 * 		Value to box.
-	 *
+	 * @param value Value to box.
 	 * @return boxed value.
 	 */
 	public ObjectValue boxLong(Value value) {
@@ -1607,9 +1356,7 @@ public final class VMHelper {
 	/**
 	 * Boxes double value.
 	 *
-	 * @param value
-	 * 		Value to box.
-	 *
+	 * @param value Value to box.
 	 * @return boxed value.
 	 */
 	public ObjectValue boxDouble(Value value) {
@@ -1619,9 +1366,7 @@ public final class VMHelper {
 	/**
 	 * Boxes int value.
 	 *
-	 * @param value
-	 * 		Value to box.
-	 *
+	 * @param value Value to box.
 	 * @return boxed value.
 	 */
 	public ObjectValue boxInt(Value value) {
@@ -1631,9 +1376,7 @@ public final class VMHelper {
 	/**
 	 * Boxes float value.
 	 *
-	 * @param value
-	 * 		Value to box.
-	 *
+	 * @param value Value to box.
 	 * @return boxed value.
 	 */
 	public ObjectValue boxFloat(Value value) {
@@ -1643,9 +1386,7 @@ public final class VMHelper {
 	/**
 	 * Boxes char value.
 	 *
-	 * @param value
-	 * 		Value to box.
-	 *
+	 * @param value Value to box.
 	 * @return boxed value.
 	 */
 	public ObjectValue boxChar(Value value) {
@@ -1655,9 +1396,7 @@ public final class VMHelper {
 	/**
 	 * Boxes short value.
 	 *
-	 * @param value
-	 * 		Value to box.
-	 *
+	 * @param value Value to box.
 	 * @return boxed value.
 	 */
 	public ObjectValue boxShort(Value value) {
@@ -1667,9 +1406,7 @@ public final class VMHelper {
 	/**
 	 * Boxes byte value.
 	 *
-	 * @param value
-	 * 		Value to box.
-	 *
+	 * @param value Value to box.
 	 * @return boxed value.
 	 */
 	public ObjectValue boxByte(Value value) {
@@ -1679,9 +1416,7 @@ public final class VMHelper {
 	/**
 	 * Boxes boolean value.
 	 *
-	 * @param value
-	 * 		Value to box.
-	 *
+	 * @param value Value to box.
 	 * @return boxed value.
 	 */
 	public ObjectValue boxBoolean(Value value) {
@@ -1691,11 +1426,8 @@ public final class VMHelper {
 	/**
 	 * Boxes primitive type if needed.
 	 *
-	 * @param value
-	 * 		Value to box.
-	 * @param type
-	 * 		Value type.
-	 *
+	 * @param value Value to box.
+	 * @param type  Value type.
 	 * @return boxed value or original,
 	 * if boxing is not needed.
 	 */
@@ -1730,9 +1462,7 @@ public final class VMHelper {
 	/**
 	 * Converts array of classes to VM array.
 	 *
-	 * @param classes
-	 * 		Array of classes to convert.
-	 *
+	 * @param classes Array of classes to convert.
 	 * @return VM array.
 	 */
 	public ArrayValue convertClasses(JavaClass[] classes) {
@@ -1747,9 +1477,7 @@ public final class VMHelper {
 	/**
 	 * Converts array to VM classes to their oops.
 	 *
-	 * @param classes
-	 * 		Array of classes to convert.
-	 *
+	 * @param classes Array of classes to convert.
 	 * @return array of oops.
 	 */
 	public InstanceValue[] getClassOops(JavaClass[] classes) {
@@ -1763,13 +1491,9 @@ public final class VMHelper {
 	/**
 	 * Converts array of ASM types to VM classes.
 	 *
-	 * @param loader
-	 * 		Class loader to use.
-	 * @param types
-	 * 		ASM class types.
-	 * @param initialize
-	 * 		Should classes be initialized.
-	 *
+	 * @param loader     Class loader to use.
+	 * @param types      ASM class types.
+	 * @param initialize Should classes be initialized.
 	 * @return Converted array.
 	 */
 	public JavaClass[] convertTypes(ObjectValue loader, Type[] types, boolean initialize) {
@@ -1784,11 +1508,8 @@ public final class VMHelper {
 	/**
 	 * Creates new VM array.
 	 *
-	 * @param componentType
-	 * 		Component type of array.
-	 * @param length
-	 * 		Array length.
-	 *
+	 * @param componentType Component type of array.
+	 * @param length        Array length.
 	 * @return new array.
 	 */
 	public ArrayValue newArray(JavaClass componentType, int length) {
@@ -1799,9 +1520,7 @@ public final class VMHelper {
 	/**
 	 * Returns empty VM array.
 	 *
-	 * @param componentType
-	 * 		Component type of array.
-	 *
+	 * @param componentType Component type of array.
 	 * @return empty array.
 	 */
 	public ArrayValue emptyArray(JavaClass componentType) {
@@ -1809,35 +1528,9 @@ public final class VMHelper {
 	}
 
 	/**
-	 * Checks whether a class is a primitive wrapper.
-	 *
-	 * @param jc
-	 * 		Class to check.
-	 *
-	 * @return {@code true} if class is a primitive wrapper,
-	 * {@code false} otherwise.
-	 */
-	public boolean isPrimitiveWrapper(JavaClass jc) {
-		if (!(jc instanceof InstanceJavaClass)) {
-			return false;
-		}
-		VMSymbols symbols = vm.getSymbols();
-		return symbols.java_lang_Long() == jc
-				|| symbols.java_lang_Double() == jc
-				|| symbols.java_lang_Integer() == jc
-				|| symbols.java_lang_Float() == jc
-				|| symbols.java_lang_Character() == jc
-				|| symbols.java_lang_Short() == jc
-				|| symbols.java_lang_Byte() == jc
-				|| symbols.java_lang_Boolean() == jc;
-	}
-
-	/**
 	 * Returns file descriptor handle.
 	 *
-	 * @param fos
-	 * 		File output stream to get handle from.
-	 *
+	 * @param fos File output stream to get handle from.
 	 * @return file descriptor handle.
 	 */
 	public long getFileStreamHandle(InstanceValue fos) {
@@ -1848,27 +1541,21 @@ public final class VMHelper {
 	/**
 	 * Invokes {@link java.lang.invoke.MethodType#methodType(Class, Class[])}
 	 *
-	 * @param rt
-	 * 		Return type.
-	 * @param parameters
-	 * 		Parameter types.
-	 *
+	 * @param rt         Return type.
+	 * @param parameters Parameter types.
 	 * @return method type.
 	 */
 	public InstanceValue methodType(JavaClass rt, ArrayValue parameters) {
 		return (InstanceValue) invokeStatic(vm.getSymbols().java_lang_invoke_MethodHandleNatives(), "findMethodHandleType", "(Ljava/lang/Class;[Ljava/lang/Class;)Ljava/lang/invoke/MethodType;", new Value[0], new Value[]{
-				rt.getOop(), parameters
+			rt.getOop(), parameters
 		}).getResult();
 	}
 
 	/**
 	 * Invokes {@link java.lang.invoke.MethodType#methodType(Class, Class[])}
 	 *
-	 * @param rt
-	 * 		Return type.
-	 * @param parameters
-	 * 		Parameter types.
-	 *
+	 * @param rt         Return type.
+	 * @param parameters Parameter types.
 	 * @return method type.
 	 */
 	public InstanceValue methodType(JavaClass rt, JavaClass[] parameters) {
@@ -1882,11 +1569,8 @@ public final class VMHelper {
 	/**
 	 * Invokes {@link java.lang.invoke.MethodType#methodType(Class, Class[])}
 	 *
-	 * @param loader
-	 * 		Class loader to pull classes from.
-	 * @param methodType
-	 * 		Method type.
-	 *
+	 * @param loader     Class loader to pull classes from.
+	 * @param methodType Method type.
 	 * @return method type.
 	 */
 	public InstanceValue methodType(ObjectValue loader, Type methodType) {
@@ -1896,37 +1580,10 @@ public final class VMHelper {
 	}
 
 	/**
-	 * Searches for field offset.
-	 *
-	 * @param target
-	 * 		Class to search in first.
-	 * @param javaClass
-	 * 		Class to search in recursively.
-	 * @param name
-	 * 		Feild name.
-	 * @param desc
-	 * 		Field desc.
-	 *
-	 * @return field offset or {@code -1L} if not found.
-	 */
-	public long getFieldOffset(InstanceJavaClass target, InstanceJavaClass javaClass, String name, String desc) {
-		long offset = target.getVirtualFieldOffset(name, desc);
-		if (offset == -1L) {
-			do {
-				offset = javaClass.getVirtualFieldOffset(name, desc);
-			} while(offset == -1L && (javaClass = javaClass.getSuperClass()) != null);
-		}
-		return offset;
-	}
-
-	/**
 	 * Creates multi array.
 	 *
-	 * @param type
-	 * 		Array type.
-	 * @param lengths
-	 * 		Array containing length of each dimension.
-	 *
+	 * @param type    Array type.
+	 * @param lengths Array containing length of each dimension.
 	 * @return new array.
 	 */
 	public ArrayValue newMultiArray(ArrayJavaClass type, int[] lengths) {
@@ -1936,13 +1593,9 @@ public final class VMHelper {
 	/**
 	 * Creates new object instance.
 	 *
-	 * @param type
-	 * 		Type of object.
-	 * @param desc
-	 * 		Init method descriptor.
-	 * @param params
-	 * 		Init method arguments.
-	 *
+	 * @param type   Type of object.
+	 * @param desc   Init method descriptor.
+	 * @param params Init method arguments.
 	 * @return new allocated object.
 	 */
 	public InstanceValue newInstance(InstanceJavaClass type, String desc, Value... params) {
@@ -1958,9 +1611,7 @@ public final class VMHelper {
 	/**
 	 * Marks method as a hidden method.
 	 *
-	 * @param method
-	 * 		Method to make hidden.
-	 *
+	 * @param method Method to make hidden.
 	 * @see Modifier#ACC_HIDDEN_FRAME
 	 */
 	public void makeHiddenMethod(JavaMethod method) {
@@ -1971,8 +1622,7 @@ public final class VMHelper {
 	/**
 	 * Makes necessary methods of a class hidden.
 	 *
-	 * @param jc
-	 * 		Class to setup.
+	 * @param jc Class to setup.
 	 */
 	public void setupHiddenFrames(InstanceJavaClass jc) {
 		VMSymbols symbols = vm.getSymbols();
@@ -2031,11 +1681,8 @@ public final class VMHelper {
 	/**
 	 * Returns method by it's slot.
 	 *
-	 * @param jc
-	 * 		Method owner.
-	 * @param slot
-	 * 		Method slot.
-	 *
+	 * @param jc   Method owner.
+	 * @param slot Method slot.
 	 * @return method by it's slot or {@code null},
 	 * if not found.
 	 */
@@ -2046,11 +1693,8 @@ public final class VMHelper {
 	/**
 	 * Returns field by it's slot.
 	 *
-	 * @param jc
-	 * 		Field owner.
-	 * @param slot
-	 * 		Method slot.
-	 *
+	 * @param jc   Field owner.
+	 * @param slot Method slot.
 	 * @return field by it's slot or {@code null},
 	 * if not found.
 	 */
@@ -2061,18 +1705,16 @@ public final class VMHelper {
 	/**
 	 * Links method handle.
 	 *
-	 * @param handle
-	 * 		Method handle.
-	 *
+	 * @param handle Method handle.
 	 * @return linked method handle.
 	 */
 	public InstanceValue linkMethodHandleConstant(InstanceJavaClass caller, Handle handle) {
 		Value[] args = new Value[]{
-				caller.getOop(),
-				IntValue.of(handle.getTag()),
-				findClass(caller.getClassLoader(), handle.getOwner(), false).getOop(),
-				newUtf8(handle.getName()),
-				methodType(caller.getClassLoader(), Type.getMethodType(handle.getDesc()))
+			caller.getOop(),
+			IntValue.of(handle.getTag()),
+			findClass(caller.getClassLoader(), handle.getOwner(), false).getOop(),
+			newUtf8(handle.getName()),
+			methodType(caller.getClassLoader(), Type.getMethodType(handle.getDesc()))
 		};
 
 		InstanceJavaClass natives = vm.getSymbols().java_lang_invoke_MethodHandleNatives();
@@ -2084,9 +1726,7 @@ public final class VMHelper {
 	 * for an invokedynamic call.
 	 *
 	 * @return VM boxed value.
-	 *
-	 * @throws IllegalStateException
-	 * 		If constant value cannot be created.
+	 * @throws IllegalStateException If constant value cannot be created.
 	 */
 	public ObjectValue forInvokeDynamicCall(Object cst) {
 		if (cst instanceof Long) {
@@ -2113,16 +1753,14 @@ public final class VMHelper {
 	/**
 	 * Converts Java string to VM array of chars.
 	 *
-	 * @param str
-	 * 		String to convert.
-	 *
+	 * @param str String to convert.
 	 * @return VM array.
 	 */
 	public ArrayValue toVMChars(String str) {
 		int length = str.length();
 		VirtualMachine vm = this.vm;
 		ArrayValue wrapper = newArray(vm.getPrimitives().charPrimitive(), length);
-		while(length-- != 0) {
+		while (length-- != 0) {
 			wrapper.setChar(length, str.charAt(length));
 		}
 		return wrapper;
@@ -2132,19 +1770,15 @@ public final class VMHelper {
 	 * Attempts to locate a class.
 	 * Throws {@link NoClassDefFoundError} if class is not found.
 	 *
-	 * @param loader
-	 * 		Loader to search the class in.
-	 * @param name
-	 * 		Class name.
-	 * @param initialize
-	 * 		Whether the class should be initialized.
-	 *
+	 * @param loader     Loader to search the class in.
+	 * @param name       Class name.
+	 * @param initialize Whether the class should be initialized.
 	 * @return found class.
 	 */
 	public JavaClass tryFindClass(ObjectValue loader, String name, boolean initialize) {
 		try {
 			return findClass(loader, name, initialize);
-		} catch(VMException ex) {
+		} catch (VMException ex) {
 			InstanceValue oop = ex.getOop();
 			VMSymbols symbols = vm.getSymbols();
 			if (oop.isNull() || !symbols.java_lang_Error().isAssignableFrom(oop.getJavaClass())) {
@@ -2158,13 +1792,9 @@ public final class VMHelper {
 	/**
 	 * Returns the size of the descriptor.
 	 *
-	 * @param descriptor
-	 * 		Descriptor to get size for.
-	 *
+	 * @param descriptor Descriptor to get size for.
 	 * @return Descriptor size.
-	 *
-	 * @throws IllegalStateException
-	 * 		If primitive descriptor is invalid.
+	 * @throws IllegalStateException If primitive descriptor is invalid.
 	 */
 	public int getDescriptorSize(String descriptor) {
 		MemoryManager memoryManager = vm.getMemoryManager();
@@ -2218,7 +1848,7 @@ public final class VMHelper {
 		}
 		int length = lengths[depth];
 		int next = depth + 1;
-		while(length-- != 0) {
+		while (length-- != 0) {
 			array.setValue(length, newMultiArrayInner((ArrayJavaClass) newType, lengths, next));
 		}
 		return array;
@@ -2252,9 +1882,9 @@ public final class VMHelper {
 		int maxStack = mn.maxStack;
 		int maxLocals = getMaxLocals(jm, locals);
 		return vm.getExecutionEngine().createContext(
-				jm,
-				storage.newStack(maxStack),
-				storage.newLocals(maxLocals)
+			jm,
+			storage.newStack(maxStack),
+			storage.newLocals(maxLocals)
 		);
 	}
 

@@ -22,12 +22,9 @@ final class BootClassLoaderHolder {
 	/**
 	 * Boot class loader to get classes from.
 	 *
-	 * @param vm
-	 * 		VM instance.
-	 * @param bootClassLoader
-	 * 		Boot class loader.
-	 * @param data
-	 * 		Class storage.
+	 * @param vm              VM instance.
+	 * @param bootClassLoader Boot class loader.
+	 * @param data            Class storage.
 	 */
 	BootClassLoaderHolder(VirtualMachine vm, BootClassLoader bootClassLoader, ClassLoaderData data) {
 		this.vm = vm;
@@ -38,14 +35,14 @@ final class BootClassLoaderHolder {
 	/**
 	 * Resolves boot class by it's name.
 	 *
-	 * @param name
-	 * 		Name of the class.
-	 *
+	 * @param name Name of the class.
 	 * @return Resolved class or {@code null}, if not found.
 	 */
 	JavaClass findBootClass(String name) {
 		int dimensions = 0;
-		while (name.charAt(dimensions) == '[') dimensions++;
+		while (name.charAt(dimensions) == '[') {
+			dimensions++;
+		}
 		ClassLoaderData data = this.data;
 		String trueName = dimensions == 0 ? name : name.substring(dimensions + 1, name.length() - 1);
 		InstanceJavaClass jc;
@@ -54,25 +51,27 @@ final class BootClassLoaderHolder {
 			jc = data.getClass(trueName);
 			if (jc == null) {
 				ClassParseResult result = bootClassLoader.findBootClass(trueName);
-				if (result == null) return null;
+				if (result == null) {
+					return null;
+				}
 				VirtualMachine vm = this.vm;
 				ClassLoaders classLoaders = vm.getClassLoaders();
-				jc = classLoaders.constructClass(NullValue.INSTANCE, result.getClassReader(), result.getNode());
+				jc = classLoaders.constructClass(vm.getMemoryManager().nullValue(), result.getClassReader(), result.getNode());
 				classLoaders.setClassOop(jc);
 				data.linkClass(jc);
 			}
 			res = jc;
 		}
-		while (dimensions-- != 0) res = res.newArrayClass();
+		while (dimensions-- != 0) {
+			res = res.newArrayClass();
+		}
 		return res;
 	}
 
 	/**
 	 * Lookups bootstrap class without linking it.
 	 *
-	 * @param name
-	 * 		Name of the class.
-	 *
+	 * @param name Name of the class.
 	 * @return class info or {@code null}, if not found.
 	 */
 	ClassParseResult lookup(String name) {
@@ -82,8 +81,7 @@ final class BootClassLoaderHolder {
 	/**
 	 * Forcibly links bootstrap class.
 	 *
-	 * @param jc
-	 * 		Class to link.
+	 * @param jc Class to link.
 	 */
 	void forceLink(InstanceJavaClass jc) {
 		data.forceLinkClass(jc);

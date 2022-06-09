@@ -29,10 +29,8 @@ public class Interpreter {
 	/**
 	 * Processes {@link ExecutionContext}.
 	 *
-	 * @param ctx
-	 * 		Context to process.
-	 * @param options
-	 * 		Execution options.
+	 * @param ctx     Context to process.
+	 * @param options Execution options.
 	 */
 	public void execute(ExecutionContext ctx, ExecutionContextOptions options) {
 		JavaMethod jm = ctx.getMethod();
@@ -47,18 +45,25 @@ public class Interpreter {
 				int pos = ctx.getInsnPosition();
 				ctx.setInsnPosition(pos + 1);
 				AbstractInsnNode insn = instructions.get(pos);
-				if (updateLineNumbers && insn instanceof LineNumberNode) ctx.setLineNumber(((LineNumberNode) insn).line);
-				for (int i = 0; i < interceptors.size(); i++) {
-					if (interceptors.get(i).intercept(ctx, insn) == Result.ABORT)
-						break exec;
+				if (updateLineNumbers && insn instanceof LineNumberNode) {
+					ctx.setLineNumber(((LineNumberNode) insn).line);
 				}
-				if (insn.getOpcode() == -1) continue;
+				for (int i = 0; i < interceptors.size(); i++) {
+					if (interceptors.get(i).intercept(ctx, insn) == Result.ABORT) {
+						break exec;
+					}
+				}
+				if (insn.getOpcode() == -1) {
+					continue;
+				}
 				InstructionProcessor<AbstractInsnNode> processor = vmi.getProcessor(insn);
 				if (processor == null) {
 					ctx.getHelper().throwException(ctx.getSymbols().java_lang_InternalError(), "No implemented processor for " + insn.getOpcode());
 					continue;
 				}
-				if (processor.execute(insn, ctx) == Result.ABORT) break;
+				if (processor.execute(insn, ctx) == Result.ABORT) {
+					break;
+				}
 			} catch (VMException ex) {
 				ctx.unwind();
 				InstanceValue oop = ex.getOop();
@@ -73,7 +78,9 @@ public class Interpreter {
 					shouldRepeat = false;
 					for (int i = 0, j = tryCatchBlocks.size(); i < j; i++) {
 						TryCatchBlockNode block = tryCatchBlocks.get(i);
-						if (index < AsmUtil.getIndex(block.start) || index > AsmUtil.getIndex(block.end)) continue;
+						if (index < AsmUtil.getIndex(block.start) || index > AsmUtil.getIndex(block.end)) {
+							continue;
+						}
 						String type = block.type;
 						boolean handle = type == null;
 						if (!handle) {

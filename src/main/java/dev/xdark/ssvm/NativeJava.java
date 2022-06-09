@@ -1,9 +1,22 @@
 package dev.xdark.ssvm;
 
+//<editor-fold desc="Imports">
+
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.asm.VMOpcodes;
-import dev.xdark.ssvm.execution.VMNewProcessor;
+import dev.xdark.ssvm.execution.rewrite.BooleanArrayProcessor;
+import dev.xdark.ssvm.execution.rewrite.ReferenceArrayProcessor;
+import dev.xdark.ssvm.execution.rewrite.ByteArrayProcessor;
+import dev.xdark.ssvm.execution.rewrite.CharArrayProcessor;
+import dev.xdark.ssvm.execution.rewrite.DoubleArrayProcessor;
+import dev.xdark.ssvm.execution.rewrite.DynamicCallProcessor;
+import dev.xdark.ssvm.execution.rewrite.FloatArrayProcessor;
+import dev.xdark.ssvm.execution.rewrite.IntArrayProcessor;
+import dev.xdark.ssvm.execution.rewrite.LongArrayProcessor;
+import dev.xdark.ssvm.execution.rewrite.ShortArrayProcessor;
+import dev.xdark.ssvm.execution.rewrite.VMNewProcessor;
 import dev.xdark.ssvm.execution.asm.*;
+import dev.xdark.ssvm.execution.rewrite.LdcProcessor;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.natives.*;
 import dev.xdark.ssvm.symbol.VMSymbols;
@@ -14,8 +27,18 @@ import org.objectweb.asm.tree.FieldNode;
 import java.util.List;
 
 import static dev.xdark.ssvm.asm.Modifier.ACC_VM_HIDDEN;
+import static dev.xdark.ssvm.asm.VMOpcodes.BOOLEAN_NEW_ARRAY;
+import static dev.xdark.ssvm.asm.VMOpcodes.BYTE_NEW_ARRAY;
+import static dev.xdark.ssvm.asm.VMOpcodes.CHAR_NEW_ARRAY;
+import static dev.xdark.ssvm.asm.VMOpcodes.DOUBLE_NEW_ARRAY;
 import static dev.xdark.ssvm.asm.VMOpcodes.DYNAMIC_CALL;
+import static dev.xdark.ssvm.asm.VMOpcodes.FLOAT_NEW_ARRAY;
+import static dev.xdark.ssvm.asm.VMOpcodes.INT_NEW_ARRAY;
+import static dev.xdark.ssvm.asm.VMOpcodes.LONG_NEW_ARRAY;
+import static dev.xdark.ssvm.asm.VMOpcodes.REFERENCE_NEW_ARRAY;
+import static dev.xdark.ssvm.asm.VMOpcodes.SHORT_NEW_ARRAY;
 import static org.objectweb.asm.Opcodes.*;
+//</editor-fold>
 
 /**
  * A class to setup the VM instance.
@@ -34,12 +57,11 @@ public final class NativeJava {
 	/**
 	 * Sets up VM instance.
 	 *
-	 * @param vm
-	 * 		VM to set up.
+	 * @param vm VM to set up.
 	 */
 	static void init(VirtualMachine vm) {
-		VMInterface vmi = vm.getInterface();
-		setInstructions(vmi);
+		//<editor-fold desc="Natives registration">
+		setInstructions(vm);
 		injectPhase2(vm);
 		ClassNatives.init(vm);
 		ObjectNatives.init(vm);
@@ -88,6 +110,7 @@ public final class NativeJava {
 		SystemPropsNatives.init(vm);
 		ScopedMemoryAccessNatives.init(vm);
 		ReferenceNatives.init(vm);
+		//</editor-fold>
 	}
 
 	/**
@@ -95,44 +118,43 @@ public final class NativeJava {
 	 * This must be invoked as early as
 	 * possible.
 	 *
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	static void injectPhase1(VirtualMachine vm) {
 		InstanceJavaClass cl = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Class");
 		List<FieldNode> fields = cl.getNode().fields;
 		fields.add(new FieldNode(
-				ACC_PRIVATE | ACC_VM_HIDDEN,
-				PROTECTION_DOMAIN,
-				"Ljava/security/ProtectionDomain;",
-				null,
-				null
+			ACC_PRIVATE | ACC_VM_HIDDEN,
+			PROTECTION_DOMAIN,
+			"Ljava/security/ProtectionDomain;",
+			null,
+			null
 		));
 		fields.add(new FieldNode(
-				ACC_PRIVATE | ACC_VM_HIDDEN,
-				CONSTANT_POOL,
-				"Ljava/lang/Object;",
-				null,
-				null
+			ACC_PRIVATE | ACC_VM_HIDDEN,
+			CONSTANT_POOL,
+			"Ljava/lang/Object;",
+			null,
+			null
 		));
 	}
 
 	/**
 	 * Injects VM related things.
 	 *
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	static void injectPhase2(VirtualMachine vm) {
+		//<editor-fold desc="Field injection">
 		VMSymbols symbols = vm.getSymbols();
 		InstanceJavaClass classLoader = symbols.java_lang_ClassLoader();
 
 		classLoader.getNode().fields.add(new FieldNode(
-				ACC_PRIVATE | ACC_VM_HIDDEN,
-				CLASS_LOADER_OOP,
-				"Ljava/lang/Object;",
-				null,
-				null
+			ACC_PRIVATE | ACC_VM_HIDDEN,
+			CLASS_LOADER_OOP,
+			"Ljava/lang/Object;",
+			null,
+			null
 		));
 
 		vm.getInvokeDynamicLinker().setupMethodHandles();
@@ -140,18 +162,18 @@ public final class NativeJava {
 			InstanceJavaClass resolvedMethodName = symbols.java_lang_invoke_ResolvedMethodName();
 			List<FieldNode> fields = resolvedMethodName.getNode().fields;
 			fields.add(new FieldNode(
-					ACC_PRIVATE | ACC_VM_HIDDEN,
-					VM_TARGET,
-					"Ljava/lang/Object;",
-					null,
-					null
+				ACC_PRIVATE | ACC_VM_HIDDEN,
+				VM_TARGET,
+				"Ljava/lang/Object;",
+				null,
+				null
 			));
 			fields.add(new FieldNode(
-					ACC_PRIVATE | ACC_VM_HIDDEN,
-					VM_HOLDER,
-					"Ljava/lang/Object;",
-					null,
-					null
+				ACC_PRIVATE | ACC_VM_HIDDEN,
+				VM_HOLDER,
+				"Ljava/lang/Object;",
+				null,
+				null
 			));
 		}
 		inject:
@@ -167,25 +189,27 @@ public final class NativeJava {
 				}
 			}
 			fields.add(new FieldNode(
-					ACC_PRIVATE | ACC_VM_HIDDEN,
-					"handle",
-					"J",
-					null,
-					null
+				ACC_PRIVATE | ACC_VM_HIDDEN,
+				"handle",
+				"J",
+				null,
+				null
 			));
 		}
+		//</editor-fold>
 	}
 
 	/**
 	 * Sets up default opcode set.
 	 *
-	 * @param vmi
-	 * 		VM interface.
+	 * @param vm VM instance.
 	 */
-	private static void setInstructions(VMInterface vmi) {
+	private static void setInstructions(VirtualMachine vm) {
+		//<editor-fold desc="VM instructions">
+		VMInterface vmi = vm.getInterface();
 		vmi.setProcessor(NOP, new NopProcessor());
 
-		vmi.setProcessor(ACONST_NULL, new ConstantProcessor(NullValue.INSTANCE));
+		vmi.setProcessor(ACONST_NULL, new ConstantProcessor(vm.getMemoryManager().nullValue()));
 
 		// ICONST_M1..INCONST_5
 		for (int x = ICONST_M1; x <= ICONST_5; x++) {
@@ -204,7 +228,7 @@ public final class NativeJava {
 
 		vmi.setProcessor(BIPUSH, new BytePushProcessor());
 		vmi.setProcessor(SIPUSH, new ShortPushProcessor());
-		vmi.setProcessor(LDC, new LdcProcessor());
+		vmi.setProcessor(LDC, new dev.xdark.ssvm.execution.asm.LdcProcessor());
 
 		vmi.setProcessor(LLOAD, new LongLoadProcessor());
 		vmi.setProcessor(ILOAD, new IntLoadProcessor());
@@ -376,7 +400,17 @@ public final class NativeJava {
 
 		// VM opcodes
 		vmi.setProcessor(DYNAMIC_CALL, new DynamicCallProcessor());
-		vmi.setProcessor(VMOpcodes.LDC, new VMLdcProcessor());
+		vmi.setProcessor(VMOpcodes.LDC, new LdcProcessor());
 		vmi.setProcessor(VMOpcodes.NEW, new VMNewProcessor());
+		vmi.setProcessor(BOOLEAN_NEW_ARRAY, new BooleanArrayProcessor());
+		vmi.setProcessor(CHAR_NEW_ARRAY, new CharArrayProcessor());
+		vmi.setProcessor(FLOAT_NEW_ARRAY, new FloatArrayProcessor());
+		vmi.setProcessor(DOUBLE_NEW_ARRAY, new DoubleArrayProcessor());
+		vmi.setProcessor(BYTE_NEW_ARRAY, new ByteArrayProcessor());
+		vmi.setProcessor(SHORT_NEW_ARRAY, new ShortArrayProcessor());
+		vmi.setProcessor(INT_NEW_ARRAY, new IntArrayProcessor());
+		vmi.setProcessor(LONG_NEW_ARRAY, new LongArrayProcessor());
+		vmi.setProcessor(REFERENCE_NEW_ARRAY, new ReferenceArrayProcessor());
+		//</editor-fold>
 	}
 }

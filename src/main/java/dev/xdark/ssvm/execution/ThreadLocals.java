@@ -22,8 +22,7 @@ public final class ThreadLocals implements Locals, AutoCloseable, Disposable {
 	private final ThreadRegion table;
 
 	/**
-	 * @param maxSize
-	 * 		The maximum amount of local variables.
+	 * @param maxSize The maximum amount of local variables.
 	 */
 	public ThreadLocals(int maxSize) {
 		table = SimpleThreadStorage.threadPush(maxSize);
@@ -84,12 +83,18 @@ public final class ThreadLocals implements Locals, AutoCloseable, Disposable {
 
 	@Override
 	public boolean equals(Object o) {
-		if (o == this) return true;
-		if (!(o instanceof Locals)) return false;
+		if (o == this) {
+			return true;
+		}
+		if (!(o instanceof Locals)) {
+			return false;
+		}
 		Locals other = (Locals) o;
 		ThreadRegion table = this.table;
 		int length = table.length();
-		if (table.length() != other.maxSlots()) return false;
+		if (table.length() != other.maxSlots()) {
+			return false;
+		}
 		for (int i = 0; i < length; i++) {
 			if (!Objects.equals(table.get(i), other.load(i))) {
 				return false;
@@ -113,7 +118,7 @@ public final class ThreadLocals implements Locals, AutoCloseable, Disposable {
 	@Override
 	public String toString() {
 		return "Locals{" +
-				"table=" + Arrays.toString(table.unwrap()) +
-				'}';
+			"table=" + Arrays.toString(table.unwrap()) +
+			'}';
 	}
 }

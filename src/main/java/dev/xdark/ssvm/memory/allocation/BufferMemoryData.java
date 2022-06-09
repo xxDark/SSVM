@@ -1,4 +1,4 @@
-package dev.xdark.ssvm.memory;
+package dev.xdark.ssvm.memory.allocation;
 
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.util.VolatileBufferAccess;
@@ -129,13 +129,13 @@ final class BufferMemoryData implements MemoryData {
 			Arrays.fill(buf, value);
 			ByteBuffer slice = buffer.slice().order(buffer.order());
 			slice.position($offset);
-			while($bytes != 0) {
+			while ($bytes != 0) {
 				int len = Math.min($bytes, MEMSET_THRESHOLD);
 				slice.put(buf, 0, len);
 				$bytes -= len;
 			}
 		} else {
-			while($bytes-- != 0) {
+			while ($bytes-- != 0) {
 				buffer.put($offset++, value);
 			}
 		}
@@ -152,7 +152,7 @@ final class BufferMemoryData implements MemoryData {
 			int $bytes = validate(bytes);
 			int $offset = validate(srcOffset);
 			ByteBuffer buffer = this.buffer;
-			while($bytes-- != 0) {
+			while ($bytes-- != 0) {
 				dst.writeByte(start++, buffer.get($offset++));
 			}
 		}

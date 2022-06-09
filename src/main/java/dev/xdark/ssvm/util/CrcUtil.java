@@ -31,11 +31,8 @@ public class CrcUtil {
 	/**
 	 * Updates CRC32 value.
 	 *
-	 * @param v
-	 * 		Initial value.
-	 * @param b
-	 * 		Byte to update the checksum with.
-	 *
+	 * @param v Initial value.
+	 * @param b Byte to update the checksum with.
 	 * @return updated value.
 	 */
 	public int update(int v, byte b) {

@@ -6,8 +6,8 @@ import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.fs.FileDescriptorManager;
-import dev.xdark.ssvm.memory.MemoryData;
-import dev.xdark.ssvm.memory.MemoryManager;
+import dev.xdark.ssvm.memory.allocation.MemoryData;
+import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ArrayValue;
@@ -36,8 +36,7 @@ import java.io.OutputStream;
 public class GenericFileSystemNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
@@ -86,7 +85,9 @@ public class GenericFileSystemNatives {
 			VMHelper helper = vm.getHelper();
 			long handle = helper.getFileStreamHandle(_this);
 			OutputStream out = vm.getFileDescriptorManager().getFdOut(handle);
-			if (out == null) return Result.ABORT;
+			if (out == null) {
+				return Result.ABORT;
+			}
 			byte[] bytes = helper.toJavaBytes(locals.load(1));
 			int off = locals.load(2).asInt();
 			int len = locals.load(3).asInt();
@@ -103,7 +104,9 @@ public class GenericFileSystemNatives {
 			VMHelper helper = vm.getHelper();
 			long handle = helper.getFileStreamHandle(_this);
 			OutputStream out = vm.getFileDescriptorManager().getFdOut(handle);
-			if (out == null) return Result.ABORT;
+			if (out == null) {
+				return Result.ABORT;
+			}
 			try {
 				out.write(locals.load(1).asByte());
 			} catch (IOException ex) {

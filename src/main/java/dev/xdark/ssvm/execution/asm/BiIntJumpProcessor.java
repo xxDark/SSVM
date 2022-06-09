@@ -18,8 +18,7 @@ public final class BiIntJumpProcessor implements InstructionProcessor<JumpInsnNo
 	private final BiIntPredicate condition;
 
 	/**
-	 * @param condition
-	 * 		Predicate to check.
+	 * @param condition Predicate to check.
 	 */
 	public BiIntJumpProcessor(BiIntPredicate condition) {
 		this.condition = condition;

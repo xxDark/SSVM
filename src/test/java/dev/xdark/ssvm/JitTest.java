@@ -11,7 +11,7 @@ import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.LongValue;
-import dev.xdark.ssvm.value.NullValue;
+import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.TopValue;
 import dev.xdark.ssvm.value.Value;
 import org.junit.jupiter.api.Test;
@@ -51,12 +51,13 @@ public class JitTest {
 		}
 		byte[] bc = baos.toByteArray();
 		VMHelper helper = vm.getHelper();
+		ObjectValue nullValue = vm.getMemoryManager().nullValue();
 		InstanceJavaClass jc = helper.defineClass(
-				NullValue.INSTANCE,
-				null,
-				bc, 0, bc.length,
-				NullValue.INSTANCE,
-				"JVM_DefineClass"
+			nullValue,
+			null,
+			bc, 0, bc.length,
+			nullValue,
+			"JVM_DefineClass"
 		);
 		ThreadLocalRandom rng = ThreadLocalRandom.current();
 		a = rng.nextLong();
@@ -80,13 +81,13 @@ public class JitTest {
 		}
 		try {
 			helper.invokeStatic(m, new Value[0], new Value[]{
-					LongValue.of(a),
-					TopValue.INSTANCE,
-					IntValue.of(b),
-					helper.newUtf8(c),
-					LongValue.of(d),
-					TopValue.INSTANCE,
-					IntValue.of(e)
+				LongValue.of(a),
+				TopValue.INSTANCE,
+				IntValue.of(b),
+				helper.newUtf8(c),
+				LongValue.of(d),
+				TopValue.INSTANCE,
+				IntValue.of(e)
 			});
 		} catch (VMException ex) {
 			helper.invokeVirtual("printStackTrace", "()V", new Value[0], new Value[]{ex.getOop()});
@@ -147,7 +148,7 @@ public class JitTest {
 	}
 
 	private static final class JitClassLoader extends ClassLoader
-			implements JitInstaller.ClassDefiner {
+		implements JitInstaller.ClassDefiner {
 
 		@Override
 		public Class<?> define(JitClass jitClass) {

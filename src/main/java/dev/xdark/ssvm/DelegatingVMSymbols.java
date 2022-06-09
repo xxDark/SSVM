@@ -438,8 +438,7 @@ final class DelegatingVMSymbols implements VMSymbols {
 	}
 
 	/**
-	 * @param symbols
-	 * 		New symbols.
+	 * @param symbols New symbols.
 	 */
 	void setSymbols(VMSymbols symbols) {
 		this.symbols = symbols;

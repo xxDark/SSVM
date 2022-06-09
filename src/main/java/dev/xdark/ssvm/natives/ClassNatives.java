@@ -7,8 +7,8 @@ import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.memory.MemoryManager;
-import dev.xdark.ssvm.memory.StringPool;
+import dev.xdark.ssvm.memory.management.MemoryManager;
+import dev.xdark.ssvm.memory.management.StringPool;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaField;
@@ -20,7 +20,6 @@ import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.JavaValue;
-import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
@@ -52,8 +51,7 @@ public class ClassNatives {
 	private final String PROTECTION_DOMAIN = NativeJava.PROTECTION_DOMAIN;
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
@@ -64,7 +62,7 @@ public class ClassNatives {
 			String name = vm.getHelper().readUtf8(ctx.getLocals().load(0));
 			VMPrimitives primitives = vm.getPrimitives();
 			Value result;
-			switch(name) {
+			switch (name) {
 				case "long":
 					result = primitives.longPrimitive().getOop();
 					break;
@@ -159,7 +157,7 @@ public class ClassNatives {
 			Locals locals = ctx.getLocals();
 			JavaClass _this = locals.<JavaValue<JavaClass>>load(0).getValue();
 			InstanceJavaClass superClass = _this.getSuperClass();
-			ctx.setResult(superClass == null ? NullValue.INSTANCE : superClass.getOop());
+			ctx.setResult(superClass == null ? vm.getMemoryManager().nullValue() : superClass.getOop());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getModifiers", "()I", ctx -> {
@@ -296,22 +294,22 @@ public class ClassNatives {
 		vmi.setInvoker(jlc, "getEnclosingMethod0", "()[Ljava/lang/Object;", ctx -> {
 			JavaClass klasas = ((JavaValue<JavaClass>) ctx.getLocals().load(0)).getValue();
 			if (!(klasas instanceof InstanceJavaClass)) {
-				ctx.setResult(NullValue.INSTANCE);
+				ctx.setResult(vm.getMemoryManager().nullValue());
 			} else {
 				ClassNode node = ((InstanceJavaClass) klasas).getNode();
 				String enclosingClass = node.outerClass;
 				String enclosingMethod = node.outerMethod;
 				String enclosingDesc = node.outerMethodDesc;
 				if (enclosingClass == null || enclosingMethod == null || enclosingDesc == null) {
-					ctx.setResult(NullValue.INSTANCE);
+					ctx.setResult(vm.getMemoryManager().nullValue());
 				} else {
 					VMHelper helper = vm.getHelper();
 					StringPool pool = vm.getStringPool();
 					JavaClass outerHost = helper.findClass(ctx.getOwner().getClassLoader(), enclosingClass, false);
 					ctx.setResult(helper.toVMValues(new ObjectValue[]{
-							outerHost.getOop(),
-							pool.intern(enclosingMethod),
-							pool.intern(enclosingDesc)
+						outerHost.getOop(),
+						pool.intern(enclosingMethod),
+						pool.intern(enclosingDesc)
 					}));
 				}
 			}
@@ -320,12 +318,12 @@ public class ClassNatives {
 		vmi.setInvoker(jlc, "getDeclaringClass0", "()Ljava/lang/Class;", ctx -> {
 			JavaClass klasas = ((JavaValue<JavaClass>) ctx.getLocals().load(0)).getValue();
 			if (!(klasas instanceof InstanceJavaClass)) {
-				ctx.setResult(NullValue.INSTANCE);
+				ctx.setResult(vm.getMemoryManager().nullValue());
 			} else {
 				ClassNode node = ((InstanceJavaClass) klasas).getNode();
 				String nestHostClass = node.nestHostClass;
 				if (nestHostClass == null) {
-					ctx.setResult(NullValue.INSTANCE);
+					ctx.setResult(vm.getMemoryManager().nullValue());
 				} else {
 					VMHelper helper = vm.getHelper();
 					JavaClass oop = helper.findClass(ctx.getOwner().getClassLoader(), nestHostClass, false);
@@ -337,14 +335,14 @@ public class ClassNatives {
 		vmi.setInvoker(jlc, "getSimpleBinaryName0", "()Ljava/lang/String;", ctx -> {
 			JavaClass klasas = ((JavaValue<JavaClass>) ctx.getLocals().load(0)).getValue();
 			if (!(klasas instanceof InstanceJavaClass)) {
-				ctx.setResult(NullValue.INSTANCE);
+				ctx.setResult(vm.getMemoryManager().nullValue());
 			} else {
 				String name = klasas.getInternalName();
 				int idx = name.lastIndexOf('$');
 				if (idx != -1) {
 					ctx.setResult(vm.getStringPool().intern(name.substring(idx + 1)));
 				} else {
-					ctx.setResult(NullValue.INSTANCE);
+					ctx.setResult(vm.getMemoryManager().nullValue());
 				}
 			}
 			return Result.ABORT;
@@ -363,7 +361,7 @@ public class ClassNatives {
 		});
 		vmi.setInvoker(jlc, "getComponentType", "()Ljava/lang/Class;", ctx -> {
 			JavaClass type = ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue().getComponentType();
-			ctx.setResult(type == null ? NullValue.INSTANCE : type.getOop());
+			ctx.setResult(type == null ? vm.getMemoryManager().nullValue() : type.getOop());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getProtectionDomain0", "()Ljava/security/ProtectionDomain;", ctx -> {
@@ -374,7 +372,7 @@ public class ClassNatives {
 		vmi.setInvoker(jlc, "getRawAnnotations", "()[B", ctx -> {
 			JavaClass _this = ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue();
 			if (!(_this instanceof InstanceJavaClass)) {
-				ctx.setResult(NullValue.INSTANCE);
+				ctx.setResult(vm.getMemoryManager().nullValue());
 				return Result.ABORT;
 			}
 			ClassFile classFile = ((InstanceJavaClass) _this).getRawClassFile();
@@ -433,15 +431,15 @@ public class ClassNatives {
 				return getAnnotationsIn(vm, cp, candidate.getAttributes());
 			}
 		}
-		return NullValue.INSTANCE;
+		return vm.getMemoryManager().nullValue();
 	}
 
 	private ObjectValue getAnnotationsIn(VirtualMachine vm, ConstPool cp, List<Attribute> attributes) {
 		return attributes.stream()
-				.filter(x -> Constants.Attributes.RUNTIME_VISIBLE_ANNOTATIONS.equals(cp.getUtf(x.getNameIndex())))
-				.findFirst()
-				.map(x -> readAnnotation(x, vm))
-				.orElse(NullValue.INSTANCE);
+			.filter(x -> Constants.Attributes.RUNTIME_VISIBLE_ANNOTATIONS.equals(cp.getUtf(x.getNameIndex())))
+			.findFirst()
+			.map(x -> readAnnotation(x, vm))
+			.orElse(vm.getMemoryManager().nullValue());
 	}
 
 	private ObjectValue readAnnotation(Attribute attr, VirtualMachine vm) {
@@ -471,12 +469,12 @@ public class ClassNatives {
 	private MethodRawData getMethodRawData(JavaMethod jm, boolean includeDefault) {
 		String name = jm.getName();
 		String desc = jm.getDesc();
-		MethodRawData data = new MethodRawData();
 		InstanceJavaClass owner = jm.getOwner();
+		VirtualMachine vm = owner.getVM();
+		MethodRawData data = new MethodRawData(vm.getMemoryManager().nullValue());
 		ClassFile cf = owner.getRawClassFile();
 		List<Method> methods = cf.getMethods();
 		ConstPool cp = cf.getPool();
-		VirtualMachine vm = owner.getVM();
 		search:
 		for (Method candidate : methods) {
 			if (!name.equals(cp.getUtf(candidate.getNameIndex()))) {
@@ -516,13 +514,19 @@ public class ClassNatives {
 
 	private static final class MethodRawData {
 
-		ObjectValue annotations = NullValue.INSTANCE;
-		ObjectValue parameterAnnotations = NullValue.INSTANCE;
-		ObjectValue annotationDefault = NullValue.INSTANCE;
+		ObjectValue annotations;
+		ObjectValue parameterAnnotations;
+		ObjectValue annotationDefault;
+
+		MethodRawData(ObjectValue nullValue) {
+			annotations = nullValue;
+			parameterAnnotations = nullValue;
+			annotationDefault = nullValue;
+		}
 
 		boolean isComplete(boolean includeDefault) {
 			return !annotations.isNull() && !parameterAnnotations.isNull()
-					&& (!includeDefault || !annotationDefault.isNull());
+				&& (!includeDefault || !annotationDefault.isNull());
 		}
 	}
 }

@@ -16,8 +16,7 @@ public final class ConstantProcessor implements InstructionProcessor<AbstractIns
 	private final Value cst;
 
 	/**
-	 * @param cst
-	 * 		Constant to push.
+	 * @param cst Constant to push.
 	 */
 	public ConstantProcessor(Value cst) {
 		this.cst = cst;

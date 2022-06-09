@@ -61,8 +61,7 @@ public class SystemPropsNatives {
 	private final int FIXED_LENGTH = 1 + _user_name_NDX;
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		InstanceJavaClass jc = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/util/SystemProps$Raw");

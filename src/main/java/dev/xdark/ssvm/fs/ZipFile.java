@@ -20,31 +20,23 @@ public interface ZipFile extends Closeable {
 	boolean startsWithLOC();
 
 	/**
-	 * @param index
-	 * 		Position of the entry.
-	 *
+	 * @param index Position of the entry.
 	 * @return zip entry or {@code null},
 	 * if not found.
 	 */
 	ZipEntry getEntry(int index);
 
 	/**
-	 * @param name
-	 * 		Entry name.
-	 *
+	 * @param name Entry name.
 	 * @return zip entry or {@code null},
 	 * if not found.
 	 */
 	ZipEntry getEntry(String name);
 
 	/**
-	 * @param entry
-	 * 		Entry to read bytes from.
-	 *
+	 * @param entry Entry to read bytes from.
 	 * @return entry content.
-	 *
-	 * @throws IOException
-	 * 		If any I/O error occurs.
+	 * @throws IOException If any I/O error occurs.
 	 */
 	byte[] readEntry(ZipEntry entry) throws IOException;
 
@@ -61,9 +53,7 @@ public interface ZipFile extends Closeable {
 	/**
 	 * Creates zip entry handle.
 	 *
-	 * @param entry
-	 * 		Entry to create handle for.
-	 *
+	 * @param entry Entry to create handle for.
 	 * @return zip entry handle.
 	 */
 	long makeHandle(ZipEntry entry);
@@ -71,9 +61,7 @@ public interface ZipFile extends Closeable {
 	/**
 	 * Gets zip entry by it's handle.
 	 *
-	 * @param handle
-	 * 		Entry handle.
-	 *
+	 * @param handle Entry handle.
 	 * @return zip entry or {@code null}.
 	 */
 	ZipEntry getEntry(long handle);
@@ -81,9 +69,7 @@ public interface ZipFile extends Closeable {
 	/**
 	 * Removes entry handle.
 	 *
-	 * @param handle
-	 * 		Handle to remove.
-	 *
+	 * @param handle Handle to remove.
 	 * @return {@code true} if entry was remove.
 	 */
 	boolean freeHandle(long handle);

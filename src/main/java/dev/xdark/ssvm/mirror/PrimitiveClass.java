@@ -21,12 +21,9 @@ public final class PrimitiveClass implements JavaClass {
 	private ArrayJavaClass arrayClass;
 
 	/**
-	 * @param vm
-	 * 		VM instance.
-	 * @param name
-	 * 		Name of the class.
-	 * @param descriptor
-	 * 		Descriptor of the class.
+	 * @param vm         VM instance.
+	 * @param name       Name of the class.
+	 * @param descriptor Descriptor of the class.
 	 */
 	public PrimitiveClass(VirtualMachine vm, String name, String descriptor) {
 		this.vm = vm;
@@ -58,7 +55,7 @@ public final class PrimitiveClass implements JavaClass {
 
 	@Override
 	public ObjectValue getClassLoader() {
-		return NullValue.INSTANCE;
+		return vm.getMemoryManager().nullValue();
 	}
 
 	@Override

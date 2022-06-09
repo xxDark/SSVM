@@ -4,10 +4,14 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.fs.FileDescriptorManager;
 import dev.xdark.ssvm.fs.HostFileDescriptorManager;
+import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
+import dev.xdark.ssvm.memory.allocation.SynchronizedMemoryAllocator;
+import dev.xdark.ssvm.memory.management.MemoryManager;
+import dev.xdark.ssvm.memory.management.SynchronizedMemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.value.NullValue;
+import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
 import org.objectweb.asm.tree.AnnotationNode;
@@ -43,9 +47,10 @@ public class TestUtil {
 			throw new RuntimeException(ex);
 		}
 		VMHelper helper = vm.getHelper();
+		ObjectValue nullValue = vm.getMemoryManager().nullValue();
 		InstanceJavaClass res;
 		try {
-			res = helper.defineClass(NullValue.INSTANCE, null, result, 0, result.length, NullValue.INSTANCE, "JVM_DefineClass");
+			res = helper.defineClass(nullValue, null, result, 0, result.length, nullValue, "JVM_DefineClass");
 		} catch(VMException ex) {
 			throw new IllegalStateException(helper.toJavaException(ex.getOop()));
 		}
@@ -86,6 +91,16 @@ public class TestUtil {
 			@Override
 			protected FileDescriptorManager createFileDescriptorManager() {
 				return new HostFileDescriptorManager();
+			}
+
+			@Override
+			protected MemoryAllocator createMemoryAllocator() {
+				return new SynchronizedMemoryAllocator(super.createMemoryAllocator());
+			}
+
+			@Override
+			protected MemoryManager createMemoryManager() {
+				return new SynchronizedMemoryManager(super.createMemoryManager());
 			}
 		};
 	}

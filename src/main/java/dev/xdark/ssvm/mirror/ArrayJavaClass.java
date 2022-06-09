@@ -18,14 +18,10 @@ public final class ArrayJavaClass implements JavaClass {
 	private ArrayJavaClass arrayClass;
 
 	/**
-	 * @param vm
-	 * 		VM instance.
-	 * @param internalName
-	 * 		Internal name of the array class.
-	 * @param dimensions
-	 * 		Amount of dimensions.
-	 * @param componentType
-	 * 		Component of the array.
+	 * @param vm            VM instance.
+	 * @param internalName  Internal name of the array class.
+	 * @param dimensions    Amount of dimensions.
+	 * @param componentType Component of the array.
 	 */
 	public ArrayJavaClass(VirtualMachine vm, String internalName, int dimensions, JavaClass componentType) {
 		this.vm = vm;

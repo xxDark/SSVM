@@ -23,10 +23,8 @@ public class NativeJavaThread extends Thread {
 	private final VMThread vmThread;
 
 	/**
-	 * @param oop
-	 * 		Thread oop.
-	 * @param vmThread
-	 * 		VM thread.
+	 * @param oop      Thread oop.
+	 * @param vmThread VM thread.
 	 */
 	public NativeJavaThread(InstanceValue oop, VMThread vmThread) {
 		this.oop = oop;
@@ -49,8 +47,8 @@ public class NativeJavaThread extends Thread {
 			if (!uncaughtExceptionHandler.isNull()) {
 				try {
 					helper.invokeVirtual("uncaughtException", "(Ljava/lang/Thread;Ljava/lang/Throwable;)V", new Value[0], new Value[]{
-							oop,
-							ex.getOop()
+						oop,
+						ex.getOop()
 					});
 				} catch (VMException uex) {
 					OutputStream os = vm.getFileDescriptorManager().getStreamOut(2);

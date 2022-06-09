@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.execution.asm;
 
-import dev.xdark.ssvm.asm.NewInsnNode;
+import dev.xdark.ssvm.asm.VMOpcodes;
+import dev.xdark.ssvm.asm.VMTypeInsnNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
@@ -20,7 +21,7 @@ public final class NewProcessor implements InstructionProcessor<TypeInsnNode> {
 		String desc = insn.desc;
 		InstanceJavaClass klass = (InstanceJavaClass) ctx.getHelper().tryFindClass(ctx.getClassLoader(), desc, true);
 		InsnList list = ctx.getMethod().getNode().instructions;
-		list.set(insn, new NewInsnNode(insn, klass));
+		list.set(insn, new VMTypeInsnNode(insn, VMOpcodes.NEW, klass));
 		ctx.setInsnPosition(ctx.getInsnPosition() - 1);
 		return Result.CONTINUE;
 	}

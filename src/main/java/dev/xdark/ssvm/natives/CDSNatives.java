@@ -18,8 +18,7 @@ import lombok.experimental.UtilityClass;
 public class CDSNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		InstanceJavaClass jc = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/CDS");

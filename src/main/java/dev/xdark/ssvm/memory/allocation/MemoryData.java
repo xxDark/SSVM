@@ -1,4 +1,4 @@
-package dev.xdark.ssvm.memory;
+package dev.xdark.ssvm.memory.allocation;
 
 import java.nio.ByteBuffer;
 
@@ -12,9 +12,7 @@ public interface MemoryData {
 	/**
 	 * Read long at the specific offset.
 	 *
-	 * @param offset
-	 * 		Data offset.
-	 *
+	 * @param offset Data offset.
 	 * @return long value.
 	 */
 	long readLong(long offset);
@@ -22,9 +20,7 @@ public interface MemoryData {
 	/**
 	 * Read int at the specific offset.
 	 *
-	 * @param offset
-	 * 		Data offset.
-	 *
+	 * @param offset Data offset.
 	 * @return int value.
 	 */
 	int readInt(long offset);
@@ -32,9 +28,7 @@ public interface MemoryData {
 	/**
 	 * Read char at the specific offset.
 	 *
-	 * @param offset
-	 * 		Data offset.
-	 *
+	 * @param offset Data offset.
 	 * @return char value.
 	 */
 	char readChar(long offset);
@@ -42,9 +36,7 @@ public interface MemoryData {
 	/**
 	 * Read short at the specific offset.
 	 *
-	 * @param offset
-	 * 		Data offset.
-	 *
+	 * @param offset Data offset.
 	 * @return short value.
 	 */
 	short readShort(long offset);
@@ -52,9 +44,7 @@ public interface MemoryData {
 	/**
 	 * Read byte at the specific offset.
 	 *
-	 * @param offset
-	 * 		Data offset.
-	 *
+	 * @param offset Data offset.
 	 * @return byte value.
 	 */
 	byte readByte(long offset);
@@ -62,50 +52,40 @@ public interface MemoryData {
 	/**
 	 * Write long at the specific offset.
 	 *
-	 * @param offset
-	 * 		Data offset.
-	 * @param value
-	 * 		Long value.
+	 * @param offset Data offset.
+	 * @param value  Long value.
 	 */
 	void writeLong(long offset, long value);
 
 	/**
 	 * Write int at the specific offset.
 	 *
-	 * @param offset
-	 * 		Data offset.
-	 * @param value
-	 * 		Int value.
+	 * @param offset Data offset.
+	 * @param value  Int value.
 	 */
 	void writeInt(long offset, int value);
 
 	/**
 	 * Write char at the specific offset.
 	 *
-	 * @param offset
-	 * 		Data offset.
-	 * @param value
-	 * 		Char value.
+	 * @param offset Data offset.
+	 * @param value  Char value.
 	 */
 	void writeChar(long offset, char value);
 
 	/**
 	 * Write short at the specific offset.
 	 *
-	 * @param offset
-	 * 		Data offset.
-	 * @param value
-	 * 		Short value.
+	 * @param offset Data offset.
+	 * @param value  Short value.
 	 */
 	void writeShort(long offset, short value);
 
 	/**
 	 * Write byte at the specific offset.
 	 *
-	 * @param offset
-	 * 		Data offset.
-	 * @param value
-	 * 		Byte value.
+	 * @param offset Data offset.
+	 * @param value  Byte value.
 	 */
 	void writeByte(long offset, byte value);
 
@@ -162,50 +142,37 @@ public interface MemoryData {
 	/**
 	 * Fills data region.
 	 *
-	 * @param offset
-	 * 		Data offset.
-	 * @param bytes
-	 * 		Data length.
-	 * @param value
-	 * 		Value to fill with.
+	 * @param offset Data offset.
+	 * @param bytes  Data length.
+	 * @param value  Value to fill with.
 	 */
 	void set(long offset, long bytes, byte value);
 
 	/**
 	 * Copies this data region.
 	 *
-	 * @param srcOffset
-	 * 		Source offset.
-	 * @param dst
-	 * 		Destination data.
-	 * @param dstOffset
-	 * 		Destination offset.
-	 * @param bytes
-	 * 		Data length.
+	 * @param srcOffset Source offset.
+	 * @param dst       Destination data.
+	 * @param dstOffset Destination offset.
+	 * @param bytes     Data length.
 	 */
 	void copy(long srcOffset, MemoryData dst, long dstOffset, long bytes);
 
 	/**
 	 * Write buffer at the specific offset.
 	 *
-	 * @param offset
-	 * 		Data offset.
-	 * @param buffer
-	 * 		Buffer to write.
+	 * @param offset Data offset.
+	 * @param buffer Buffer to write.
 	 */
 	void write(long offset, ByteBuffer buffer);
 
 	/**
 	 * Write array of bytes at the specific offset.
 	 *
-	 * @param dstOffset
-	 * 		Data offset.
-	 * @param array
-	 * 		Array to write.
-	 * @param arrayOffset
-	 * 		Array offset.
-	 * @param length
-	 * 		Array length.
+	 * @param dstOffset   Data offset.
+	 * @param array       Array to write.
+	 * @param arrayOffset Array offset.
+	 * @param length      Array length.
 	 */
 	void write(long dstOffset, byte[] array, int arrayOffset, int length);
 
@@ -217,11 +184,8 @@ public interface MemoryData {
 	/**
 	 * Creates slice of this memory data.
 	 *
-	 * @param offset
-	 * 		Slice offset.
-	 * @param bytes
-	 * 		Slice length.
-	 *
+	 * @param offset Slice offset.
+	 * @param bytes  Slice length.
 	 * @return data slice.
 	 */
 	MemoryData slice(long offset, long bytes);
@@ -230,17 +194,14 @@ public interface MemoryData {
 	 * Transfers data of this memory to
 	 * another memory data.
 	 *
-	 * @param other
-	 * 		Memory data to transfer to.
+	 * @param other Memory data to transfer to.
 	 */
 	void transferTo(MemoryData other);
 
 	/**
 	 * Creates buffer backed memory data.
 	 *
-	 * @param buffer
-	 * 		Buffer to use.
-	 *
+	 * @param buffer Buffer to use.
 	 * @return memory data instance.
 	 */
 	static MemoryData buffer(ByteBuffer buffer) {

@@ -34,8 +34,7 @@ public class MethodHandleNatives {
 	private final String VM_HOLDER = NativeJava.VM_HOLDER;
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
@@ -200,7 +199,7 @@ public class MethodHandleNatives {
 		int flags = memberName.getInt("flags");
 		int refKind = (flags >> MN_REFERENCE_KIND_SHIFT) & MN_REFERENCE_KIND_MASK;
 		boolean speculativeResolve0 = speculativeResolveModeIndex >= 0 && locals.load(speculativeResolveModeIndex).asBoolean();
-		switch(flags & ALL_KINDS) {
+		switch (flags & ALL_KINDS) {
 			case IS_METHOD:
 				initMethodMember(refKind, vm, memberName, clazz, name, mt, IS_METHOD, speculativeResolve0);
 				break;
@@ -272,10 +271,10 @@ public class MethodHandleNatives {
 		VMHelper helper = vm.getHelper();
 		VMSymbols symbols = vm.getSymbols();
 		String desc = helper.readUtf8(helper.invokeExact(symbols.java_lang_invoke_MethodType(), "toMethodDescriptorString", "()Ljava/lang/String;", new Value[0], new Value[]{
-				methodType
+			methodType
 		}).getResult());
 		JavaMethod handle;
-		switch(refKind) {
+		switch (refKind) {
 			case REF_invokeStatic:
 				handle = clazz.getStaticMethod(name, desc);
 				break;
@@ -313,7 +312,7 @@ public class MethodHandleNatives {
 		// https://github.com/openjdk/jdk/blob/026b85303c01326bc49a1105a89853d7641fcd50/src/hotspot/share/prims/methodHandles.cpp#L839
 		// https://github.com/openjdk/jdk/blob/534e557874274255c55086b4f6128063cbd9cc58/src/hotspot/share/interpreter/linkResolver.cpp#L974
 		JavaField handle;
-		switch(refKind) {
+		switch (refKind) {
 			case REF_getStatic:
 			case REF_putStatic:
 			case REF_getField:
@@ -344,7 +343,8 @@ public class MethodHandleNatives {
 		}
 		if (v.isVoid()) {
 			// Return null if return type is non-void
-			return NullValue.INSTANCE;
+			// TODO this is bad
+			return jm.getOwner().getVM().getMemoryManager().nullValue();
 		}
 		return v;
 	}

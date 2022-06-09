@@ -14,9 +14,7 @@ public interface ClassLoaderData {
 	/**
 	 * Returns a class based off it's name.
 	 *
-	 * @param name
-	 * 		Name of the class.
-	 *
+	 * @param name Name of the class.
 	 * @return class.
 	 */
 	InstanceJavaClass getClass(String name);
@@ -25,11 +23,8 @@ public interface ClassLoaderData {
 	/**
 	 * Attempts to register a class.
 	 *
-	 * @param jc
-	 * 		Class to register.
-	 *
-	 * @throws IllegalStateException
-	 * 		If the class with the name of {@code jc} is already linked.
+	 * @param jc Class to register.
+	 * @throws IllegalStateException If the class with the name of {@code jc} is already linked.
 	 */
 	void linkClass(InstanceJavaClass jc);
 
@@ -37,8 +32,7 @@ public interface ClassLoaderData {
 	 * Registers a class.
 	 * This method will REPLACE existing class.
 	 *
-	 * @param jc
-	 * 		Class to register.
+	 * @param jc Class to register.
 	 */
 	void forceLinkClass(InstanceJavaClass jc);
 
@@ -50,8 +44,7 @@ public interface ClassLoaderData {
 	/**
 	 * Claims another class loader data.
 	 *
-	 * @param classLoaderData
-	 * 		Class loader data to claim.
+	 * @param classLoaderData Class loader data to claim.
 	 */
 	void claim(ClassLoaderData classLoaderData);
 }

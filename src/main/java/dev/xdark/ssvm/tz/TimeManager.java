@@ -9,9 +9,7 @@ package dev.xdark.ssvm.tz;
 public interface TimeManager {
 
 	/**
-	 * @param javaHome
-	 * 		Path to Java home.
-	 *
+	 * @param javaHome Path to Java home.
 	 * @return platform defined TimeZone id.
 	 */
 	String getSystemTimeZoneId(String javaHome);

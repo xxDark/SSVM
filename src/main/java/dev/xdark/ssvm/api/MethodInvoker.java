@@ -10,6 +10,12 @@ import dev.xdark.ssvm.execution.Result;
  */
 public interface MethodInvoker {
 
+	/**
+	 * Intercepts execution content.
+	 *
+	 * @param ctx content to itercept.
+	 * @return interception result.
+	 */
 	Result intercept(ExecutionContext ctx);
 
 	/**

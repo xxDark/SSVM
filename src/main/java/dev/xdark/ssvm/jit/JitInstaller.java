@@ -21,15 +21,10 @@ public class JitInstaller {
 	/**
 	 * Installs JITted code.
 	 *
-	 * @param method
-	 * 		Method to "JIT".
-	 * @param definer
-	 * 		Class definer.
-	 * @param jitClass
-	 * 		Class containing JIT code.
-	 *
-	 * @throws ReflectiveOperationException
-	 * 		If resulting class cannot be instantiated.
+	 * @param method   Method to "JIT".
+	 * @param definer  Class definer.
+	 * @param jitClass Class containing JIT code.
+	 * @throws ReflectiveOperationException If resulting class cannot be instantiated.
 	 */
 	public void install(JavaMethod method, ClassDefiner definer, JitClass jitClass) throws ReflectiveOperationException {
 		Class<?> c = definer.define(jitClass);
@@ -38,7 +33,7 @@ public class JitInstaller {
 			Field field = c.getDeclaredField("constants");
 			try {
 				Class.forName(c.getName(), true, c.getClassLoader());
-			} catch(ClassNotFoundException ignored) {
+			} catch (ClassNotFoundException ignored) {
 			}
 			Object[] constantsArray = constants.toArray();
 			if (JitCompiler.CAN_USE_STATIC_FINAL) {
@@ -67,9 +62,7 @@ public class JitInstaller {
 		/**
 		 * Defines class.
 		 *
-		 * @param jitClass
-		 * 		Class containing JIT code.
-		 *
+		 * @param jitClass Class containing JIT code.
 		 * @return defined class.
 		 */
 		Class<?> define(JitClass jitClass);

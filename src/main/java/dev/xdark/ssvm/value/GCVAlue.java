@@ -5,7 +5,7 @@ package dev.xdark.ssvm.value;
  *
  * @author xDark
  */
-public interface ReferenceCounted {
+public interface GCVAlue {
 
 	/**
 	 * @return current reference count.
@@ -15,26 +15,22 @@ public interface ReferenceCounted {
 	/**
 	 * Increases reference count.
 	 *
-	 * @param count
-	 * 		Count to increase reference count by.
-	 *
+	 * @param count Count to increase reference count by.
 	 * @return this value.
 	 */
-	ReferenceCounted retain(long count);
+	GCVAlue retain(long count);
 
 	/**
 	 * Increases reference count.
 	 *
 	 * @return this value.
 	 */
-	ReferenceCounted retain();
+	GCVAlue retain();
 
 	/**
 	 * Decreases reference count.
 	 *
-	 * @param count
-	 * 		Count to decrease reference count by.
-	 *
+	 * @param count Count to decrease reference count by.
 	 * @return this value.
 	 */
 	boolean release(long count);

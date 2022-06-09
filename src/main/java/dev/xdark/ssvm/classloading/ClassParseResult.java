@@ -14,10 +14,8 @@ public final class ClassParseResult {
 	private final ClassNode node;
 
 	/**
-	 * @param classReader
-	 * 		Class source.
-	 * @param node
-	 * 		ASM node.
+	 * @param classReader Class source.
+	 * @param node        ASM node.
 	 */
 	public ClassParseResult(ClassReader classReader, ClassNode node) {
 		this.classReader = classReader;

@@ -11,7 +11,7 @@ public class UnsafeTest {
 	@Test
 	public void doTest() {
 		TestUtil.test(InnerUnsafeTest.class, true, c -> {
-			c.setStaticFieldValue("addressSize", "I", IntValue.of(c.getVM().getMemoryManager().addressSize()));
+			c.setStaticFieldValue("addressSize", "I", IntValue.of(c.getVM().getMemoryAllocator().addressSize()));
 		});
 	}
 

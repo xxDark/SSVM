@@ -38,7 +38,7 @@ public class UnsafeUtil {
 			}
 			ARRAY_BYTE_BASE_OFFSET = unsafe.arrayBaseOffset(byte[].class);
 			UNSAFE = unsafe;
-		} catch(IllegalAccessException ex) {
+		} catch (IllegalAccessException ex) {
 			throw new ExceptionInInitializerError(ex);
 		}
 	}

@@ -18,8 +18,7 @@ public final class BiDoubleProcessor implements InstructionProcessor<AbstractIns
 	private final BiDoubleToDoubleFunction op;
 
 	/**
-	 * @param op
-	 * 		Double processor.
+	 * @param op Double processor.
 	 */
 	public BiDoubleProcessor(BiDoubleToDoubleFunction op) {
 		this.op = op;

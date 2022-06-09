@@ -4,6 +4,7 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.NullValue;
+import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 
@@ -12,7 +13,7 @@ import org.objectweb.asm.Opcodes;
  *
  * @author xDark
  */
-public  final class InitializedVMSymbols implements VMSymbols {
+public final class InitializedVMSymbols implements VMSymbols {
 
 	private final InstanceJavaClass java_lang_Object;
 	private final InstanceJavaClass java_lang_Class;
@@ -101,8 +102,7 @@ public  final class InitializedVMSymbols implements VMSymbols {
 	private final InstanceJavaClass java_lang_InstantiationError;
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public InitializedVMSymbols(VirtualMachine vm) {
 		vm.assertInitialized();
@@ -641,7 +641,8 @@ public  final class InitializedVMSymbols implements VMSymbols {
 			ClassWriter writer = new ClassWriter(0);
 			writer.visit(Opcodes.V1_8, Modifier.ACC_VM_HIDDEN, "java/lang/invoke/ResolvedMethodName", null, "java/lang/Object", null);
 			byte[] b = writer.toByteArray();
-			jc = vm.getHelper().defineClass(NullValue.INSTANCE, "java/lang/invoke/ResolvedMethodName", b, 0, b.length, NullValue.INSTANCE, "JVM_DefineClass");
+			ObjectValue nullValue = vm.getMemoryManager().nullValue();
+			jc = vm.getHelper().defineClass(nullValue, "java/lang/invoke/ResolvedMethodName", b, 0, b.length, nullValue, "JVM_DefineClass");
 		}
 		return jc;
 	}

@@ -24,8 +24,7 @@ import lombok.experimental.UtilityClass;
 public class ThreadNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
@@ -84,7 +83,7 @@ public class ThreadNatives {
 			}
 			try {
 				vm.getThreadManager().sleep(time);
-			} catch(InterruptedException ex) {
+			} catch (InterruptedException ex) {
 				VMHelper helper = vm.getHelper();
 				helper.throwException(symbols.java_lang_InterruptedException(), helper.newUtf8(ex.getMessage()));
 			}

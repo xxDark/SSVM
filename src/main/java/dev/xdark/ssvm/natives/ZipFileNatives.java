@@ -30,8 +30,7 @@ import java.util.zip.ZipEntry;
 public class ZipFileNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
@@ -53,7 +52,7 @@ public class ZipFileNatives {
 					helper.throwException(symbols.java_io_IOException(), zipPath);
 				}
 				ctx.setResult(LongValue.of(handle));
-			} catch(IOException ex) {
+			} catch (IOException ex) {
 				helper.throwException(symbols.java_io_IOException(), ex.getMessage());
 			}
 			return Result.ABORT;
@@ -111,14 +110,14 @@ public class ZipFileNatives {
 						break;
 					case 1:
 						byte[] extra = value.getExtra();
-						ctx.setResult(extra == null ? NullValue.INSTANCE : helper.toVMBytes(extra));
+						ctx.setResult(extra == null ? vm.getMemoryManager().nullValue() : helper.toVMBytes(extra));
 						break;
 					case 2:
 						String comment = value.getComment();
-						ctx.setResult(comment == null ? NullValue.INSTANCE : helper.toVMBytes(comment.getBytes(StandardCharsets.UTF_8)));
+						ctx.setResult(comment == null ? vm.getMemoryManager().nullValue() : helper.toVMBytes(comment.getBytes(StandardCharsets.UTF_8)));
 						break;
 					default:
-						ctx.setResult(NullValue.INSTANCE);
+						ctx.setResult(vm.getMemoryManager().nullValue());
 				}
 				return Result.ABORT;
 			});
@@ -201,7 +200,7 @@ public class ZipFileNatives {
 				byte[] read;
 				try {
 					read = zipFile.readEntry(entry);
-				} catch(IOException ex) {
+				} catch (IOException ex) {
 					vm.getHelper().throwException(vm.getSymbols().java_util_zip_ZipException(), ex.getMessage());
 					return Result.ABORT;
 				}
@@ -244,7 +243,7 @@ public class ZipFileNatives {
 					if (!vm.getFileDescriptorManager().close(ctx.getLocals().load(0).asLong())) {
 						throw new PanicException("Segfault");
 					}
-				} catch(IOException ex) {
+				} catch (IOException ex) {
 					vm.getHelper().throwException(symbols.java_util_zip_ZipException(), ex.getMessage());
 				}
 				return Result.ABORT;

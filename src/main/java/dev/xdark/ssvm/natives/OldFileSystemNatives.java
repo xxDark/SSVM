@@ -23,8 +23,7 @@ public class OldFileSystemNatives {
 	/**
 	 * Initializes win32/unix file system class.
 	 *
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		InstanceJavaClass fs = (InstanceJavaClass) vm.findBootstrapClass("java/io/WinNTFileSystem");
@@ -78,7 +77,7 @@ public class OldFileSystemNatives {
 			String path = helper.readUtf8(((InstanceValue) value).getValue("path", "Ljava/lang/String;"));
 			String[] list = vm.getFileDescriptorManager().list(path);
 			if (list == null) {
-				ctx.setResult(NullValue.INSTANCE);
+				ctx.setResult(vm.getMemoryManager().nullValue());
 			} else {
 				ObjectValue[] values = new ObjectValue[list.length];
 				for (int i = 0; i < list.length; i++) {

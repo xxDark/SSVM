@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.value;
 
-import dev.xdark.ssvm.memory.Memory;
+import dev.xdark.ssvm.memory.management.MemoryManager;
+import dev.xdark.ssvm.memory.allocation.MemoryBlock;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 
 /**
@@ -13,11 +14,11 @@ public class SimpleInstanceValue extends SimpleObjectValue implements InstanceVa
 	private boolean initialized;
 
 	/**
-	 * @param memory
-	 * 		Object data.
+	 * @param memoryManager Memory manager.
+	 * @param memory Object data.
 	 */
-	public SimpleInstanceValue(Memory memory) {
-		super(memory);
+	public SimpleInstanceValue(MemoryManager memoryManager, MemoryBlock memory) {
+		super(memoryManager, memory);
 	}
 
 	@Override

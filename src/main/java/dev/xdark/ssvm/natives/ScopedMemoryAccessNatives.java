@@ -15,8 +15,7 @@ import lombok.experimental.UtilityClass;
 public class ScopedMemoryAccessNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		InstanceJavaClass jc = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/ScopedMemoryAccess");

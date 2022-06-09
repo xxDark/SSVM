@@ -18,15 +18,14 @@ import lombok.experimental.UtilityClass;
 public class AccessControllerNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
 		InstanceJavaClass accController = (InstanceJavaClass) vm.findBootstrapClass("java/security/AccessController");
 		vmi.setInvoker(accController, "getStackAccessControlContext", "()Ljava/security/AccessControlContext;", ctx -> {
 			// TODO implement?
-			ctx.setResult(NullValue.INSTANCE);
+			ctx.setResult(vm.getMemoryManager().nullValue());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(accController, "doPrivileged", "(Ljava/security/PrivilegedAction;)Ljava/lang/Object;", ctx -> {
@@ -34,7 +33,7 @@ public class AccessControllerNatives {
 			VMHelper helper = vm.getHelper();
 			helper.checkNotNull(action);
 			Value result = helper.invokeVirtual("run", "()Ljava/lang/Object;", new Value[0], new Value[]{
-					action
+				action
 			}).getResult();
 			ctx.setResult(result);
 			return Result.ABORT;
@@ -44,7 +43,7 @@ public class AccessControllerNatives {
 			VMHelper helper = vm.getHelper();
 			helper.checkNotNull(action);
 			Value result = helper.invokeVirtual("run", "()Ljava/lang/Object;", new Value[0], new Value[]{
-					action
+				action
 			}).getResult();
 			ctx.setResult(result);
 			return Result.ABORT;
@@ -54,7 +53,7 @@ public class AccessControllerNatives {
 			VMHelper helper = vm.getHelper();
 			helper.checkNotNull(action);
 			Value result = helper.invokeVirtual("run", "()Ljava/lang/Object;", new Value[0], new Value[]{
-					action
+				action
 			}).getResult();
 			ctx.setResult(result);
 			return Result.ABORT;
@@ -64,7 +63,7 @@ public class AccessControllerNatives {
 			VMHelper helper = vm.getHelper();
 			helper.checkNotNull(action);
 			Value result = helper.invokeVirtual("run", "()Ljava/lang/Object;", new Value[0], new Value[]{
-					action
+				action
 			}).getResult();
 			ctx.setResult(result);
 			return Result.ABORT;

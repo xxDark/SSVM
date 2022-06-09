@@ -18,8 +18,7 @@ import java.security.SecureRandom;
 public class SeedGeneratorNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public static void init(VirtualMachine vm) {
 		// TODO remove this stub, let VM decide.

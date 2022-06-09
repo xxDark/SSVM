@@ -12,13 +12,9 @@ public interface ExecutionContextManager {
 	/**
 	 * Creates new execution context.
 	 *
-	 * @param method
-	 * 		Method to execute.
-	 * @param stack
-	 * 		Method stack.
-	 * @param locals
-	 * 		Method locals.
-	 *
+	 * @param method Method to execute.
+	 * @param stack  Method stack.
+	 * @param locals Method locals.
 	 * @return new execution context.
 	 */
 	ExecutionContext createContext(JavaMethod method, Stack stack, Locals locals);

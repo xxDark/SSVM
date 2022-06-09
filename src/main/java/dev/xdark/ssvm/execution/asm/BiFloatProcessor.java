@@ -18,8 +18,7 @@ public final class BiFloatProcessor implements InstructionProcessor<AbstractInsn
 	private final BiFloatToFloatFunction op;
 
 	/**
-	 * @param op
-	 * 		Double processor.
+	 * @param op Double processor.
 	 */
 	public BiFloatProcessor(BiFloatToFloatFunction op) {
 		this.op = op;

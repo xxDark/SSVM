@@ -18,8 +18,7 @@ public final class IntJumpProcessor implements InstructionProcessor<JumpInsnNode
 	private final IntPredicate condition;
 
 	/**
-	 * @param condition
-	 * 		Predicate to check.
+	 * @param condition Predicate to check.
 	 */
 	public IntJumpProcessor(IntPredicate condition) {
 		this.condition = condition;

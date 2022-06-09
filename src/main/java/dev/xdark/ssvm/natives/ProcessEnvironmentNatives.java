@@ -21,8 +21,7 @@ import java.util.Map;
 public class ProcessEnvironmentNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
@@ -49,11 +48,11 @@ public class ProcessEnvironmentNatives {
 				Map<String, String> env = vm.getenv();
 				for (Map.Entry<String, String> entry : env.entrySet()) {
 					result.append(entry.getKey()).append('=').append(entry.getValue())
-							.append('\0');
+						.append('\0');
 				}
 				ctx.setResult(vm.getHelper().newUtf8(result.append('\0').toString()));
 				return Result.ABORT;
 			});
 		}
-		}
+	}
 }

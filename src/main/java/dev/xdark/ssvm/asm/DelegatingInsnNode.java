@@ -10,25 +10,21 @@ import org.objectweb.asm.tree.AbstractInsnNode;
  * VM uses this instruction to rewrite some Java
  * instructions, e.g. INVOKEDYNAMIC.
  *
- * @param <I>
- * 		Type of the delegating instruction.
- *
+ * @param <I> Type of the delegating instruction.
  * @author xDark
  */
 @Getter
-public abstract class DelegatingInsnNode<I extends AbstractInsnNode> extends AbstractInsnNode implements VirtualInsnNode {
+public class DelegatingInsnNode<I extends AbstractInsnNode> extends AbstractInsnNode implements VirtualInsnNode {
 
 	@Delegate(types = AbstractInsnNode.class)
 	protected final I delegate;
 	private final int virtualOpcode;
 
 	/**
-	 * @param delegate
-	 * 		Backing instruction.
-	 * @param virtualOpcode
-	 * 		VM specific opcode.
+	 * @param delegate      Backing instruction.
+	 * @param virtualOpcode VM specific opcode.
 	 */
-	protected DelegatingInsnNode(I delegate, int virtualOpcode) {
+	public DelegatingInsnNode(I delegate, int virtualOpcode) {
 		super(delegate.getOpcode());
 		this.delegate = delegate;
 		this.virtualOpcode = virtualOpcode;

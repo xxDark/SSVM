@@ -24,8 +24,7 @@ public final class ThreadStack implements Stack, AutoCloseable, Disposable {
 	private int cursor;
 
 	/**
-	 * @param maxSize
-	 * 		The maximum size of the stack.
+	 * @param maxSize The maximum size of the stack.
 	 */
 	public ThreadStack(int maxSize) {
 		stack = SimpleThreadStorage.threadPush(maxSize);
@@ -97,7 +96,9 @@ public final class ThreadStack implements Stack, AutoCloseable, Disposable {
 
 	@Override
 	public <V extends Value> V poll() {
-		if (cursor == 0) return null;
+		if (cursor == 0) {
+			return null;
+		}
 		return (V) stack.get(--cursor);
 	}
 
@@ -155,11 +156,17 @@ public final class ThreadStack implements Stack, AutoCloseable, Disposable {
 
 	@Override
 	public boolean equals(Object o) {
-		if (o == this) return true;
-		if (!(o instanceof Stack)) return false;
+		if (o == this) {
+			return true;
+		}
+		if (!(o instanceof Stack)) {
+			return false;
+		}
 		Stack other = (Stack) o;
 		int cursor = this.cursor;
-		if (cursor != other.position()) return false;
+		if (cursor != other.position()) {
+			return false;
+		}
 		for (int i = 0; i < cursor; i++) {
 			if (!Objects.equals(getAt(i), other.getAt(i))) {
 				return false;
@@ -167,7 +174,7 @@ public final class ThreadStack implements Stack, AutoCloseable, Disposable {
 		}
 		return true;
 	}
-	
+
 	@Override
 	public int hashCode() {
 		int result = 1;
@@ -183,9 +190,9 @@ public final class ThreadStack implements Stack, AutoCloseable, Disposable {
 	@Override
 	public String toString() {
 		return "Stack{" +
-				"stack=" + Arrays.toString(stack.unwrap()) +
-				", cursor=" + cursor +
-				'}';
+			"stack=" + Arrays.toString(stack.unwrap()) +
+			", cursor=" + cursor +
+			'}';
 	}
 
 	private static void checkValue(Value value) {

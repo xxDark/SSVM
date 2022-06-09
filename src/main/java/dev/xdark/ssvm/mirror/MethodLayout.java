@@ -13,8 +13,7 @@ public final class MethodLayout {
 	private final Map<MemberKey, JavaMethod> methods;
 
 	/**
-	 * @param methods
-	 * 		Map containing all methods from hierarchy.
+	 * @param methods Map containing all methods from hierarchy.
 	 */
 	public MethodLayout(Map<MemberKey, JavaMethod> methods) {
 		this.methods = methods;

@@ -1,7 +1,7 @@
 package dev.xdark.ssvm.value;
 
-import dev.xdark.ssvm.memory.Memory;
-import dev.xdark.ssvm.memory.MemoryManager;
+import dev.xdark.ssvm.memory.management.MemoryManager;
+import dev.xdark.ssvm.memory.allocation.MemoryBlock;
 import dev.xdark.ssvm.mirror.JavaClass;
 
 import java.util.concurrent.TimeUnit;
@@ -13,17 +13,19 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * @author xDark
  */
-public class SimpleObjectValue extends AbstractReferenceCounted implements ObjectValue {
+public class SimpleObjectValue implements ObjectValue {
 
 	private final ReentrantLock lock;
 	private final Condition signal;
-	private final Memory memory;
+	private final MemoryManager memoryManager;
+	private final MemoryBlock memory;
 
 	/**
-	 * @param memory
-	 * 		Object data.
+	 * @param memoryManager Memory manager.
+	 * @param memory        Object data.
 	 */
-	public SimpleObjectValue(Memory memory) {
+	public SimpleObjectValue(MemoryManager memoryManager, MemoryBlock memory) {
+		this.memoryManager = memoryManager;
 		this.memory = memory;
 		ReentrantLock lock = new ReentrantLock();
 		this.lock = lock;
@@ -61,7 +63,7 @@ public class SimpleObjectValue extends AbstractReferenceCounted implements Objec
 	}
 
 	@Override
-	public Memory getMemory() {
+	public MemoryBlock getMemory() {
 		return memory;
 	}
 
@@ -95,12 +97,7 @@ public class SimpleObjectValue extends AbstractReferenceCounted implements Objec
 		return lock.isHeldByCurrentThread();
 	}
 
-	@Override
-	protected void deallocate() {
-		getMemoryManager().readyForDeallocation(this);
-	}
-
 	protected MemoryManager getMemoryManager() {
-		return memory.getMemoryManager();
+		return memoryManager;
 	}
 }

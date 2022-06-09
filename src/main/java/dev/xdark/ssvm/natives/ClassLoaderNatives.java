@@ -31,8 +31,7 @@ import java.util.function.Function;
 public class ClassLoaderNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
@@ -92,7 +91,7 @@ public class ClassLoaderNatives {
 			if (loadedClass != null && Modifier.isHiddenMember(loadedClass.getModifiers())) {
 				loadedClass = null;
 			}
-			ctx.setResult(loadedClass == null ? NullValue.INSTANCE : loadedClass.getOop());
+			ctx.setResult(loadedClass == null ? vm.getMemoryManager().nullValue() : loadedClass.getOop());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(classLoader, "findBootstrapClass", "(Ljava/lang/String;)Ljava/lang/Class;", ctx -> {
@@ -106,7 +105,7 @@ public class ClassLoaderNatives {
 			if (loadedClass != null && Modifier.isHiddenMember(loadedClass.getModifiers())) {
 				loadedClass = null;
 			}
-			ctx.setResult(loadedClass == null ? NullValue.INSTANCE : loadedClass.getOop());
+			ctx.setResult(loadedClass == null ? vm.getMemoryManager().nullValue() : loadedClass.getOop());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(classLoader, "resolveClass0", "(Ljava/lang/Class;)V", ctx -> {
@@ -127,7 +126,7 @@ public class ClassLoaderNatives {
 			int off = locals.load(argOffset + 3).asInt();
 			int length = locals.load(argOffset + 4).asInt();
 			ObjectValue pd = locals.<ObjectValue>load(argOffset + 5);
-			ObjectValue source = withSource ? locals.<ObjectValue>load(argOffset + 6) : NullValue.INSTANCE;
+			ObjectValue source = withSource ? locals.<ObjectValue>load(argOffset + 6) : ctx.getMemoryManager().nullValue();
 			byte[] bytes = helper.toJavaBytes(b);
 			return helper.defineClass(loader, helper.readUtf8(name), bytes, off, length, pd, helper.readUtf8(source), link);
 		};

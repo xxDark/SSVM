@@ -26,8 +26,7 @@ import java.util.function.Predicate;
 public class NativeLibraryNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
@@ -107,7 +106,7 @@ public class NativeLibraryNatives {
 			}
 		}
 		MethodInvoker findBuiltinLib = ctx -> {
-			VMHelper helper =ctx.getHelper();
+			VMHelper helper = ctx.getHelper();
 			String name = helper.readUtf8(ctx.getLocals().load(0));
 			ctx.setResult(helper.newUtf8(vm.getNativeLibraryManager().findBuiltinLibrary(name)));
 			return Result.ABORT;

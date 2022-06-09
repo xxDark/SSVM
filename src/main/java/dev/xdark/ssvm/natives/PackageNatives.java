@@ -17,15 +17,14 @@ import lombok.experimental.UtilityClass;
 public class PackageNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
 		VMSymbols symbols = vm.getSymbols();
 		InstanceJavaClass jc = symbols.java_lang_Package();
 		vmi.setInvoker(jc, "getSystemPackage0", "(Ljava/lang/String;)Ljava/lang/String;", ctx -> {
-			ctx.setResult(NullValue.INSTANCE);
+			ctx.setResult(vm.getMemoryManager().nullValue());
 			return Result.ABORT;
 		});
 	}

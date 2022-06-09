@@ -1,7 +1,7 @@
 package dev.xdark.ssvm.thread;
 
 import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.memory.MemoryManager;
+import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.InstanceValue;
 
@@ -17,10 +17,8 @@ public class DetachedVMThread extends BaseVMThread {
 	private InstanceValue oop;
 
 	/**
-	 * @param vm
-	 * 		VM instance.
-	 * @param thread
-	 * 		Java thread.
+	 * @param vm     VM instance.
+	 * @param thread Java thread.
 	 */
 	public DetachedVMThread(VirtualMachine vm, Thread thread) {
 		super(null);

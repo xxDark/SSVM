@@ -22,8 +22,7 @@ public abstract class BaseVMThread implements VMThread {
 	private final InstanceValue oop;
 
 	/**
-	 * @param oop
-	 * 		VM thread oop.
+	 * @param oop VM thread oop.
 	 */
 	protected BaseVMThread(InstanceValue oop) {
 		this.oop = oop;

@@ -24,8 +24,7 @@ import org.objectweb.asm.Type;
 public class ConstructorAccessorNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();

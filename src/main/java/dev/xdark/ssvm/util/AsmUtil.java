@@ -30,9 +30,7 @@ public class AsmUtil {
 	 * {@code Ljava/lang/Class; => java/lang/Class}.
 	 * {@code [Ljava/lang/String; => identity}.
 	 *
-	 * @param descriptor
-	 * 		Descriptor to normalize.
-	 *
+	 * @param descriptor Descriptor to normalize.
 	 * @return Normalized descriptor.
 	 */
 	public String normalizeDescriptor(String descriptor) {
@@ -46,9 +44,7 @@ public class AsmUtil {
 	/**
 	 * Returns maximum amount of local variable slots.
 	 *
-	 * @param mn
-	 * 		Method to calculate the amount from.
-	 *
+	 * @param mn Method to calculate the amount from.
 	 * @return maximum amount of local variable slots.
 	 */
 	public int getMaxLocals(JavaMethod mn) {
@@ -62,13 +58,9 @@ public class AsmUtil {
 	/**
 	 * Returns index of the instruction.
 	 *
-	 * @param insnNode
-	 * 		Instruction to get index from.
-	 *
+	 * @param insnNode Instruction to get index from.
 	 * @return index of the instruction.
-	 *
-	 * @throws IllegalStateException
-	 * 		If index could not be extracted.
+	 * @throws IllegalStateException If index could not be extracted.
 	 */
 	public int getIndex(AbstractInsnNode insnNode) {
 		return UNSAFE.getInt(insnNode, INSN_INDEX);
@@ -77,9 +69,7 @@ public class AsmUtil {
 	/**
 	 * Returns opcode name.
 	 *
-	 * @param opcode
-	 * 		Opcode to get name from.
-	 *
+	 * @param opcode Opcode to get name from.
 	 * @return opcode name.
 	 */
 	public String getName(int opcode) {
@@ -89,8 +79,7 @@ public class AsmUtil {
 	/**
 	 * Returns default descriptor value.
 	 *
-	 * @param desc
-	 * 		Type descriptor.
+	 * @param desc Type descriptor.
 	 */
 	public Object getDefaultValue(String desc) {
 		switch (desc) {

@@ -19,9 +19,8 @@ public final class DoubleCompareProcessor implements InstructionProcessor<Abstra
 	private final int nan;
 
 	/**
-	 * @param nan
-	 * 		Value to be pushed to the stack
-	 * 		if one of the doubles is {@code NaN}.
+	 * @param nan Value to be pushed to the stack
+	 *            if one of the doubles is {@code NaN}.
 	 */
 	public DoubleCompareProcessor(int nan) {
 		this.nan = nan;

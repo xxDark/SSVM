@@ -27,13 +27,9 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Searches for a virtual method by it's name and descriptor recursively.
 	 *
-	 * @param name
-	 * 		Name of the method.
-	 * @param desc
-	 * 		Descriptor of the method.
-	 *
+	 * @param name Name of the method.
+	 * @param desc Descriptor of the method.
 	 * @return class method or {@code null}, if not found.
-	 *
 	 * @deprecated Use {@link dev.xdark.ssvm.LinkResolver} instead.
 	 */
 	@Deprecated
@@ -42,13 +38,9 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Searches for an interface method by it's name and descriptor recursively.
 	 *
-	 * @param name
-	 * 		Name of the method.
-	 * @param desc
-	 * 		Descriptor of the method.
-	 *
+	 * @param name Name of the method.
+	 * @param desc Descriptor of the method.
 	 * @return class method or {@code null}, if not found.
-	 *
 	 * @deprecated Use {@link dev.xdark.ssvm.LinkResolver} instead.
 	 */
 	@Deprecated
@@ -57,11 +49,8 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Searches for a virtual method by it's name and descriptor.
 	 *
-	 * @param name
-	 * 		Name of the method.
-	 * @param desc
-	 * 		Descriptor of the method.
-	 *
+	 * @param name Name of the method.
+	 * @param desc Descriptor of the method.
 	 * @return class method or {@code null}, if not found.
 	 */
 	JavaMethod getVirtualMethod(String name, String desc);
@@ -69,11 +58,8 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Searches for a virtual field by it's name and descriptor.
 	 *
-	 * @param name
-	 * 		Name of the field.
-	 * @param desc
-	 * 		Descriptor of the field.
-	 *
+	 * @param name Name of the field.
+	 * @param desc Descriptor of the field.
 	 * @return virtual class field or {@code null}, if not found.
 	 */
 	JavaField getVirtualField(String name, String desc);
@@ -82,11 +68,8 @@ public interface InstanceJavaClass extends JavaClass {
 	 * Searches for virtual field by it's name and descriptor
 	 * recursively.
 	 *
-	 * @param name
-	 * 		Name of the field.
-	 * @param desc
-	 * 		Descriptor of the field.
-	 *
+	 * @param name Name of the field.
+	 * @param desc Descriptor of the field.
 	 * @return static class field or {@code null}, if not found.
 	 */
 	JavaField getVirtualFieldRecursively(String name, String desc);
@@ -94,11 +77,8 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Searches for a static field by it's name and descriptor.
 	 *
-	 * @param name
-	 * 		Name of the field.
-	 * @param desc
-	 * 		Descriptor of the field.
-	 *
+	 * @param name Name of the field.
+	 * @param desc Descriptor of the field.
 	 * @return static class field or {@code null}, if not found.
 	 */
 	JavaField getStaticField(String name, String desc);
@@ -107,11 +87,8 @@ public interface InstanceJavaClass extends JavaClass {
 	 * Searches for a static field by it's name and descriptor
 	 * recursively.
 	 *
-	 * @param name
-	 * 		Name of the field.
-	 * @param desc
-	 * 		Descriptor of the field.
-	 *
+	 * @param name Name of the field.
+	 * @param desc Descriptor of the field.
 	 * @return static class field or {@code null}, if not found.
 	 */
 	JavaField getStaticFieldRecursively(String name, String desc);
@@ -119,13 +96,9 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Searches for a static method by it's name and descriptor recursively.
 	 *
-	 * @param name
-	 * 		Name of the method.
-	 * @param desc
-	 * 		Descriptor of the method.
-	 *
+	 * @param name Name of the method.
+	 * @param desc Descriptor of the method.
 	 * @return class method or {@code null}, if not found.
-	 *
 	 * @deprecated Use {@link dev.xdark.ssvm.LinkResolver} instead.
 	 */
 	@Deprecated
@@ -134,11 +107,8 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Searches for a static method by it's name and descriptor.
 	 *
-	 * @param name
-	 * 		Name of the method.
-	 * @param desc
-	 * 		Descriptor of the method.
-	 *
+	 * @param name Name of the method.
+	 * @param desc Descriptor of the method.
 	 * @return class method or {@code null}, if not found.
 	 */
 	JavaMethod getStaticMethod(String name, String desc);
@@ -146,11 +116,8 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Searches for a method by it's name and descriptor.
 	 *
-	 * @param name
-	 * 		Name of the method.
-	 * @param desc
-	 * 		Descriptor of the method.
-	 *
+	 * @param name Name of the method.
+	 * @param desc Descriptor of the method.
 	 * @return class method or {@code null}, if not found.
 	 */
 	JavaMethod getMethod(String name, String desc);
@@ -158,9 +125,7 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Returns static offset of a field.
 	 *
-	 * @param field
-	 * 		Field info.
-	 *
+	 * @param field Field info.
 	 * @return static offset of a field or {@code -1L},
 	 * if field was not found.
 	 */
@@ -169,11 +134,8 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Returns static offset of a field.
 	 *
-	 * @param name
-	 * 		Field name.
-	 * @param desc
-	 * 		Field desc.
-	 *
+	 * @param name Field name.
+	 * @param desc Field desc.
 	 * @return static offset of a field or {@code -1L},
 	 * if field was not found.
 	 */
@@ -182,9 +144,7 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Returns static value of a field.
 	 *
-	 * @param field
-	 * 		Field info.
-	 *
+	 * @param field Field info.
 	 * @return static value of a field or {@code null},
 	 * if field was not found.
 	 */
@@ -193,11 +153,8 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Returns static value of a field.
 	 *
-	 * @param name
-	 * 		Field name.
-	 * @param desc
-	 * 		Field descriptor.
-	 *
+	 * @param name Field name.
+	 * @param desc Field descriptor.
 	 * @return static value of a field or {@code null},
 	 * if field was not found.
 	 */
@@ -206,11 +163,8 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Sets static value for a field.
 	 *
-	 * @param field
-	 * 		Field info.
-	 * @param value
-	 * 		New value.
-	 *
+	 * @param field Field info.
+	 * @param value New value.
 	 * @return whether the value was changed or not.
 	 * This method will return {@code false} if there is no such field.
 	 */
@@ -219,13 +173,9 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Sets static value for a field.
 	 *
-	 * @param name
-	 * 		Field name.
-	 * @param desc
-	 * 		Field desc.
-	 * @param value
-	 * 		New value.
-	 *
+	 * @param name  Field name.
+	 * @param desc  Field desc.
+	 * @param value New value.
 	 * @return whether the value was changed or not.
 	 * This method will return {@code false} if there is no such field.
 	 */
@@ -234,11 +184,8 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Searches for field offset.
 	 *
-	 * @param name
-	 * 		Field name.
-	 * @param desc
-	 * 		Field desc.
-	 *
+	 * @param name Field name.
+	 * @param desc Field desc.
 	 * @return field offset or {@code -1L} if not found.
 	 */
 	long getVirtualFieldOffset(String name, String desc);
@@ -246,11 +193,8 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Searches for field offset recursively.
 	 *
-	 * @param name
-	 * 		Field name.
-	 * @param desc
-	 * 		Field desc.
-	 *
+	 * @param name Field name.
+	 * @param desc Field desc.
 	 * @return field offset or {@code -1L} if not found.
 	 */
 	long getVirtualFieldOffsetRecursively(String name, String desc);
@@ -258,9 +202,7 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Searches for field offset recursively.
 	 *
-	 * @param name
-	 * 		Field name.
-	 *
+	 * @param name Field name.
 	 * @return field offset or {@code -1L} if not found.
 	 */
 	long getVirtualFieldOffsetRecursively(String name);
@@ -268,9 +210,7 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Checks whether virtual field exists.
 	 *
-	 * @param info
-	 * 		Field info.
-	 *
+	 * @param info Field info.
 	 * @return {@code true} if field exists, {@code false}
 	 * otherwise.
 	 */
@@ -279,11 +219,8 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Checks whether virtual field exists.
 	 *
-	 * @param name
-	 * 		Field name.
-	 * @param desc
-	 * 		Field desc.
-	 *
+	 * @param name Field name.
+	 * @param desc Field desc.
 	 * @return {@code true} if field exists, {@code false}
 	 * otherwise.
 	 */
@@ -306,9 +243,7 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Returns list of all methods.
 	 *
-	 * @param publicOnly
-	 * 		Should only public methods be included.
-	 *
+	 * @param publicOnly Should only public methods be included.
 	 * @return all methods.
 	 */
 	List<JavaMethod> getDeclaredMethods(boolean publicOnly);
@@ -316,9 +251,7 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Returns list of all constructors.
 	 *
-	 * @param publicOnly
-	 * 		Should only public constructors be included.
-	 *
+	 * @param publicOnly Should only public constructors be included.
 	 * @return all constructors.
 	 */
 	List<JavaMethod> getDeclaredConstructors(boolean publicOnly);
@@ -326,9 +259,7 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Returns list of all fields.
 	 *
-	 * @param publicOnly
-	 * 		Should only public fields be included.
-	 *
+	 * @param publicOnly Should only public fields be included.
 	 * @return all fields.
 	 */
 	List<JavaField> getDeclaredFields(boolean publicOnly);
@@ -371,8 +302,7 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Sets oop of the class.
 	 *
-	 * @param oop
-	 * 		Class oop.
+	 * @param oop Class oop.
 	 */
 	void setOop(JavaValue<InstanceJavaClass> oop);
 
@@ -382,17 +312,13 @@ public interface InstanceJavaClass extends JavaClass {
 	void loadNoResolve();
 
 	/**
-	 * @param slot
-	 * 		Method slot.
-	 *
+	 * @param slot Method slot.
 	 * @return method by it's slot.
 	 */
 	JavaMethod getMethodBySlot(int slot);
 
 	/**
-	 * @param slot
-	 * 		Field slot.
-	 *
+	 * @param slot Field slot.
 	 * @return field by it's slot.
 	 */
 	JavaField getFieldBySlot(int slot);
@@ -400,14 +326,10 @@ public interface InstanceJavaClass extends JavaClass {
 	/**
 	 * Attempts to redefine this class.
 	 *
-	 * @param reader
-	 * 		Class source.
-	 * @param node
-	 * 		New class node.
-	 *
-	 * @throws IllegalStateException
-	 * 		If any methods or fields were added, removed, or order has changed.
-	 * 		If modifiers of fields or methods were changed (method/field became (non-) static).
+	 * @param reader Class source.
+	 * @param node   New class node.
+	 * @throws IllegalStateException If any methods or fields were added, removed, or order has changed.
+	 *                               If modifiers of fields or methods were changed (method/field became (non-) static).
 	 */
 	void redefine(ClassReader reader, ClassNode node);
 

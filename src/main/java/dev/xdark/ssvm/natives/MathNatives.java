@@ -18,8 +18,7 @@ import lombok.experimental.UtilityClass;
 public class MathNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public static void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();

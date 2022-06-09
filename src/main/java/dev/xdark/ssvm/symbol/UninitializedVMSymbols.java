@@ -6,7 +6,7 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 /**
  * Implementation of VM symbols that
  * always throws exception due to uninitialized VM.
- * 
+ *
  * @author xDark
  */
 public final class UninitializedVMSymbols implements VMSymbols {

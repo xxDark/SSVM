@@ -2,6 +2,7 @@ package dev.xdark.ssvm.execution;
 
 import dev.xdark.ssvm.LinkResolver;
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.symbol.VMPrimitives;
@@ -74,6 +75,13 @@ public interface ExecutionContext {
 	}
 
 	/**
+	 * @return memory manager.
+	 */
+	default MemoryManager getMemoryManager() {
+		return getVM().getMemoryManager();
+	}
+
+	/**
 	 * @return method being executed.
 	 */
 	JavaMethod getMethod();
@@ -103,8 +111,7 @@ public interface ExecutionContext {
 	/**
 	 * Sets the position of currently executing instruction.
 	 *
-	 * @param insnPosition
-	 * 		New position.
+	 * @param insnPosition New position.
 	 */
 	void setInsnPosition(int insnPosition);
 
@@ -116,8 +123,7 @@ public interface ExecutionContext {
 	/**
 	 * Sets current line number.
 	 *
-	 * @param lineNumber
-	 * 		Line number to set.
+	 * @param lineNumber Line number to set.
 	 */
 	void setLineNumber(int lineNumber);
 
@@ -129,24 +135,21 @@ public interface ExecutionContext {
 	/**
 	 * Sets execution result.
 	 *
-	 * @param result
-	 * 		Value to set.
+	 * @param result Value to set.
 	 */
 	void setResult(Value result);
 
 	/**
 	 * Attempts to acquire monitor on an object.
 	 *
-	 * @param value
-	 * 		Object to acquire monitor on.
+	 * @param value Object to acquire monitor on.
 	 */
 	void monitorEnter(ObjectValue value);
 
 	/**
 	 * Unlocks monitor of the object.
 	 *
-	 * @param value
-	 * 		Object which monitor to unlock.
+	 * @param value Object which monitor to unlock.
 	 */
 	void monitorExit(ObjectValue value);
 

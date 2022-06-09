@@ -1,7 +1,7 @@
 package dev.xdark.ssvm.thread;
 
 import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.memory.MemoryManager;
+import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.InstanceValue;
 
@@ -21,8 +21,7 @@ public class NativeThreadManager implements ThreadManager {
 	private final VirtualMachine vm;
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public NativeThreadManager(VirtualMachine vm) {
 		this.vm = vm;
@@ -34,7 +33,7 @@ public class NativeThreadManager implements ThreadManager {
 			Map<Thread, VMThread> systemThreads = this.systemThreads;
 			VMThread vmThread = systemThreads.get(thread);
 			if (vmThread == null) {
-				synchronized(this) {
+				synchronized (this) {
 					vmThread = systemThreads.get(thread);
 					if (vmThread == null) {
 						vmThread = new DetachedVMThread(vm, thread);
@@ -52,7 +51,7 @@ public class NativeThreadManager implements ThreadManager {
 		Map<InstanceValue, NativeVMThread> threadMap = this.vmThreads;
 		NativeVMThread vmThread = threadMap.get(thread);
 		if (vmThread == null) {
-			synchronized(this) {
+			synchronized (this) {
 				vmThread = threadMap.get(thread);
 				if (vmThread == null) {
 					vmThread = createThread(thread);
@@ -88,7 +87,8 @@ public class NativeThreadManager implements ThreadManager {
 		VMThread detached = systemThreads.remove(thread);
 		boolean callInitialize = true;
 		InstanceValue instance;
-		fromDetached: {
+		fromDetached:
+		{
 			if (detached != null) {
 				DetachedVMThread dtvm = (DetachedVMThread) detached;
 				if (dtvm.isOopSet()) {
@@ -130,9 +130,7 @@ public class NativeThreadManager implements ThreadManager {
 	/**
 	 * Creates new native thread.
 	 *
-	 * @param value
-	 * 		Thread oop.
-	 *
+	 * @param value Thread oop.
 	 * @return created thread.
 	 */
 	protected NativeVMThread createThread(InstanceValue value) {
@@ -142,11 +140,8 @@ public class NativeThreadManager implements ThreadManager {
 	/**
 	 * Creates new main thread.
 	 *
-	 * @param value
-	 * 		Thread oop.
-	 * @param thread
-	 * 		Java thread.
-	 *
+	 * @param value  Thread oop.
+	 * @param thread Java thread.
 	 * @return main thread.
 	 */
 	protected NativeVMThread createMainThread(InstanceValue value, Thread thread) {

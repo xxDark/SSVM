@@ -1,5 +1,7 @@
 package dev.xdark.ssvm.fs;
 
+import dev.xdark.ssvm.tlc.ThreadLocalStorage;
+
 /**
  * Handle key for file management.
  *
@@ -7,14 +9,10 @@ package dev.xdark.ssvm.fs;
  */
 public final class Handle {
 
-	private static final ThreadLocal<Handle> HANDLE_TLC = ThreadLocal.withInitial(Handle::new);
 	private long value;
 
 	private Handle(long value) {
 		this.value = value;
-	}
-
-	private Handle() {
 	}
 
 	/**
@@ -27,8 +25,7 @@ public final class Handle {
 	/**
 	 * Sets handle value.
 	 *
-	 * @param value
-	 * 		New value.
+	 * @param value New value.
 	 */
 	public void set(long value) {
 		this.value = value;
@@ -57,15 +54,11 @@ public final class Handle {
 	/**
 	 * Returns thread-local handle.
 	 *
-	 * @param value
-	 * 		Raw handle.
-	 *
+	 * @param value Raw handle.
 	 * @return thread-local handle.
 	 */
 	public static Handle threadLocal(long value) {
-		Handle handle = HANDLE_TLC.get();
-		handle.value = value;
-		return handle;
+		return ThreadLocalStorage.get().ioHandle(value);
 	}
 
 	/**
@@ -74,13 +67,11 @@ public final class Handle {
 	 * @return thread-local handle.
 	 */
 	public static Handle threadLocal() {
-		return Handle.HANDLE_TLC.get();
+		return ThreadLocalStorage.get().ioHandle();
 	}
 
 	/**
-	 * @param value
-	 * 		Handle value.
-	 *
+	 * @param value Handle value.
 	 * @return new handle.
 	 */
 	public static Handle of(long value) {

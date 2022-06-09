@@ -14,8 +14,7 @@ public class DisposeUtil {
 	 * Disposes an object if it is marked
 	 * as {@link Disposable}.
 	 *
-	 * @param o
-	 * 		Object to dispose.
+	 * @param o Object to dispose.
 	 */
 	public void dispose(Object o) {
 		if (o instanceof Disposable) {

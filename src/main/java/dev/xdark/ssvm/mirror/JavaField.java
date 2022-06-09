@@ -17,14 +17,10 @@ public final class JavaField {
 	private Type type;
 
 	/**
-	 * @param owner
-	 * 		Field owner.
-	 * @param node
-	 * 		ASM field info.
-	 * @param slot
-	 * 		Field slot.
-	 * @param offset
-	 * 		Field offset.
+	 * @param owner  Field owner.
+	 * @param node   ASM field info.
+	 * @param slot   Field slot.
+	 * @param offset Field offset.
 	 */
 	public JavaField(InstanceJavaClass owner, FieldNode node, int slot, long offset) {
 		this.owner = owner;

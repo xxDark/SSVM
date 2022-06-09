@@ -17,7 +17,9 @@ public final class CompositeBootClassLoader implements BootClassLoader {
 	public ClassParseResult findBootClass(String name) {
 		for (BootClassLoader cl : classLoaders) {
 			ClassParseResult res = cl.findBootClass(name);
-			if (res != null) return res;
+			if (res != null) {
+				return res;
+			}
 		}
 		return null;
 	}

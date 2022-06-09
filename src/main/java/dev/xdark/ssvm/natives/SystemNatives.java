@@ -5,8 +5,8 @@ import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.memory.MemoryData;
-import dev.xdark.ssvm.memory.MemoryManager;
+import dev.xdark.ssvm.memory.allocation.MemoryData;
+import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
@@ -32,8 +32,7 @@ import java.util.Properties;
 public class SystemNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
@@ -87,9 +86,9 @@ public class SystemNatives {
 				Object key = entry.getKey();
 				Object property = entry.getValue();
 				helper.invokeExact(mn, new Value[0], new Value[]{
-						value,
-						helper.newUtf8(key.toString()),
-						helper.newUtf8(property.toString())
+					value,
+					helper.newUtf8(key.toString()),
+					helper.newUtf8(property.toString())
 				});
 			}
 			ctx.setResult(value);

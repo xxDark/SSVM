@@ -18,8 +18,7 @@ public final class BiLongProcessor implements InstructionProcessor<AbstractInsnN
 	private final BiLongToLongFunction op;
 
 	/**
-	 * @param op
-	 * 		Longs processor.
+	 * @param op Longs processor.
 	 */
 	public BiLongProcessor(BiLongToLongFunction op) {
 		this.op = op;

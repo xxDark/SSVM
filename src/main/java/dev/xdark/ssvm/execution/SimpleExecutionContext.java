@@ -26,12 +26,9 @@ public final class SimpleExecutionContext implements ExecutionContext, Disposabl
 	private Value result = VoidValue.INSTANCE; // void by default
 
 	/**
-	 * @param method
-	 * 		Method being executed.
-	 * @param stack
-	 * 		Execution stack.
-	 * @param locals
-	 * 		Local variable table.
+	 * @param method Method being executed.
+	 * @param stack  Execution stack.
+	 * @param locals Local variable table.
 	 */
 	public SimpleExecutionContext(JavaMethod method, Stack stack, Locals locals) {
 		this.virtualMachine = method.getOwner().getVM();
@@ -101,8 +98,9 @@ public final class SimpleExecutionContext implements ExecutionContext, Disposabl
 		}
 		lockMap.compute(value, (v, count) -> {
 			v.monitorEnter();
-			if (count == null)
+			if (count == null) {
 				return new LockCount();
+			}
 			count.value++;
 			return count;
 		});

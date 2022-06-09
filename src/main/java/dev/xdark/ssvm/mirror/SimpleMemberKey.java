@@ -12,12 +12,9 @@ public final class SimpleMemberKey implements MemberKey {
 	private final String desc;
 
 	/**
-	 * @param owner
-	 * 		Member owner.
-	 * @param name
-	 * 		Member name.
-	 * @param desc
-	 * 		Member desc.
+	 * @param owner Member owner.
+	 * @param name  Member name.
+	 * @param desc  Member desc.
 	 */
 	public SimpleMemberKey(InstanceJavaClass owner, String name, String desc) {
 		this.owner = owner;

@@ -17,8 +17,7 @@ public final class ConstantDoubleProcessor implements InstructionProcessor<Abstr
 	private final Value cst;
 
 	/**
-	 * @param cst
-	 * 		Double constant.
+	 * @param cst Double constant.
 	 */
 	public ConstantDoubleProcessor(double cst) {
 		this.cst = new DoubleValue(cst);

@@ -17,9 +17,7 @@ public class ClassUtil {
 	 * <p>
 	 * This method will ignore stackmap of the class.
 	 *
-	 * @param reader
-	 * 		Source to read from.
-	 *
+	 * @param reader Source to read from.
 	 * @return read node.
 	 */
 	public ClassNode readNode(ClassReader reader) {

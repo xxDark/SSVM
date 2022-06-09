@@ -35,16 +35,14 @@ public interface VMThread {
 	/**
 	 * Sets native thread priority.
 	 *
-	 * @param priority
-	 * 		Priority to set.
+	 * @param priority Priority to set.
 	 */
 	void setPriority(int priority);
 
 	/**
 	 * Sets native thread name.
 	 *
-	 * @param name
-	 * 		Name to set.
+	 * @param name Name to set.
 	 */
 	void setName(String name);
 
@@ -71,10 +69,8 @@ public interface VMThread {
 	 * The interrupted state is reset or not based on
 	 * the value of clear that is passed.
 	 *
-	 * @param clear
-	 * 		Whether interruption status
-	 * 		must be cleared.
-	 *
+	 * @param clear Whether interruption status
+	 *              must be cleared.
 	 * @return {@code true} if thread was interrupted,
 	 * {@code false} otherwise.
 	 */
@@ -107,11 +103,8 @@ public interface VMThread {
 	/**
 	 * Causes the currently executing thread to sleep.
 	 *
-	 * @param millis
-	 * 		The length of time to sleep in milliseconds.
-	 *
-	 * @throws InterruptedException
-	 * 		If any thread has interrupted the current thread.
+	 * @param millis The length of time to sleep in milliseconds.
+	 * @throws InterruptedException If any thread has interrupted the current thread.
 	 */
 	void sleep(long millis) throws InterruptedException;
 }

@@ -16,10 +16,8 @@ public final class FieldLayout {
 	private final long size;
 
 	/**
-	 * @param fields
-	 * 		Map containing field info.
-	 * @param size
-	 * 		Total size of class layout.
+	 * @param fields Map containing field info.
+	 * @param size   Total size of class layout.
 	 */
 	public FieldLayout(Map<MemberKey, JavaField> fields, long size) {
 		this.fields = fields;
@@ -29,9 +27,7 @@ public final class FieldLayout {
 	/**
 	 * Returns field offset.
 	 *
-	 * @param info
-	 * 		Field information.
-	 *
+	 * @param info Field information.
 	 * @return field offset or {@code -1L} if not found.
 	 */
 	public long getFieldOffset(MemberKey info) {
@@ -42,11 +38,8 @@ public final class FieldLayout {
 	/**
 	 * Returns field offset.
 	 *
-	 * @param javaClass
-	 * 		Class defining the field
-	 * @param name
-	 * 		Field name.
-	 *
+	 * @param javaClass Class defining the field
+	 * @param name      Field name.
 	 * @return field offset or {@code -1L} if not found.
 	 */
 	public long getFieldOffset(JavaClass javaClass, String name) {

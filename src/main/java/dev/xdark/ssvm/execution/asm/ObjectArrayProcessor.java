@@ -1,10 +1,15 @@
 package dev.xdark.ssvm.execution.asm;
 
+import dev.xdark.ssvm.asm.DelegatingInsnNode;
+import dev.xdark.ssvm.asm.VMOpcodes;
+import dev.xdark.ssvm.asm.VMTypeInsnNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.mirror.JavaClass;
+import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 
 /**
@@ -16,10 +21,11 @@ public final class ObjectArrayProcessor implements InstructionProcessor<TypeInsn
 
 	@Override
 	public Result execute(TypeInsnNode insn, ExecutionContext ctx) {
-		JavaClass type = ctx.getHelper().tryFindClass(ctx.getClassLoader(), insn.desc, true);
-		Stack stack = ctx.getStack();
-		int length = stack.popInt();
-		stack.push(ctx.getOperations().allocateArray(type, length));
+		JavaClass type = ctx.getHelper().tryFindClass(ctx.getClassLoader(), insn.desc, false);
+		VMTypeInsnNode wrapper = new VMTypeInsnNode(insn, VMOpcodes.REFERENCE_NEW_ARRAY, type);
+		InsnList list = ctx.getMethod().getNode().instructions;
+		list.set(insn, wrapper);
+		ctx.setInsnPosition(ctx.getInsnPosition() - 1);
 		return Result.CONTINUE;
 	}
 }

@@ -20,8 +20,7 @@ public final class BiValueJumpProcessor implements InstructionProcessor<JumpInsn
 	private final BiPredicate<Value, Value> condition;
 
 	/**
-	 * @param condition
-	 * 		Predicate to check.
+	 * @param condition Predicate to check.
 	 */
 	public BiValueJumpProcessor(BiPredicate<Value, Value> condition) {
 		this.condition = condition;

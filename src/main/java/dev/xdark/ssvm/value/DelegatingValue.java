@@ -20,8 +20,7 @@ public abstract class DelegatingValue<V extends Value> implements Value {
 	/**
 	 * Sets delegate value.
 	 *
-	 * @param delegate
-	 * 		New value.
+	 * @param delegate New value.
 	 */
 	public abstract void setDelegate(V delegate);
 

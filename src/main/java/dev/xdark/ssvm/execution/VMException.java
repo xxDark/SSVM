@@ -13,10 +13,8 @@ public final class VMException extends RuntimeException {
 	private final InstanceValue oop;
 
 	/**
-	 * @param message
-	 * 		Exception message.
-	 * @param oop
-	 * 		Throwable oop.
+	 * @param message Exception message.
+	 * @param oop     Throwable oop.
 	 */
 	public VMException(String message, InstanceValue oop) {
 		super(message, null, false, false);
@@ -24,8 +22,7 @@ public final class VMException extends RuntimeException {
 	}
 
 	/**
-	 * @param oop
-	 * 		Throwable oop.
+	 * @param oop Throwable oop.
 	 */
 	public VMException(InstanceValue oop) {
 		this(null, oop);

@@ -18,8 +18,7 @@ public final class BiIntProcessor implements InstructionProcessor<AbstractInsnNo
 	private final BiIntToIntFunction op;
 
 	/**
-	 * @param op
-	 * 		Ints processor.
+	 * @param op Ints processor.
 	 */
 	public BiIntProcessor(BiIntToIntFunction op) {
 		this.op = op;

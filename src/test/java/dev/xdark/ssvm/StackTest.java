@@ -207,7 +207,6 @@ public final class StackTest {
 		stack.push(IntValue.ONE);
 		stack.pushWide(LongValue.ZERO);
 		stack.pushWide(new DoubleValue(1.3D));
-		stack.push(NullValue.INSTANCE);
 		stack.pushWide(LongValue.ONE);
 	}
 }

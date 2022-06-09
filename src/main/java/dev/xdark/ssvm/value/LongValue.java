@@ -15,9 +15,7 @@ public final class LongValue extends NumericValue implements WideValue {
 	private final long value;
 
 	/**
-	 * @param value
-	 * 		Long value.
-	 *
+	 * @param value Long value.
 	 * @deprecated Only for the VM,
 	 * use {@link LongValue#of(long)}
 	 * instead.
@@ -78,9 +76,7 @@ public final class LongValue extends NumericValue implements WideValue {
 	}
 
 	/**
-	 * @param value
-	 * 		InLongt value.
-	 *
+	 * @param value InLongt value.
 	 * @return VM long value.
 	 */
 	public static LongValue of(long value) {
@@ -93,11 +89,8 @@ public final class LongValue extends NumericValue implements WideValue {
 	/**
 	 * Creates new cache.
 	 *
-	 * @param low
-	 * 		Min value.
-	 * @param high
-	 * 		Max value.
-	 *
+	 * @param low  Min value.
+	 * @param high Max value.
 	 * @return int cache.
 	 */
 	public static LongValue[] createCache(int low, int high) {

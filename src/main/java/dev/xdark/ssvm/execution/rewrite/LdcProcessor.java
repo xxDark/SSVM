@@ -1,4 +1,4 @@
-package dev.xdark.ssvm.execution.asm;
+package dev.xdark.ssvm.execution.rewrite;
 
 import dev.xdark.ssvm.asm.VMLdcInsnNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
@@ -10,7 +10,7 @@ import dev.xdark.ssvm.execution.Result;
  *
  * @author xDark
  */
-public final class VMLdcProcessor implements InstructionProcessor<VMLdcInsnNode> {
+public final class LdcProcessor implements InstructionProcessor<VMLdcInsnNode> {
 
 	@Override
 	public Result execute(VMLdcInsnNode insn, ExecutionContext ctx) {

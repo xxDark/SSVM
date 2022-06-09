@@ -23,8 +23,7 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 	protected final VirtualMachine vm;
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public SimpleExecutionEngine(VirtualMachine vm) {
 		this.vm = vm;

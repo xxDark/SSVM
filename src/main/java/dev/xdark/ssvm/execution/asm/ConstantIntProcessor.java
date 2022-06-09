@@ -17,8 +17,7 @@ public final class ConstantIntProcessor implements InstructionProcessor<Abstract
 	private final Value cst;
 
 	/**
-	 * @param cst
-	 * 		Int constant.
+	 * @param cst Int constant.
 	 */
 	public ConstantIntProcessor(int cst) {
 		this.cst = IntValue.of(cst);

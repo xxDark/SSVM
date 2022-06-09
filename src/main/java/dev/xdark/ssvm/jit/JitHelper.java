@@ -4,7 +4,7 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.execution.VMException;
-import dev.xdark.ssvm.memory.MemoryManager;
+import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
@@ -38,7 +38,7 @@ import static org.objectweb.asm.Opcodes.*;
 @SuppressWarnings("unused")
 @UtilityClass
 public class JitHelper {
-	
+
 	private static final Value[] NO_VALUES = {};
 
 	public int arrayLoadInt(Value array, int index, ExecutionContext ctx) {
@@ -673,7 +673,7 @@ public class JitHelper {
 		helper.checkArrayLength(length);
 		VMPrimitives primitives = vm.getPrimitives();
 		ArrayValue array;
-		switch(operand) {
+		switch (operand) {
 			case T_LONG:
 				array = helper.newArray(primitives.longPrimitive(), length);
 				break;
@@ -709,20 +709,12 @@ public class JitHelper {
 	}
 
 	public Value allocateValueArray(int length, Object klass, ExecutionContext ctx) {
-		Stack stack = ctx.getStack();
-		VirtualMachine vm = ctx.getVM();
-		VMHelper helper = vm.getHelper();
-		helper.checkArrayLength(length);
-		return helper.newArray((JavaClass) klass, length);
+		return ctx.getOperations().allocateArray((JavaClass) klass, length);
 	}
 
 	public Value allocateValueArray(int length, String desc, ExecutionContext ctx) {
 		VMHelper helper = ctx.getHelper();
 		return allocateValueArray(length, helper.tryFindClass(ctx.getOwner().getClassLoader(), desc, false), ctx);
-	}
-
-	public Value allocateValueArray(String desc, ExecutionContext ctx) {
-		return allocateValueArray(ctx.getStack().pop().asInt(), desc, ctx);
 	}
 
 	public int getArrayLength(ObjectValue value, ExecutionContext ctx) {
@@ -790,7 +782,7 @@ public class JitHelper {
 		JavaClass type = helper.tryFindClass(ctx.getOwner().getClassLoader(), desc, true);
 		Stack stack = ctx.getStack();
 		int[] lengths = new int[dimensions];
-		while(dimensions-- != 0) {
+		while (dimensions-- != 0) {
 			lengths[dimensions] = stack.pop().asInt();
 		}
 		return helper.newMultiArray((ArrayJavaClass) type, lengths);

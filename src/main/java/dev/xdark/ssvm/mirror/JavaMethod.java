@@ -28,14 +28,10 @@ public final class JavaMethod {
 	private Boolean isConstructor;
 
 	/**
-	 * @param owner
-	 * 		Method owner.
-	 * @param node
-	 * 		ASM method info.
-	 * @param desc
-	 * 		Method descriptor override.
-	 * @param slot
-	 * 		Method slot.
+	 * @param owner Method owner.
+	 * @param node  ASM method info.
+	 * @param desc  Method descriptor override.
+	 * @param slot  Method slot.
 	 */
 	public JavaMethod(InstanceJavaClass owner, MethodNode node, String desc, int slot) {
 		this.owner = owner;
@@ -45,12 +41,9 @@ public final class JavaMethod {
 	}
 
 	/**
-	 * @param owner
-	 * 		Method owner.
-	 * @param node
-	 * 		ASM method info.
-	 * @param slot
-	 * 		Method slot.
+	 * @param owner Method owner.
+	 * @param node  ASM method info.
+	 * @param slot  Method slot.
 	 */
 	public JavaMethod(InstanceJavaClass owner, MethodNode node, int slot) {
 		this(owner, node, node.desc, slot);
@@ -167,7 +160,7 @@ public final class JavaMethod {
 		if (polymorphic == null) {
 			List<AnnotationNode> visibleAnnotations = node.visibleAnnotations;
 			return this.polymorphic = visibleAnnotations != null
-					&& visibleAnnotations.stream().anyMatch(x -> "Ljava/lang/invoke/MethodHandle$PolymorphicSignature;".equals(x.desc));
+				&& visibleAnnotations.stream().anyMatch(x -> "Ljava/lang/invoke/MethodHandle$PolymorphicSignature;".equals(x.desc));
 		}
 		return polymorphic;
 	}
@@ -215,7 +208,7 @@ public final class JavaMethod {
 		if (callerSensitive == null) {
 			List<AnnotationNode> visibleAnnotations = node.visibleAnnotations;
 			return this.callerSensitive = visibleAnnotations != null
-					&& visibleAnnotations.stream().anyMatch(x -> "Lsun/reflect/CallerSensitive;".equals(x.desc));
+				&& visibleAnnotations.stream().anyMatch(x -> "Lsun/reflect/CallerSensitive;".equals(x.desc));
 		}
 		return callerSensitive;
 	}

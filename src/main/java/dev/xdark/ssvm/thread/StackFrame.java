@@ -64,9 +64,7 @@ public interface StackFrame {
 	/**
 	 * Creates stack frame from the execution point.
 	 *
-	 * @param ctx
-	 * 		Execution context.
-	 *
+	 * @param ctx Execution context.
 	 * @return stack frame that mirrors it's information from
 	 * execution context.
 	 */
@@ -77,23 +75,18 @@ public interface StackFrame {
 	/**
 	 * Creates new stack frame.
 	 *
-	 * @param declaringClass
-	 * 		the class containing
-	 * 		the execution point represented
-	 * 		by the stack frame.
-	 * @param methodName
-	 * 		name of
-	 * 		the method containing the execution point
-	 * 		by the stack frame.
-	 * @param sourceFile
-	 * 		name of the file containing
-	 * 		the execution point represented
-	 * 		by the stack frame.
-	 * @param lineNumber
-	 * 		line number of
-	 * 		the method containing the execution point
-	 * 		by the stack frame.
-	 *
+	 * @param declaringClass the class containing
+	 *                       the execution point represented
+	 *                       by the stack frame.
+	 * @param methodName     name of
+	 *                       the method containing the execution point
+	 *                       by the stack frame.
+	 * @param sourceFile     name of the file containing
+	 *                       the execution point represented
+	 *                       by the stack frame.
+	 * @param lineNumber     line number of
+	 *                       the method containing the execution point
+	 *                       by the stack frame.
 	 * @return new stack frame.
 	 */
 	static StackFrame from(InstanceJavaClass declaringClass, String methodName, String sourceFile, int lineNumber) {

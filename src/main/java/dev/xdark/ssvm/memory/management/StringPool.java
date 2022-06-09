@@ -1,4 +1,4 @@
-package dev.xdark.ssvm.memory;
+package dev.xdark.ssvm.memory.management;
 
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -13,9 +13,7 @@ public interface StringPool {
 	/**
 	 * Pools string value.
 	 *
-	 * @param value
-	 * 		Value to pool.
-	 *
+	 * @param value Value to pool.
 	 * @return interned string value.
 	 */
 	ObjectValue intern(String value);
@@ -23,9 +21,7 @@ public interface StringPool {
 	/**
 	 * Pools string value.
 	 *
-	 * @param value
-	 * 		Value to pool.
-	 *
+	 * @param value Value to pool.
 	 * @return interned string value.
 	 */
 	InstanceValue intern(InstanceValue value);
@@ -33,9 +29,7 @@ public interface StringPool {
 	/**
 	 * Gets interned string from pool if available.
 	 *
-	 * @param str
-	 * 		String to get.
-	 *
+	 * @param str String to get.
 	 * @return interned string value or {@code null},
 	 * if not found.
 	 */

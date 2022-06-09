@@ -58,8 +58,7 @@ final class DelegatingVMPrimitives implements VMPrimitives {
 	}
 
 	/**
-	 * @param primitives
-	 * 		New primitives.
+	 * @param primitives New primitives.
 	 */
 	void setPrimitives(VMPrimitives primitives) {
 		this.primitives = primitives;

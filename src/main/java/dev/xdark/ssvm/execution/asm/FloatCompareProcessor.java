@@ -19,9 +19,8 @@ public final class FloatCompareProcessor implements InstructionProcessor<Abstrac
 	private final int nan;
 
 	/**
-	 * @param nan
-	 * 		Value to be pushed to the stack
-	 * 		if one of the floats is {@code NaN}.
+	 * @param nan Value to be pushed to the stack
+	 *            if one of the floats is {@code NaN}.
 	 */
 	public FloatCompareProcessor(int nan) {
 		this.nan = nan;

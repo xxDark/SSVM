@@ -20,14 +20,13 @@ import lombok.experimental.UtilityClass;
 public class ReferenceNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
 		InstanceJavaClass jc = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ref/Reference");
 		vmi.setInvoker(jc, "clear0", "()V", ctx -> {
-			ctx.getLocals().<InstanceValue>load(0).setValue("referent", "Ljava/lang/Object;", NullValue.INSTANCE);
+			ctx.getLocals().<InstanceValue>load(0).setValue("referent", "Ljava/lang/Object;", vm.getMemoryManager().nullValue());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "refersTo0", "(Ljava/lang/Object;)Z", ctx -> {

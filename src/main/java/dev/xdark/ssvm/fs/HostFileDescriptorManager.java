@@ -33,12 +33,9 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 	protected final OutputStream stderr;
 
 	/**
-	 * @param stdin
-	 * 		System input stream.
-	 * @param stdout
-	 * 		System output stream.
-	 * @param stderr
-	 * 		System error stream.
+	 * @param stdin  System input stream.
+	 * @param stdout System output stream.
+	 * @param stderr System error stream.
 	 */
 	public HostFileDescriptorManager(InputStream stdin, OutputStream stdout, OutputStream stderr) {
 		this.stdin = stdin;
@@ -88,7 +85,7 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 
 	@Override
 	public synchronized long newFD(int stream) {
-		switch(stream) {
+		switch (stream) {
 			case 0: {
 				long fd = newFD();
 				inputs.put(Handle.of(fd), stdin);
@@ -121,7 +118,7 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 
 	@Override
 	public synchronized long open(String path, int mode) throws IOException {
-		switch(mode) {
+		switch (mode) {
 			case READ: {
 				long fd = newFD();
 				FileInputStream in = new FileInputStream(path);
@@ -193,7 +190,7 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 
 	@Override
 	public OutputStream getStreamOut(int stream) {
-		switch(stream) {
+		switch (stream) {
 			case 1:
 				return stdout;
 			case 2:
@@ -213,7 +210,7 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 		do {
 			raw = rng.nextLong() & mask;
 			h.set(raw);
-		} while(raw == 0L || inputs.containsKey(h) || outputs.containsKey(h) || zipFiles.containsKey(h));
+		} while (raw == 0L || inputs.containsKey(h) || outputs.containsKey(h) || zipFiles.containsKey(h));
 		return raw;
 	}
 }

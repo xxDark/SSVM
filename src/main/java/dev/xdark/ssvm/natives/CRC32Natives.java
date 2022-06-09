@@ -20,8 +20,7 @@ import lombok.experimental.UtilityClass;
 public class CRC32Natives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public static void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();

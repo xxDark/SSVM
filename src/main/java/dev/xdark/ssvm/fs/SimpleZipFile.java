@@ -63,14 +63,14 @@ public class SimpleZipFile implements ZipFile {
 		Map<ZipEntry, byte[]> contents = this.contents;
 		byte[] content = contents.get(entry);
 		if (content == null) {
-			try(InputStream in = handle.getInputStream(entry)) {
+			try (InputStream in = handle.getInputStream(entry)) {
 				if (in == null) {
 					return null;
 				}
 				byte[] buf = new byte[1024];
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
 				int r;
-				while((r = in.read(buf)) >= 0) {
+				while ((r = in.read(buf)) >= 0) {
 					baos.write(buf, 0, r);
 				}
 				contents.put(entry, content = baos.toByteArray());
@@ -98,7 +98,7 @@ public class SimpleZipFile implements ZipFile {
 		do {
 			value = r.nextInt();
 			handle.set(value);
-		} while(handles.containsKey(handle));
+		} while (handles.containsKey(handle));
 		handles.put(handle.copy(), entry);
 		return (long) value << 32L | rawHandle & 0xffffffffL;
 	}

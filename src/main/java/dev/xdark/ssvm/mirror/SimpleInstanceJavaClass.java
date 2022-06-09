@@ -3,7 +3,8 @@ package dev.xdark.ssvm.mirror;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.VMException;
-import dev.xdark.ssvm.memory.MemoryManager;
+import dev.xdark.ssvm.memory.management.MemoryManager;
+import dev.xdark.ssvm.tlc.ThreadLocalStorage;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.InstanceValue;
@@ -38,8 +39,6 @@ import java.util.stream.Stream;
 
 public class SimpleInstanceJavaClass implements InstanceJavaClass {
 
-	// Need to make this TLC because cafedude stores the stream it is parsing
-	private static final ThreadLocal<ClassFileReader> READER_TLC = ThreadLocal.withInitial(ClassFileReader::new);
 	private static final String POLYMORPHIC_DESC = "([Ljava/lang/Object;)Ljava/lang/Object;";
 	private static final Predicate<JavaField> NON_HIDDEN_FIELD = nonHidden(JavaField::getAccess);
 	private static final Predicate<JavaMethod> NON_HIDDEN_METHOD = nonHidden(JavaMethod::getAccess);
@@ -89,16 +88,11 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	 * This constructor must be invoked ONLY
 	 * by the VM.
 	 *
-	 * @param vm
-	 * 		VM.
-	 * @param classLoader
-	 * 		Loader of the class.
-	 * @param classReader
-	 * 		Source of the class.
-	 * @param node
-	 * 		ASM class data.
-	 * @param oop
-	 * 		Clas oop.
+	 * @param vm          VM.
+	 * @param classLoader Loader of the class.
+	 * @param classReader Source of the class.
+	 * @param node        ASM class data.
+	 * @param oop         Clas oop.
 	 */
 	public SimpleInstanceJavaClass(VirtualMachine vm, ObjectValue classLoader, ClassReader classReader, ClassNode node, InstanceValue oop) {
 		this.vm = vm;
@@ -115,14 +109,10 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	 * This constructor must be invoked ONLY
 	 * by the VM.
 	 *
-	 * @param vm
-	 * 		VM instance.
-	 * @param classLoader
-	 * 		Loader of the class.
-	 * @param classReader
-	 * 		Source of the class.
-	 * @param node
-	 * 		ASM class data.
+	 * @param vm          VM instance.
+	 * @param classLoader Loader of the class.
+	 * @param classReader Source of the class.
+	 * @param node        ASM class data.
 	 */
 	public SimpleInstanceJavaClass(VirtualMachine vm, ObjectValue classLoader, ClassReader classReader, ClassNode node) {
 		this(vm, classLoader, classReader, node, null);
@@ -188,11 +178,11 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 			// and invoke initialize again
 			// 'cause maybe we crashed
 			Condition signal = this.signal;
-			while(true) {
+			while (true) {
 				try {
 					signal.await();
 					break;
-				} catch(InterruptedException ignored) {
+				} catch (InterruptedException ignored) {
 				}
 			}
 			lock.unlock();
@@ -216,7 +206,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 				helper.invokeStatic(clinit, new Value[0], new Value[0]);
 			}
 			state = State.COMPLETE;
-		} catch(VMException ex) {
+		} catch (VMException ex) {
 			markFailedInitialization(ex);
 		} finally {
 			signal.signalAll();
@@ -234,7 +224,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 			try {
 				loadSuperClass();
 				loadInterfaces();
-			} catch(VMException ex) {
+			} catch (VMException ex) {
 				markFailedInitialization(ex);
 			}
 			state = State.PENDING;
@@ -271,7 +261,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 			if (isInterface()) {
 				Deque<InstanceJavaClass> toCheck = new ArrayDeque<>(Arrays.asList(other.getInterfaces()));
 				JavaClass popped;
-				while((popped = toCheck.poll()) != null) {
+				while ((popped = toCheck.poll()) != null) {
 					if (popped == this) {
 						return true;
 					}
@@ -287,7 +277,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 			if (isInterface()) {
 				toCheck.addAll(Arrays.asList(other.getInterfaces()));
 				JavaClass popped;
-				while((popped = toCheck.poll()) != null) {
+				while ((popped = toCheck.poll()) != null) {
 					if (popped == this) {
 						return true;
 					}
@@ -299,7 +289,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 				}
 			} else {
 				JavaClass popped;
-				while((popped = toCheck.poll()) != null) {
+				while ((popped = toCheck.poll()) != null) {
 					if (popped == this) {
 						return true;
 					}
@@ -394,7 +384,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		JavaMethod method;
 		do {
 			method = jc.getVirtualMethod(name, desc);
-		} while(method == null && (jc = jc.getSuperclassWithoutResolving()) != null);
+		} while (method == null && (jc = jc.getSuperclassWithoutResolving()) != null);
 		return method;
 	}
 
@@ -406,10 +396,10 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		do {
 			method = jc.getVirtualMethod(name, desc);
 			deque.push(jc);
-		} while(method == null && (jc = jc.getSuperclassWithoutResolving()) != null);
+		} while (method == null && (jc = jc.getSuperclassWithoutResolving()) != null);
 		if (method == null) {
 			search:
-			while((jc = deque.poll()) != null) {
+			while ((jc = deque.poll()) != null) {
 				method = jc.getVirtualMethod(name, desc);
 				if (method != null) {
 					break;
@@ -442,7 +432,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		JavaField field;
 		do {
 			field = jc.getVirtualField(name, desc);
-		} while(field == null && (jc = jc.getSuperclassWithoutResolving()) != null);
+		} while (field == null && (jc = jc.getSuperclassWithoutResolving()) != null);
 		return field;
 	}
 
@@ -457,7 +447,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		JavaField field;
 		do {
 			field = jc.getStaticField(name, desc);
-		} while(field == null && (jc = jc.getSuperclassWithoutResolving()) != null);
+		} while (field == null && (jc = jc.getSuperclassWithoutResolving()) != null);
 		return field;
 	}
 
@@ -467,7 +457,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		JavaMethod method;
 		do {
 			method = jc.getStaticMethod(name, desc);
-		} while(method == null && (jc = jc.getSuperclassWithoutResolving()) != null);
+		} while (method == null && (jc = jc.getSuperclassWithoutResolving()) != null);
 		return method;
 	}
 
@@ -549,7 +539,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 			if (offset != -1L) {
 				return offset;
 			}
-		} while((jc = jc.getSuperclassWithoutResolving()) != null);
+		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
 		return -1L;
 	}
 
@@ -563,7 +553,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 			if (offset != -1L) {
 				return offset;
 			}
-		} while((jc = jc.getSuperclassWithoutResolving()) != null);
+		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
 		return -1L;
 	}
 
@@ -581,8 +571,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	/**
 	 * Sets virtual class layout.
 	 *
-	 * @param layout
-	 * 		Layout to use.
+	 * @param layout Layout to use.
 	 */
 	public void setVirtualFieldLayout(FieldLayout layout) {
 		this.vrtFieldLayout = layout;
@@ -591,8 +580,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	/**
 	 * Sets static class layout.
 	 *
-	 * @param layout
-	 * 		Layout to use.
+	 * @param layout Layout to use.
 	 */
 	public void setStaticFieldLayout(FieldLayout layout) {
 		this.staticFieldLayout = layout;
@@ -629,13 +617,13 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		ArrayDeque<InstanceJavaClass> deque = new ArrayDeque<InstanceJavaClass>();
 		long offset = 0L;
 		InstanceJavaClass javaClass = this;
-		while(javaClass != null) {
+		while (javaClass != null) {
 			deque.addFirst(javaClass);
 			javaClass = javaClass.getSuperclassWithoutResolving();
 		}
 		VMHelper helper = vm.getHelper();
 		int slot = 0;
-		while((javaClass = deque.pollFirst()) != null) {
+		while ((javaClass = deque.pollFirst()) != null) {
 			List<FieldNode> fields = javaClass.getNode().fields;
 			for (FieldNode field : fields) {
 				if ((field.access & Opcodes.ACC_STATIC) == 0) {
@@ -676,7 +664,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 			for (SimpleInstanceJavaClass ifc : interfaces) {
 				ifc.loadNoResolve();
 			}
-		} catch(VMException ex) {
+		} catch (VMException ex) {
 			state = State.FAILED;
 			throw ex;
 		} finally {
@@ -773,8 +761,9 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		ClassFile rawClassFile = this.rawClassFile;
 		if (rawClassFile == null) {
 			try {
-				return this.rawClassFile = READER_TLC.get().read(classReader.b);
-			} catch(InvalidClassException ex) {
+				ClassFileReader classFileReader = ThreadLocalStorage.get().getClassFileReader();
+				return this.rawClassFile = classFileReader.read(classReader.b);
+			} catch (InvalidClassException ex) {
 				// Should not happen.
 				// unless??
 				throw new RuntimeException("Cafedude returned invalid class file", ex);
@@ -878,29 +867,29 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 				.stream()
 				.filter(x -> constructors == "<init>".equals(x.getName()))
 				.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0))
-				.filter(NON_HIDDEN_METHOD)
-				.collect(Collectors.toList());
+			.filter(NON_HIDDEN_METHOD)
+			.collect(Collectors.toList());
 	}
 
 	private Stream<JavaMethod> getStaticMethods0(boolean publicOnly) {
 		return getStaticMethodLayout()
-				.getAll()
-				.stream()
-				.filter(x -> !"<clinit>".equals(x.getName()))
-				.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0);
+			.getAll()
+			.stream()
+			.filter(x -> !"<clinit>".equals(x.getName()))
+			.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0);
 	}
 
 	private List<JavaField> getDeclaredFields0(boolean publicOnly) {
 		Stream<JavaField> staticFields = getStaticFieldLayout()
-				.getAll()
-				.stream();
+			.getAll()
+			.stream();
 		return Stream.concat(staticFields, getVirtualFieldLayout()
 				.getAll()
 				.stream())
-				.filter(x -> this == x.getOwner())
-				.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0)
-				.filter(NON_HIDDEN_FIELD)
-				.collect(Collectors.toList());
+			.filter(x -> this == x.getOwner())
+			.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0)
+			.filter(NON_HIDDEN_FIELD)
+			.collect(Collectors.toList());
 	}
 
 	private void loadSuperClass() {
@@ -939,7 +928,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 					count++;
 				}
 			}
-		} while((jc = jc.getSuperclassWithoutResolving()) != null);
+		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
 		return count;
 	}
 
@@ -1017,7 +1006,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 			jc.initialize();
 			oop = vm.getMemoryManager().newInstance(jc);
 			vm.getHelper().invokeExact(jc, "<init>", "(Ljava/lang/Throwable;)V", new Value[0], new Value[]{
-					oop, cause
+				oop, cause
 			});
 			throw new VMException(oop);
 		}

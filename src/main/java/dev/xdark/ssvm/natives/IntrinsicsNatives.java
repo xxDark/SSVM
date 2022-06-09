@@ -5,8 +5,8 @@ import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.memory.MemoryData;
-import dev.xdark.ssvm.memory.MemoryManager;
+import dev.xdark.ssvm.memory.allocation.MemoryData;
+import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.PrimitiveClass;
 import dev.xdark.ssvm.util.VMHelper;
@@ -29,8 +29,7 @@ import lombok.experimental.UtilityClass;
 public class IntrinsicsNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		mathIntrinsics(vm);
@@ -285,8 +284,8 @@ public class IntrinsicsNatives {
 	}
 
 	private int indexOf(ArrayValue source, int sourceOffset, int sourceCount,
-						ArrayValue target, int targetOffset, int targetCount,
-						int fromIndex) {
+	                    ArrayValue target, int targetOffset, int targetCount,
+	                    int fromIndex) {
 		if (fromIndex >= sourceCount) {
 			return (targetCount == 0 ? sourceCount : -1);
 		}
@@ -311,7 +310,7 @@ public class IntrinsicsNatives {
 				int j = i + 1;
 				int end = j + targetCount - 1;
 				for (int k = targetOffset + 1; j < end && source.getChar(j)
-						== target.getChar(k); j++, k++) {
+					== target.getChar(k); j++, k++) {
 					;
 				}
 
@@ -835,7 +834,7 @@ public class IntrinsicsNatives {
 			if (v1 != v2) {
 				if (!v1.isNull()) {
 					boolean eq = helper.invokeVirtual("equals", "(Ljava/lang/Object;)Z", new Value[0], new Value[]{
-							v1, v2
+						v1, v2
 					}).getResult().asBoolean();
 					if (!eq) {
 						return IntValue.ZERO;

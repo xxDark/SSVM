@@ -15,59 +15,47 @@ public interface VolatileBufferAccess {
 	/**
 	 * Puts long at the specific offset.
 	 *
-	 * @param offset
-	 * 		Data offset.
-	 * @param value
-	 * 		Long value.
+	 * @param offset Data offset.
+	 * @param value  Long value.
 	 */
 	void putLong(int offset, long value);
 
 	/**
 	 * Puts int at the specific offset.
 	 *
-	 * @param offset
-	 * 		Data offset.
-	 * @param value
-	 * 		Int value.
+	 * @param offset Data offset.
+	 * @param value  Int value.
 	 */
 	void putInt(int offset, int value);
 
 	/**
 	 * Puts char at the specific offset.
 	 *
-	 * @param offset
-	 * 		Data offset.
-	 * @param value
-	 * 		Char value.
+	 * @param offset Data offset.
+	 * @param value  Char value.
 	 */
 	void putChar(int offset, char value);
 
 	/**
 	 * Puts short at the specific offset.
 	 *
-	 * @param offset
-	 * 		Data offset.
-	 * @param value
-	 * 		Short value.
+	 * @param offset Data offset.
+	 * @param value  Short value.
 	 */
 	void putShort(int offset, short value);
 
 	/**
 	 * Puts byte at the specific offset.
 	 *
-	 * @param offset
-	 * 		Data offset.
-	 * @param value
-	 * 		Byte value.
+	 * @param offset Data offset.
+	 * @param value  Byte value.
 	 */
 	void putByte(int offset, byte value);
 
 	/**
 	 * Reads long at the specific offset.
 	 *
-	 * @param offset
-	 * 		Data offset.
-	 *
+	 * @param offset Data offset.
 	 * @return long value.
 	 */
 	long getLong(int offset);
@@ -75,9 +63,7 @@ public interface VolatileBufferAccess {
 	/**
 	 * Reads int at the specific offset.
 	 *
-	 * @param offset
-	 * 		Data offset.
-	 *
+	 * @param offset Data offset.
 	 * @return int value.
 	 */
 	int getInt(int offset);
@@ -85,9 +71,7 @@ public interface VolatileBufferAccess {
 	/**
 	 * Reads char at the specific offset.
 	 *
-	 * @param offset
-	 * 		Data offset.
-	 *
+	 * @param offset Data offset.
 	 * @return char value.
 	 */
 	char getChar(int offset);
@@ -95,9 +79,7 @@ public interface VolatileBufferAccess {
 	/**
 	 * Reads short at the specific offset.
 	 *
-	 * @param offset
-	 * 		Data offset.
-	 *
+	 * @param offset Data offset.
 	 * @return short value.
 	 */
 	short getShort(int offset);
@@ -105,9 +87,7 @@ public interface VolatileBufferAccess {
 	/**
 	 * Reads byte at the specific offset.
 	 *
-	 * @param offset
-	 * 		Data offset.
-	 *
+	 * @param offset Data offset.
 	 * @return byte value.
 	 */
 	byte getByte(int offset);
@@ -115,9 +95,7 @@ public interface VolatileBufferAccess {
 	/**
 	 * Wraps byte buffer.
 	 *
-	 * @param buffer
-	 * 		Byte buffer to wrap.
-	 *
+	 * @param buffer Byte buffer to wrap.
 	 * @return interface providing volatile operations for this buffer.
 	 */
 	static VolatileBufferAccess wrap(ByteBuffer buffer) {

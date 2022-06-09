@@ -46,8 +46,8 @@ public final class SimpleClassLoaderData implements ClassLoaderData {
 	@Override
 	public void claim(ClassLoaderData classLoaderData) {
 		table.putAll(classLoaderData.getAll().stream().collect(Collectors.toMap(
-				InstanceJavaClass::getInternalName,
-				Function.identity()
+			InstanceJavaClass::getInternalName,
+			Function.identity()
 		)));
 	}
 }

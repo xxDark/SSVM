@@ -21,8 +21,7 @@ public final class InitializedVMPrimitives implements VMPrimitives {
 	private final PrimitiveClass voidPrimitive;
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public InitializedVMPrimitives(VirtualMachine vm) {
 		vm.assertInitialized();

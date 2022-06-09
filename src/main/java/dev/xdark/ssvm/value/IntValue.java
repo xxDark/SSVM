@@ -15,9 +15,7 @@ public final class IntValue extends NumericValue {
 	private final int value;
 
 	/**
-	 * @param value
-	 * 		Int value.
-	 *
+	 * @param value Int value.
 	 * @deprecated Only for the VM,
 	 * use {@link IntValue#of(int)}
 	 * instead.
@@ -88,9 +86,7 @@ public final class IntValue extends NumericValue {
 	}
 
 	/**
-	 * @param value
-	 * 		Int value.
-	 *
+	 * @param value Int value.
 	 * @return VM int value.
 	 */
 	public static IntValue of(int value) {
@@ -103,11 +99,8 @@ public final class IntValue extends NumericValue {
 	/**
 	 * Creates new cache.
 	 *
-	 * @param low
-	 * 		Min value.
-	 * @param high
-	 * 		Max value.
-	 *
+	 * @param low  Min value.
+	 * @param high Max value.
 	 * @return int cache.
 	 */
 	public static IntValue[] createCache(int low, int high) {

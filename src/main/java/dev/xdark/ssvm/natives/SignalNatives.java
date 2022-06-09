@@ -18,8 +18,7 @@ import lombok.experimental.UtilityClass;
 public class SignalNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		InstanceJavaClass signal = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/Signal");

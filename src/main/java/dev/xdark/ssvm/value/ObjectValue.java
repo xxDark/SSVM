@@ -1,6 +1,6 @@
 package dev.xdark.ssvm.value;
 
-import dev.xdark.ssvm.memory.Memory;
+import dev.xdark.ssvm.memory.allocation.MemoryBlock;
 import dev.xdark.ssvm.mirror.JavaClass;
 
 /**
@@ -8,7 +8,7 @@ import dev.xdark.ssvm.mirror.JavaClass;
  *
  * @author xDark
  */
-public interface ObjectValue extends Value, Synchronizable, ReferenceCounted {
+public interface ObjectValue extends Value, Synchronizable {
 
 	/**
 	 * Returns object class.
@@ -22,5 +22,5 @@ public interface ObjectValue extends Value, Synchronizable, ReferenceCounted {
 	 *
 	 * @return object data.
 	 */
-	Memory getMemory();
+	MemoryBlock getMemory();
 }

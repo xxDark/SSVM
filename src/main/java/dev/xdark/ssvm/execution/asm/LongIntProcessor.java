@@ -18,8 +18,7 @@ public final class LongIntProcessor implements InstructionProcessor<AbstractInsn
 	private final LongIntToLongFunction op;
 
 	/**
-	 * @param op
-	 * 		Ints processor.
+	 * @param op Ints processor.
 	 */
 	public LongIntProcessor(LongIntToLongFunction op) {
 		this.op = op;

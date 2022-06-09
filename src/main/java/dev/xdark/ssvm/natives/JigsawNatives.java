@@ -17,8 +17,7 @@ import lombok.experimental.UtilityClass;
 public class JigsawNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
@@ -26,7 +25,7 @@ public class JigsawNatives {
 		if (bootLoader != null) {
 			vmi.setInvoker(bootLoader, "setBootLoaderUnnamedModule0", "(Ljava/lang/Module;)V", MethodInvoker.noop());
 			vmi.setInvoker(bootLoader, "getSystemPackageLocation", "(Ljava/lang/String;)Ljava/lang/String;", ctx -> {
-				ctx.setResult(NullValue.INSTANCE);
+				ctx.setResult(vm.getMemoryManager().nullValue());
 				return Result.ABORT;
 			});
 		}

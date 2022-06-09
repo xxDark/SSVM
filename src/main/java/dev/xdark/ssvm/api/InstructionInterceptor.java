@@ -13,10 +13,8 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 public interface InstructionInterceptor {
 
 	/**
-	 * @param ctx
-	 * 		Execution context.
-	 * @param insn
-	 * 		Instruction to intercept.
+	 * @param ctx  Execution context.
+	 * @param insn Instruction to intercept.
 	 */
 	Result intercept(ExecutionContext ctx, AbstractInsnNode insn);
 }

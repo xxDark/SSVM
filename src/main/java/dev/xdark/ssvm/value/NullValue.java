@@ -1,11 +1,7 @@
 package dev.xdark.ssvm.value;
 
-import dev.xdark.ssvm.memory.Memory;
-import dev.xdark.ssvm.memory.MemoryData;
-import dev.xdark.ssvm.memory.SimpleMemory;
+import dev.xdark.ssvm.memory.allocation.MemoryBlock;
 import dev.xdark.ssvm.mirror.JavaClass;
-
-import java.nio.ByteBuffer;
 
 /**
  * represents {@code null} value.
@@ -14,8 +10,11 @@ import java.nio.ByteBuffer;
  */
 public final class NullValue implements ObjectValue {
 
-	public static final NullValue INSTANCE = new NullValue();
-	private final Memory memory = new SimpleMemory(null, MemoryData.buffer(ByteBuffer.allocate(0)), 0L, false);
+	private final MemoryBlock memory;
+
+	public NullValue(MemoryBlock memory) {
+		this.memory = memory;
+	}
 
 	@Override
 	public boolean isWide() {
@@ -43,7 +42,7 @@ public final class NullValue implements ObjectValue {
 	}
 
 	@Override
-	public Memory getMemory() {
+	public MemoryBlock getMemory() {
 		return memory;
 	}
 
@@ -74,31 +73,6 @@ public final class NullValue implements ObjectValue {
 
 	@Override
 	public boolean isHeldByCurrentThread() {
-		throw new UnsupportedOperationException("Null value");
-	}
-
-	@Override
-	public long refCount() {
-		throw new UnsupportedOperationException("Null value");
-	}
-
-	@Override
-	public ReferenceCounted retain(long count) {
-		throw new UnsupportedOperationException("Null value");
-	}
-
-	@Override
-	public ReferenceCounted retain() {
-		throw new UnsupportedOperationException("Null value");
-	}
-
-	@Override
-	public boolean release(long count) {
-		throw new UnsupportedOperationException("Null value");
-	}
-
-	@Override
-	public boolean release() {
 		throw new UnsupportedOperationException("Null value");
 	}
 }

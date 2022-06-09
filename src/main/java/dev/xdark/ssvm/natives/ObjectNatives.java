@@ -5,8 +5,8 @@ import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.memory.MemoryData;
-import dev.xdark.ssvm.memory.MemoryManager;
+import dev.xdark.ssvm.memory.allocation.MemoryData;
+import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
@@ -27,8 +27,7 @@ import lombok.experimental.UtilityClass;
 public class ObjectNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
@@ -67,7 +66,7 @@ public class ObjectNatives {
 			}
 			try {
 				value.monitorWait(locals.load(1).asLong());
-			} catch(InterruptedException ex) {
+			} catch (InterruptedException ex) {
 				vm.getHelper().throwException(symbols.java_lang_InterruptedException());
 			}
 			return Result.ABORT;
@@ -94,10 +93,10 @@ public class ObjectNatives {
 			MemoryData copyTo = clone.getMemory().getData();
 			MemoryData copyFrom = _this.getMemory().getData();
 			copyFrom.copy(
-					offset,
-					copyTo,
-					offset,
-					copyFrom.length() - offset
+				offset,
+				copyTo,
+				offset,
+				copyFrom.length() - offset
 			);
 			ctx.setResult(clone);
 			return Result.ABORT;

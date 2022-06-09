@@ -26,8 +26,7 @@ public class ProxyNatives {
 	/**
 	 * Initializes java/lang/reflect/Proxy.
 	 *
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
@@ -48,14 +47,15 @@ public class ProxyNatives {
 				if (parsed == null) {
 					helper.throwException(symbols.java_lang_InternalError(), "Invalid bytecode");
 				}
-				result = helper.newInstanceClass(NullValue.INSTANCE, NullValue.INSTANCE, parsed.getClassReader(), parsed.getNode());
+				ObjectValue nullValue = vm.getMemoryManager().nullValue();
+				result = helper.newInstanceClass(nullValue, nullValue, parsed.getClassReader(), parsed.getNode());
 			} else {
 				result = ((JavaValue<InstanceJavaClass>) helper.invokeVirtual("defineClass", "(Ljava/lang/String;[BII)Ljava/lang/Class;", new Value[0], new Value[]{
-						loader,
-						name,
-						bytes,
-						off,
-						len
+					loader,
+					name,
+					bytes,
+					off,
+					len
 				}).getResult()).getValue();
 			}
 			vm.getClassLoaders().getClassLoaderData(loader).forceLinkClass(result);

@@ -23,8 +23,7 @@ import lombok.experimental.UtilityClass;
 public class ArrayNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();

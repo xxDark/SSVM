@@ -12,8 +12,7 @@ public class DelegatingExecutionEngine implements ExecutionEngine {
 	private final ExecutionEngine delegate;
 
 	/**
-	 * @param delegate
-	 * 		Delegating engine.
+	 * @param delegate Delegating engine.
 	 */
 	public DelegatingExecutionEngine(ExecutionEngine delegate) {
 		this.delegate = delegate;

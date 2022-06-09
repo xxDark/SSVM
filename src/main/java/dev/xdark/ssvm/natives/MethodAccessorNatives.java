@@ -24,8 +24,7 @@ import static org.objectweb.asm.Opcodes.ACC_STATIC;
 public class MethodAccessorNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
@@ -77,8 +76,9 @@ public class MethodAccessorNatives {
 				executed = helper.invokeVirtual(name, desc, new Value[0], args);
 			}
 			Value result = executed.getResult();
-			if (result.isVoid()) result = NullValue.INSTANCE; // void
-			else {
+			if (result.isVoid()) {
+				result = vm.getMemoryManager().nullValue(); // void
+			} else {
 				result = helper.boxGeneric(result, executed.getMethod().getReturnType());
 			}
 			ctx.setResult(result);

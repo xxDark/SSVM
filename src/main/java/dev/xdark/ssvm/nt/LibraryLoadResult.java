@@ -11,12 +11,9 @@ public final class LibraryLoadResult {
 	private final String errorMessage;
 
 	/**
-	 * @param handle
-	 * 		Library handle.
-	 * @param jniVersion
-	 * 		JNI version return by {@code JNI_OnLoad}.
-	 * @param errorMessage
-	 * 		Error message if library failed to load.
+	 * @param handle       Library handle.
+	 * @param jniVersion   JNI version return by {@code JNI_OnLoad}.
+	 * @param errorMessage Error message if library failed to load.
 	 */
 	public LibraryLoadResult(long handle, int jniVersion, String errorMessage) {
 		this.handle = handle;

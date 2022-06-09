@@ -12,9 +12,7 @@ public interface ThreadManager {
 	/**
 	 * Returns VM thread from Java thread.
 	 *
-	 * @param thread
-	 * 		Thread to get VM thread from.
-	 *
+	 * @param thread Thread to get VM thread from.
 	 * @return VM thread.
 	 */
 	VMThread getVmThread(Thread thread);
@@ -22,16 +20,14 @@ public interface ThreadManager {
 	/**
 	 * Returns VMThread by an instance.
 	 *
-	 * @param thread
-	 * 		VM thread oop.
+	 * @param thread VM thread oop.
 	 */
 	VMThread getVmThread(InstanceValue thread);
 
 	/**
 	 * Assigns VM thread.
 	 *
-	 * @param thread
-	 * 		Thread to assign.
+	 * @param thread Thread to assign.
 	 */
 	void setVmThread(VMThread thread);
 
@@ -74,11 +70,8 @@ public interface ThreadManager {
 	/**
 	 * Causes the currently executing thread to sleep.
 	 *
-	 * @param millis
-	 * 		The length of time to sleep in milliseconds.
-	 *
-	 * @throws InterruptedException
-	 * 		If any thread has interrupted the current thread.
+	 * @param millis The length of time to sleep in milliseconds.
+	 * @throws InterruptedException If any thread has interrupted the current thread.
 	 */
 	void sleep(long millis) throws InterruptedException;
 }

@@ -2,6 +2,7 @@ package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.mirror.JavaField;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.util.VMHelper;
@@ -22,8 +23,7 @@ public final class LinkResolver {
 	private final VMSymbols symbols;
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public LinkResolver(VirtualMachine vm) {
 		helper = vm.getHelper();
@@ -88,6 +88,35 @@ public final class LinkResolver {
 		return method;
 	}
 
+	public JavaField resolveStaticField(InstanceJavaClass klass, String name, String desc) {
+		while (klass != null) {
+			JavaField field = klass.getStaticField(name, desc);
+			if (field != null) {
+				return field;
+			}
+			klass = klass.getSuperClass();
+		}
+		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
+		return null;
+	}
+
+	public JavaField resolveVirtualField(InstanceJavaClass klass, InstanceJavaClass current, String name, String desc) {
+		JavaField field = klass.getVirtualField(name, desc);
+		if (field == null) {
+			while (current != null) {
+				if ((field = current.getVirtualField(name, desc)) != null) {
+					break;
+				}
+				current = current.getSuperClass();
+			}
+		}
+		if (field != null) {
+			return field;
+		}
+		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
+		return null;
+	}
+
 	private JavaMethod doResolveMethod(JavaClass klass, String name, String desc) {
 		JavaMethod method = lookupMethodInClasses(klass, name, desc, false);
 		if (method == null && !klass.isArray()) {
@@ -106,10 +135,10 @@ public final class LinkResolver {
 		}
 		int acc;
 		if (inMethodResolve &&
-				method != null &&
-				klass.isInterface() &&
-				(((acc = method.getAccess()) & ACC_STATIC) != 0 || (acc & ACC_PUBLIC) == 0) &&
-				method.getOwner() == symbols.java_lang_Object()) {
+			method != null &&
+			klass.isInterface() &&
+			(((acc = method.getAccess()) & ACC_STATIC) != 0 || (acc & ACC_PUBLIC) == 0) &&
+			method.getOwner() == symbols.java_lang_Object()) {
 			method = null;
 		}
 		if (method == null) {
@@ -124,14 +153,14 @@ public final class LinkResolver {
 		InstanceJavaClass current = klass;
 		do {
 			deque.addAll(Arrays.asList(current.getInterfaces()));
-			while((klass = deque.poll()) != null) {
+			while ((klass = deque.poll()) != null) {
 				JavaMethod method = klass.getMethod(name, desc);
 				if (method != null) {
 					return method;
 				}
 				deque.addAll(Arrays.asList(klass.getInterfaces()));
 			}
-		} while((current = current.getSuperclassWithoutResolving()) != null);
+		} while ((current = current.getSuperclassWithoutResolving()) != null);
 		return null;
 	}
 
@@ -140,7 +169,7 @@ public final class LinkResolver {
 			return uncachedLookupMethod(symbols.java_lang_Object(), name, desc);
 		}
 		InstanceJavaClass jc = (InstanceJavaClass) klass;
-		while(jc != null) {
+		while (jc != null) {
 			JavaMethod method = jc.getMethod(name, desc);
 			if (method != null) {
 				return method;

@@ -20,8 +20,7 @@ public final class NopThreadManager implements ThreadManager {
 	private final VirtualMachine vm;
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public NopThreadManager(VirtualMachine vm) {
 		this.vm = vm;
@@ -34,7 +33,7 @@ public final class NopThreadManager implements ThreadManager {
 		if (current != null) {
 			return current;
 		}
-		synchronized(this) {
+		synchronized (this) {
 			current = threadMap.get(thread);
 			if (current == null) {
 				VirtualMachine vm = this.vm;

@@ -22,8 +22,7 @@ import java.security.SecureRandom;
 public class NativeSeedGeneratorNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();

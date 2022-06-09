@@ -16,8 +16,7 @@ import lombok.experimental.UtilityClass;
 public class URLClassPathNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
@@ -25,7 +24,7 @@ public class URLClassPathNatives {
 		if (ucp != null) {
 			// static jobjectArray get_lookup_cache_urls(JNIEnv *env, jobject loader, TRAPS) {return NULL;}
 			vmi.setInvoker(ucp, "getLookupCacheURLs", "(Ljava/lang/ClassLoader;)[Ljava/net/URL;", ctx -> {
-				ctx.setResult(NullValue.INSTANCE);
+				ctx.setResult(vm.getMemoryManager().nullValue());
 				return Result.ABORT;
 			});
 		}

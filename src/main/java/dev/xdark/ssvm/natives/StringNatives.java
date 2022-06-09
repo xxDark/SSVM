@@ -20,8 +20,7 @@ import java.nio.ByteOrder;
 public class StringNatives {
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
@@ -35,7 +34,7 @@ public class StringNatives {
 		InstanceJavaClass utf16 = (InstanceJavaClass) vm.findBootstrapClass("java/lang/StringUTF16");
 		if (utf16 != null) {
 			vmi.setInvoker(utf16, "isBigEndian", "()Z", ctx -> {
-				ctx.setResult(vm.getMemoryManager().getByteOrder() == ByteOrder.BIG_ENDIAN ? IntValue.ONE : IntValue.ZERO);
+				ctx.setResult(vm.getMemoryAllocator().getByteOrder() == ByteOrder.BIG_ENDIAN ? IntValue.ONE : IntValue.ZERO);
 				return Result.ABORT;
 			});
 		}

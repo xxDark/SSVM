@@ -17,8 +17,7 @@ public final class ConstantLongProcessor implements InstructionProcessor<Abstrac
 	private final Value cst;
 
 	/**
-	 * @param cst
-	 * 		Long constant.
+	 * @param cst Long constant.
 	 */
 	public ConstantLongProcessor(long cst) {
 		this.cst = LongValue.of(cst);

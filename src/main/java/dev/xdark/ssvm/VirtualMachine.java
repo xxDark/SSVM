@@ -17,10 +17,12 @@ import dev.xdark.ssvm.fs.FileDescriptorManager;
 import dev.xdark.ssvm.fs.SimpleFileDescriptorManager;
 import dev.xdark.ssvm.jvm.ManagementInterface;
 import dev.xdark.ssvm.jvm.SimpleManagementInterface;
-import dev.xdark.ssvm.memory.MemoryManager;
-import dev.xdark.ssvm.memory.SimpleMemoryManager;
-import dev.xdark.ssvm.memory.SimpleStringPool;
-import dev.xdark.ssvm.memory.StringPool;
+import dev.xdark.ssvm.memory.management.MemoryManager;
+import dev.xdark.ssvm.memory.management.SimpleMemoryManager;
+import dev.xdark.ssvm.memory.management.SimpleStringPool;
+import dev.xdark.ssvm.memory.management.StringPool;
+import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
+import dev.xdark.ssvm.memory.allocation.SimpleMemoryAllocator;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
@@ -45,7 +47,6 @@ import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.JavaValue;
-import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.ClassReader;
@@ -62,11 +63,12 @@ public class VirtualMachine {
 
 	private static final ExecutionContextOptions USE_INVOKERS = ExecutionContextOptions.builder().build();
 	private static final ExecutionContextOptions NO_INVOKERS = ExecutionContextOptions.builder()
-			.useInvokers(false)
-			.build();
+		.useInvokers(false)
+		.build();
 	private final AtomicReference<InitializationState> state = new AtomicReference<>(InitializationState.UNINITIALIZED);
 	private final BootClassLoaderHolder bootClassLoader;
 	private final VMInterface vmInterface;
+	private final MemoryAllocator memoryAllocator;
 	private final MemoryManager memoryManager;
 	private VMSymbols symbols;
 	private VMPrimitives primitives;
@@ -93,8 +95,9 @@ public class VirtualMachine {
 		this.initializer = initializer;
 		ClassLoaders classLoaders = createClassLoaders();
 		this.classLoaders = classLoaders;
-		bootClassLoader = new BootClassLoaderHolder(this, createBootClassLoader(), classLoaders.setClassLoaderData(NullValue.INSTANCE));
+		memoryAllocator = createMemoryAllocator();
 		memoryManager = createMemoryManager();
+		bootClassLoader = new BootClassLoaderHolder(this, createBootClassLoader(), classLoaders.setClassLoaderData(memoryManager.nullValue()));
 		vmInterface = new VMInterface();
 		helper = new VMHelper(this);
 		threadManager = createThreadManager();
@@ -111,9 +114,9 @@ public class VirtualMachine {
 		managementInterface = createManagementInterface();
 		timeManager = createTimeManager();
 		executionEngine = createExecutionEngine();
-		operations = new VMOperations(this);
 		linkResolver = new LinkResolver(this);
 		invokeDynamicLinker = new InvokeDynamicLinker(this);
+		operations = new VMOperations(this);
 
 		(properties = new Properties()).putAll(System.getProperties());
 		env = new HashMap<>(System.getenv());
@@ -124,8 +127,7 @@ public class VirtualMachine {
 	}
 
 	/**
-	 * @throws IllegalStateException
-	 * 		If VM is not initialized.
+	 * @throws IllegalStateException If VM is not initialized.
 	 */
 	public void assertInitialized() {
 		InitializationState state = this.state.get();
@@ -135,8 +137,7 @@ public class VirtualMachine {
 	}
 
 	/**
-	 * @throws IllegalStateException
-	 * 		If VM is not booted.
+	 * @throws IllegalStateException If VM is not booted.
 	 */
 	public void assertBooted() {
 		if (state.get() != InitializationState.BOOTED) {
@@ -147,11 +148,11 @@ public class VirtualMachine {
 	/**
 	 * Initializes the VM.
 	 *
-	 * @throws IllegalStateException
-	 * 		If VM fails to transit to {@link InitializationState#INITIALIZING} state,
-	 * 		or fails to initialize.
+	 * @throws IllegalStateException If VM fails to transit to {@link InitializationState#INITIALIZING} state,
+	 *                               or fails to initialize.
 	 */
 	public void initialize() {
+		//<editor-fold desc="VM initialization">
 		if (state.compareAndSet(InitializationState.UNINITIALIZED, InitializationState.INITIALIZING)) {
 			try {
 				ClassLoaders classLoaders = this.classLoaders;
@@ -189,16 +190,17 @@ public class VirtualMachine {
 		} else {
 			throw new IllegalStateException("Failed to enter in INITIALIZING state");
 		}
+		//</editor-fold>
 	}
 
 	/**
 	 * Full VM initialization.
 	 *
-	 * @throws IllegalStateException
-	 * 		If VM fails to transit to {@link InitializationState#BOOTING} state,
-	 * 		or fails to boot.
+	 * @throws IllegalStateException If VM fails to transit to {@link InitializationState#BOOTING} state,
+	 *                               or fails to boot.
 	 */
 	public void bootstrap() {
+		//<editor-fold desc="VM bootstrap">
 		initialize();
 		if (state.compareAndSet(InitializationState.INITIALIZED, InitializationState.BOOTING)) {
 			try {
@@ -214,10 +216,11 @@ public class VirtualMachine {
 				// jdk/internal/misc/Unsafe will cache wrong values
 				InstanceJavaClass unsafeConstants = (InstanceJavaClass) findBootstrapClass("jdk/internal/misc/UnsafeConstants", true);
 				if (unsafeConstants != null) {
+					MemoryAllocator memoryAllocator = this.memoryAllocator;
 					unsafeConstants.initialize();
-					unsafeConstants.setStaticFieldValue("ADDRESS_SIZE0", "I", IntValue.of(memoryManager.addressSize()));
-					unsafeConstants.setStaticFieldValue("PAGE_SIZE", "I", IntValue.of(memoryManager.pageSize()));
-					unsafeConstants.setStaticFieldValue("BIG_ENDIAN", "Z", memoryManager.getByteOrder() == ByteOrder.BIG_ENDIAN ? IntValue.ONE : IntValue.ZERO);
+					unsafeConstants.setStaticFieldValue("ADDRESS_SIZE0", "I", IntValue.of(memoryAllocator.addressSize()));
+					unsafeConstants.setStaticFieldValue("PAGE_SIZE", "I", IntValue.of(memoryAllocator.pageSize()));
+					unsafeConstants.setStaticFieldValue("BIG_ENDIAN", "Z", memoryAllocator.getByteOrder() == ByteOrder.BIG_ENDIAN ? IntValue.ONE : IntValue.ZERO);
 				}
 				// Initialize system group
 				InstanceJavaClass groupClass = symbols.java_lang_ThreadGroup();
@@ -227,7 +230,7 @@ public class VirtualMachine {
 				// Initialize main group
 				InstanceValue mainGroup = memoryManager.newInstance(groupClass);
 				helper.invokeExact(groupClass, "<init>", "(Ljava/lang/ThreadGroup;Ljava/lang/String;)V", new Value[0],
-						new Value[]{mainGroup, sysGroup, helper.newUtf8("main")});
+					new Value[]{mainGroup, sysGroup, helper.newUtf8("main")});
 				mainThreadGroup = mainGroup;
 				// Initialize main thread
 				VMThread mainThread = threadManager.createMainThread();
@@ -249,8 +252,8 @@ public class VirtualMachine {
 					// Oracle had moved this to native code, do it here
 					// On JDK 8 this is invoked in initializeSystemClass
 					helper.invokeVirtual("add", "(Ljava/lang/Thread;)V", new Value[0], new Value[]{
-							mainGroup,
-							mainThread.getOop()
+						mainGroup,
+						mainThread.getOop()
 					});
 					helper.invokeStatic(sysClass, "initPhase1", "()V", new Value[0], new Value[0]);
 					findBootstrapClass("java/lang/invoke/MethodHandle", true);
@@ -275,6 +278,7 @@ public class VirtualMachine {
 		} else {
 			throw new IllegalStateException("Failed to enter in BOOTING state");
 		}
+		//</editor-fold>
 	}
 
 	/**
@@ -288,8 +292,7 @@ public class VirtualMachine {
 	 * This must be only invoked by the VM
 	 * to support snapshot restore.
 	 *
-	 * @param state
-	 * 		New state.
+	 * @param state New state.
 	 */
 	public void setState(InitializationState state) {
 		this.state.set(state);
@@ -313,6 +316,15 @@ public class VirtualMachine {
 	 */
 	public Map<String, String> getenv() {
 		return env;
+	}
+
+	/**
+	 * Returns memory allocator.
+	 *
+	 * @return memory allocator.
+	 */
+	public MemoryAllocator getMemoryAllocator() {
+		return memoryAllocator;
 	}
 
 	/**
@@ -516,11 +528,8 @@ public class VirtualMachine {
 	/**
 	 * Searches for bootstrap class.
 	 *
-	 * @param name
-	 * 		Name of the class.
-	 * @param initialize
-	 * 		True if class should be initialized if found.
-	 *
+	 * @param name       Name of the class.
+	 * @param initialize True if class should be initialized if found.
 	 * @return bootstrap class or {@code null}, if not found.
 	 */
 	public JavaClass findBootstrapClass(String name, boolean initialize) {
@@ -534,9 +543,7 @@ public class VirtualMachine {
 	/**
 	 * Searches for bootstrap class.
 	 *
-	 * @param name
-	 * 		Name of the class.
-	 *
+	 * @param name Name of the class.
 	 * @return bootstrap class or {@code null}, if not found.
 	 */
 	public JavaClass findBootstrapClass(String name) {
@@ -546,12 +553,9 @@ public class VirtualMachine {
 	/**
 	 * Searches for the class in given loader.
 	 *
-	 * @param loader
-	 * 		Class loader.
-	 * @param name
-	 * 		CLass name.
-	 * @param initialize
-	 * 		Should class be initialized.
+	 * @param loader     Class loader.
+	 * @param name       CLass name.
+	 * @param initialize Should class be initialized.
 	 */
 	public JavaClass findClass(ObjectValue loader, String name, boolean initialize) {
 		JavaClass jc;
@@ -576,10 +580,8 @@ public class VirtualMachine {
 	/**
 	 * Processes {@link ExecutionContext}.
 	 *
-	 * @param ctx
-	 * 		Context to process.
-	 * @param options
-	 * 		Execution options.
+	 * @param ctx     Context to process.
+	 * @param options Execution options.
 	 */
 	public void execute(ExecutionContext ctx, ExecutionContextOptions options) {
 		executionEngine.execute(ctx, options);
@@ -588,8 +590,7 @@ public class VirtualMachine {
 	/**
 	 * Processes {@link ExecutionContext}.
 	 *
-	 * @param ctx
-	 * 		Context to process.
+	 * @param ctx Context to process.
 	 */
 	public void execute(ExecutionContext ctx) {
 		ExecutionEngine executionEngine = this.executionEngine;
@@ -599,11 +600,8 @@ public class VirtualMachine {
 	/**
 	 * Processes {@link ExecutionContext}.
 	 *
-	 * @param ctx
-	 * 		Context to process.
-	 * @param useInvokers
-	 * 		Should VM search for VMI hooks.
-	 *
+	 * @param ctx         Context to process.
+	 * @param useInvokers Should VM search for VMI hooks.
 	 * @deprecated Use {@link VirtualMachine#execute(ExecutionContext, ExecutionContextOptions)} instead.
 	 */
 	@Deprecated
@@ -632,6 +630,16 @@ public class VirtualMachine {
 	 */
 	protected BootClassLoader createBootClassLoader() {
 		return RuntimeBootClassLoader.create();
+	}
+
+	/**
+	 * Creates memory allocator.
+	 * One may override this method.
+	 *
+	 * @return memory allocator.
+	 */
+	protected MemoryAllocator createMemoryAllocator() {
+		return new SimpleMemoryAllocator();
 	}
 
 	/**
@@ -741,7 +749,7 @@ public class VirtualMachine {
 		}
 		ClassReader cr = result.getClassReader();
 		ClassNode node = result.getNode();
-		InstanceJavaClass jc = classLoaders.constructClass(NullValue.INSTANCE, cr, node);
+		InstanceJavaClass jc = classLoaders.constructClass(memoryManager.nullValue(), cr, node);
 		bootClassLoader.forceLink(jc);
 		return jc;
 	}

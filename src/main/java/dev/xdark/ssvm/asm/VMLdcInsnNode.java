@@ -15,10 +15,8 @@ public final class VMLdcInsnNode extends DelegatingInsnNode<LdcInsnNode> {
 	private final Value value;
 
 	/**
-	 * @param delegate
-	 * 		Backing instruction.
-	 * @param value
-	 * 		VM value.
+	 * @param delegate Backing instruction.
+	 * @param value    VM value.
 	 */
 	public VMLdcInsnNode(LdcInsnNode delegate, Value value) {
 		super(delegate, VMOpcodes.LDC);

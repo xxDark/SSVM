@@ -9,9 +9,7 @@ import java.util.Arrays;
 /**
  * Slice of the array.
  *
- * @param <V>
- * 		Component type.
- *
+ * @param <V> Component type.
  * @author xDark
  */
 @RequiredArgsConstructor
@@ -25,19 +23,15 @@ public class ArraySlice<V> {
 	/**
 	 * Sets element.
 	 *
-	 * @param index
-	 * 		Element index.
-	 * @param value
-	 * 		Element value.
+	 * @param index Element index.
+	 * @param value Element value.
 	 */
 	public void set(int index, V value) {
 		array[map(index)] = value;
 	}
 
 	/**
-	 * @param index
-	 * 		Element index.
-	 *
+	 * @param index Element index.
 	 * @return element by it's index.
 	 */
 	public V get(int index) {
@@ -59,11 +53,8 @@ public class ArraySlice<V> {
 	}
 
 	/**
-	 * @param fromIndex
-	 * 		Starting index.
-	 * @param toIndex
-	 * 		Ending index.
-	 *
+	 * @param fromIndex Starting index.
+	 * @param toIndex   Ending index.
 	 * @return slice of this slice.
 	 */
 	public ArraySlice<V> slice(int fromIndex, int toIndex) {
@@ -78,9 +69,7 @@ public class ArraySlice<V> {
 	}
 
 	/**
-	 * @param index
-	 * 		Index to map.
-	 *
+	 * @param index Index to map.
 	 * @return new index.
 	 */
 	public int map(int index) {

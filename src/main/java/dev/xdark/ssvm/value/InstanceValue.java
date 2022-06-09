@@ -16,9 +16,7 @@ public interface InstanceValue extends ObjectValue {
 	/**
 	 * Returns long value of a field.
 	 *
-	 * @param field
-	 * 		Field name.
-	 *
+	 * @param field Field name.
 	 * @return long value.
 	 */
 	long getLong(String field);
@@ -26,9 +24,7 @@ public interface InstanceValue extends ObjectValue {
 	/**
 	 * Returns double value of a field.
 	 *
-	 * @param field
-	 * 		Field name.
-	 *
+	 * @param field Field name.
 	 * @return double value.
 	 */
 	double getDouble(String field);
@@ -36,9 +32,7 @@ public interface InstanceValue extends ObjectValue {
 	/**
 	 * Returns int value of a field.
 	 *
-	 * @param field
-	 * 		Field name.
-	 *
+	 * @param field Field name.
 	 * @return int value.
 	 */
 	int getInt(String field);
@@ -46,9 +40,7 @@ public interface InstanceValue extends ObjectValue {
 	/**
 	 * Returns float value of a field.
 	 *
-	 * @param field
-	 * 		Field name.
-	 *
+	 * @param field Field name.
 	 * @return float value.
 	 */
 	float getFloat(String field);
@@ -56,9 +48,7 @@ public interface InstanceValue extends ObjectValue {
 	/**
 	 * Returns char value of a field.
 	 *
-	 * @param field
-	 * 		Field name.
-	 *
+	 * @param field Field name.
 	 * @return char value.
 	 */
 	char getChar(String field);
@@ -66,9 +56,7 @@ public interface InstanceValue extends ObjectValue {
 	/**
 	 * Returns short value of a field.
 	 *
-	 * @param field
-	 * 		Field name.
-	 *
+	 * @param field Field name.
 	 * @return short value.
 	 */
 	short getShort(String field);
@@ -76,9 +64,7 @@ public interface InstanceValue extends ObjectValue {
 	/**
 	 * Returns byte value of a field.
 	 *
-	 * @param field
-	 * 		Field name.
-	 *
+	 * @param field Field name.
 	 * @return byte value.
 	 */
 	byte getByte(String field);
@@ -86,9 +72,7 @@ public interface InstanceValue extends ObjectValue {
 	/**
 	 * Returns boolean value of a field.
 	 *
-	 * @param field
-	 * 		Field name.
-	 *
+	 * @param field Field name.
 	 * @return boolean value.
 	 */
 	boolean getBoolean(String field);
@@ -96,9 +80,7 @@ public interface InstanceValue extends ObjectValue {
 	/**
 	 * Returns VM value of a field.
 	 *
-	 * @param field
-	 * 		Field name.
-	 *
+	 * @param field Field name.
 	 * @return VM value.
 	 */
 	ObjectValue getValue(String field, String desc);
@@ -106,92 +88,73 @@ public interface InstanceValue extends ObjectValue {
 	/**
 	 * Sets long value of a field.
 	 *
-	 * @param field
-	 * 		field name.
-	 * @param value
-	 * 		Value to set.
+	 * @param field field name.
+	 * @param value Value to set.
 	 */
 	void setLong(String field, long value);
 
 	/**
 	 * Sets double value of a field.
 	 *
-	 * @param field
-	 * 		field name.
-	 * @param value
-	 * 		Value to set.
+	 * @param field field name.
+	 * @param value Value to set.
 	 */
 	void setDouble(String field, double value);
 
 	/**
 	 * Sets int value of a field.
 	 *
-	 * @param field
-	 * 		field name.
-	 * @param value
-	 * 		Value to set.
+	 * @param field field name.
+	 * @param value Value to set.
 	 */
 	void setInt(String field, int value);
 
 	/**
 	 * Sets float value of a field.
 	 *
-	 * @param field
-	 * 		field name.
-	 * @param value
-	 * 		Value to set.
+	 * @param field field name.
+	 * @param value Value to set.
 	 */
 	void setFloat(String field, float value);
 
 	/**
 	 * Sets char value of a field.
 	 *
-	 * @param field
-	 * 		field name.
-	 * @param value
-	 * 		Value to set.
+	 * @param field field name.
+	 * @param value Value to set.
 	 */
 	void setChar(String field, char value);
 
 	/**
 	 * Sets short value of a field.
 	 *
-	 * @param field
-	 * 		field name.
-	 * @param value
-	 * 		Value to set.
+	 * @param field field name.
+	 * @param value Value to set.
 	 */
 	void setShort(String field, short value);
 
 	/**
 	 * Sets byte value of a field.
 	 *
-	 * @param field
-	 * 		field name.
-	 * @param value
-	 * 		Value to set.
+	 * @param field field name.
+	 * @param value Value to set.
 	 */
 	void setByte(String field, byte value);
 
 	/**
 	 * Sets boolean value of a field.
 	 *
-	 * @param field
-	 * 		field name.
-	 * @param value
-	 * 		Value to set.
+	 * @param field field name.
+	 * @param value Value to set.
 	 */
 	void setBoolean(String field, boolean value);
 
 	/**
 	 * Sets VM value of a field.
 	 *
-	 * @param field
-	 * 		field name.
-	 * @param desc
-	 * 		Field descriptor.
-	 * @param value
-	 * 		Value to set.
+	 * @param field field name.
+	 * @param desc  Field descriptor.
+	 * @param value Value to set.
 	 */
 	void setValue(String field, String desc, ObjectValue value);
 
@@ -201,11 +164,8 @@ public interface InstanceValue extends ObjectValue {
 	void initialize();
 
 	/**
-	 * @param name
-	 * 		Field name.
-	 * @param desc
-	 * 		Field desc.
-	 *
+	 * @param name Field name.
+	 * @param desc Field desc.
 	 * @return field offset for this object or {@code -1},
 	 * if not found.
 	 */

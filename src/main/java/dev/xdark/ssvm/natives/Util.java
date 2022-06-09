@@ -45,15 +45,10 @@ final class Util {
 	 * values.
 	 * Used for reflection calls.
 	 *
-	 * @param vm
-	 * 		VM instance.
-	 * @param loader
-	 * 		Class loader to use.
-	 * @param argTypes
-	 * 		Original types.
-	 * @param array
-	 * 		Array to convert.
-	 *
+	 * @param vm       VM instance.
+	 * @param loader   Class loader to use.
+	 * @param argTypes Original types.
+	 * @param array    Array to convert.
 	 * @return original values array.
 	 */
 	Value[] convertReflectionArgs(VirtualMachine vm, ObjectValue loader, Type[] argTypes, ArrayValue array) {
@@ -82,13 +77,9 @@ final class Util {
 	 * Performs argument conversion to its
 	 * wrapper/primitive type if needed.
 	 *
-	 * @param helper
-	 * 		VM helper.
-	 * @param type
-	 * 		Argument type.
-	 * @param arg
-	 * 		Argument.
-	 *
+	 * @param helper VM helper.
+	 * @param type   Argument type.
+	 * @param arg    Argument.
 	 * @return boxed/unboxed argument or itself,
 	 * if conversion is not needed.
 	 */
@@ -124,7 +115,7 @@ final class Util {
 			}
 		} else if (arg instanceof InstanceValue) {
 			InstanceValue obj = (InstanceValue) arg;
-			switch(type.getSort()) {
+			switch (type.getSort()) {
 				case Type.LONG:
 					return helper.unboxLong(obj);
 				case Type.DOUBLE:
@@ -150,9 +141,7 @@ final class Util {
 	 * Converts {@link AnnotationsAttribute} back
 	 * to it's raw form.
 	 *
-	 * @param attribute
-	 * 		Attribute to convert.
-	 *
+	 * @param attribute Attribute to convert.
 	 * @return raw bytes.
 	 */
 	byte[] toBytes(AnnotationsAttribute attribute) {
@@ -160,7 +149,7 @@ final class Util {
 		AnnotationWriter writer = new AnnotationWriter(new DataOutputStream(baos));
 		try {
 			writer.writeAnnotations(attribute);
-		} catch(IOException ex) {
+		} catch (IOException ex) {
 			throw new RuntimeException(ex); // Should never happen.
 		}
 		return baos.toByteArray();
@@ -170,9 +159,7 @@ final class Util {
 	 * Converts {@link ParameterAnnotationsAttribute} back
 	 * to it's raw form.
 	 *
-	 * @param attribute
-	 * 		Attribute to convert.
-	 *
+	 * @param attribute Attribute to convert.
 	 * @return raw bytes.
 	 */
 	byte[] toBytes(ParameterAnnotationsAttribute attribute) {
@@ -180,7 +167,7 @@ final class Util {
 		AnnotationWriter writer = new AnnotationWriter(new DataOutputStream(baos));
 		try {
 			writer.writeParameterAnnotations(attribute);
-		} catch(IOException ex) {
+		} catch (IOException ex) {
 			throw new RuntimeException(ex); // Should never happen.
 		}
 		return baos.toByteArray();
@@ -190,9 +177,7 @@ final class Util {
 	 * Converts {@link AnnotationDefaultAttribute} back
 	 * to it's raw form.
 	 *
-	 * @param attribute
-	 * 		Attribute to convert.
-	 *
+	 * @param attribute Attribute to convert.
 	 * @return raw bytes.
 	 */
 	byte[] toBytes(AnnotationDefaultAttribute attribute) {
@@ -200,7 +185,7 @@ final class Util {
 		AnnotationWriter writer = new AnnotationWriter(new DataOutputStream(baos));
 		try {
 			writer.writeAnnotationDefault(attribute);
-		} catch(IOException ex) {
+		} catch (IOException ex) {
 			throw new RuntimeException(ex); // Should never happen.
 		}
 		return baos.toByteArray();

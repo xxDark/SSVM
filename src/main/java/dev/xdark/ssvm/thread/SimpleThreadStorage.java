@@ -56,9 +56,7 @@ public class SimpleThreadStorage implements ThreadStorage {
 	/**
 	 * Creates new thread storage.
 	 *
-	 * @param maxSize
-	 * 		Storage size.
-	 *
+	 * @param maxSize Storage size.
 	 * @return new storage.
 	 */
 	public static SimpleThreadStorage create(int maxSize) {

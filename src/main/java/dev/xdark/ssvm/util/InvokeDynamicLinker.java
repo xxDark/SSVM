@@ -3,8 +3,8 @@ package dev.xdark.ssvm.util;
 import dev.xdark.ssvm.NativeJava;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
-import dev.xdark.ssvm.memory.MemoryManager;
-import dev.xdark.ssvm.memory.StringPool;
+import dev.xdark.ssvm.memory.management.MemoryManager;
+import dev.xdark.ssvm.memory.management.StringPool;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaField;
 import dev.xdark.ssvm.mirror.JavaMethod;
@@ -34,36 +34,35 @@ import static org.objectweb.asm.Opcodes.ACC_STATIC;
 public final class InvokeDynamicLinker {
 
 	public static final int MN_IS_METHOD = 0x00010000,
-			MN_IS_CONSTRUCTOR = 0x00020000,
-			MN_IS_FIELD = 0x00040000,
-			MN_IS_TYPE = 0x00080000,
-			MN_CALLER_SENSITIVE = 0x00100000,
-			MN_REFERENCE_KIND_SHIFT = 24,
-			MN_REFERENCE_KIND_MASK = 0x0F000000 >> MN_REFERENCE_KIND_SHIFT,
-			MN_SEARCH_SUPERCLASSES = 0x00100000,
-			MN_SEARCH_INTERFACES = 0x00200000;
+		MN_IS_CONSTRUCTOR = 0x00020000,
+		MN_IS_FIELD = 0x00040000,
+		MN_IS_TYPE = 0x00080000,
+		MN_CALLER_SENSITIVE = 0x00100000,
+		MN_REFERENCE_KIND_SHIFT = 24,
+		MN_REFERENCE_KIND_MASK = 0x0F000000 >> MN_REFERENCE_KIND_SHIFT,
+		MN_SEARCH_SUPERCLASSES = 0x00100000,
+		MN_SEARCH_INTERFACES = 0x00200000;
 	public static final byte
-			REF_getField = 1,
-			REF_getStatic = 2,
-			REF_putField = 3,
-			REF_putStatic = 4,
-			REF_invokeVirtual = 5,
-			REF_invokeStatic = 6,
-			REF_invokeSpecial = 7,
-			REF_newInvokeSpecial = 8,
-			REF_invokeInterface = 9;
+		REF_getField = 1,
+		REF_getStatic = 2,
+		REF_putField = 3,
+		REF_putStatic = 4,
+		REF_invokeVirtual = 5,
+		REF_invokeStatic = 6,
+		REF_invokeSpecial = 7,
+		REF_newInvokeSpecial = 8,
+		REF_invokeInterface = 9;
 	public static final int
-			IS_METHOD = MN_IS_METHOD,
-			IS_CONSTRUCTOR = MN_IS_CONSTRUCTOR,
-			IS_FIELD = MN_IS_FIELD,
-			IS_TYPE = MN_IS_TYPE;
+		IS_METHOD = MN_IS_METHOD,
+		IS_CONSTRUCTOR = MN_IS_CONSTRUCTOR,
+		IS_FIELD = MN_IS_FIELD,
+		IS_TYPE = MN_IS_TYPE;
 	public static final int ALL_KINDS = IS_METHOD | IS_CONSTRUCTOR | IS_FIELD | IS_TYPE;
 
 	private final VirtualMachine vm;
 
 	/**
-	 * @param vm
-	 * 		VM instance.
+	 * @param vm VM instance.
 	 */
 	public InvokeDynamicLinker(VirtualMachine vm) {
 		this.vm = vm;
@@ -72,11 +71,8 @@ public final class InvokeDynamicLinker {
 	/**
 	 * Links {@link InvokeDynamicInsnNode}.
 	 *
-	 * @param insn
-	 * 		Node to link.
-	 * @param caller
-	 * 		Method caller.
-	 *
+	 * @param insn   Node to link.
+	 * @param caller Method caller.
 	 * @return Linked method handle or call site.
 	 */
 	public InstanceValue linkCall(InvokeDynamicInsnNode insn, InstanceJavaClass caller) {
@@ -105,22 +101,22 @@ public final class InvokeDynamicLinker {
 			// shortly after it was added, shaking
 			method = natives.getStaticMethod("linkCallSite", "(Ljava/lang/Object;ILjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/invoke/MemberName;");
 			linkArgs = new Value[]{
-					caller.getOop(),
-					IntValue.ZERO,
-					linker,
-					stringPool.intern(insn.name),
-					helper.methodType(caller.getClassLoader(), Type.getMethodType(insn.desc)),
-					bsmArgs,
-					appendix
+				caller.getOop(),
+				IntValue.ZERO,
+				linker,
+				stringPool.intern(insn.name),
+				helper.methodType(caller.getClassLoader(), Type.getMethodType(insn.desc)),
+				bsmArgs,
+				appendix
 			};
 		} else {
 			linkArgs = new Value[]{
-					caller.getOop(),
-					linker,
-					stringPool.intern(insn.name),
-					helper.methodType(caller.getClassLoader(), Type.getMethodType(insn.desc)),
-					bsmArgs,
-					appendix
+				caller.getOop(),
+				linker,
+				stringPool.intern(insn.name),
+				helper.methodType(caller.getClassLoader(), Type.getMethodType(insn.desc)),
+				bsmArgs,
+				appendix
 			};
 		}
 
@@ -131,13 +127,9 @@ public final class InvokeDynamicLinker {
 	/**
 	 * Invokes linked dynamic call.
 	 *
-	 * @param args
-	 * 		Call arguments.
-	 * @param desc
-	 * 		Call descriptor.
-	 * @param handle
-	 * 		Call site or method handle.
-	 *
+	 * @param args   Call arguments.
+	 * @param desc   Call descriptor.
+	 * @param handle Call site or method handle.
 	 * @return invocation result.
 	 */
 	public Value dynamicCall(Value[] args, String desc, InstanceValue handle) {
@@ -169,11 +161,11 @@ public final class InvokeDynamicLinker {
 			InstanceJavaClass memberName = symbols.java_lang_invoke_MemberName();
 			List<FieldNode> fields = memberName.getNode().fields;
 			fields.add(new FieldNode(
-					ACC_PRIVATE | ACC_VM_HIDDEN,
-					NativeJava.VM_INDEX,
-					"I",
-					null,
-					null
+				ACC_PRIVATE | ACC_VM_HIDDEN,
+				NativeJava.VM_INDEX,
+				"I",
+				null,
+				null
 			));
 			for (int i = 0; i < fields.size(); i++) {
 				FieldNode fn = fields.get(i);
@@ -182,11 +174,11 @@ public final class InvokeDynamicLinker {
 				}
 			}
 			fields.add(new FieldNode(
-					ACC_PRIVATE | ACC_VM_HIDDEN,
-					"method",
-					"Ljava/lang/invoke/ResolvedMethodName;",
-					null,
-					null
+				ACC_PRIVATE | ACC_VM_HIDDEN,
+				"method",
+				"Ljava/lang/invoke/ResolvedMethodName;",
+				null,
+				null
 			));
 		}
 
@@ -194,18 +186,18 @@ public final class InvokeDynamicLinker {
 			InstanceJavaClass resolvedMethodName = symbols.java_lang_invoke_ResolvedMethodName();
 			List<FieldNode> fields = resolvedMethodName.getNode().fields;
 			fields.add(new FieldNode(
-					ACC_PRIVATE | ACC_VM_HIDDEN,
-					NativeJava.VM_TARGET,
-					"Ljava/lang/Object;",
-					null,
-					null
+				ACC_PRIVATE | ACC_VM_HIDDEN,
+				NativeJava.VM_TARGET,
+				"Ljava/lang/Object;",
+				null,
+				null
 			));
 			fields.add(new FieldNode(
-					ACC_PRIVATE | ACC_VM_HIDDEN,
-					NativeJava.VM_HOLDER,
-					"Ljava/lang/Object;",
-					null,
-					null
+				ACC_PRIVATE | ACC_VM_HIDDEN,
+				NativeJava.VM_HOLDER,
+				"Ljava/lang/Object;",
+				null,
+				null
 			));
 		}
 	}
@@ -213,14 +205,10 @@ public final class InvokeDynamicLinker {
 	/**
 	 * Initializes method member.
 	 *
-	 * @param refKind
-	 * 		Reference kind.
-	 * @param memberName
-	 * 		Member name instance.
-	 * @param handle
-	 * 		Method handle.
-	 * @param mnType
-	 * 		Linkage type.
+	 * @param refKind    Reference kind.
+	 * @param memberName Member name instance.
+	 * @param handle     Method handle.
+	 * @param mnType     Linkage type.
 	 */
 	public void initMethodMember(int refKind, InstanceValue memberName, JavaMethod handle, int mnType) {
 		VirtualMachine vm = this.vm;
@@ -244,12 +232,9 @@ public final class InvokeDynamicLinker {
 	/**
 	 * Initializes field member.
 	 *
-	 * @param refKind
-	 * 		Reference kind.
-	 * @param memberName
-	 * 		Member name instance.
-	 * @param handle
-	 * 		Field handle.
+	 * @param refKind    Reference kind.
+	 * @param memberName Member name instance.
+	 * @param handle     Field handle.
 	 */
 	public void initFieldMember(int refKind, InstanceValue memberName, JavaField handle) {
 		VirtualMachine vm = this.vm;
@@ -280,9 +265,7 @@ public final class InvokeDynamicLinker {
 	/**
 	 * Reads method handle target.
 	 *
-	 * @param handle
-	 * 		Handle to read target from.
-	 *
+	 * @param handle Handle to read target from.
 	 * @return Method handle target.
 	 * Throws VM exception if handle is not initialized.
 	 */

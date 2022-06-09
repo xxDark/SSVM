@@ -19,10 +19,8 @@ public final class LinkedDynamicCallNode extends DelegatingInsnNode<InvokeDynami
 	private int descriptorArgsSize = -1;
 
 	/**
-	 * @param delegate
-	 * 		Backing instruction.
-	 * @param methodHandle
-	 * 		CallSite linked method handle.
+	 * @param delegate     Backing instruction.
+	 * @param methodHandle CallSite linked method handle.
 	 */
 	public LinkedDynamicCallNode(InvokeDynamicInsnNode delegate, InstanceValue methodHandle) {
 		super(delegate, VMOpcodes.DYNAMIC_CALL);

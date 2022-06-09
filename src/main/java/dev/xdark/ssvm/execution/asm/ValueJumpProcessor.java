@@ -19,8 +19,7 @@ public final class ValueJumpProcessor implements InstructionProcessor<JumpInsnNo
 	private final Predicate<Value> condition;
 
 	/**
-	 * @param condition
-	 * 		Predicate to check.
+	 * @param condition Predicate to check.
 	 */
 	public ValueJumpProcessor(Predicate<Value> condition) {
 		this.condition = condition;

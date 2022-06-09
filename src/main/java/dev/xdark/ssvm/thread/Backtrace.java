@@ -24,9 +24,7 @@ public interface Backtrace extends Iterable<StackFrame> {
 	/**
 	 * Returns frame at the specific index.
 	 *
-	 * @param index
-	 * 		Index of the frame.
-	 *
+	 * @param index Index of the frame.
 	 * @return frame at the specific index.
 	 */
 	StackFrame get(int index);
@@ -41,8 +39,7 @@ public interface Backtrace extends Iterable<StackFrame> {
 	/**
 	 * Pushes frame.
 	 *
-	 * @param frame
-	 * 		Frame to push.
+	 * @param frame Frame to push.
 	 */
 	void push(StackFrame frame);
 

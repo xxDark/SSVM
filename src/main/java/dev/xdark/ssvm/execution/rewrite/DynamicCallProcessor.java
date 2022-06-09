@@ -1,4 +1,4 @@
-package dev.xdark.ssvm.execution.asm;
+package dev.xdark.ssvm.execution.rewrite;
 
 import dev.xdark.ssvm.asm.LinkedDynamicCallNode;
 import dev.xdark.ssvm.execution.ExecutionContext;

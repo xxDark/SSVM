@@ -93,12 +93,9 @@ public interface JavaClass {
 	void initialize();
 
 	/**
-	 * @param other
-	 * 		The Class object to be checked.
-	 *
+	 * @param other The Class object to be checked.
 	 * @return {@code boolean} value indicating whether objects
 	 * of the type cls can be assigned to objects of this class.
-	 *
 	 * @see Class#isAssignableFrom(Class)
 	 */
 	boolean isAssignableFrom(JavaClass other);

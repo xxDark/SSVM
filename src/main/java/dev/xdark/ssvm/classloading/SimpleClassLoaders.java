@@ -2,7 +2,7 @@ package dev.xdark.ssvm.classloading;
 
 import dev.xdark.ssvm.NativeJava;
 import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.memory.MemoryManager;
+import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.SimpleInstanceJavaClass;
 import dev.xdark.ssvm.value.InstanceValue;

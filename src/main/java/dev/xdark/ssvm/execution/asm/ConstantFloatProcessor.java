@@ -17,8 +17,7 @@ public final class ConstantFloatProcessor implements InstructionProcessor<Abstra
 	private final Value cst;
 
 	/**
-	 * @param cst
-	 * 		Float constant.
+	 * @param cst Float constant.
 	 */
 	public ConstantFloatProcessor(float cst) {
 		this.cst = new FloatValue(cst);

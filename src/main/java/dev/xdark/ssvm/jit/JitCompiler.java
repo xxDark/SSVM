@@ -5,7 +5,7 @@ import dev.xdark.ssvm.asm.DelegatingInsnNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.VMException;
-import dev.xdark.ssvm.memory.MemoryManager;
+import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaField;
@@ -276,9 +276,7 @@ public final class JitCompiler {
 	Map<NewMultiArrayInfo, MethodInsnNode> multiArrays = new HashMap<>();
 
 	/**
-	 * @param jm
-	 * 		Method to check.
-	 *
+	 * @param jm Method to check.
 	 * @return {@code true} if method is compilable,
 	 * {@code false} otherwise.
 	 */
@@ -289,11 +287,8 @@ public final class JitCompiler {
 	/**
 	 * Compiles method.
 	 *
-	 * @param jm
-	 * 		Method for compilation.
-	 * @param flags
-	 *        {@link ClassWriter} flags.
-	 *
+	 * @param jm    Method for compilation.
+	 * @param flags {@link ClassWriter} flags.
 	 * @return jit class info.
 	 */
 	public static JitClass compile(JavaMethod jm, int flags) {
@@ -389,21 +384,21 @@ public final class JitCompiler {
 
 		InsnList instructions = node.instructions;
 		Map<LabelNode, LabelNode> copy = StreamSupport.stream(instructions.spliterator(), false)
-				.filter(x -> x instanceof LabelNode)
-				.collect(Collectors.toMap(x -> (LabelNode) x, __ -> new LabelNode()));
+			.filter(x -> x instanceof LabelNode)
+			.collect(Collectors.toMap(x -> (LabelNode) x, __ -> new LabelNode()));
 		Map<LabelNode, Label> labels = copy.entrySet()
-				.stream()
-				.collect(Collectors.toMap(Map.Entry::getKey, x -> x.getValue().getLabel()));
+			.stream()
+			.collect(Collectors.toMap(Map.Entry::getKey, x -> x.getValue().getLabel()));
 		List<TryCatchBlockNode> tryCatchBlocks = node.tryCatchBlocks;
 		Map<Label, List<TryCatchBlockNode>> handlers = tryCatchBlocks.stream()
-				.collect(Collectors.groupingBy(x -> labels.get(x.handler),
-						Collectors.mapping(Function.identity(), Collectors.toList())));
+			.collect(Collectors.groupingBy(x -> labels.get(x.handler),
+				Collectors.mapping(Function.identity(), Collectors.toList())));
 		for (TryCatchBlockNode block : tryCatchBlocks) {
 			jit.visitTryCatchBlock(
-					labels.get(block.start),
-					labels.get(block.end),
-					labels.get(block.handler),
-					VM_EXCEPTION.internalName
+				labels.get(block.start),
+				labels.get(block.end),
+				labels.get(block.handler),
+				VM_EXCEPTION.internalName
 			);
 		}
 		// Process instructions.
@@ -809,12 +804,12 @@ public final class JitCompiler {
 		if (value instanceof String) {
 			loadCompilerConstant(target.getOwner().getVM().getStringPool().intern((String) value));
 		} else if (value instanceof Long
-				|| value instanceof Double
-				|| value instanceof Integer
-				|| value instanceof Short
-				|| value instanceof Byte
-				|| value instanceof Character
-				|| value instanceof Float) {
+			|| value instanceof Double
+			|| value instanceof Integer
+			|| value instanceof Short
+			|| value instanceof Byte
+			|| value instanceof Character
+			|| value instanceof Float) {
 			jit.visitLdcInsn(value);
 		} else if (value instanceof Type) {
 			Type type = (Type) value;

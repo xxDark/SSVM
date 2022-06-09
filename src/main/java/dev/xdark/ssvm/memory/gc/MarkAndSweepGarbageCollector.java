@@ -38,7 +38,6 @@ import java.util.Map;
 public class MarkAndSweepGarbageCollector implements GarbageCollector {
 	protected static final byte MARK_NONE = 0;
 	private static final byte MARK_SET = 1;
-	private static final byte MARK_REF = 2;
 	private final Map<ObjectValue, GCHandle> handles = new HashMap<>();
 	private final VirtualMachine vm;
 
@@ -56,15 +55,11 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 
 	@Override
 	public GCHandle makeHandle(ObjectValue value) {
-		return handles.computeIfAbsent(value, k -> {
-			setMarkImpl(value, MARK_REF);
-			return new SimpleGCHandle() {
-				@Override
-				protected void deallocate() {
-					setMarkImpl(k, MARK_NONE);
-					handles.remove(k);
-				}
-			};
+		return handles.computeIfAbsent(value, k -> new SimpleGCHandle() {
+			@Override
+			protected void deallocate() {
+				handles.remove(k);
+			}
 		});
 	}
 
@@ -108,6 +103,9 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 				}
 			}
 		}
+		for (ObjectValue value : handles.keySet()) {
+			setMark(value);
+		}
 		MemoryAllocator allocator = vm.getMemoryAllocator();
 		allObjects.removeIf(x -> {
 			if (x.isNull()) {
@@ -117,9 +115,7 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 			MemoryData data = block.getData();
 			byte mark = data.readByte(0L);
 			boolean result = mark == MARK_NONE;
-			if (mark != MARK_REF) {
-				data.writeByte(0L, MARK_NONE);
-			}
+			data.writeByte(0L, MARK_NONE);
 			if (result) {
 				if (!allocator.freeHeap(block.getAddress())) {
 					throw new PanicException("Failed to free heap memory");
@@ -138,46 +134,42 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 			if (!klass.shouldBeInitialized()) {
 				MemoryBlock memory = klass.getOop().getMemory();
 				address.set(memory.getAddress());
-				markAllFields(klass.getStaticFieldLayout(), memory.getData(), memoryManager.getStaticOffset(klass), MARK_SET);
+				markAllFields(klass.getStaticFieldLayout(), memory.getData(), memoryManager.getStaticOffset(klass));
 			}
 		}
 	}
 
 	private void markClass(JavaClass klass) {
 		InstanceValue oop = klass.getOop();
-		setMark(oop, MARK_SET);
+		setMark(oop);
 		ArrayJavaClass arrayClass = klass.getArrayClass();
 		while (arrayClass != null) {
-			setMark(arrayClass.getOop(), MARK_SET);
+			setMark(arrayClass.getOop());
 			arrayClass = arrayClass.getArrayClass();
 		}
 	}
 
 	private void tryMark(Value value) {
 		if (value instanceof ObjectValue) {
-			setMark((ObjectValue) value, MARK_SET);
+			setMark((ObjectValue) value);
 		}
 	}
 
 	private void setMark(ObjectValue value) {
-		setMark(value, MARK_SET);
-	}
-
-	private void setMark(ObjectValue value, byte markToSet) {
 		if (!value.isNull()) {
 			MemoryData data = value.getMemory().getData();
 			byte mark = data.readByte(0L);
-			if (mark == MARK_REF || mark == MARK_SET) {
-				// Already marked/referenced outside of the VM
+			if (mark == MARK_SET) {
+				// Already marked
 				return;
 			}
-			setMarkImpl(value, markToSet);
+			setMarkImpl(value);
 		}
 	}
 
-	private void setMarkImpl(ObjectValue value, byte markToSet) {
+	private void setMarkImpl(ObjectValue value) {
 		MemoryData data = value.getMemory().getData();
-		data.writeByte(0L, markToSet);
+		data.writeByte(0L, MARK_SET);
 		MemoryManager memoryManager = vm.getMemoryManager();
 		long offset = memoryManager.valueBaseOffset(value);
 		long objectSize = memoryManager.objectSize();
@@ -185,21 +177,21 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 			ArrayValue arrayValue = (ArrayValue) value;
 			if (!arrayValue.getJavaClass().getComponentType().isPrimitive()) {
 				for (int i = 0, j = arrayValue.getLength(); i < j; i++) {
-					setMark(memoryManager.getValue(data.readLong(offset + objectSize * (long) i)), markToSet);
+					setMark(memoryManager.getValue(data.readLong(offset + objectSize * (long) i)));
 				}
 			}
 		} else {
 			InstanceValue instanceValue = (InstanceValue) value;
 			InstanceJavaClass klass = instanceValue.getJavaClass();
-			markAllFields(klass.getVirtualFieldLayout(), data, offset, markToSet);
+			markAllFields(klass.getVirtualFieldLayout(), data, offset);
 		}
 	}
 
-	private void markAllFields(FieldLayout layout, MemoryData data, long offset, byte markToSet) {
+	private void markAllFields(FieldLayout layout, MemoryData data, long offset) {
 		MemoryManager memoryManager = vm.getMemoryManager();
 		for (JavaField field : layout.getAll()) {
 			if (field.getType().getSort() >= Type.ARRAY) {
-				setMark(memoryManager.getValue(data.readLong(offset + field.getOffset())), markToSet);
+				setMark(memoryManager.getValue(data.readLong(offset + field.getOffset())));
 			}
 		}
 	}

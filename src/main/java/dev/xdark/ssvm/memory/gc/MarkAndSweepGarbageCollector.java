@@ -39,6 +39,7 @@ import java.util.Map;
 public class MarkAndSweepGarbageCollector implements GarbageCollector {
 	protected static final byte MARK_NONE = 0;
 	private static final byte MARK_SET = 1;
+	private static final byte MARK_GLOBAL_REF = 2;
 	private final Map<ObjectValue, GCHandle> handles = new HashMap<>();
 	private final VirtualMachine vm;
 
@@ -65,13 +66,23 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 	}
 
 	@Override
+	public GCHandle getHandle(ObjectValue value) {
+		return handles.get(value);
+	}
+
+	@Override
+	public void makeGlobalReference(ObjectValue value) {
+		value.getMemory().getData().writeByte(0, MARK_GLOBAL_REF);
+	}
+
+	@Override
 	public boolean invoke() {
 		VirtualMachine vm = this.vm;
 		SafePoint safePoint = vm.getSafePoint();
 		ThreadManager threadManager = vm.getThreadManager();
 		threadManager.suspendAll();
 		try {
-			if (!safePoint.tryAcquire()) {
+			if (!safePoint.tryLock()) {
 				return false;
 			}
 			try {
@@ -122,7 +133,9 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 					MemoryData data = block.getData();
 					byte mark = data.readByte(0L);
 					boolean result = mark == MARK_NONE;
-					data.writeByte(0L, MARK_NONE);
+					if (mark != MARK_GLOBAL_REF) {
+						data.writeByte(0L, MARK_NONE);
+					}
 					if (result) {
 						if (!allocator.freeHeap(block.getAddress())) {
 							throw new PanicException("Failed to free heap memory");
@@ -176,13 +189,16 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 				// Already marked
 				return;
 			}
+			if (mark != MARK_GLOBAL_REF) {
+				// Don't rewrite MARK_GLOBAL_REF
+				data.writeByte(0L, MARK_SET);
+			}
 			setMarkImpl(value);
 		}
 	}
 
 	private void setMarkImpl(ObjectValue value) {
 		MemoryData data = value.getMemory().getData();
-		data.writeByte(0L, MARK_SET);
 		MemoryManager memoryManager = vm.getMemoryManager();
 		long offset = memoryManager.valueBaseOffset(value);
 		long objectSize = memoryManager.objectSize();

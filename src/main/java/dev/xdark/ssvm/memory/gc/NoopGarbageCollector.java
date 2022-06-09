@@ -31,6 +31,15 @@ public final class NoopGarbageCollector implements GarbageCollector {
 	}
 
 	@Override
+	public GCHandle getHandle(ObjectValue value) {
+		return null;
+	}
+
+	@Override
+	public void makeGlobalReference(ObjectValue value) {
+	}
+
+	@Override
 	public boolean invoke() {
 		return true;
 	}

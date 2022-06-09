@@ -26,5 +26,13 @@ public interface SafePoint {
 	 * @return {@code true} if the amount of unsafe
 	 * points was incremented.
 	 */
-	boolean tryAcquire();
+	boolean tryLock();
+
+	/**
+	 * Increments the amount of
+	 * {@literal unsafe} points.
+	 */
+	default AcquiredSafePoint acquire() {
+		return new AcquiredSafePoint(this);
+	}
 }

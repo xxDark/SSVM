@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.execution.asm;
 
 import dev.xdark.ssvm.asm.LinkedDynamicCallNode;
+import dev.xdark.ssvm.execution.AcquiredSafePoint;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
@@ -17,7 +18,11 @@ public final class InvokeDynamicLinkerProcessor implements InstructionProcessor<
 
 	@Override
 	public Result execute(InvokeDynamicInsnNode insn, ExecutionContext ctx) {
-		InstanceValue linked = ctx.getInvokeDynamicLinker().linkCall(insn, ctx.getOwner());
+		InstanceValue linked;
+		try (AcquiredSafePoint __ = ctx.getSafePoint().acquire()) {
+			linked = ctx.getInvokeDynamicLinker().linkCall(insn, ctx.getOwner());
+			ctx.getGarbageCollector().makeGlobalReference(linked);
+		}
 		// Rewrite instruction
 		InsnList list = ctx.getMethod().getNode().instructions;
 		list.set(insn, new LinkedDynamicCallNode(insn, linked));

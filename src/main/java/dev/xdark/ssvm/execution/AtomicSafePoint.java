@@ -31,7 +31,7 @@ public class AtomicSafePoint implements SafePoint {
 	}
 
 	@Override
-	public boolean tryAcquire() {
+	public boolean tryLock() {
 		return UPDATER.compareAndSet(this, 0L, 1L);
 	}
 }

@@ -1,7 +1,6 @@
 package dev.xdark.ssvm.memory.management;
 
 import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.memory.gc.GCHandle;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 
@@ -18,7 +17,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class SimpleStringPool implements StringPool {
 
-	private final Map<String, InternedString> pool = new HashMap<>();
+	private final Map<String, InstanceValue> pool = new HashMap<>();
 	private final ReadWriteLock lock = new ReentrantReadWriteLock();
 	private final VirtualMachine vm;
 
@@ -40,10 +39,10 @@ public class SimpleStringPool implements StringPool {
 			return pool.computeIfAbsent(value, k -> {
 				InstanceValue utf8 = (InstanceValue) vm.getHelper().newUtf8(value, false);
 				// We never return the string from the pool,
-				// so mark it with GC reference and keep it forever
-				GCHandle gcHandle = vm.getMemoryManager().getGarbageCollector().makeHandle(utf8);
-				return new InternedString(utf8, gcHandle);
-			}).reference;
+				// so mark it as global reference and keep forever
+				vm.getMemoryManager().getGarbageCollector().makeGlobalReference(utf8);
+				return utf8;
+			});
 		} finally {
 			lock.unlock();
 		}
@@ -59,20 +58,9 @@ public class SimpleStringPool implements StringPool {
 		Lock lock = this.lock.readLock();
 		lock.lock();
 		try {
-			InternedString ref = pool.get(str);
-			return ref == null ? null : ref.reference;
+			return pool.get(str);
 		} finally {
 			lock.unlock();
-		}
-	}
-
-	private static final class InternedString {
-		final InstanceValue reference;
-		final GCHandle gcHandle;
-
-		InternedString(InstanceValue reference, GCHandle gcHandle) {
-			this.reference = reference;
-			this.gcHandle = gcHandle;
 		}
 	}
 }

@@ -27,6 +27,22 @@ public interface GarbageCollector {
 	GCHandle makeHandle(ObjectValue value);
 
 	/**
+	 * Returns GC handle if there is any.
+	 *
+	 * @param value Value to get handle for.
+	 * @return GC handle or {@code null} if none.
+	 */
+	GCHandle getHandle(ObjectValue value);
+
+	/**
+	 * Marks an object as global reference, forever.
+	 *
+	 * @param value
+	 *      Object to mark as global reference.
+	 */
+	void makeGlobalReference(ObjectValue value);
+
+	/**
 	 * Invokes garbage collector.
 	 *
 	 * @return {@code true} if garbage collector

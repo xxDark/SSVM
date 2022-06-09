@@ -296,6 +296,13 @@ public class VMOperations {
 	 */
 	public void arrayStoreReference(ObjectValue array, int index, ObjectValue value) {
 		ArrayValue arrayValue = verifyArrayAccess(array, index);
+		if (!value.isNull()) {
+			JavaClass type = arrayValue.getJavaClass().getComponentType();
+			JavaClass valueType = value.getJavaClass();
+			if (!type.isAssignableFrom(valueType)) {
+				helper.throwException(symbols.java_lang_ArrayStoreException(), valueType.getName());
+			}
+		}
 		arrayValue.setValue(index, value);
 	}
 
@@ -1194,6 +1201,37 @@ public class VMOperations {
 		}
 	}
 	//</editor-fold>
+
+	/**
+	 * Attempts to unlock object monitor.
+	 * Throws VM exception if an object is {@code null},
+	 * or if current thread does not own the lock.
+	 *
+	 * @param value Object to unlock.
+	 */
+	public void monitorExit(ObjectValue value) {
+		VMHelper helper = this.helper;
+		if (!helper.<InstanceValue>checkNotNull(value).monitorExit()) {
+			helper.throwException(symbols.java_lang_IllegalMonitorStateException());
+		}
+	}
+
+	/**
+	 * Performs {@code instanceof} check.
+	 *
+	 * @param value     Value to perform the check on.
+	 * @param javaClass Target type.
+	 * @return {@code true} if comparison is success.
+	 */
+	public boolean instanceofCheck(ObjectValue value, JavaClass javaClass) {
+		if (javaClass instanceof InstanceJavaClass) {
+			((InstanceJavaClass) javaClass).loadNoResolve();
+		}
+		if (value.isNull()) {
+			return false;
+		}
+		return javaClass.isAssignableFrom(value.getJavaClass());
+	}
 
 	private ArrayValue verifyArrayAccess(ObjectValue value, int index) {
 		VMHelper helper = this.helper;

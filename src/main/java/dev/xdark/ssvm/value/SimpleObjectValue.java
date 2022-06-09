@@ -73,8 +73,13 @@ public class SimpleObjectValue implements ObjectValue {
 	}
 
 	@Override
-	public void monitorExit() {
+	public boolean monitorExit() {
+		ReentrantLock lock = this.lock;
+		if (!lock.isHeldByCurrentThread()) {
+			return false;
+		}
 		lock.unlock();
+		return true;
 	}
 
 	@Override

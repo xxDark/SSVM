@@ -114,7 +114,7 @@ public final class JitCompiler {
 	private static final Access LOAD = interfaceCall(LOCALS, "load", VALUE, J_INT);
 
 	// value static methods
-	private static final Access GET_NULL = getStatic(NULL, "INSTANCE", NULL);
+	private static final Access GET_NULL = staticCall(JIT_HELPER, "loadNull", VALUE, CTX);
 	private static final Access INT_OF = staticCall(INT, "of", INT, J_INT);
 	private static final Access LONG_OF = staticCall(LONG, "of", LONG, J_LONG);
 	private static final Access FLOAT_OF = specialCall(FLOAT, "<init>", J_VOID, J_FLOAT);
@@ -770,6 +770,7 @@ public final class JitCompiler {
 	}
 
 	private void loadNull() {
+		loadCtx();
 		GET_NULL.emit(jit);
 	}
 

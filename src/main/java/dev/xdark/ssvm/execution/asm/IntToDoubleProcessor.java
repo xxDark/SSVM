@@ -17,7 +17,7 @@ public final class IntToDoubleProcessor implements InstructionProcessor<Abstract
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
-		stack.pushWide(new DoubleValue(stack.pop().asDouble()));
+		stack.pushDouble(stack.pop().asDouble());
 		return Result.CONTINUE;
 	}
 }

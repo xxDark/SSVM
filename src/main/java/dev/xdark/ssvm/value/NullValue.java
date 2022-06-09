@@ -52,7 +52,7 @@ public final class NullValue implements ObjectValue {
 	}
 
 	@Override
-	public void monitorExit() {
+	public boolean monitorExit() {
 		throw new UnsupportedOperationException("Null value");
 	}
 

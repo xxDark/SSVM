@@ -4,8 +4,7 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.Stack;
-import dev.xdark.ssvm.jit.JitHelper;
-import dev.xdark.ssvm.value.Value;
+import dev.xdark.ssvm.util.MathUtil;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 /**
@@ -29,9 +28,9 @@ public final class FloatCompareProcessor implements InstructionProcessor<Abstrac
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
-		Value v2 = stack.pop();
-		Value v1 = stack.pop();
-		stack.push(JitHelper.compareFloat(v1, v2, nan));
+		float v2 = stack.popFloat();
+		float v1 = stack.popFloat();
+		stack.pushInt(MathUtil.compareFloat(v1, v2, nan));
 		return Result.CONTINUE;
 	}
 }

@@ -2,7 +2,6 @@ package dev.xdark.ssvm.mirror;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.Opcodes;
 

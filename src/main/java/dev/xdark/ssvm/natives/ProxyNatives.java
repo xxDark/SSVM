@@ -10,7 +10,6 @@ import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.JavaValue;
-import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;

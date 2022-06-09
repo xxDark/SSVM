@@ -2,7 +2,6 @@ package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.classloading.ClassParseResult;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;

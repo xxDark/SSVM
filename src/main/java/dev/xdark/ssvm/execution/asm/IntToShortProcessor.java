@@ -3,7 +3,8 @@ package dev.xdark.ssvm.execution.asm;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.jit.JitHelper;
+import dev.xdark.ssvm.execution.Stack;
+import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 /**
@@ -15,7 +16,13 @@ public final class IntToShortProcessor implements InstructionProcessor<AbstractI
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
-		JitHelper.intToShort(ctx);
+		Stack stack = ctx.getStack();
+		Value v = stack.peek();
+		short s = v.asShort();
+		if (v.asInt() != s) {
+			stack.pop();
+			stack.pushInt(s);
+		}
 		return Result.CONTINUE;
 	}
 }

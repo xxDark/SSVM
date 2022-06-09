@@ -1,10 +1,10 @@
 package dev.xdark.ssvm.execution;
 
 import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.jit.JitHelper;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.Disposable;
 import dev.xdark.ssvm.util.DisposeUtil;
+import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.TopValue;
 import dev.xdark.ssvm.value.Value;
@@ -92,10 +92,7 @@ public final class SimpleExecutionContext implements ExecutionContext, Disposabl
 
 	@Override
 	public void monitorEnter(ObjectValue value) {
-		if (value.isNull()) {
-			VirtualMachine vm = virtualMachine;
-			vm.getHelper().throwException(vm.getSymbols().java_lang_NullPointerException());
-		}
+		virtualMachine.getHelper().checkNotNull(value);
 		lockMap.compute(value, (v, count) -> {
 			v.monitorEnter();
 			if (count == null) {
@@ -108,20 +105,18 @@ public final class SimpleExecutionContext implements ExecutionContext, Disposabl
 
 	@Override
 	public void monitorExit(ObjectValue value) {
-		if (value.isNull()) {
-			VirtualMachine vm = virtualMachine;
-			vm.getHelper().throwException(vm.getSymbols().java_lang_NullPointerException());
-		}
+		VirtualMachine vm = virtualMachine;
+		VMHelper helper = vm.getHelper();
+		helper.checkNotNull(value);
 		Map<ObjectValue, LockCount> lockMap = this.lockMap;
 		LockCount count = lockMap.get(value);
 		if (count == null) {
-			VirtualMachine vm = this.virtualMachine;
-			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalMonitorStateException());
+			helper.throwException(vm.getSymbols().java_lang_IllegalMonitorStateException());
 		}
 		if (--count.value == 0) {
 			lockMap.remove(value);
 		}
-		JitHelper.tryMonitorExit(value, this);
+		vm.getOperations().monitorExit(value);
 	}
 
 	@Override

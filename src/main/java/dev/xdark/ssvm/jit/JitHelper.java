@@ -13,13 +13,8 @@ import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.util.InvokeDynamicLinker;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
-import dev.xdark.ssvm.value.DoubleValue;
-import dev.xdark.ssvm.value.FloatValue;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.LongValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 import lombok.AccessLevel;
@@ -42,210 +37,68 @@ public class JitHelper {
 	private static final Value[] NO_VALUES = {};
 
 	public int arrayLoadInt(Value array, int index, ExecutionContext ctx) {
-		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNull(array);
-		helper.rangeCheck(arr, index);
-		return arr.getInt(index);
-	}
-
-	public Value arrayLoadInt(Value array, Value index, ExecutionContext ctx) {
-		return IntValue.of(arrayLoadInt(array, index.asInt(), ctx));
+		return ctx.getOperations().arrayLoadInt((ObjectValue) array, index);
 	}
 
 	public long arrayLoadLong(Value array, int index, ExecutionContext ctx) {
-		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNull(array);
-		helper.rangeCheck(arr, index);
-		return arr.getLong(index);
-	}
-
-	public Value arrayLoadLong(Value array, Value index, ExecutionContext ctx) {
-		return LongValue.of(arrayLoadLong(array, index.asInt(), ctx));
+		return ctx.getOperations().arrayLoadLong((ObjectValue) array, index);
 	}
 
 	public float arrayLoadFloat(Value array, int index, ExecutionContext ctx) {
-		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNull(array);
-		helper.rangeCheck(arr, index);
-		return arr.getFloat(index);
-	}
-
-	public Value arrayLoadFloat(Value array, Value index, ExecutionContext ctx) {
-		return new FloatValue(arrayLoadFloat(array, index.asInt(), ctx));
+		return ctx.getOperations().arrayLoadFloat((ObjectValue) array, index);
 	}
 
 	public double arrayLoadDouble(Value array, int index, ExecutionContext ctx) {
-		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNull(array);
-		helper.rangeCheck(arr, index);
-		return arr.getDouble(index);
-	}
-
-	public Value arrayLoadDouble(Value array, Value index, ExecutionContext ctx) {
-		return new DoubleValue(arrayLoadDouble(array, index.asInt(), ctx));
+		return ctx.getOperations().arrayLoadDouble((ObjectValue) array, index);
 	}
 
 	public char arrayLoadChar(Value array, int index, ExecutionContext ctx) {
-		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNull(array);
-		helper.rangeCheck(arr, index);
-		return arr.getChar(index);
-	}
-
-	public Value arrayLoadChar(Value array, Value index, ExecutionContext ctx) {
-		return IntValue.of(arrayLoadChar(array, index.asInt(), ctx));
+		return ctx.getOperations().arrayLoadChar((ObjectValue) array, index);
 	}
 
 	public short arrayLoadShort(Value array, int index, ExecutionContext ctx) {
-		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNull(array);
-		helper.rangeCheck(arr, index);
-		return arr.getShort(index);
-	}
-
-	public Value arrayLoadShort(Value array, Value index, ExecutionContext ctx) {
-		return IntValue.of(arrayLoadShort(array, index.asInt(), ctx));
+		return ctx.getOperations().arrayLoadShort((ObjectValue) array, index);
 	}
 
 	public byte arrayLoadByte(Value array, int index, ExecutionContext ctx) {
-		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNull(array);
-		helper.rangeCheck(arr, index);
-		return arr.getByte(index);
-	}
+		return ctx.getOperations().arrayLoadByte((ObjectValue) array, index);
 
-	public Value arrayLoadByte(Value array, Value index, ExecutionContext ctx) {
-		return IntValue.of(arrayLoadByte(array, index.asInt(), ctx));
 	}
 
 	public Value arrayLoadValue(Value array, int index, ExecutionContext ctx) {
-		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNull(array);
-		helper.rangeCheck(arr, index);
-		return arr.getValue(index);
-	}
-
-	public Value arrayLoadValue(Value array, Value index, ExecutionContext ctx) {
-		return arrayLoadValue(array, index.asInt(), ctx);
+		return ctx.getOperations().arrayLoadReference((ObjectValue) array, index);
 	}
 
 	public void arrayStoreLong(Value array, int index, long value, ExecutionContext ctx) {
-		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNull(array);
-		helper.rangeCheck(arr, index);
-		arr.setLong(index, value);
-	}
-
-	public void arrayStoreLong(Value array, Value index, Value value, ExecutionContext ctx) {
-		arrayStoreLong(array, index.asInt(), value.asLong(), ctx);
+		ctx.getOperations().arrayStoreLong((ObjectValue) array, index, value);
 	}
 
 	public void arrayStoreDouble(Value array, int index, double value, ExecutionContext ctx) {
-		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNull(array);
-		helper.rangeCheck(arr, index);
-		arr.setDouble(index, value);
-	}
-
-	public void arrayStoreDouble(Value array, Value index, Value value, ExecutionContext ctx) {
-		arrayStoreDouble(array, index.asInt(), value.asDouble(), ctx);
+		ctx.getOperations().arrayStoreDouble((ObjectValue) array, index, value);
 	}
 
 	public void arrayStoreFloat(Value array, int index, float value, ExecutionContext ctx) {
-		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNull(array);
-		helper.rangeCheck(arr, index);
-		arr.setFloat(index, value);
-	}
-
-	public void arrayStoreFloat(Value array, Value index, Value value, ExecutionContext ctx) {
-		arrayStoreFloat(array, index.asInt(), value.asFloat(), ctx);
+		ctx.getOperations().arrayStoreFloat((ObjectValue) array, index, value);
 	}
 
 	public void arrayStoreInt(Value array, int index, int value, ExecutionContext ctx) {
-		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNull(array);
-		helper.rangeCheck(arr, index);
-		arr.setInt(index, value);
-	}
-
-	public void arrayStoreInt(Value array, Value index, Value value, ExecutionContext ctx) {
-		arrayStoreInt(array, index.asInt(), value.asInt(), ctx);
+		ctx.getOperations().arrayStoreInt((ObjectValue) array, index, value);
 	}
 
 	public void arrayStoreChar(Value array, int index, char value, ExecutionContext ctx) {
-		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNull(array);
-		helper.rangeCheck(arr, index);
-		arr.setChar(index, value);
-	}
-
-	public void arrayStoreChar(Value array, Value index, Value value, ExecutionContext ctx) {
-		arrayStoreChar(array, index.asInt(), value.asChar(), ctx);
+		ctx.getOperations().arrayStoreChar((ObjectValue) array, index, value);
 	}
 
 	public void arrayStoreShort(Value array, int index, short value, ExecutionContext ctx) {
-		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNull(array);
-		helper.rangeCheck(arr, index);
-		arr.setShort(index, value);
-	}
-
-	public void arrayStoreShort(Value array, Value index, Value value, ExecutionContext ctx) {
-		arrayStoreShort(array, index.asInt(), value.asShort(), ctx);
+		ctx.getOperations().arrayStoreShort((ObjectValue) array, index, value);
 	}
 
 	public void arrayStoreByte(Value array, int index, byte value, ExecutionContext ctx) {
-		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNull(array);
-		helper.rangeCheck(arr, index);
-		arr.setByte(index, value);
-	}
-
-	public void arrayStoreByte(Value array, Value index, Value value, ExecutionContext ctx) {
-		arrayStoreByte(array, index.asInt(), value.asByte(), ctx);
+		ctx.getOperations().arrayStoreByte((ObjectValue) array, index, value);
 	}
 
 	public void arrayStoreValue(Value array, int index, Value value, ExecutionContext ctx) {
-		VMHelper helper = ctx.getHelper();
-		ArrayValue arr = helper.checkNotNull(array);
-		helper.rangeCheck(arr, index);
-
-		ObjectValue o = (ObjectValue) value;
-		if (!value.isNull()) {
-			JavaClass type = arr.getJavaClass().getComponentType();
-			JavaClass valueType = o.getJavaClass();
-			if (!type.isAssignableFrom(valueType)) {
-				VMSymbols symbols = ctx.getVM().getSymbols();
-				helper.throwException(symbols.java_lang_ArrayStoreException(), valueType.getName());
-			}
-		}
-
-		arr.setValue(index, (ObjectValue) value);
-	}
-
-	public void arrayStoreValue(Value array, Value index, Value value, ExecutionContext ctx) {
-		arrayStoreValue(array, index.asInt(), value, ctx);
-	}
-
-	public Value compareFloat(Value a, Value b, int nan) {
-		float v1 = a.asFloat();
-		float v2 = b.asFloat();
-		if (Float.isNaN(v1) || Float.isNaN(v2)) {
-			return IntValue.of(nan);
-		} else {
-			return IntValue.of(Float.compare(v1, v2));
-		}
-	}
-
-	public Value compareDouble(Value a, Value b, int nan) {
-		double v1 = a.asDouble();
-		double v2 = b.asDouble();
-		if (Double.isNaN(v1) || Double.isNaN(v2)) {
-			return IntValue.of(nan);
-		} else {
-			return IntValue.of(Double.compare(v1, v2));
-		}
+		ctx.getOperations().arrayStoreReference((ObjectValue) array, index, (ObjectValue) value);
 	}
 
 	public Value getStaticA(String owner, String name, String desc, ExecutionContext ctx) {
@@ -447,12 +300,6 @@ public class JitHelper {
 	public boolean getFieldZ(Value value, long offset, ExecutionContext ctx) {
 		ObjectValue o = nonNull(value, ctx);
 		return ctx.getVM().getMemoryManager().readBoolean(o, offset);
-	}
-
-	public Value getFieldGeneric(String owner, String name, String desc, ExecutionContext ctx) {
-		ObjectValue value = ctx.getStack().pop();
-		InstanceJavaClass klass = getOrFindInstanceClass(owner, ctx);
-		return ctx.getOperations().getGenericField(value, klass, name, desc);
 	}
 
 	public void putFieldA(Value instance, Value value, Object owner, String name, String desc, ExecutionContext ctx) {
@@ -737,15 +584,7 @@ public class JitHelper {
 	}
 
 	public boolean instanceofResult(Value value, Object javaClass, ExecutionContext ctx) {
-		VirtualMachine vm = ctx.getVM();
-		if (javaClass instanceof InstanceJavaClass) {
-			((InstanceJavaClass) javaClass).loadNoResolve();
-		}
-		if (value.isNull()) {
-			return false;
-		} else {
-			return ((JavaClass) javaClass).isAssignableFrom(((ObjectValue) value).getJavaClass());
-		}
+		return ctx.getOperations().instanceofCheck((ObjectValue) value, (JavaClass) javaClass);
 	}
 
 	public boolean instanceofResult(Value value, String desc, ExecutionContext ctx) {
@@ -754,38 +593,12 @@ public class JitHelper {
 		return instanceofResult(value, javaClass, ctx);
 	}
 
-	public void instanceofResult(String desc, ExecutionContext ctx) {
-		VirtualMachine vm = ctx.getVM();
-		Stack stack = ctx.getStack();
-		ObjectValue value = stack.pop();
-		stack.push(instanceofResult(value, desc, ctx) ? IntValue.ONE : IntValue.ZERO);
-	}
-
 	public void monitorEnter(Value value, ExecutionContext ctx) {
 		ctx.monitorEnter((ObjectValue) value);
 	}
 
-	public void monitorEnter(ExecutionContext ctx) {
-		monitorEnter(ctx.getStack().pop(), ctx);
-	}
-
 	public void monitorExit(Value value, ExecutionContext ctx) {
 		ctx.monitorExit((ObjectValue) value);
-	}
-
-	public void monitorExit(ExecutionContext ctx) {
-		monitorExit(ctx.getStack().pop(), ctx);
-	}
-
-	public Value multiNewArray(String desc, int dimensions, ExecutionContext ctx) {
-		VMHelper helper = ctx.getHelper();
-		JavaClass type = helper.tryFindClass(ctx.getOwner().getClassLoader(), desc, true);
-		Stack stack = ctx.getStack();
-		int[] lengths = new int[dimensions];
-		while (dimensions-- != 0) {
-			lengths[dimensions] = stack.pop().asInt();
-		}
-		return helper.newMultiArray((ArrayJavaClass) type, lengths);
 	}
 
 	public Value multiNewArray(Object klass, int[] dimensions, ExecutionContext ctx) {
@@ -806,36 +619,6 @@ public class JitHelper {
 
 	public Value methodLdc(String desc, ExecutionContext ctx) {
 		return ctx.getHelper().valueFromLdc(Type.getMethodType(desc));
-	}
-
-	public void intToByte(ExecutionContext ctx) {
-		Stack stack = ctx.getStack();
-		Value v = stack.peek();
-		byte b = v.asByte();
-		if (v.asInt() != b) {
-			stack.pop();
-			stack.push(IntValue.of(b));
-		}
-	}
-
-	public void intToChar(ExecutionContext ctx) {
-		Stack stack = ctx.getStack();
-		Value v = stack.peek();
-		char c = v.asChar();
-		if (v.asInt() != c) {
-			stack.pop();
-			stack.push(IntValue.of(c));
-		}
-	}
-
-	public void intToShort(ExecutionContext ctx) {
-		Stack stack = ctx.getStack();
-		Value v = stack.peek();
-		short s = v.asShort();
-		if (v.asInt() != s) {
-			stack.pop();
-			stack.push(IntValue.of(s));
-		}
 	}
 
 	public VMException exceptionCaught(VMException ex, Object $classes, ExecutionContext ctx) {
@@ -875,20 +658,15 @@ public class JitHelper {
 		return invokeDynamicLinker.dynamicCall(args, result.desc, result.handle);
 	}
 
+	public Value loadNull(ExecutionContext ctx) {
+		return ctx.getMemoryManager().nullValue();
+	}
+
 	private static JavaMethod resolveStaticMethod(String owner, String name, String desc, ExecutionContext ctx) {
 		VirtualMachine vm = ctx.getVM();
 		VMHelper helper = vm.getHelper();
 		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
 		return vm.getLinkResolver().resolveStaticMethod(klass, name, desc);
-	}
-
-	public void tryMonitorExit(ObjectValue value, ExecutionContext ctx) {
-		try {
-			value.monitorExit();
-		} catch (IllegalMonitorStateException ignored) {
-			VirtualMachine vm = ctx.getVM();
-			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalMonitorStateException());
-		}
 	}
 
 	private static InstanceJavaClass getOrFindInstanceClass(Object owner, ExecutionContext ctx) {

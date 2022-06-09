@@ -14,8 +14,11 @@ public interface Synchronizable {
 
 	/**
 	 * Unlocks the object.
+	 *
+	 * @return {@code true} if an object was unlocked,
+	 * or {@code false} if thread does not hold the monitor.
 	 */
-	void monitorExit();
+	boolean monitorExit();
 
 	/**
 	 * Causes the current thread to wait until it is awakened,

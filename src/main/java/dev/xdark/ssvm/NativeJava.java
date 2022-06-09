@@ -1,7 +1,6 @@
 package dev.xdark.ssvm;
 
 //<editor-fold desc="Imports">
-
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.asm.VMOpcodes;
 import dev.xdark.ssvm.execution.rewrite.BooleanArrayProcessor;
@@ -20,7 +19,6 @@ import dev.xdark.ssvm.execution.rewrite.LdcProcessor;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.natives.*;
 import dev.xdark.ssvm.symbol.VMSymbols;
-import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.tree.FieldNode;
 

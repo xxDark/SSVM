@@ -4,8 +4,7 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.Stack;
-import dev.xdark.ssvm.jit.JitHelper;
-import dev.xdark.ssvm.value.Value;
+import dev.xdark.ssvm.util.MathUtil;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 /**
@@ -29,9 +28,9 @@ public final class DoubleCompareProcessor implements InstructionProcessor<Abstra
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
-		Value v2 = stack.popWide();
-		Value v1 = stack.popWide();
-		stack.push(JitHelper.compareDouble(v1, v2, nan));
+		double v2 = stack.popDouble();
+		double v1 = stack.popDouble();
+		stack.pushInt(MathUtil.compareDouble(v1, v2, nan));
 		return Result.CONTINUE;
 	}
 }

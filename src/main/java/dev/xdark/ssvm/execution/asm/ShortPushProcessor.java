@@ -3,7 +3,6 @@ package dev.xdark.ssvm.execution.asm;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.value.IntValue;
 import org.objectweb.asm.tree.IntInsnNode;
 
 /**
@@ -15,7 +14,7 @@ public final class ShortPushProcessor implements InstructionProcessor<IntInsnNod
 
 	@Override
 	public Result execute(IntInsnNode insn, ExecutionContext ctx) {
-		ctx.getStack().push(IntValue.of(insn.operand));
+		ctx.getStack().pushInt(insn.operand);
 		return Result.CONTINUE;
 	}
 }

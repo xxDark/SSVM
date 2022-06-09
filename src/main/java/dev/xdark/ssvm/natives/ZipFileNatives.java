@@ -13,7 +13,6 @@ import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.LongValue;
-import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 

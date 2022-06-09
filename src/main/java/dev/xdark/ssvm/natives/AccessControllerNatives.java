@@ -5,7 +5,6 @@ import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
 

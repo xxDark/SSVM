@@ -3,7 +3,6 @@ package dev.xdark.ssvm.symbol;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;

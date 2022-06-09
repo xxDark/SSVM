@@ -6,7 +6,6 @@ import dev.xdark.ssvm.classloading.ClassLoaders;
 import dev.xdark.ssvm.classloading.ClassParseResult;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
-import dev.xdark.ssvm.value.NullValue;
 
 /**
  * Holder for the boot class loader.

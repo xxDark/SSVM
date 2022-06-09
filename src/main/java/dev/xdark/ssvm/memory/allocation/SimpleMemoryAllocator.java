@@ -152,10 +152,9 @@ public class SimpleMemoryAllocator implements MemoryAllocator {
 		if (entry != null) {
 			MemoryBlock block = entry.getValue();
 			long diff = address - block.getAddress();
-			if (heap != block.isHeap() || diff >= block.getData().length()) {
-				return null;
+			if (heap == block.isHeap() && diff < block.getData().length()) {
+				return entry;
 			}
-			return entry;
 		}
 		return null;
 	}
@@ -180,7 +179,7 @@ public class SimpleMemoryAllocator implements MemoryAllocator {
 			}
 			Map.Entry<MemoryAddress, MemoryBlock> presentAddress = allocatedBlocks.floorEntry(address);
 			if (presentAddress == null) {
-				break;
+				presentAddress = allocatedBlocks.firstEntry();
 			}
 			MemoryBlock block = presentAddress.getValue();
 			long existingAddress = block.getAddress();

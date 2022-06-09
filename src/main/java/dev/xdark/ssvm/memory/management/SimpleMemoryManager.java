@@ -19,7 +19,6 @@ import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.SimpleArrayValue;
 import dev.xdark.ssvm.value.SimpleInstanceValue;
 import dev.xdark.ssvm.value.SimpleJavaValue;
-import dev.xdark.ssvm.value.Value;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -145,13 +144,13 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public synchronized ObjectValue readValue(ObjectValue object, long offset) {
+	public ObjectValue readValue(ObjectValue object, long offset) {
 		long address = object.getMemory().getData().readLong(offset);
 		return objects.get(tlcAddress(address));
 	}
 
 	@Override
-	public synchronized JavaClass readClass(ObjectValue object) {
+	public JavaClass readClass(ObjectValue object) {
 		ObjectValue value = objects.get(tlcAddress(object.getMemory().getData().readLong(0)));
 		if (!(value instanceof JavaValue)) {
 			throw new PanicException("Segfault");
@@ -214,7 +213,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public synchronized ObjectValue getAndWriteValue(ObjectValue object, long offset, ObjectValue value) {
+	public ObjectValue getAndWriteValue(ObjectValue object, long offset, ObjectValue value) {
 		MemoryData data = object.getMemory().getData();
 		ObjectValue old = objects.get(tlcAddress(data.readLong(offset)));
 		data.writeLong(offset, value.getMemory().getAddress());
@@ -263,36 +262,60 @@ public class SimpleMemoryManager implements MemoryManager {
 	@Override
 	public int sizeOfType(JavaClass javaClass) {
 		VMPrimitives primitives = vm.getPrimitives();
-		if (javaClass == primitives.longPrimitive() || javaClass == primitives.doublePrimitive()) {
-			return 8;
+		if (javaClass == primitives.longPrimitive()) {
+			return longSize();
 		}
-		if (javaClass == primitives.intPrimitive() || javaClass == primitives.floatPrimitive()) {
-			return 4;
+		if (javaClass == primitives.doublePrimitive()) {
+			return doubleSize();
 		}
-		if (javaClass == primitives.charPrimitive() || javaClass == primitives.shortPrimitive()) {
+		if (javaClass == primitives.intPrimitive()) {
+			return intSize();
+		}
+		if (javaClass == primitives.floatPrimitive()) {
+			return floatSize();
+		}
+		if (javaClass == primitives.charPrimitive()) {
+			return charSize();
+		}
+		if (javaClass == primitives.shortPrimitive()) {
 			return 2;
 		}
-		if (javaClass == primitives.bytePrimitive() || javaClass == primitives.booleanPrimitive()) {
-			return 1;
+		if (javaClass == primitives.bytePrimitive()) {
+			return byteSize();
 		}
-		return 8;
+		if (javaClass == primitives.booleanPrimitive()) {
+			return booleanSize();
+		}
+		return objectSize();
 	}
 
 	@Override
 	public int sizeOfType(Class<?> javaClass) {
-		if (javaClass == long.class || javaClass == double.class) {
-			return 8;
+		if (javaClass == long.class) {
+			return longSize();
 		}
-		if (javaClass == int.class || javaClass == float.class) {
-			return 4;
+		if (javaClass == double.class) {
+			return doubleSize();
 		}
-		if (javaClass == char.class || javaClass == short.class) {
+		if (javaClass == int.class) {
+			return intSize();
+		}
+		if (javaClass == float.class) {
+			return floatSize();
+		}
+		if (javaClass == char.class) {
+			return charSize();
+		}
+		if (javaClass == short.class) {
 			return 2;
 		}
-		if (javaClass == byte.class || javaClass == boolean.class) {
-			return 1;
+		if (javaClass == byte.class) {
+			return byteSize();
 		}
-		return 8;
+		if (javaClass == boolean.class) {
+			return booleanSize();
+		}
+		return objectSize();
 	}
 
 	@Override

@@ -117,6 +117,7 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 								for (Value value : ctx.getLocals().getTable()) {
 									tryMark(value);
 								}
+								tryMark(ctx.getResult());
 							}
 						}
 					}

@@ -27,12 +27,4 @@ public interface SafePoint {
 	 * points was incremented.
 	 */
 	boolean tryLock();
-
-	/**
-	 * Increments the amount of
-	 * {@literal unsafe} points.
-	 */
-	default AcquiredSafePoint acquire() {
-		return new AcquiredSafePoint(this);
-	}
 }

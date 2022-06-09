@@ -99,6 +99,11 @@ public final class ArrayJavaClass implements JavaClass {
 	}
 
 	@Override
+	public ArrayJavaClass getArrayClass() {
+		return arrayClass;
+	}
+
+	@Override
 	public void initialize() {
 	}
 

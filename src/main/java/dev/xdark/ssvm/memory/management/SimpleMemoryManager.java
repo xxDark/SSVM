@@ -6,6 +6,8 @@ import dev.xdark.ssvm.memory.allocation.MemoryAddress;
 import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
 import dev.xdark.ssvm.memory.allocation.MemoryBlock;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
+import dev.xdark.ssvm.memory.gc.GarbageCollector;
+import dev.xdark.ssvm.memory.gc.NoopGarbageCollector;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
@@ -33,9 +35,11 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	private final Map<MemoryAddress, ObjectValue> objects = new HashMap<>();
 
-	private final VirtualMachine vm;
+	protected final VirtualMachine vm;
 	private final MemoryAllocator allocator;
+	private final GarbageCollector garbageCollector;
 	private final NullValue nullValue;
+	private final int gcReserved;
 	private final int objectHeaderSize;
 	private final int arrayLengthOffset;
 
@@ -46,11 +50,15 @@ public class SimpleMemoryManager implements MemoryManager {
 		this.vm = vm;
 		MemoryAllocator allocator = vm.getMemoryAllocator();
 		this.allocator = allocator;
+		GarbageCollector garbageCollector = createGarbageCollector();
+		this.garbageCollector = garbageCollector;
 		MemoryBlock emptyHeapBlock = allocator.emptyHeapBlock();
 		NullValue value = new NullValue(emptyHeapBlock);
 		objects.put(MemoryAddress.of(emptyHeapBlock.getAddress()), value);
 		nullValue = value;
-		int addressSize = allocator.addressSize();
+		int gcReserved = garbageCollector.reservedHeaderSize();
+		this.gcReserved = gcReserved;
+		int addressSize = allocator.addressSize() + gcReserved; // Reserve space for GC
 		objectHeaderSize = addressSize + 4;
 		arrayLengthOffset = addressSize;
 	}
@@ -81,11 +89,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	public InstanceValue newInstance(InstanceJavaClass javaClass) {
 		InstanceValue value = tryNewInstance(javaClass);
 		if (value == null) {
-			gc();
-			value = tryNewInstance(javaClass);
-			if (value == null) {
-				outOfMemory();
-			}
+			outOfMemory();
 		}
 		return value;
 	}
@@ -106,11 +110,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	public <V> JavaValue<V> newJavaInstance(InstanceJavaClass javaClass, V value) {
 		JavaValue<V> wrapper = tryNewJavaInstance(javaClass, value);
 		if (wrapper == null) {
-			gc();
-			wrapper = tryNewJavaInstance(javaClass, value);
-			if (wrapper == null) {
-				outOfMemory();
-			}
+			outOfMemory();
 		}
 		return wrapper;
 	}
@@ -123,6 +123,7 @@ public class SimpleMemoryManager implements MemoryManager {
 		}
 		SimpleJavaValue<InstanceJavaClass> wrapper = new SimpleJavaValue<>(this, memory, javaClass);
 		javaClass.setOop(wrapper);
+		//noinspection ConstantConditions
 		setClass(memory, javaClass);
 		objects.put(MemoryAddress.of(memory.getAddress()), wrapper);
 		return wrapper;
@@ -145,11 +146,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	public ArrayValue newArray(ArrayJavaClass javaClass, int length) {
 		ArrayValue value = tryNewArray(javaClass, length);
 		if (value == null) {
-			gc();
-			value = tryNewArray(javaClass, length);
-			if (value == null) {
-				outOfMemory();
-			}
+			outOfMemory();
 		}
 		return value;
 	}
@@ -202,7 +199,7 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public JavaClass readClass(ObjectValue object) {
-		ObjectValue value = objects.get(tlcAddress(object.getMemory().getData().readLong(0)));
+		ObjectValue value = objects.get(tlcAddress(object.getMemory().getData().readLong(gcReserved)));
 		if (!(value instanceof JavaValue)) {
 			throw new PanicException("Segfault");
 		}
@@ -288,11 +285,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	public <C extends JavaClass> JavaValue<C> newClassOop(C javaClass) {
 		JavaValue<C> value = tryNewClassOop(javaClass);
 		if (value == null) {
-			gc();
-			value = tryNewClassOop(javaClass);
-			if (value == null) {
-				outOfMemory();
-			}
+			outOfMemory();
 		}
 		return value;
 	}
@@ -449,8 +442,17 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public void gc() {
-		// NO-OP
+	public GarbageCollector getGarbageCollector() {
+		return garbageCollector;
+	}
+
+	/**
+	 * Creates new garbage collector.
+	 *
+	 * @return garbage collector.
+	 */
+	protected GarbageCollector createGarbageCollector() {
+		return new NoopGarbageCollector();
 	}
 
 	private void outOfMemory() {
@@ -475,7 +477,7 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	private void setClass(MemoryBlock memory, JavaClass jc) {
 		long address = jc.getOop().getMemory().getAddress();
-		memory.getData().writeLong(0L, address);
+		memory.getData().writeLong(gcReserved, address);
 	}
 
 	private static MemoryAddress tlcAddress(long addr) {

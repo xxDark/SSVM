@@ -19,12 +19,15 @@ public class NativeThreadManager implements ThreadManager {
 	private final Map<Thread, VMThread> systemThreads = new WeakHashMap<>();
 	private final Map<InstanceValue, NativeVMThread> vmThreads = new WeakHashMap<>();
 	private final VirtualMachine vm;
+	private final ThreadGroup threadGroup;
 
 	/**
 	 * @param vm VM instance.
+	 * @param threadGroup Thread group to use.
 	 */
-	public NativeThreadManager(VirtualMachine vm) {
+	public NativeThreadManager(VirtualMachine vm, ThreadGroup threadGroup) {
 		this.vm = vm;
+		this.threadGroup =threadGroup;
 	}
 
 	@Override
@@ -134,7 +137,7 @@ public class NativeThreadManager implements ThreadManager {
 	 * @return created thread.
 	 */
 	protected NativeVMThread createThread(InstanceValue value) {
-		return new NativeVMThread(value);
+		return new NativeVMThread(value, threadGroup);
 	}
 
 	/**

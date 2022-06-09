@@ -25,6 +25,17 @@ public class NativeJavaThread extends Thread {
 	/**
 	 * @param oop      Thread oop.
 	 * @param vmThread VM thread.
+	 * @param group Thread group.
+	 */
+	public NativeJavaThread(InstanceValue oop, VMThread vmThread, ThreadGroup group) {
+		super(group, (Runnable) null);
+		this.oop = oop;
+		this.vmThread = vmThread;
+	}
+
+	/**
+	 * @param oop      Thread oop.
+	 * @param vmThread VM thread.
 	 */
 	public NativeJavaThread(InstanceValue oop, VMThread vmThread) {
 		this.oop = oop;

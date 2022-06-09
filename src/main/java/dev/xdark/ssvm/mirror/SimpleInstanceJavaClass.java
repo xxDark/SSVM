@@ -369,6 +369,11 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	}
 
 	@Override
+	public ArrayJavaClass getArrayClass() {
+		return arrayClass;
+	}
+
+	@Override
 	public VirtualMachine getVM() {
 		return vm;
 	}

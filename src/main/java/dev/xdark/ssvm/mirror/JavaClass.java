@@ -88,6 +88,13 @@ public interface JavaClass {
 	ArrayJavaClass newArrayClass();
 
 	/**
+	 * Returns array class if present.
+	 *
+	 * @return array class.
+	 */
+	ArrayJavaClass getArrayClass();
+
+	/**
 	 * Initializes class data.
 	 */
 	void initialize();

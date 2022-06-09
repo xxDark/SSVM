@@ -94,6 +94,11 @@ public final class PrimitiveClass implements JavaClass {
 	}
 
 	@Override
+	public ArrayJavaClass getArrayClass() {
+		return arrayClass;
+	}
+
+	@Override
 	public void initialize() {
 	}
 

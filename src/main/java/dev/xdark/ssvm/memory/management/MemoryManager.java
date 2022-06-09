@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.memory.management;
 
+import dev.xdark.ssvm.memory.gc.GarbageCollector;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
@@ -455,7 +456,7 @@ public interface MemoryManager {
 	void writeDefaults(ObjectValue value);
 
 	/**
-	 * Invokes garbage collection.
+	 * @return garbage collector.
 	 */
-	void gc();
+	GarbageCollector getGarbageCollector();
 }

@@ -31,6 +31,7 @@ public final class NoopGarbageCollector implements GarbageCollector {
 	}
 
 	@Override
-	public void invoke() {
+	public boolean invoke() {
+		return true;
 	}
 }

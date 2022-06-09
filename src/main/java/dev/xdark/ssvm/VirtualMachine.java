@@ -12,6 +12,8 @@ import dev.xdark.ssvm.classloading.SimpleClassLoaders;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.ExecutionContextOptions;
 import dev.xdark.ssvm.execution.ExecutionEngine;
+import dev.xdark.ssvm.execution.NoopSafePoint;
+import dev.xdark.ssvm.execution.SafePoint;
 import dev.xdark.ssvm.execution.SimpleExecutionEngine;
 import dev.xdark.ssvm.fs.FileDescriptorManager;
 import dev.xdark.ssvm.fs.SimpleFileDescriptorManager;
@@ -85,6 +87,7 @@ public class VirtualMachine {
 	private final Map<String, String> env;
 	private final VMInitializer initializer;
 	private final ExecutionEngine executionEngine;
+	private final SafePoint safePoint;
 	private final VMOperations operations;
 	private final LinkResolver linkResolver;
 	private final InvokeDynamicLinker invokeDynamicLinker;
@@ -96,6 +99,7 @@ public class VirtualMachine {
 		ClassLoaders classLoaders = createClassLoaders();
 		this.classLoaders = classLoaders;
 		memoryAllocator = createMemoryAllocator();
+		safePoint = createSafePoint();
 		memoryManager = createMemoryManager();
 		bootClassLoader = new BootClassLoaderHolder(this, createBootClassLoader(), classLoaders.setClassLoaderData(memoryManager.nullValue()));
 		vmInterface = new VMInterface();
@@ -481,6 +485,15 @@ public class VirtualMachine {
 	}
 
 	/**
+	 * Returns safepoint mechanism.
+	 *
+	 * @return safepoint mechanism.
+	 */
+	public SafePoint getSafePoint() {
+		return safePoint;
+	}
+
+	/**
 	 * Returns system thread group.
 	 *
 	 * @return system thread group.
@@ -740,6 +753,16 @@ public class VirtualMachine {
 	 */
 	protected ExecutionEngine createExecutionEngine() {
 		return new SimpleExecutionEngine(this);
+	}
+
+	/**
+	 * Creates safepoint mechanism.
+	 * One may override this method.
+	 *
+	 * @return safepoint mechanism.
+	 */
+	protected SafePoint createSafePoint() {
+		return new NoopSafePoint();
 	}
 
 	private InstanceJavaClass internalLink(String name) {

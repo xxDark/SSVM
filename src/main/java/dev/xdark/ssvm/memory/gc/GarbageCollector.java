@@ -28,6 +28,9 @@ public interface GarbageCollector {
 
 	/**
 	 * Invokes garbage collector.
+	 *
+	 * @return {@code true} if garbage collector
+	 * was invoked, {@code false} otherwise.
 	 */
-	void invoke();
+	boolean invoke();
 }

@@ -72,67 +72,70 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 		threadManager.suspendAll();
 		try {
 			if (!safePoint.tryAcquire()) {
-				return false; // We can only do this at safepoint
+				return false;
 			}
-			MemoryManager memoryManager = vm.getMemoryManager();
-			Collection<ObjectValue> allObjects = memoryManager.listObjects();
-			ClassLoaders classLoaders = vm.getClassLoaders();
-			Collection<InstanceValue> loaderList = classLoaders.getAll();
-			for (InstanceValue classLoader : loaderList) {
-				setMark(classLoader);
-				ClassLoaderData data = classLoaders.getClassLoaderData(classLoader);
-				markClassLoaderData(data);
-			}
-			markClassLoaderData(vm.getBootClassLoaderData());
-			VMPrimitives primitives = vm.getPrimitives();
-			markClass(primitives.longPrimitive());
-			markClass(primitives.doublePrimitive());
-			markClass(primitives.intPrimitive());
-			markClass(primitives.floatPrimitive());
-			markClass(primitives.charPrimitive());
-			markClass(primitives.shortPrimitive());
-			markClass(primitives.bytePrimitive());
-			markClass(primitives.booleanPrimitive());
-			for (VMThread thread : threadManager.getThreads()) {
-				if (thread.isAlive()) {
-					setMark(thread.getOop());
-					for (StackFrame frame : thread.getBacktrace()) {
-						ExecutionContext ctx = frame.getExecutionContext();
-						if (ctx != null) {
-							for (Value value : ctx.getStack().view()) {
-								tryMark(value);
-							}
-							for (Value value : ctx.getLocals().getTable()) {
-								tryMark(value);
+			try {
+				MemoryManager memoryManager = vm.getMemoryManager();
+				Collection<ObjectValue> allObjects = memoryManager.listObjects();
+				ClassLoaders classLoaders = vm.getClassLoaders();
+				Collection<InstanceValue> loaderList = classLoaders.getAll();
+				for (InstanceValue classLoader : loaderList) {
+					setMark(classLoader);
+					ClassLoaderData data = classLoaders.getClassLoaderData(classLoader);
+					markClassLoaderData(data);
+				}
+				markClassLoaderData(vm.getBootClassLoaderData());
+				VMPrimitives primitives = vm.getPrimitives();
+				markClass(primitives.longPrimitive());
+				markClass(primitives.doublePrimitive());
+				markClass(primitives.intPrimitive());
+				markClass(primitives.floatPrimitive());
+				markClass(primitives.charPrimitive());
+				markClass(primitives.shortPrimitive());
+				markClass(primitives.bytePrimitive());
+				markClass(primitives.booleanPrimitive());
+				for (VMThread thread : threadManager.getThreads()) {
+					if (thread.isAlive()) {
+						setMark(thread.getOop());
+						for (StackFrame frame : thread.getBacktrace()) {
+							ExecutionContext ctx = frame.getExecutionContext();
+							if (ctx != null) {
+								for (Value value : ctx.getStack().view()) {
+									tryMark(value);
+								}
+								for (Value value : ctx.getLocals().getTable()) {
+									tryMark(value);
+								}
 							}
 						}
 					}
 				}
-			}
-			for (ObjectValue value : handles.keySet()) {
-				setMark(value);
-			}
-			MemoryAllocator allocator = vm.getMemoryAllocator();
-			allObjects.removeIf(x -> {
-				if (x.isNull()) {
-					return false;
+				for (ObjectValue value : handles.keySet()) {
+					setMark(value);
 				}
-				MemoryBlock block = x.getMemory();
-				MemoryData data = block.getData();
-				byte mark = data.readByte(0L);
-				boolean result = mark == MARK_NONE;
-				data.writeByte(0L, MARK_NONE);
-				if (result) {
-					if (!allocator.freeHeap(block.getAddress())) {
-						throw new PanicException("Failed to free heap memory");
+				MemoryAllocator allocator = vm.getMemoryAllocator();
+				allObjects.removeIf(x -> {
+					if (x.isNull()) {
+						return false;
 					}
-				}
-				return result;
-			});
-			return true;
+					MemoryBlock block = x.getMemory();
+					MemoryData data = block.getData();
+					byte mark = data.readByte(0L);
+					boolean result = mark == MARK_NONE;
+					data.writeByte(0L, MARK_NONE);
+					if (result) {
+						if (!allocator.freeHeap(block.getAddress())) {
+							throw new PanicException("Failed to free heap memory");
+						}
+					}
+					return result;
+				});
+				return true;
+			} finally {
+				safePoint.decrement();
+			}
 		} finally {
 			threadManager.resumeAll();
-			safePoint.decrement();
 		}
 	}
 

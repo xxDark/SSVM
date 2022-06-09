@@ -28,7 +28,7 @@ public final class PrimitiveClass implements JavaClass {
 		this.vm = vm;
 		this.name = name;
 		this.descriptor = descriptor;
-		oop = vm.getMemoryManager().createOopForClass(this);
+		oop = vm.getMemoryManager().newClassOop(this);
 		objectClass = vm.getSymbols().java_lang_Object();
 	}
 

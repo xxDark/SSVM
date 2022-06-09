@@ -49,9 +49,23 @@ public class SynchronizedMemoryManager implements MemoryManager {
 	}
 
 	@Override
+	public InstanceValue tryNewInstance(InstanceJavaClass javaClass) {
+		synchronized (mutex) {
+			return memoryManager.tryNewInstance(javaClass);
+		}
+	}
+
+	@Override
 	public InstanceValue newInstance(InstanceJavaClass javaClass) {
 		synchronized (mutex) {
 			return memoryManager.newInstance(javaClass);
+		}
+	}
+
+	@Override
+	public <V> JavaValue<V> tryNewJavaInstance(InstanceJavaClass javaClass, V value) {
+		synchronized (mutex) {
+			return memoryManager.tryNewJavaInstance(javaClass, value);
 		}
 	}
 
@@ -66,6 +80,13 @@ public class SynchronizedMemoryManager implements MemoryManager {
 	public JavaValue<InstanceJavaClass> newJavaLangClass(InstanceJavaClass javaClass) {
 		synchronized (mutex) {
 			return memoryManager.newJavaLangClass(javaClass);
+		}
+	}
+
+	@Override
+	public ArrayValue tryNewArray(ArrayJavaClass javaClass, int length) {
+		synchronized (mutex) {
+			return memoryManager.tryNewArray(javaClass, length);
 		}
 	}
 
@@ -188,16 +209,16 @@ public class SynchronizedMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public <C extends JavaClass> JavaValue<C> createOopForClass(C javaClass) {
+	public <C extends JavaClass> JavaValue<C> tryNewClassOop(C javaClass) {
 		synchronized (mutex) {
-			return memoryManager.createOopForClass(javaClass);
+			return memoryManager.tryNewClassOop(javaClass);
 		}
 	}
 
 	@Override
-	public <C extends JavaClass> JavaValue<C> createOopForClass(InstanceJavaClass javaLangClass, C javaClass) {
+	public <C extends JavaClass> JavaValue<C> newClassOop(C javaClass) {
 		synchronized (mutex) {
-			return memoryManager.createOopForClass(javaLangClass, javaClass);
+			return memoryManager.newClassOop(javaClass);
 		}
 	}
 

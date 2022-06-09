@@ -11,13 +11,13 @@ public interface MemoryAllocator {
 
 	/**
 	 * @return empty memory block
-	 * at the address of {@literal  0}.
+	 * at the address of {@literal 0}.
 	 */
 	MemoryBlock emptyHeapBlock();
 
 	/**
 	 * @return empty memory block
-	 * at the address of {@literal  0}.
+	 * at the address of {@literal 0}.
 	 */
 	MemoryBlock emptyDirectBlock();
 

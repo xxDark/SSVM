@@ -29,7 +29,7 @@ public final class ArrayJavaClass implements JavaClass {
 		this.dimensions = dimensions;
 		this.componentType = componentType;
 		name = internalName.replace('/', '.');
-		oop = vm.getMemoryManager().createOopForClass(this);
+		oop = vm.getMemoryManager().newClassOop(this);
 		objectClass = vm.getSymbols().java_lang_Object();
 	}
 

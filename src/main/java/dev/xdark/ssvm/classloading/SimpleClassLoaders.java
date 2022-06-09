@@ -74,7 +74,7 @@ public class SimpleClassLoaders implements ClassLoaders {
 
 	@Override
 	public void setClassOop(InstanceJavaClass javaClass) {
-		javaClass.setOop(vm.getMemoryManager().createOopForClass(javaClass));
+		javaClass.setOop(vm.getMemoryManager().newClassOop(javaClass));
 	}
 
 	@Override
@@ -88,7 +88,7 @@ public class SimpleClassLoaders implements ClassLoaders {
 	public void initializeBootOop(InstanceJavaClass javaClass, InstanceJavaClass javaLangClass) {
 		VirtualMachine vm = this.vm;
 		MemoryManager memoryManager = vm.getMemoryManager();
-		JavaValue<InstanceJavaClass> oop = javaLangClass == javaClass ? memoryManager.newJavaLangClass(javaClass) : memoryManager.createOopForClass(javaLangClass, javaClass);
+		JavaValue<InstanceJavaClass> oop = javaLangClass == javaClass ? memoryManager.newJavaLangClass(javaClass) : memoryManager.newClassOop(javaClass);
 		javaClass.setOop(oop);
 	}
 

@@ -7,7 +7,6 @@ import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
 
 import java.util.Collection;
 
@@ -40,6 +39,15 @@ public interface MemoryManager {
 	 * @param javaClass Class of the object.
 	 * @return allocated object.
 	 */
+	InstanceValue tryNewInstance(InstanceJavaClass javaClass);
+
+	/**
+	 * Allocates new object.
+	 * Throws VM exception if allocation fails.
+	 *
+	 * @param javaClass Class of the object.
+	 * @return allocated object.
+	 */
 	InstanceValue newInstance(InstanceJavaClass javaClass);
 
 	/**
@@ -50,10 +58,25 @@ public interface MemoryManager {
 	 * @param <V>       Type of Java value.
 	 * @return allocated Java wrapper.
 	 */
+	<V> JavaValue<V> tryNewJavaInstance(InstanceJavaClass javaClass, V value);
+
+	/**
+	 * Allocates new Java wrapper.
+	 * Throws VM exception if allocation fails.
+	 *
+	 * @param javaClass Class of the object.
+	 * @param value     Java value.
+	 * @param <V>       Type of Java value.
+	 * @return allocated Java wrapper.
+	 */
 	<V> JavaValue<V> newJavaInstance(InstanceJavaClass javaClass, V value);
 
 	/**
-	 * Allocates new Java wrapper for java/lang/Class.
+	 * Allocates new Java wrapper for {@code java/lang/Class}.
+	 * The method must set class oop for {@code java/lang/Class} here,
+	 * as it may happen that the memory manager might require virtual
+	 * field layout for {@code java/lang/Class} to be initialized,
+	 * in case if its not, it may fail.
 	 *
 	 * @param javaClass java/lang/Class mirror.
 	 * @return allocated Java wrapper.
@@ -62,6 +85,16 @@ public interface MemoryManager {
 
 	/**
 	 * Allocates new array.
+	 *
+	 * @param javaClass Array class.
+	 * @param length    Array length.
+	 * @return allocated array.
+	 */
+	ArrayValue tryNewArray(ArrayJavaClass javaClass, int length);
+
+	/**
+	 * Allocates new array.
+	 * Throws VM exception if allocation fails.
 	 *
 	 * @param javaClass Array class.
 	 * @param length    Array length.
@@ -278,21 +311,21 @@ public interface MemoryManager {
 	int readArrayLength(ArrayValue array);
 
 	/**
-	 * Creates and sets new class oop.
+	 * Creates new class oop.
 	 *
 	 * @param javaClass Class to create oop for.
 	 * @return oop.
 	 */
-	<C extends JavaClass> JavaValue<C> createOopForClass(C javaClass);
+	<C extends JavaClass> JavaValue<C> tryNewClassOop(C javaClass);
 
 	/**
-	 * Creates and sets new class oop.
+	 * Creates new class oop.
+	 * Throws VM exception if allocation fails.
 	 *
-	 * @param javaLangClass {@code java/lang/Class} class.
-	 * @param javaClass     Class to create oop for.
+	 * @param javaClass Class to create oop for.
 	 * @return oop.
 	 */
-	<C extends JavaClass> JavaValue<C> createOopForClass(InstanceJavaClass javaLangClass, C javaClass);
+	<C extends JavaClass> JavaValue<C> newClassOop(C javaClass);
 
 	/**
 	 * Reports the offset of the data in

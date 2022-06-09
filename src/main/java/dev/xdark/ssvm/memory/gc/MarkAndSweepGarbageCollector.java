@@ -70,10 +70,10 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 		SafePoint safePoint = vm.getSafePoint();
 		ThreadManager threadManager = vm.getThreadManager();
 		threadManager.suspendAll();
-		if (!safePoint.tryIncrement()) {
-			return false; // We can only do this at safepoint
-		}
 		try {
+			if (!safePoint.tryAcquire()) {
+				return false; // We can only do this at safepoint
+			}
 			MemoryManager memoryManager = vm.getMemoryManager();
 			Collection<ObjectValue> allObjects = memoryManager.listObjects();
 			ClassLoaders classLoaders = vm.getClassLoaders();

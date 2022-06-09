@@ -16,7 +16,7 @@ public final class NoopSafePoint implements SafePoint {
 	}
 
 	@Override
-	public boolean tryIncrement() {
+	public boolean tryAcquire() {
 		return true;
 	}
 }

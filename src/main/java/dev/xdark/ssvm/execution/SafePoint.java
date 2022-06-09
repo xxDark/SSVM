@@ -26,5 +26,5 @@ public interface SafePoint {
 	 * @return {@code true} if the amount of unsafe
 	 * points was incremented.
 	 */
-	boolean tryIncrement();
+	boolean tryAcquire();
 }

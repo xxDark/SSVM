@@ -12,6 +12,7 @@
   - Interface to modify VM behaviour, similar to JVM TI
   - Instruction rewriting: rewrite parts of methods as the VM executes
   - Somewhat *JIT* compiler
+  - Garbage Collector
 
 For some basic example, see: [EXAMPLE.md](EXAMPLE.md)
 

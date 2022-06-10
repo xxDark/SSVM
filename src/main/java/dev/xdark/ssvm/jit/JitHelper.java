@@ -458,14 +458,14 @@ public class JitHelper {
 		return allocateInstance(getOrFindInstanceClass(desc, ctx), ctx);
 	}
 
-	public ArrayValue allocateLongArray(int length, ExecutionContext ctx) {
+	public Value allocateLongArray(int length, ExecutionContext ctx) {
 		VirtualMachine vm = ctx.getVM();
 		VMHelper helper = vm.getHelper();
 		helper.checkArrayLength(length);
 		return helper.newArray(vm.getPrimitives().longPrimitive(), length);
 	}
 
-	public ArrayValue allocateDoubleArray(int length, ExecutionContext ctx) {
+	public Value allocateDoubleArray(int length, ExecutionContext ctx) {
 		VirtualMachine vm = ctx.getVM();
 		VMHelper helper = vm.getHelper();
 		helper.checkArrayLength(length);

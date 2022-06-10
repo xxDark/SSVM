@@ -578,8 +578,13 @@ public class JitHelper {
 	}
 
 	public Value checkCast(Value value, Object rawDesc, ExecutionContext ctx) {
-		String desc = AsmUtil.normalizeDescriptor((String) rawDesc);
-		JavaClass type = ctx.getHelper().tryFindClass(ctx.getClassLoader(), desc, true);
+		JavaClass type;
+		if (!(rawDesc instanceof JavaClass)) {
+			String desc = AsmUtil.normalizeDescriptor((String) rawDesc);
+			type = ctx.getHelper().tryFindClass(ctx.getClassLoader(), desc, true);
+		} else {
+			type = (JavaClass) rawDesc;
+		}
 		return ctx.getOperations().checkCast((ObjectValue) value, type);
 	}
 

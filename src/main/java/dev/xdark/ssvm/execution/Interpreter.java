@@ -62,6 +62,7 @@ public class Interpreter {
 					continue;
 				}
 				if (processor.execute(insn, ctx) == Result.ABORT) {
+					ctx.pollSafePoint();
 					break;
 				}
 			} catch (VMException ex) {
@@ -102,6 +103,7 @@ public class Interpreter {
 						if (handle) {
 							ctx.getStack().push(oop);
 							ctx.setInsnPosition(AsmUtil.getIndex(block.handler));
+							ctx.pollSafePointAndSuspend();
 							continue exec;
 						}
 					}

@@ -9,8 +9,18 @@ public interface SafePoint {
 
 	/**
 	 * Polls safepoint.
+	 *
+	 * @return {@code true} if safepoint was polled
+	 * and the thread must block.
 	 */
-	void poll();
+	boolean poll();
+
+	/**
+	 * Polls safepoint.
+	 * @return {@code true} if safepoint was polled
+	 * and the thread must block.
+	 */
+	boolean pollAndSuspend();
 
 	/**
 	 * Requests a safepoint.

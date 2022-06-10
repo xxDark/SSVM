@@ -15,6 +15,7 @@ public final class LdcProcessor implements InstructionProcessor<VMLdcInsnNode> {
 	@Override
 	public Result execute(VMLdcInsnNode insn, ExecutionContext ctx) {
 		ctx.getStack().pushGeneric(insn.getValue());
+		ctx.pollSafePointAndSuspend();
 		return Result.CONTINUE;
 	}
 }

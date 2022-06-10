@@ -16,6 +16,7 @@ public final class VMNewProcessor implements InstructionProcessor<VMTypeInsnNode
 	@Override
 	public Result execute(VMTypeInsnNode insn, ExecutionContext ctx) {
 		ctx.getStack().push(ctx.getOperations().allocateInstance((InstanceJavaClass) insn.getJavaType()));
+		ctx.pollSafePointAndSuspend();
 		return Result.CONTINUE;
 	}
 }

@@ -7,7 +7,13 @@ package dev.xdark.ssvm.execution;
  */
 public final class NoopSafePoint implements SafePoint {
 	@Override
-	public void poll() {
+	public boolean poll() {
+		return false;
+	}
+
+	@Override
+	public boolean pollAndSuspend() {
+		return false;
 	}
 
 	@Override

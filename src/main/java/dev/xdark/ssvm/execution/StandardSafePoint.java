@@ -4,6 +4,7 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.VMThread;
 
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -20,12 +21,24 @@ public class StandardSafePoint implements SafePoint {
 	}
 
 	@Override
-	public void poll() {
+	public boolean poll() {
+		CountDownLatch latch = this.latch;
+		if (latch != null) {
+			latch.countDown();
+			return true;
+		}
+		return false;
+	}
+
+	@Override
+	public boolean pollAndSuspend() {
 		CountDownLatch latch = this.latch;
 		if (latch != null) {
 			latch.countDown();
 			Thread.currentThread().suspend();
+			return true;
 		}
+		return false;
 	}
 
 	@Override
@@ -33,7 +46,9 @@ public class StandardSafePoint implements SafePoint {
 		ThreadManager threadManager = vm.getThreadManager();
 		// Attempt to block on thread manager.
 		synchronized (threadManager) {
-			VMThread[] threads = threadManager.getThreads();
+			VMThread[] threads = Arrays.stream(threadManager.getThreads())
+				.filter(VMThread::isAlive)
+				.toArray(VMThread[]::new);
 			CountDownLatch latch = new CountDownLatch(threads.length);
 			this.latch = latch;
 			// And now we wait

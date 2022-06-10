@@ -97,6 +97,20 @@ public interface ExecutionContext {
 	}
 
 	/**
+	 * @see SafePoint#poll()
+	 */
+	default boolean pollSafePoint() {
+		return getSafePoint().poll();
+	}
+
+	/**
+	 * @see SafePoint#pollAndSuspend()
+	 */
+	default boolean pollSafePointAndSuspend() {
+		return getSafePoint().pollAndSuspend();
+	}
+
+	/**
 	 * @return method being executed.
 	 */
 	JavaMethod getMethod();

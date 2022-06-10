@@ -4,6 +4,7 @@ import dev.xdark.ssvm.asm.VMLdcInsnNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.LdcInsnNode;
@@ -26,6 +27,9 @@ public final class LdcProcessor implements InstructionProcessor<LdcInsnNode> {
 			value = (Value) cst;
 		} else {
 			value = ctx.getHelper().valueFromLdc(cst);
+			if (value instanceof ObjectValue) {
+				ctx.getGarbageCollector().makeGlobalReference((ObjectValue) value);
+			}
 		}
 		InsnList list = ctx.getMethod().getNode().instructions;
 		list.set(insn, new VMLdcInsnNode(insn, value));

@@ -564,7 +564,7 @@ public class JitHelper {
 		return allocateValueArray(length, helper.tryFindClass(ctx.getOwner().getClassLoader(), desc, false), ctx);
 	}
 
-	public int getArrayLength(ObjectValue value, ExecutionContext ctx) {
+	public int getArrayLength(Value value, ExecutionContext ctx) {
 		ArrayValue array = ctx.getHelper().checkNotNull(value);
 		return array.getLength();
 	}

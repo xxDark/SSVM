@@ -141,7 +141,7 @@ public class NativeThreadManager implements ThreadManager {
 			synchronized (this) {
 				vmThreads.remove(value);
 				// When the thread is dead, poll safepoint
-				vm.getSafePoint().poll();
+				vm.getSafePoint().pollAndSuspend();
 			}
 		});
 	}

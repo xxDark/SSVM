@@ -17,6 +17,7 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaField;
 import dev.xdark.ssvm.symbol.VMPrimitives;
+import dev.xdark.ssvm.thread.Backtrace;
 import dev.xdark.ssvm.thread.StackFrame;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.VMThread;
@@ -28,8 +29,10 @@ import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.Type;
 
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Primitive mark and sweep garbage collector.
@@ -40,7 +43,8 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 	protected static final byte MARK_NONE = 0;
 	private static final byte MARK_SET = 1;
 	private static final byte MARK_GLOBAL_REF = 2;
-	private final Map<ObjectValue, GCHandle> handles = new HashMap<>();
+	private final Map<ObjectValue, GCHandle> handles = new IdentityHashMap<>();
+	private final Set<ObjectValue> globalReferences = Collections.newSetFromMap(new IdentityHashMap<>());
 	private final VirtualMachine vm;
 
 	/**
@@ -56,7 +60,7 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 	}
 
 	@Override
-	public GCHandle makeHandle(ObjectValue value) {
+	public synchronized GCHandle makeHandle(ObjectValue value) {
 		return handles.computeIfAbsent(value, k -> new SimpleGCHandle() {
 			@Override
 			protected void deallocate() {
@@ -66,17 +70,18 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 	}
 
 	@Override
-	public GCHandle getHandle(ObjectValue value) {
+	public synchronized GCHandle getHandle(ObjectValue value) {
 		return handles.get(value);
 	}
 
 	@Override
-	public void makeGlobalReference(ObjectValue value) {
+	public synchronized void makeGlobalReference(ObjectValue value) {
 		value.getMemory().getData().writeByte(0, MARK_GLOBAL_REF);
+		globalReferences.add(value);
 	}
 
 	@Override
-	public boolean invoke() {
+	public synchronized boolean invoke() {
 		VirtualMachine vm = this.vm;
 		SafePoint safePoint = vm.getSafePoint();
 		ThreadManager threadManager = vm.getThreadManager();
@@ -102,9 +107,10 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 			markClass(primitives.bytePrimitive());
 			markClass(primitives.booleanPrimitive());
 			for (VMThread thread : threadManager.getThreads()) {
-				if (thread.isAlive()) {
+				Backtrace backtrace = thread.getBacktrace();
+				if (backtrace.count() != 0) {
 					setMark(thread.getOop());
-					for (StackFrame frame : thread.getBacktrace()) {
+					for (StackFrame frame : backtrace) {
 						ExecutionContext ctx = frame.getExecutionContext();
 						if (ctx != null) {
 							for (Value value : ctx.getStack().view()) {
@@ -121,6 +127,9 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 			for (ObjectValue value : handles.keySet()) {
 				setMark(value);
 			}
+			for (ObjectValue value : globalReferences) {
+				setMark(value);
+			}
 			MemoryAllocator allocator = vm.getMemoryAllocator();
 			allObjects.removeIf(x -> {
 				if (x.isNull()) {
@@ -130,13 +139,12 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 				MemoryData data = block.getData();
 				byte mark = data.readByte(0L);
 				boolean result = mark == MARK_NONE;
-				if (mark != MARK_GLOBAL_REF) {
-					data.writeByte(0L, MARK_NONE);
-				}
 				if (result) {
 					if (!allocator.freeHeap(block.getAddress())) {
 						throw new PanicException("Failed to free heap memory");
 					}
+				} else if (mark != MARK_GLOBAL_REF) {
+					data.writeByte(0L, MARK_NONE);
 				}
 				return result;
 			});
@@ -206,7 +214,10 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 		} else {
 			InstanceValue instanceValue = (InstanceValue) value;
 			InstanceJavaClass klass = instanceValue.getJavaClass();
-			markAllFields(klass.getVirtualFieldLayout(), data, offset);
+			while (klass != null) {
+				markAllFields(klass.getVirtualFieldLayout(), data, offset);
+				klass = klass.getSuperClass();
+			}
 		}
 	}
 

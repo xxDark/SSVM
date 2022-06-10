@@ -31,7 +31,7 @@ public class ProcessEnvironmentNatives {
 			Map<String, String> env = vm.getenv();
 			int idx = 0;
 			int len = env.size();
-			ArrayValue array = helper.newArray(vm.getPrimitives().bytePrimitive().newArrayClass(), len);
+			ArrayValue array = helper.newArray(vm.getPrimitives().bytePrimitive().newArrayClass(), len * 2);
 			for (Map.Entry<String, String> entry : env.entrySet()) {
 				ObjectValue key = helper.newUtf8(entry.getKey());
 				ObjectValue value = helper.newUtf8(entry.getValue());

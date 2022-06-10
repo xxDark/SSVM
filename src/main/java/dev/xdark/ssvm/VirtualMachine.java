@@ -150,6 +150,15 @@ public class VirtualMachine {
 	}
 
 	/**
+	 * Attempts to initialize the VM.
+	 */
+	private void tryInitialize() {
+		if (state.compareAndSet(InitializationState.UNINITIALIZED, InitializationState.INITIALIZING)) {
+			init();
+		}
+	}
+
+	/**
 	 * Initializes the VM.
 	 *
 	 * @throws IllegalStateException If VM fails to transit to {@link InitializationState#INITIALIZING} state,
@@ -158,39 +167,7 @@ public class VirtualMachine {
 	public void initialize() {
 		//<editor-fold desc="VM initialization">
 		if (state.compareAndSet(InitializationState.UNINITIALIZED, InitializationState.INITIALIZING)) {
-			try {
-				ClassLoaders classLoaders = this.classLoaders;
-				VMInitializer initializer = this.initializer;
-				initializer.initBegin(this);
-				initializer.initClassLoaders(this);
-				// java/lang/Object & java/lang/Class must be loaded manually,
-				// otherwise some MemoryManager implementations will bottleneck.
-				InstanceJavaClass klass = internalLink("java/lang/Class");
-				InstanceJavaClass object = internalLink("java/lang/Object");
-				initializer.bootLink(this, klass, object);
-				NativeJava.injectPhase1(this);
-				classLoaders.initializeBootClass(object);
-				classLoaders.initializeBootClass(klass);
-				classLoaders.initializeBootOop(klass, klass);
-				classLoaders.initializeBootOop(object, klass);
-				object.link();
-				klass.link();
-				InitializedVMSymbols initializedVMSymbols = new InitializedVMSymbols(this);
-				((DelegatingVMSymbols) symbols).setSymbols(initializedVMSymbols);
-				symbols = initializedVMSymbols;
-				InitializedVMPrimitives initializedVMPrimitives = new InitializedVMPrimitives(this);
-				((DelegatingVMPrimitives) primitives).setPrimitives(initializedVMPrimitives);
-				primitives = initializedVMPrimitives;
-				NativeJava.init(this);
-				initializer.nativeInit(this);
-				InstanceJavaClass groupClass = symbols.java_lang_ThreadGroup();
-				groupClass.initialize();
-				IntrinsicsNatives.init(this);
-				state.set(InitializationState.INITIALIZED);
-			} catch (Exception ex) {
-				state.set(InitializationState.FAILED);
-				throw new IllegalStateException("VM initialization failed", ex);
-			}
+			init();
 		} else {
 			throw new IllegalStateException("Failed to enter in INITIALIZING state");
 		}
@@ -205,7 +182,7 @@ public class VirtualMachine {
 	 */
 	public void bootstrap() {
 		//<editor-fold desc="VM bootstrap">
-		assertInitialized();
+		tryInitialize();
 		if (state.compareAndSet(InitializationState.INITIALIZED, InitializationState.BOOTING)) {
 			try {
 				VMSymbols symbols = this.symbols;
@@ -763,6 +740,42 @@ public class VirtualMachine {
 	 */
 	protected SafePoint createSafePoint() {
 		return new NoopSafePoint();
+	}
+
+	private void init() {
+		try {
+			ClassLoaders classLoaders = this.classLoaders;
+			VMInitializer initializer = this.initializer;
+			initializer.initBegin(this);
+			initializer.initClassLoaders(this);
+			// java/lang/Object & java/lang/Class must be loaded manually,
+			// otherwise some MemoryManager implementations will bottleneck.
+			InstanceJavaClass klass = internalLink("java/lang/Class");
+			InstanceJavaClass object = internalLink("java/lang/Object");
+			initializer.bootLink(this, klass, object);
+			NativeJava.injectPhase1(this);
+			classLoaders.initializeBootClass(object);
+			classLoaders.initializeBootClass(klass);
+			classLoaders.initializeBootOop(klass, klass);
+			classLoaders.initializeBootOop(object, klass);
+			object.link();
+			klass.link();
+			InitializedVMSymbols initializedVMSymbols = new InitializedVMSymbols(this);
+			((DelegatingVMSymbols) symbols).setSymbols(initializedVMSymbols);
+			symbols = initializedVMSymbols;
+			InitializedVMPrimitives initializedVMPrimitives = new InitializedVMPrimitives(this);
+			((DelegatingVMPrimitives) primitives).setPrimitives(initializedVMPrimitives);
+			primitives = initializedVMPrimitives;
+			NativeJava.init(this);
+			initializer.nativeInit(this);
+			InstanceJavaClass groupClass = symbols.java_lang_ThreadGroup();
+			groupClass.initialize();
+			IntrinsicsNatives.init(this);
+			state.set(InitializationState.INITIALIZED);
+		} catch (Exception ex) {
+			state.set(InitializationState.FAILED);
+			throw new IllegalStateException("VM initialization failed", ex);
+		}
 	}
 
 	private InstanceJavaClass internalLink(String name) {

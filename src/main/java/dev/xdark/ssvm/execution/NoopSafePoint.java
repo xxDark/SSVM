@@ -19,4 +19,8 @@ public final class NoopSafePoint implements SafePoint {
 	@Override
 	public void request() {
 	}
+
+	@Override
+	public void complete() {
+	}
 }

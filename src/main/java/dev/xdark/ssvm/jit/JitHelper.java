@@ -514,54 +514,13 @@ public class JitHelper {
 		return helper.newArray(vm.getPrimitives().booleanPrimitive(), length);
 	}
 
-	public Value allocatePrimitiveArray(int length, int operand, ExecutionContext ctx) {
-		VirtualMachine vm = ctx.getVM();
-		VMHelper helper = vm.getHelper();
-		helper.checkArrayLength(length);
-		VMPrimitives primitives = vm.getPrimitives();
-		ArrayValue array;
-		switch (operand) {
-			case T_LONG:
-				array = helper.newArray(primitives.longPrimitive(), length);
-				break;
-			case T_DOUBLE:
-				array = helper.newArray(primitives.doublePrimitive(), length);
-				break;
-			case T_INT:
-				array = helper.newArray(primitives.intPrimitive(), length);
-				break;
-			case T_FLOAT:
-				array = helper.newArray(primitives.floatPrimitive(), length);
-				break;
-			case T_CHAR:
-				array = helper.newArray(primitives.charPrimitive(), length);
-				break;
-			case T_SHORT:
-				array = helper.newArray(primitives.shortPrimitive(), length);
-				break;
-			case T_BYTE:
-				array = helper.newArray(primitives.bytePrimitive(), length);
-				break;
-			case T_BOOLEAN:
-				array = helper.newArray(primitives.booleanPrimitive(), length);
-				break;
-			default:
-				throw new IllegalStateException("Illegal array type: " + operand);
-		}
-		return array;
-	}
-
-	public Value allocatePrimitiveArray(int operand, ExecutionContext ctx) {
-		return allocatePrimitiveArray(ctx.getStack().pop().asInt(), operand, ctx);
-	}
-
 	public Value allocateValueArray(int length, Object klass, ExecutionContext ctx) {
 		return ctx.getOperations().allocateArray((JavaClass) klass, length);
 	}
 
 	public Value allocateValueArray(int length, String desc, ExecutionContext ctx) {
 		VMHelper helper = ctx.getHelper();
-		return allocateValueArray(length, helper.tryFindClass(ctx.getOwner().getClassLoader(), desc, false), ctx);
+		return allocateValueArray(length, helper.tryFindClass(ctx.getClassLoader(), desc, false), ctx);
 	}
 
 	public int getArrayLength(Value value, ExecutionContext ctx) {

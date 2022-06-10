@@ -19,7 +19,7 @@ public final class PrimitiveArrayProcessor implements InstructionProcessor<IntIn
 	@Override
 	public Result execute(IntInsnNode insn, ExecutionContext ctx) {
 		int operand = insn.operand;
-		int virtualOpcode = VMOpcodes.BOOLEAN_NEW_ARRAY + (operand - Opcodes.T_BOOLEAN);
+		int virtualOpcode = VMOpcodes.VM_BOOLEAN_NEW_ARRAY + (operand - Opcodes.T_BOOLEAN);
 		DelegatingInsnNode<IntInsnNode> wrapper = new DelegatingInsnNode<>(insn, virtualOpcode);
 		InsnList list = ctx.getMethod().getNode().instructions;
 		list.set(insn, wrapper);

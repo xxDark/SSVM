@@ -26,4 +26,9 @@ public interface SafePoint {
 	 * Requests a safepoint.
 	 */
 	void request();
+
+	/**
+	 * Finishes safepoint.
+	 */
+	void complete();
 }

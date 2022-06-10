@@ -7,6 +7,7 @@ import dev.xdark.ssvm.value.InstanceValue;
 
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.stream.Stream;
 
 /**
  * Native thread manager that uses
@@ -72,12 +73,15 @@ public class NativeThreadManager implements ThreadManager {
 
 	@Override
 	public synchronized VMThread[] getThreads() {
-		return vmThreads.values().toArray(new NativeVMThread[0]);
+		return Stream.concat(
+			systemThreads.values().stream(),
+			vmThreads.values().stream()
+		).toArray(VMThread[]::new);
 	}
 
 	@Override
-	public VMThread[] getVisibleThreads() {
-		return getThreads();
+	public synchronized VMThread[] getVisibleThreads() {
+		return vmThreads.values().toArray(new VMThread[0]);
 	}
 
 	@Override
@@ -117,12 +121,16 @@ public class NativeThreadManager implements ThreadManager {
 
 	@Override
 	public synchronized void suspendAll() {
-		vmThreads.values().forEach(NativeVMThread::suspend);
+		for (VMThread thread : getThreads()) {
+			thread.suspend();
+		}
 	}
 
 	@Override
 	public synchronized void resumeAll() {
-		vmThreads.values().forEach(NativeVMThread::resume);
+		for (VMThread thread : getThreads()) {
+			thread.resume();
+		}
 	}
 
 	@Override

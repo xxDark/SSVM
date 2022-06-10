@@ -23,7 +23,7 @@ public final class LinkedDynamicCallNode extends DelegatingInsnNode<InvokeDynami
 	 * @param methodHandle CallSite linked method handle.
 	 */
 	public LinkedDynamicCallNode(InvokeDynamicInsnNode delegate, InstanceValue methodHandle) {
-		super(delegate, VMOpcodes.DYNAMIC_CALL);
+		super(delegate, VMOpcodes.VM_DYNAMIC_CALL);
 		this.methodHandle = methodHandle;
 		descriptorArgs = Type.getArgumentTypes(delegate.desc);
 	}

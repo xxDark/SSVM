@@ -20,6 +20,7 @@ import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.thread.Backtrace;
 import dev.xdark.ssvm.thread.StackFrame;
 import dev.xdark.ssvm.thread.ThreadManager;
+import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.thread.VMThread;
 import dev.xdark.ssvm.tlc.ThreadLocalStorage;
 import dev.xdark.ssvm.value.ArrayValue;
@@ -29,10 +30,8 @@ import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.Type;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Primitive mark and sweep garbage collector.
@@ -44,7 +43,6 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 	private static final byte MARK_SET = 1;
 	private static final byte MARK_GLOBAL_REF = 2;
 	private final Map<ObjectValue, GCHandle> handles = new IdentityHashMap<>();
-	private final Set<ObjectValue> globalReferences = Collections.newSetFromMap(new IdentityHashMap<>());
 	private final VirtualMachine vm;
 
 	/**
@@ -75,9 +73,8 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 	}
 
 	@Override
-	public synchronized void makeGlobalReference(ObjectValue value) {
+	public void makeGlobalReference(ObjectValue value) {
 		value.getMemory().getData().writeByte(0, MARK_GLOBAL_REF);
-		globalReferences.add(value);
 	}
 
 	@Override
@@ -107,30 +104,33 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 			markClass(primitives.bytePrimitive());
 			markClass(primitives.booleanPrimitive());
 			for (VMThread thread : threadManager.getThreads()) {
+				setMark(thread.getOop());
 				Backtrace backtrace = thread.getBacktrace();
-				if (backtrace.count() != 0) {
-					setMark(thread.getOop());
-					for (StackFrame frame : backtrace) {
-						ExecutionContext ctx = frame.getExecutionContext();
-						if (ctx != null) {
-							for (Value value : ctx.getStack().view()) {
-								tryMark(value);
-							}
-							for (Value value : ctx.getLocals().getTable()) {
-								tryMark(value);
-							}
-							tryMark(ctx.getResult());
-						}
+				ThreadStorage threadStorage = thread.getThreadStorage();
+				for (Value value : threadStorage) {
+					tryMark(value);
+				}
+				for (StackFrame frame : backtrace) {
+					ExecutionContext ctx = frame.getExecutionContext();
+					if (ctx != null) {
+						tryMark(ctx.getResult());
 					}
 				}
 			}
 			for (ObjectValue value : handles.keySet()) {
 				setMark(value);
 			}
-			for (ObjectValue value : globalReferences) {
-				setMark(value);
-			}
 			MemoryAllocator allocator = vm.getMemoryAllocator();
+			// We need to do one more pass to find all
+			// global references
+			for (ObjectValue value : allObjects) {
+				if (!value.isNull()) {
+					MemoryData data = value.getMemory().getData();
+					if (data.readByte(0) == MARK_GLOBAL_REF) {
+						setMark(value);
+					}
+				}
+			}
 			allObjects.removeIf(x -> {
 				if (x.isNull()) {
 					return false;
@@ -150,6 +150,7 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 			});
 			return true;
 		} finally {
+			safePoint.complete();
 			threadManager.resumeAll();
 		}
 	}
@@ -216,7 +217,7 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 			InstanceJavaClass klass = instanceValue.getJavaClass();
 			while (klass != null) {
 				markAllFields(klass.getVirtualFieldLayout(), data, offset);
-				klass = klass.getSuperClass();
+				klass = klass.getSuperclassWithoutResolving();
 			}
 		}
 	}

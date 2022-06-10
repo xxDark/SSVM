@@ -65,10 +65,15 @@ public class ObjectNatives {
 				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException());
 			}
 			try {
-				value.monitorWait(locals.load(1).asLong());
+				long time = locals.load(1).asLong();
+				if (time == 0L) {
+					time = Long.MAX_VALUE;
+				}
+				value.monitorWait(time);
 			} catch (InterruptedException ex) {
 				vm.getHelper().throwException(symbols.java_lang_InterruptedException());
 			}
+			ctx.pollSafePointAndSuspend();
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "hashCode", "()I", ctx -> {

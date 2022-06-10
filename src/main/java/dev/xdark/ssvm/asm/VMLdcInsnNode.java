@@ -19,7 +19,7 @@ public final class VMLdcInsnNode extends DelegatingInsnNode<LdcInsnNode> {
 	 * @param value    VM value.
 	 */
 	public VMLdcInsnNode(LdcInsnNode delegate, Value value) {
-		super(delegate, VMOpcodes.LDC);
+		super(delegate, VMOpcodes.VM_LDC);
 		this.value = value;
 	}
 }

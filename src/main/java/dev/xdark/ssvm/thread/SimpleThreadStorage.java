@@ -6,6 +6,9 @@ import dev.xdark.ssvm.execution.ThreadLocals;
 import dev.xdark.ssvm.execution.ThreadStack;
 import dev.xdark.ssvm.value.Value;
 
+import java.util.Arrays;
+import java.util.Iterator;
+
 /**
  * Thread cache for VM.
  *
@@ -51,6 +54,11 @@ public class SimpleThreadStorage implements ThreadStorage {
 	@Override
 	public Locals newLocals(int size) {
 		return new ThreadLocals(push(size));
+	}
+
+	@Override
+	public Iterator<Value> iterator() {
+		return Arrays.asList(storage).subList(0, currentIndex).iterator();
 	}
 
 	/**

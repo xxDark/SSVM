@@ -10,22 +10,22 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class VMOpcodes {
 
-	public static final int DYNAMIC_CALL = 257;
-	public static final int LDC = DYNAMIC_CALL + 1;
+	public static final int VM_DYNAMIC_CALL = 257;
+	public static final int VM_LDC = VM_DYNAMIC_CALL + 1;
 	// Reserved for future optimizations
-	public static final int INVOKEVIRTUAL = LDC + 1;
-	public static final int INVOKESPECIAL = INVOKEVIRTUAL + 1;
-	public static final int INVOKESTATIC = INVOKESPECIAL + 1;
-	public static final int INVOKEINTERFACE = INVOKESTATIC + 1;
-	public static final int NEW = INVOKEINTERFACE + 1;
-	public static final int ANEWARRAY = NEW + 1;
-	public static final int BOOLEAN_NEW_ARRAY = ANEWARRAY + 1;
-	public static final int CHAR_NEW_ARRAY = BOOLEAN_NEW_ARRAY + 1;
-	public static final int FLOAT_NEW_ARRAY = CHAR_NEW_ARRAY + 1;
-	public static final int DOUBLE_NEW_ARRAY = FLOAT_NEW_ARRAY + 1;
-	public static final int BYTE_NEW_ARRAY = DOUBLE_NEW_ARRAY + 1;
-	public static final int SHORT_NEW_ARRAY = BYTE_NEW_ARRAY + 1;
-	public static final int INT_NEW_ARRAY = SHORT_NEW_ARRAY + 1;
-	public static final int LONG_NEW_ARRAY = INT_NEW_ARRAY + 1;
-	public static final int REFERENCE_NEW_ARRAY = LONG_NEW_ARRAY + 1;
+	public static final int VM_INVOKEVIRTUAL = VM_LDC + 1;
+	public static final int VM_INVOKESPECIAL = VM_INVOKEVIRTUAL + 1;
+	public static final int VM_INVOKESTATIC = VM_INVOKESPECIAL + 1;
+	public static final int VM_INVOKEINTERFACE = VM_INVOKESTATIC + 1;
+	public static final int VM_NEW = VM_INVOKEINTERFACE + 1;
+	public static final int VM_ANEWARRAY = VM_NEW + 1;
+	public static final int VM_BOOLEAN_NEW_ARRAY = VM_ANEWARRAY + 1;
+	public static final int VM_CHAR_NEW_ARRAY = VM_BOOLEAN_NEW_ARRAY + 1;
+	public static final int VM_FLOAT_NEW_ARRAY = VM_CHAR_NEW_ARRAY + 1;
+	public static final int VM_DOUBLE_NEW_ARRAY = VM_FLOAT_NEW_ARRAY + 1;
+	public static final int VM_BYTE_NEW_ARRAY = VM_DOUBLE_NEW_ARRAY + 1;
+	public static final int VM_SHORT_NEW_ARRAY = VM_BYTE_NEW_ARRAY + 1;
+	public static final int VM_INT_NEW_ARRAY = VM_SHORT_NEW_ARRAY + 1;
+	public static final int VM_LONG_NEW_ARRAY = VM_INT_NEW_ARRAY + 1;
+	public static final int VM_REFERENCE_NEW_ARRAY = VM_LONG_NEW_ARRAY + 1;
 }

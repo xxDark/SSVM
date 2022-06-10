@@ -292,10 +292,19 @@ public interface Stack {
 	 * @param index Value position.
 	 * @return value at the specific position.
 	 */
-	Value getAt(int index);
+	<V extends Value> V getAt(int index);
 
 	/**
 	 * @return stack content as a list view.
 	 */
 	List<Value> view();
+
+	/**
+	 * Copies stack contents into the locals.
+	 * Decreases current position.
+	 *
+	 * @param locals Locals to copy into.
+	 * @param count  Locals count.
+	 */
+	void sinkInto(Locals locals, int count);
 }

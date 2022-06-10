@@ -2,13 +2,14 @@ package dev.xdark.ssvm.thread;
 
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Stack;
+import dev.xdark.ssvm.value.Value;
 
 /**
  * Thread storage.
  *
  * @author xDark
  */
-public interface ThreadStorage {
+public interface ThreadStorage extends Iterable<Value> {
 
 	/**
 	 * Returns an array slice of data.

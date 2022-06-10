@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.mirror;
 
+import dev.xdark.ssvm.util.AsmUtil;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
@@ -23,6 +24,7 @@ public final class JavaMethod {
 	private Type returnType;
 	private Boolean polymorphic;
 	private int maxArgs = -1;
+	private int maxLocals = -1;
 	private int invocationCount;
 	private Boolean callerSensitive;
 	private Boolean isConstructor;
@@ -185,6 +187,17 @@ public final class JavaMethod {
 	}
 
 	/**
+	 * @return the maximum amount of local variables.
+	 */
+	public int getMaxLocals() {
+		int maxLocals = this.maxLocals;
+		if (maxLocals == -1) {
+			return this.maxLocals = AsmUtil.getMaxLocals(this);
+		}
+		return maxLocals;
+	}
+
+	/**
 	 * @return amount of times
 	 * this method was invoked.
 	 */
@@ -236,9 +249,6 @@ public final class JavaMethod {
 
 		JavaMethod that = (JavaMethod) o;
 
-		if (!owner.equals(that.owner)) {
-			return false;
-		}
 		return node.equals(that.node);
 	}
 

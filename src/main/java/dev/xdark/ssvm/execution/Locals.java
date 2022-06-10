@@ -42,6 +42,15 @@ public interface Locals {
 	void copyFrom(Value[] locals);
 
 	/**
+	 * Copies contents into this locals.
+	 *
+	 * @param locals Content to copy.
+	 * @param offset Content offset.
+	 * @param length Content length.
+	 */
+	void copyFrom(Value[] locals, int offset, int length);
+
+	/**
 	 * @return underlying content of this LVT.
 	 */
 	Value[] getTable();

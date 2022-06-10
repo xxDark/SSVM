@@ -48,6 +48,7 @@ public class JitInstaller {
 		VirtualMachine vm = method.getOwner().getVM();
 		vm.getInterface().setInvoker(method, ctx -> {
 			cons.invoke(ctx);
+			ctx.pollSafePointAndSuspend();
 			return Result.ABORT;
 		});
 	}

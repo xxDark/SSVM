@@ -62,7 +62,7 @@ public class Interpreter {
 					continue;
 				}
 				if (processor.execute(insn, ctx) == Result.ABORT) {
-					ctx.pollSafePoint();
+					ctx.pollSafePointAndSuspend();
 					break;
 				}
 			} catch (VMException ex) {

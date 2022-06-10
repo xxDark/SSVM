@@ -135,13 +135,24 @@ public final class ThreadStack implements Stack, AutoCloseable, Disposable {
 	}
 
 	@Override
-	public Value getAt(int index) {
-		return stack.get(index);
+	public <V extends Value> V getAt(int index) {
+		return (V) stack.get(index);
 	}
 
 	@Override
 	public List<Value> view() {
 		return Arrays.asList(Arrays.copyOf(stack.unwrap(), cursor));
+	}
+
+	@Override
+	public void sinkInto(Locals locals, int count) {
+		if (count == 0) {
+			return;
+		}
+		ThreadRegion stack = this.stack;
+		int start = cursor - count;
+		locals.copyFrom(stack.getArray(), stack.map(start), count);
+		cursor = start;
 	}
 
 	@Override

@@ -63,8 +63,8 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	private MethodLayout staticMethodLayout;
 	private JavaMethod[] methodArray;
 
-	private SimpleInstanceJavaClass superClass;
-	private SimpleInstanceJavaClass[] interfaces;
+	private InstanceJavaClass superClass;
+	private InstanceJavaClass[] interfaces;
 	private ArrayJavaClass arrayClass;
 
 	// Initialization
@@ -346,13 +346,13 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	}
 
 	@Override
-	public SimpleInstanceJavaClass getSuperClass() {
+	public InstanceJavaClass getSuperClass() {
 		initialize();
 		return superClass;
 	}
 
 	@Override
-	public SimpleInstanceJavaClass[] getInterfaces() {
+	public InstanceJavaClass[] getInterfaces() {
 		initialize();
 		return interfaces;
 	}
@@ -666,7 +666,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		try {
 			loadSuperClass();
 			loadInterfaces();
-			for (SimpleInstanceJavaClass ifc : interfaces) {
+			for (InstanceJavaClass ifc : interfaces) {
 				ifc.loadNoResolve();
 			}
 		} catch (VMException ex) {
@@ -828,8 +828,12 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		if (superName == null) {
 			return null;
 		}
-		VirtualMachine vm = this.vm;
-		return (InstanceJavaClass) vm.findClass(classLoader, superName, false);
+		InstanceJavaClass superClass = this.superClass;
+		if (superClass == null) {
+			VirtualMachine vm = this.vm;
+			return this.superClass = (InstanceJavaClass) vm.findClass(classLoader, superName, false);
+		}
+		return superClass;
 	}
 
 	@Override
@@ -898,23 +902,23 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	}
 
 	private void loadSuperClass() {
-		SimpleInstanceJavaClass superClass = this.superClass;
+		InstanceJavaClass superClass = this.superClass;
 		if (superClass == null) {
 			VirtualMachine vm = this.vm;
 			String superName = node.superName;
 			if (superName != null) {
 				// Load parent class.
-				superClass = (SimpleInstanceJavaClass) vm.findClass(classLoader, superName, false);
+				superClass = (InstanceJavaClass) vm.findClass(classLoader, superName, false);
 				this.superClass = superClass;
 			}
 		}
 	}
 
 	private void loadInterfaces() {
-		SimpleInstanceJavaClass[] $interfaces = this.interfaces;
+		InstanceJavaClass[] $interfaces = this.interfaces;
 		if ($interfaces == null) {
 			List<String> _interfaces = node.interfaces;
-			$interfaces = new SimpleInstanceJavaClass[_interfaces.size()];
+			$interfaces = new InstanceJavaClass[_interfaces.size()];
 			VirtualMachine vm = this.vm;
 			ObjectValue classLoader = this.classLoader;
 			for (int i = 0, j = _interfaces.size(); i < j; i++) {

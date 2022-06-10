@@ -24,7 +24,9 @@ public class StandardSafePoint implements SafePoint {
 	public boolean poll() {
 		CountDownLatch latch = this.latch;
 		if (latch != null) {
-			latch.countDown();
+			if (latch.getCount() != 0) {
+				latch.countDown();
+			}
 			return true;
 		}
 		return false;
@@ -34,7 +36,9 @@ public class StandardSafePoint implements SafePoint {
 	public boolean pollAndSuspend() {
 		CountDownLatch latch = this.latch;
 		if (latch != null) {
-			latch.countDown();
+			if (latch.getCount() != 0) {
+				latch.countDown();
+			}
 			Thread.currentThread().suspend();
 			return true;
 		}
@@ -46,8 +50,11 @@ public class StandardSafePoint implements SafePoint {
 		ThreadManager threadManager = vm.getThreadManager();
 		// Attempt to block on thread manager.
 		synchronized (threadManager) {
-			VMThread[] threads = Arrays.stream(threadManager.getThreads())
-				.filter(VMThread::isAlive)
+			VMThread[] threads = Arrays.stream(threadManager.getVisibleThreads())
+				.filter(x -> {
+					Thread t = x.getJavaThread();
+					return t != null && t.getState() == Thread.State.RUNNABLE;
+				})
 				.toArray(VMThread[]::new);
 			CountDownLatch latch = new CountDownLatch(threads.length);
 			this.latch = latch;
@@ -56,7 +63,11 @@ public class StandardSafePoint implements SafePoint {
 				latch.await();
 			} catch (InterruptedException ignored) {
 			}
-			this.latch = null;
 		}
+	}
+
+	@Override
+	public void complete() {
+		this.latch = null;
 	}
 }

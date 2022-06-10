@@ -7,6 +7,7 @@ import dev.xdark.ssvm.classloading.ClassLoaderData;
 import dev.xdark.ssvm.classloading.ClassLoaders;
 import dev.xdark.ssvm.classloading.ClassParseResult;
 import dev.xdark.ssvm.execution.ExecutionContext;
+import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.memory.management.MemoryManager;
@@ -155,6 +156,20 @@ public final class VMHelper {
 		}
 		ExecutionContext ctx = createContext(method, locals);
 		contextPrepare(ctx, stack, locals);
+		vm.execute(ctx);
+		return ctx;
+	}
+
+	/**
+	 * Makes direct call.
+	 *
+	 * @param method Method to invoke.
+	 * @param stack  Execution stack.
+	 * @param locals Local variable table.
+	 * @return invocation result.
+	 */
+	public ExecutionContext invokeDirect(JavaMethod method, Stack stack, Locals locals) {
+		ExecutionContext ctx = vm.getExecutionEngine().createContext(method, stack, locals);
 		vm.execute(ctx);
 		return ctx;
 	}
@@ -1857,18 +1872,6 @@ public final class VMHelper {
 	private static void contextPrepare(ExecutionContext ctx, Value[] stack, Value[] locals) {
 		ctx.getOwner().initialize();
 		ctx.getLocals().copyFrom(locals);
-		/*
-		for (int i = 0, j = locals.length; i < j; i++) {
-			Value arg = locals[i];
-			Objects.requireNonNull(arg, "Null argument");
-			lvt.set(i, arg);
-			if (arg != TopValue.INSTANCE && arg.isWide()) {
-				if (i + 1 == locals.length || locals[i + 1] != TopValue.INSTANCE) {
-					throw new IllegalStateException("Locals table is broken");
-				}
-			}
-		}
-		*/
 		Stack $stack = ctx.getStack();
 		for (Value value : stack) {
 			$stack.pushRaw(value);

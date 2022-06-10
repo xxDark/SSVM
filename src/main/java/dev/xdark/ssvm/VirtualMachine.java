@@ -183,6 +183,7 @@ public class VirtualMachine {
 	public void bootstrap() {
 		//<editor-fold desc="VM bootstrap">
 		tryInitialize();
+		assertInitialized();
 		if (state.compareAndSet(InitializationState.INITIALIZED, InitializationState.BOOTING)) {
 			try {
 				VMSymbols symbols = this.symbols;

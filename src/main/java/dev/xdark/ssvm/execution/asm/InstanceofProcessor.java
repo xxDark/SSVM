@@ -4,7 +4,7 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.Stack;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.JavaClass;
 import org.objectweb.asm.tree.TypeInsnNode;
 
 /**
@@ -14,7 +14,7 @@ public final class InstanceofProcessor implements InstructionProcessor<TypeInsnN
 
 	@Override
 	public Result execute(TypeInsnNode insn, ExecutionContext ctx) {
-		InstanceJavaClass klass = (InstanceJavaClass) ctx.getHelper().tryFindClass(ctx.getClassLoader(), insn.desc, false);
+		JavaClass klass = ctx.getHelper().tryFindClass(ctx.getClassLoader(), insn.desc, false);
 		Stack stack = ctx.getStack();
 		boolean result = ctx.getOperations().instanceofCheck(stack.pop(), klass);
 		stack.pushInt(result ? 1 : 0);

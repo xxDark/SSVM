@@ -4,18 +4,21 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.DelegatingInsnNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
+import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaField;
 import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.util.UnsafeUtil;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.DoubleValue;
 import dev.xdark.ssvm.value.FloatValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
+import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.LongValue;
 import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.TopValue;
@@ -103,15 +106,19 @@ public final class JitCompiler {
 	private static final ClassType VM_EXCEPTION = ClassType.of(VMException.class);
 	private static final ClassType INSTANCE = ClassType.of(InstanceValue.class);
 	private static final ClassType TOP = ClassType.of(TopValue.class);
+	private static final ClassType THREAD_STORAGE = ClassType.of(ThreadStorage.class);
+	private static final ClassType STACK = ClassType.of(Stack.class);
 
 	// ctx methods
 	private static final Access GET_LOCALS = interfaceCall(CTX, "getLocals", LOCALS);
 	private static final Access GET_HELPER = interfaceCall(CTX, "getHelper", VM_HELPER);
 	private static final Access SET_RESULT = interfaceCall(CTX, "setResult", J_VOID, VALUE);
 	private static final Access SET_LINE = interfaceCall(CTX, "setLineNumber", J_VOID, J_INT);
+	private static final Access GET_THREAD_STORAGE = interfaceCall(CTX, "getThreadStorage", THREAD_STORAGE);
 
 	// locals methods
 	private static final Access LOAD = interfaceCall(LOCALS, "load", VALUE, J_INT);
+	private static final Access SET = interfaceCall(LOCALS, "set", J_VOID, J_INT, VALUE);
 
 	// value static methods
 	private static final Access GET_NULL = staticCall(JIT_HELPER, "loadNull", VALUE, CTX);
@@ -246,6 +253,9 @@ public final class JitCompiler {
 	private static final Access INVOKE_VIRTUAL_INTRINSIC = staticCall(JIT_HELPER, "invokeVirtual", VALUE, VALUES, J_OBJECT, J_OBJECT, CTX);
 	private static final Access INVOKE_STATIC_SLOW = staticCall(JIT_HELPER, "invokeStatic", VALUE, VALUES, J_STRING, J_STRING, J_STRING, CTX);
 	private static final Access INVOKE_SPECIAL_SLOW = staticCall(JIT_HELPER, "invokeSpecial", VALUE, VALUES, J_STRING, J_STRING, J_STRING, CTX);
+	private static final Access INVOKE_DIRECT = staticCall(JIT_HELPER, "invokeDirect", VALUE, LOCALS, STACK, J_OBJECT, CTX);
+	private static final Access NEW_LOCALS = staticCall(JIT_HELPER, "newLocals", LOCALS, J_INT, CTX);
+	private static final Access NEW_STACK = staticCall(JIT_HELPER, "newStack", STACK, J_INT, CTX);
 
 	private static final Access EXCEPTION_CAUGHT = staticCall(JIT_HELPER, "exceptionCaught", VM_EXCEPTION, VM_EXCEPTION, J_OBJECT, CTX);
 	private static final Access GET_EXCEPTION_OOP = virtualCall(VM_EXCEPTION, "getOop", INSTANCE);
@@ -1237,7 +1247,6 @@ public final class JitCompiler {
 		MethodVisitor jit = this.jit;
 		String desc = node.desc;
 		Type rt = Type.getReturnType(desc);
-		Access access;
 		try {
 			JavaMethod target = this.target;
 			InstanceJavaClass owner = target.getOwner();
@@ -1245,10 +1254,18 @@ public final class JitCompiler {
 			InstanceJavaClass jc = (InstanceJavaClass) vm.getHelper().findClass(owner.getClassLoader(), node.owner, false);
 			String name = node.name;
 			JavaMethod mn = vm.getLinkResolver().resolveStaticMethod(jc, name, desc);
-			collectStaticCallArgs(desc);
+			// Make locals
+			emitInt(mn.getMaxLocals(), jit);
+			loadCtx();
+			NEW_LOCALS.emit(jit);
+			collectStaticCallArgsToLocals(desc);
+			// Make stack
+			emitInt(mn.getNode().maxStack, jit);
+			loadCtx();
+			NEW_STACK.emit(jit);
 			loadCompilerConstant(mn);
 			loadCtx();
-			INVOKE_STATIC_INTRINSIC.emit(jit);
+			INVOKE_DIRECT.emit(jit);
 		} catch (VMException ex) {
 			// Class was probably not found.
 			// We need to use fallback path
@@ -1278,10 +1295,18 @@ public final class JitCompiler {
 			InstanceJavaClass jc = (InstanceJavaClass) vm.getHelper().findClass(owner.getClassLoader(), node.owner, false);
 			String name = node.name;
 			JavaMethod mn = vm.getLinkResolver().resolveSpecialMethod(jc, name, desc);
-			collectVirtualCallArgs(desc);
+			// Make locals
+			emitInt(mn.getMaxLocals(), jit);
+			loadCtx();
+			NEW_LOCALS.emit(jit);
+			collectVirtualCallArgsToLocals(desc);
+			// Make stack
+			emitInt(mn.getNode().maxStack, jit);
+			loadCtx();
+			NEW_STACK.emit(jit);
 			loadCompilerConstant(mn);
 			loadCtx();
-			INVOKE_SPECIAL_INTRINSIC.emit(jit);
+			INVOKE_DIRECT.emit(jit);
 		} catch (VMException ex) {
 			// Class was probably not found.
 			// We need to use fallback path
@@ -1586,6 +1611,20 @@ public final class JitCompiler {
 		return target.getOwner().getVM().getHelper();
 	}
 
+	private void collectArgsToLocals(int extra, String desc) {
+		Type[] args = Type.getArgumentTypes(desc);
+		int count = totalSize(args) + extra;
+		int idx = args.length;
+		count--;
+		while (idx-- != 0) {
+			Type arg = args[idx];
+			if (arg.getSize() == 2) {
+				loadTopToLocal(count--);
+			}
+			loadArgToLocal(count--, arg);
+		}
+	}
+
 	private void collectArgs(int extra, String desc) {
 		Type[] args = Type.getArgumentTypes(desc);
 		int count = totalSize(args) + extra;
@@ -1612,6 +1651,15 @@ public final class JitCompiler {
 		collectArgs(0, desc);
 	}
 
+	private void collectVirtualCallArgsToLocals(String desc) {
+		collectArgsToLocals(1, desc);
+		loadArgToLocal(0, VALUE.type);
+	}
+
+	private void collectStaticCallArgsToLocals(String desc) {
+		collectArgsToLocals(0, desc);
+	}
+
 	private static int totalSize(Type[] args) {
 		int size = 0;
 		for (Type arg : args) {
@@ -1631,12 +1679,31 @@ public final class JitCompiler {
 		jit.visitInsn(AASTORE);
 	}
 
+	private void loadArgToLocal(int idx, Type type) {
+		// value args
+		MethodVisitor jit = this.jit;
+		jit.visitInsn(DUP); // value args args
+		jvm_swap(2, type.getSize()); // args args value
+		toVM(type); // args args value
+		emitInt(idx, jit); // args args value idx
+		jit.visitInsn(SWAP);
+		SET.emit(jit);
+	}
+
 	private void loadTopTo(int idx) {
 		MethodVisitor jit = this.jit;
 		jit.visitInsn(DUP); // args args
-		jit.visitLdcInsn(idx); // args args idx
+		emitInt(idx, jit); // args args idx
 		GET_TOP.emit(jit); // args args idx value
 		jit.visitInsn(AASTORE);
+	}
+
+	private void loadTopToLocal(int idx) {
+		MethodVisitor jit = this.jit;
+		jit.visitInsn(DUP); // args args
+		emitInt(idx, jit); // args args idx
+		GET_TOP.emit(jit); // args args idx value
+		SET.emit(jit);
 	}
 
 	private void toJava(Type type) {

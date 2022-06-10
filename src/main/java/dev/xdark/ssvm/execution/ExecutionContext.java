@@ -8,6 +8,7 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.util.InvokeDynamicLinker;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.util.VMOperations;
@@ -94,6 +95,13 @@ public interface ExecutionContext {
 	 */
 	default GarbageCollector getGarbageCollector() {
 		return getMemoryManager().getGarbageCollector();
+	}
+
+	/**
+	 * @return thread storage.
+	 */
+	default ThreadStorage getThreadStorage() {
+		return getVM().getThreadStorage();
 	}
 
 	/**

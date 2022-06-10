@@ -857,6 +857,11 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	}
 
 	@Override
+	public State getState() {
+		return state;
+	}
+
+	@Override
 	public String toString() {
 		return getName();
 	}
@@ -1043,12 +1048,5 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 				throw new IllegalStateException("Static access changed");
 			}
 		}
-	}
-
-	private enum State {
-		PENDING,
-		IN_PROGRESS,
-		COMPLETE,
-		FAILED,
 	}
 }

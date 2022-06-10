@@ -6,12 +6,10 @@ import dev.xdark.ssvm.classloading.ClassLoaders;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.SafePoint;
-import dev.xdark.ssvm.memory.allocation.MemoryAddress;
 import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
 import dev.xdark.ssvm.memory.allocation.MemoryBlock;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.MemoryManager;
-import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.FieldLayout;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
@@ -22,7 +20,6 @@ import dev.xdark.ssvm.thread.StackFrame;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.thread.VMThread;
-import dev.xdark.ssvm.tlc.ThreadLocalStorage;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -157,24 +154,19 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 
 	private void markClassLoaderData(ClassLoaderData data) {
 		MemoryManager memoryManager = vm.getMemoryManager();
-		MemoryAddress address = ThreadLocalStorage.get().memoryAddress();
 		for (InstanceJavaClass klass : data.getAll()) {
 			markClass(klass);
-			if (!klass.shouldBeInitialized()) {
+			if (klass.getState() != InstanceJavaClass.State.PENDING) {
 				MemoryBlock memory = klass.getOop().getMemory();
-				address.set(memory.getAddress());
 				markAllFields(klass.getStaticFieldLayout(), memory.getData(), memoryManager.getStaticOffset(klass));
 			}
 		}
 	}
 
 	private void markClass(JavaClass klass) {
-		InstanceValue oop = klass.getOop();
-		setMark(oop);
-		ArrayJavaClass arrayClass = klass.getArrayClass();
-		while (arrayClass != null) {
-			setMark(arrayClass.getOop());
-			arrayClass = arrayClass.getArrayClass();
+		while (klass != null) {
+			setMark(klass.getOop());
+			klass = klass.getArrayClass();
 		}
 	}
 

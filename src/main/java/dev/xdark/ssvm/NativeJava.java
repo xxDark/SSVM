@@ -12,6 +12,7 @@ import dev.xdark.ssvm.execution.rewrite.FloatArrayProcessor;
 import dev.xdark.ssvm.execution.rewrite.IntArrayProcessor;
 import dev.xdark.ssvm.execution.rewrite.LongArrayProcessor;
 import dev.xdark.ssvm.execution.rewrite.ShortArrayProcessor;
+import dev.xdark.ssvm.execution.rewrite.VMCastProcessor;
 import dev.xdark.ssvm.execution.rewrite.VMInterfaceCallProcessor;
 import dev.xdark.ssvm.execution.rewrite.VMNewProcessor;
 import dev.xdark.ssvm.execution.asm.*;
@@ -31,6 +32,7 @@ import static dev.xdark.ssvm.asm.Modifier.ACC_VM_HIDDEN;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_BOOLEAN_NEW_ARRAY;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_BYTE_NEW_ARRAY;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_CHAR_NEW_ARRAY;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_CHECKCAST;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_DOUBLE_NEW_ARRAY;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_DYNAMIC_CALL;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_FLOAT_NEW_ARRAY;
@@ -422,6 +424,7 @@ public final class NativeJava {
 		vmi.setProcessor(VM_INVOKESPECIAL, new VMSpecialCallProcessor());
 		vmi.setProcessor(VM_INVOKEVIRTUAL, new VMVirtualCallProcessor());
 		vmi.setProcessor(VM_INVOKEINTERFACE, new VMInterfaceCallProcessor());
+		vmi.setProcessor(VM_CHECKCAST, new VMCastProcessor());
 		//</editor-fold>
 	}
 }

@@ -27,7 +27,6 @@ import me.coley.cafedude.classfile.ConstPool;
 import me.coley.cafedude.classfile.constant.ConstPoolEntry;
 import me.coley.cafedude.classfile.constant.CpString;
 import me.coley.cafedude.classfile.constant.CpUtf8;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 
@@ -73,7 +72,6 @@ public class UnsafeNatives {
 	private static void init(VirtualMachine vm, InstanceJavaClass unsafe, UnsafeHelper uhelper) {
 		VMInterface vmi = vm.getInterface();
 		vmi.setInvoker(unsafe, uhelper.allocateMemory(), "(J)J", ctx -> {
-			MemoryManager memoryManager = vm.getMemoryManager();
 			MemoryBlock block = vm.getMemoryAllocator().allocateDirect(ctx.getLocals().load(1).asLong());
 			if (block == null) {
 				vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError());
@@ -241,7 +239,7 @@ public class UnsafeNatives {
 			Locals locals = ctx.getLocals();
 			MemoryManager memoryManager = vm.getMemoryManager();
 			long offset = locals.load(2).asLong();
-			MemoryData buffer = getDataNonNull(memoryManager, locals.load(1), offset);
+			MemoryData buffer = getDataNonNull(locals.load(1), offset);
 			buffer.writeLongVolatile(0L, locals.<ObjectValue>load(4).getMemory().getAddress());
 			return Result.ABORT;
 		};
@@ -454,11 +452,11 @@ public class UnsafeNatives {
 			ctx.setResult(IntValue.of(data.readShort(0L)));
 			return Result.ABORT;
 		});
-		MethodInvoker putObject = (MethodInvoker) ctx -> {
+		MethodInvoker putObject = ctx -> {
 			Locals locals = ctx.getLocals();
 			MemoryManager memoryManager = vm.getMemoryManager();
 			long offset = locals.load(2).asLong();
-			MemoryData data = getDataNonNull(memoryManager, locals.load(1), offset);
+			MemoryData data = getDataNonNull(locals.load(1), offset);
 			data.writeLong(0L, locals.<ObjectValue>load(4).getMemory().getAddress());
 			return Result.ABORT;
 		};
@@ -474,7 +472,7 @@ public class UnsafeNatives {
 			ctx.setResult(LongValue.of(data.readLong(0L)));
 			return Result.ABORT;
 		});
-		vmi.setInvoker(unsafe, "getByte", "(Ljava/lang/Object;J)J", ctx -> {
+		vmi.setInvoker(unsafe, "getByte", "(Ljava/lang/Object;J)B", ctx -> {
 			Locals locals = ctx.getLocals();
 			long offset = locals.load(2).asLong();
 			MemoryData data = getData(vm.getMemoryAllocator(), locals.load(1), offset);
@@ -485,15 +483,7 @@ public class UnsafeNatives {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
 			JavaClass klass = helper.<JavaValue<JavaClass>>checkNotNull(locals.load(1)).getValue();
-			if (klass == vm.getSymbols().java_lang_Class()) {
-				helper.throwException(vm.getSymbols().java_lang_IllegalAccessException(), klass.getName());
-			}
-			if (!canAllocateInstance(klass)) {
-				helper.throwException(vm.getSymbols().java_lang_InstantiationException(), klass.getName());
-			}
-			klass.initialize();
-			MemoryManager memoryManager = vm.getMemoryManager();
-			InstanceValue instance = memoryManager.newInstance((InstanceJavaClass) klass);
+			InstanceValue instance = ctx.getOperations().allocateInstance(klass);
 			ctx.setResult(instance);
 			return Result.ABORT;
 		});
@@ -547,15 +537,8 @@ public class UnsafeNatives {
 		});
 	}
 
-	private static boolean canAllocateInstance(JavaClass jc) {
-		if (!(jc instanceof InstanceJavaClass)) {
-			return false;
-		}
-		int acc = jc.getModifiers();
-		return (acc & Opcodes.ACC_ABSTRACT) == 0;
-	}
 
-	public static MemoryData getDataNonNull(MemoryManager manager, Value instance, long offset) {
+	public static MemoryData getDataNonNull(Value instance, long offset) {
 		if (instance.isNull()) {
 			throw new PanicException("Segfault");
 		}

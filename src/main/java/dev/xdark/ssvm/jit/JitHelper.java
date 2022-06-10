@@ -2,6 +2,7 @@ package dev.xdark.ssvm.jit;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.ExecutionContext;
+import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.memory.management.MemoryManager;
@@ -9,7 +10,6 @@ import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
-import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.util.InvokeDynamicLinker;
 import dev.xdark.ssvm.util.VMHelper;
@@ -22,8 +22,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.UtilityClass;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
-
-import static org.objectweb.asm.Opcodes.*;
 
 /**
  * JIT helper.
@@ -624,6 +622,20 @@ public class JitHelper {
 
 	public Value loadNull(ExecutionContext ctx) {
 		return ctx.getMemoryManager().nullValue();
+	}
+
+	public Value invokeDirect(Locals locals, Stack stack, Object method, ExecutionContext ctx) {
+		JavaMethod jm = (JavaMethod) method;
+		jm.getOwner().initialize();
+		return ctx.getHelper().invokeDirect(jm, stack, locals).getResult();
+	}
+
+	public Locals newLocals(int count, ExecutionContext ctx) {
+		return ctx.getThreadStorage().newLocals(count);
+	}
+
+	public Stack newStack(int count, ExecutionContext ctx) {
+		return ctx.getThreadStorage().newStack(count);
 	}
 
 	private static JavaMethod resolveStaticMethod(String owner, String name, String desc, ExecutionContext ctx) {

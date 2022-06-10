@@ -19,6 +19,7 @@ import dev.xdark.ssvm.fs.FileDescriptorManager;
 import dev.xdark.ssvm.fs.SimpleFileDescriptorManager;
 import dev.xdark.ssvm.jvm.ManagementInterface;
 import dev.xdark.ssvm.jvm.SimpleManagementInterface;
+import dev.xdark.ssvm.memory.gc.GarbageCollector;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.memory.management.SimpleMemoryManager;
 import dev.xdark.ssvm.memory.management.SimpleStringPool;
@@ -192,6 +193,7 @@ public class VirtualMachine {
 				InstanceJavaClass sysClass = symbols.java_lang_System();
 				MemoryManager memoryManager = this.memoryManager;
 				ThreadManager threadManager = this.threadManager;
+				GarbageCollector garbageCollector = memoryManager.getGarbageCollector();
 
 				// Inject unsafe constants
 				// This must be done first, otherwise
@@ -207,10 +209,12 @@ public class VirtualMachine {
 				// Initialize system group
 				InstanceJavaClass groupClass = symbols.java_lang_ThreadGroup();
 				InstanceValue sysGroup = memoryManager.newInstance(groupClass);
+				garbageCollector.makeGlobalReference(sysGroup);
 				helper.invokeExact(groupClass, "<init>", "()V", new Value[0], new Value[]{sysGroup});
 				systemThreadGroup = sysGroup;
 				// Initialize main group
 				InstanceValue mainGroup = memoryManager.newInstance(groupClass);
+				garbageCollector.makeGlobalReference(mainGroup);
 				helper.invokeExact(groupClass, "<init>", "(Ljava/lang/ThreadGroup;Ljava/lang/String;)V", new Value[0],
 					new Value[]{mainGroup, sysGroup, helper.newUtf8("main")});
 				mainThreadGroup = mainGroup;
@@ -249,9 +253,7 @@ public class VirtualMachine {
 					}
 					helper.invokeStatic(sysClass, "initPhase3", "()V", new Value[0], new Value[0]);
 				}
-				InstanceJavaClass classLoaderClass = symbols.java_lang_ClassLoader();
-				classLoaderClass.initialize();
-				helper.invokeStatic(classLoaderClass, "getSystemClassLoader", "()Ljava/lang/ClassLoader;", new Value[0], new Value[0]);
+				helper.invokeStatic(symbols.java_lang_ClassLoader(), "getSystemClassLoader", "()Ljava/lang/ClassLoader;", new Value[0], new Value[0]);
 				state.set(InitializationState.BOOTED);
 			} catch (Exception ex) {
 				state.set(InitializationState.FAILED);

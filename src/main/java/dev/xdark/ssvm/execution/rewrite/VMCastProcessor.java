@@ -4,19 +4,14 @@ import dev.xdark.ssvm.asm.VMTypeInsnNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
 
 /**
- * Fast path for NEW instruction.
- *
- * @author xDark
+ * Fast path for CHECKCAST.
  */
-public final class VMNewProcessor implements InstructionProcessor<VMTypeInsnNode> {
-
+public class VMCastProcessor implements InstructionProcessor<VMTypeInsnNode> {
 	@Override
 	public Result execute(VMTypeInsnNode insn, ExecutionContext ctx) {
-		ctx.getStack().push(ctx.getOperations().allocateInstance(insn.getJavaType()));
-		ctx.pollSafePointAndSuspend();
+		ctx.getOperations().checkCast(ctx.getStack().peek(), insn.getJavaType());
 		return Result.CONTINUE;
 	}
 }

@@ -7,12 +7,13 @@ import dev.xdark.ssvm.util.UnsafeUtil;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Basic memory allocator that uses
- * tree map to store memory blocks.
+ * navigable map to store memory blocks.
  *
  * @author xDark
  */
@@ -21,9 +22,20 @@ public class SimpleMemoryAllocator implements MemoryAllocator {
 	protected static final int PAGE_SIZE = UnsafeUtil.get().pageSize();
 	protected static final int ADDRESS_SIZE = 8;
 
-	private final TreeMap<MemoryAddress, MemoryBlock> allocatedBlocks = new TreeMap<>();
 	private final MemoryBlock emptyHeap = makeBlock(0L, 0L, true);
 	private final MemoryBlock emptyDirect = makeBlock(0L, 0L, false);
+	private final NavigableMap<MemoryAddress, MemoryBlock> allocatedBlocks;
+
+	/**
+	 * @param allocatedBlocks Backing map.
+	 */
+	public SimpleMemoryAllocator(NavigableMap<MemoryAddress, MemoryBlock> allocatedBlocks) {
+		this.allocatedBlocks = allocatedBlocks;
+	}
+
+	public SimpleMemoryAllocator() {
+		this(new TreeMap<>());
+	}
 
 	@Override
 	public MemoryBlock emptyHeapBlock() {
@@ -163,7 +175,7 @@ public class SimpleMemoryAllocator implements MemoryAllocator {
 		if (!canAllocate(bytes)) {
 			return null;
 		}
-		TreeMap<MemoryAddress, MemoryBlock> allocatedBlocks = this.allocatedBlocks;
+		NavigableMap<MemoryAddress, MemoryBlock> allocatedBlocks = this.allocatedBlocks;
 		// Use random strategy to find free address
 		ThreadLocalRandom rng = ThreadLocalRandom.current();
 		MemoryAddress address = ThreadLocalStorage.get().memoryAddress();

@@ -31,12 +31,7 @@ public class SimpleClassLoaders implements ClassLoaders {
 	private ClassLoaderData bootClassLoaderData;
 
 	@Override
-	public synchronized void register(InstanceValue classLoader) {
-		classLoaders.add(classLoader);
-	}
-
-	@Override
-	public ClassLoaderData setClassLoaderData(ObjectValue classLoader) {
+	public synchronized ClassLoaderData setClassLoaderData(ObjectValue classLoader) {
 		if (classLoader.isNull()) {
 			if (bootClassLoaderData != null) {
 				throw new IllegalStateException("Class loader data for boot loader is already set");
@@ -50,6 +45,7 @@ public class SimpleClassLoaders implements ClassLoaders {
 			ClassLoaderData data = createClassLoaderData();
 			JavaValue<ClassLoaderData> oop = vm.getMemoryManager().newJavaInstance(vm.getSymbols().java_lang_Object(), data);
 			instance.setValue(NativeJava.CLASS_LOADER_OOP, "Ljava/lang/Object;", oop);
+			classLoaders.add(instance);
 			return data;
 		}
 	}

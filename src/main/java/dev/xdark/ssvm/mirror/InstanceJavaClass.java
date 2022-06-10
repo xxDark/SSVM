@@ -338,4 +338,16 @@ public interface InstanceJavaClass extends JavaClass {
 	 * this class can be allocated.
 	 */
 	boolean canAllocateInstance();
+
+	/**
+	 * @return class initialization state.
+	 */
+	State getState();
+
+	enum State {
+		PENDING,
+		IN_PROGRESS,
+		COMPLETE,
+		FAILED,
+	}
 }

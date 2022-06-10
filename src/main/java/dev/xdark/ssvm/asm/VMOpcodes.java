@@ -28,4 +28,5 @@ public class VMOpcodes {
 	public static final int VM_INT_NEW_ARRAY = VM_SHORT_NEW_ARRAY + 1;
 	public static final int VM_LONG_NEW_ARRAY = VM_INT_NEW_ARRAY + 1;
 	public static final int VM_REFERENCE_NEW_ARRAY = VM_LONG_NEW_ARRAY + 1;
+	public static final int VM_CHECKCAST = VM_REFERENCE_NEW_ARRAY + 1;
 }

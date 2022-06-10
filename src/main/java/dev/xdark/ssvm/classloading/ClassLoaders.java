@@ -16,13 +16,6 @@ import java.util.Collection;
 public interface ClassLoaders {
 
 	/**
-	 * Registers new class loader.
-	 *
-	 * @param classLoader Class loader to register.
-	 */
-	void register(InstanceValue classLoader);
-
-	/**
 	 * Sets class loader data.
 	 *
 	 * @param classLoader Class loader to set data for.

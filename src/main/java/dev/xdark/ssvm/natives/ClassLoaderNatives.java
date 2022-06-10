@@ -67,7 +67,7 @@ public class ClassLoaderNatives {
 				int flags = locals.load(8).asInt();
 				boolean hidden = (flags & 0x2) != 0;
 				InstanceJavaClass jc = defineClass0New.apply(ctx, !hidden);
-				ObjectValue classData = locals.<ObjectValue>load(9);
+				ObjectValue classData = locals.load(9);
 				if (hidden) {
 					jc.getNode().access |= Modifier.ACC_VM_HIDDEN;
 				}
@@ -84,7 +84,7 @@ public class ClassLoaderNatives {
 			Value name = locals.load(1);
 			VMHelper helper = vm.getHelper();
 			helper.checkNotNull(name);
-			InstanceValue loader = locals.<InstanceValue>load(0);
+			InstanceValue loader = locals.load(0);
 			ClassLoaderData data = vm.getClassLoaders().getClassLoaderData(loader);
 			InstanceJavaClass loadedClass = data.getClass(helper.readUtf8(name).replace('.', '/'));
 			if (loadedClass != null && Modifier.isHiddenMember(loadedClass.getModifiers())) {
@@ -119,13 +119,13 @@ public class ClassLoaderNatives {
 		return (ctx, link) -> {
 			VMHelper helper = ctx.getHelper();
 			Locals locals = ctx.getLocals();
-			ObjectValue loader = locals.<ObjectValue>load(0);
-			ObjectValue name = locals.<ObjectValue>load(argOffset + 1);
+			ObjectValue loader = locals.load(0);
+			ObjectValue name = locals.load(argOffset + 1);
 			ArrayValue b = helper.checkNotNull(locals.load(argOffset + 2));
 			int off = locals.load(argOffset + 3).asInt();
 			int length = locals.load(argOffset + 4).asInt();
-			ObjectValue pd = locals.<ObjectValue>load(argOffset + 5);
-			ObjectValue source = withSource ? locals.<ObjectValue>load(argOffset + 6) : ctx.getMemoryManager().nullValue();
+			ObjectValue pd = locals.load(argOffset + 5);
+			ObjectValue source = withSource ? locals.load(argOffset + 6) : ctx.getMemoryManager().nullValue();
 			byte[] bytes = helper.toJavaBytes(b);
 			return helper.defineClass(loader, helper.readUtf8(name), bytes, off, length, pd, helper.readUtf8(source), link);
 		};

@@ -53,11 +53,14 @@ public class VMOperations {
 	 * @return allocated instance.
 	 * @see InstanceJavaClass#canAllocateInstance()
 	 */
-	public InstanceValue allocateInstance(InstanceJavaClass klass) {
-		if (!klass.canAllocateInstance()) {
+	public InstanceValue allocateInstance(JavaClass klass) {
+		InstanceJavaClass jc;
+		if (!(klass instanceof InstanceJavaClass) || !(jc = (InstanceJavaClass) klass).canAllocateInstance()) {
 			helper.throwException(symbols.java_lang_InstantiationError());
+			return null;
 		}
-		return memoryManager.newInstance(klass);
+		jc.initialize();
+		return memoryManager.newInstance(jc);
 	}
 
 	/**

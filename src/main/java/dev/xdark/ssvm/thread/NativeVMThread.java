@@ -18,10 +18,11 @@ public class NativeVMThread extends BaseVMThread {
 	/**
 	 * @param oop VM thread oop.
 	 * @param group Thread group.
+	 * @param handle Thread handle.
 	 */
-	public NativeVMThread(InstanceValue oop, ThreadGroup group) {
+	public NativeVMThread(InstanceValue oop, ThreadGroup group, ThreadHandle handle) {
 		super(oop);
-		thread = new NativeJavaThread(oop, this, group);
+		thread = new NativeJavaThread(oop, this, group, handle);
 	}
 
 	/**

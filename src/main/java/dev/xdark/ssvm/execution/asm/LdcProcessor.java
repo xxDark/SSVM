@@ -4,7 +4,6 @@ import dev.xdark.ssvm.asm.VMLdcInsnNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.execution.SafePoint;
 import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.LdcInsnNode;
@@ -26,13 +25,7 @@ public final class LdcProcessor implements InstructionProcessor<LdcInsnNode> {
 			// VM-patched.
 			value = (Value) cst;
 		} else {
-			SafePoint safePoint = ctx.getSafePoint();
-			safePoint.increment();
-			try {
-				value = ctx.getHelper().valueFromLdc(cst);
-			} finally {
-				safePoint.decrement();
-			}
+			value = ctx.getHelper().valueFromLdc(cst);
 		}
 		InsnList list = ctx.getMethod().getNode().instructions;
 		list.set(insn, new VMLdcInsnNode(insn, value));

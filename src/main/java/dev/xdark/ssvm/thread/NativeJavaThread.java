@@ -21,16 +21,19 @@ public class NativeJavaThread extends Thread {
 
 	private final InstanceValue oop;
 	private final VMThread vmThread;
+	private final ThreadHandle handle;
 
 	/**
 	 * @param oop      Thread oop.
 	 * @param vmThread VM thread.
-	 * @param group Thread group.
+	 * @param group    Thread group.
+	 * @param handle   Thread handle.
 	 */
-	public NativeJavaThread(InstanceValue oop, VMThread vmThread, ThreadGroup group) {
+	public NativeJavaThread(InstanceValue oop, VMThread vmThread, ThreadGroup group, ThreadHandle handle) {
 		super(group, (Runnable) null);
 		this.oop = oop;
 		this.vmThread = vmThread;
+		this.handle = handle;
 	}
 
 	/**
@@ -40,6 +43,7 @@ public class NativeJavaThread extends Thread {
 	public NativeJavaThread(InstanceValue oop, VMThread vmThread) {
 		this.oop = oop;
 		this.vmThread = vmThread;
+		handle = null;
 	}
 
 	@Override
@@ -84,7 +88,14 @@ public class NativeJavaThread extends Thread {
 			try {
 				oop.monitorNotifyAll();
 			} finally {
-				oop.monitorExit();
+				try {
+					oop.monitorExit();
+				} finally {
+					ThreadHandle handle = this.handle;
+					if (handle != null) {
+						handle.release();
+					}
+				}
 			}
 		}
 	}

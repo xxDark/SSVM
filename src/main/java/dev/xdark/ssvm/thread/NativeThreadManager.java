@@ -137,7 +137,13 @@ public class NativeThreadManager implements ThreadManager {
 	 * @return created thread.
 	 */
 	protected NativeVMThread createThread(InstanceValue value) {
-		return new NativeVMThread(value, threadGroup);
+		return new NativeVMThread(value, threadGroup, () -> {
+			synchronized (this) {
+				vmThreads.remove(value);
+				// When the thread is dead, poll safepoint
+				vm.getSafePoint().poll();
+			}
+		});
 	}
 
 	/**

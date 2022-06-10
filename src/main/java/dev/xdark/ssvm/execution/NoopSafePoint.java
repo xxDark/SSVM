@@ -6,17 +6,11 @@ package dev.xdark.ssvm.execution;
  * @author xDark
  */
 public final class NoopSafePoint implements SafePoint {
-
 	@Override
-	public void increment() {
+	public void poll() {
 	}
 
 	@Override
-	public void decrement() {
-	}
-
-	@Override
-	public boolean tryLock() {
-		return true;
+	public void request() {
 	}
 }

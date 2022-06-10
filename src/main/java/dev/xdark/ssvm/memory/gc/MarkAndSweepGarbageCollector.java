@@ -80,74 +80,67 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 		VirtualMachine vm = this.vm;
 		SafePoint safePoint = vm.getSafePoint();
 		ThreadManager threadManager = vm.getThreadManager();
-		threadManager.suspendAll();
+		safePoint.request();
 		try {
-			if (!safePoint.tryLock()) {
-				return false;
+			MemoryManager memoryManager = vm.getMemoryManager();
+			Collection<ObjectValue> allObjects = memoryManager.listObjects();
+			ClassLoaders classLoaders = vm.getClassLoaders();
+			Collection<InstanceValue> loaderList = classLoaders.getAll();
+			for (InstanceValue classLoader : loaderList) {
+				setMark(classLoader);
+				ClassLoaderData data = classLoaders.getClassLoaderData(classLoader);
+				markClassLoaderData(data);
 			}
-			try {
-				MemoryManager memoryManager = vm.getMemoryManager();
-				Collection<ObjectValue> allObjects = memoryManager.listObjects();
-				ClassLoaders classLoaders = vm.getClassLoaders();
-				Collection<InstanceValue> loaderList = classLoaders.getAll();
-				for (InstanceValue classLoader : loaderList) {
-					setMark(classLoader);
-					ClassLoaderData data = classLoaders.getClassLoaderData(classLoader);
-					markClassLoaderData(data);
-				}
-				markClassLoaderData(vm.getBootClassLoaderData());
-				VMPrimitives primitives = vm.getPrimitives();
-				markClass(primitives.longPrimitive());
-				markClass(primitives.doublePrimitive());
-				markClass(primitives.intPrimitive());
-				markClass(primitives.floatPrimitive());
-				markClass(primitives.charPrimitive());
-				markClass(primitives.shortPrimitive());
-				markClass(primitives.bytePrimitive());
-				markClass(primitives.booleanPrimitive());
-				for (VMThread thread : threadManager.getThreads()) {
-					if (thread.isAlive()) {
-						setMark(thread.getOop());
-						for (StackFrame frame : thread.getBacktrace()) {
-							ExecutionContext ctx = frame.getExecutionContext();
-							if (ctx != null) {
-								for (Value value : ctx.getStack().view()) {
-									tryMark(value);
-								}
-								for (Value value : ctx.getLocals().getTable()) {
-									tryMark(value);
-								}
-								tryMark(ctx.getResult());
+			markClassLoaderData(vm.getBootClassLoaderData());
+			VMPrimitives primitives = vm.getPrimitives();
+			markClass(primitives.longPrimitive());
+			markClass(primitives.doublePrimitive());
+			markClass(primitives.intPrimitive());
+			markClass(primitives.floatPrimitive());
+			markClass(primitives.charPrimitive());
+			markClass(primitives.shortPrimitive());
+			markClass(primitives.bytePrimitive());
+			markClass(primitives.booleanPrimitive());
+			for (VMThread thread : threadManager.getThreads()) {
+				if (thread.isAlive()) {
+					setMark(thread.getOop());
+					for (StackFrame frame : thread.getBacktrace()) {
+						ExecutionContext ctx = frame.getExecutionContext();
+						if (ctx != null) {
+							for (Value value : ctx.getStack().view()) {
+								tryMark(value);
 							}
+							for (Value value : ctx.getLocals().getTable()) {
+								tryMark(value);
+							}
+							tryMark(ctx.getResult());
 						}
 					}
 				}
-				for (ObjectValue value : handles.keySet()) {
-					setMark(value);
-				}
-				MemoryAllocator allocator = vm.getMemoryAllocator();
-				allObjects.removeIf(x -> {
-					if (x.isNull()) {
-						return false;
-					}
-					MemoryBlock block = x.getMemory();
-					MemoryData data = block.getData();
-					byte mark = data.readByte(0L);
-					boolean result = mark == MARK_NONE;
-					if (mark != MARK_GLOBAL_REF) {
-						data.writeByte(0L, MARK_NONE);
-					}
-					if (result) {
-						if (!allocator.freeHeap(block.getAddress())) {
-							throw new PanicException("Failed to free heap memory");
-						}
-					}
-					return result;
-				});
-				return true;
-			} finally {
-				safePoint.decrement();
 			}
+			for (ObjectValue value : handles.keySet()) {
+				setMark(value);
+			}
+			MemoryAllocator allocator = vm.getMemoryAllocator();
+			allObjects.removeIf(x -> {
+				if (x.isNull()) {
+					return false;
+				}
+				MemoryBlock block = x.getMemory();
+				MemoryData data = block.getData();
+				byte mark = data.readByte(0L);
+				boolean result = mark == MARK_NONE;
+				if (mark != MARK_GLOBAL_REF) {
+					data.writeByte(0L, MARK_NONE);
+				}
+				if (result) {
+					if (!allocator.freeHeap(block.getAddress())) {
+						throw new PanicException("Failed to free heap memory");
+					}
+				}
+				return result;
+			});
+			return true;
 		} finally {
 			threadManager.resumeAll();
 		}

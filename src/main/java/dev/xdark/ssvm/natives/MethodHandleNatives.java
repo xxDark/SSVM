@@ -4,12 +4,15 @@ import dev.xdark.ssvm.NativeJava;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
+import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaField;
 import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.thread.StackFrame;
+import dev.xdark.ssvm.util.InvokeDynamicLinker;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.*;
@@ -113,14 +116,35 @@ public class MethodHandleNatives {
 			InstanceValue _this = locals.load(0);
 			InstanceValue form = helper.checkNotNull(_this.getValue("form", "Ljava/lang/invoke/LambdaForm;"));
 			InstanceValue vmentry = helper.checkNotNull(form.getValue("vmentry", "Ljava/lang/invoke/MemberName;"));
-			JavaMethod vmtarget = vm.getInvokeDynamicLinker().readVMTarget(_this);
+			InvokeDynamicLinker invokeDynamicLinker = vm.getInvokeDynamicLinker();
+			JavaMethod vmtarget = invokeDynamicLinker.readVMTargetFromMemberName(vmentry);
 			String name = vmtarget.getName();
 			if ("<init>".equals(name)) {
 				helper.throwException(symbols.java_lang_InternalError(), "Bad name " + name);
 			}
 			Value[] lvt = locals.getTable();
+			ExecutionContext last = vm.currentThread().getBacktrace().last().getExecutionContext();
+			JavaMethod callerMethod = last.getMethod();
+			String callName = callerMethod.getName();
+			if (mh.isAssignableFrom(_this.getJavaClass()) && "invoke".equals(callName)) {
+				// Ask VM about caller
+				// TODO move to VMHelper?
+				JavaClass jc = ((JavaValue<JavaClass>) helper.invokeStatic(symbols.internal_reflect_Reflection(), "getCallerClass", "()Ljava/lang/Class;", new Value[0], new Value[0]).getResult()).getValue();
+				// Construct MT
+				InstanceValue mt = helper.methodType(jc.getClassLoader(), callerMethod.getType());
+				// Invoke asType
+				_this = (InstanceValue) helper.invokeVirtual("asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;", new Value[0], new Value[]{
+					_this,
+					mt
+				}).getResult();
+				// Re-read method target
+				form = helper.checkNotNull(_this.getValue("form", "Ljava/lang/invoke/LambdaForm;"));
+				vmentry = helper.checkNotNull(form.getValue("vmentry", "Ljava/lang/invoke/MemberName;"));
+				vmtarget = invokeDynamicLinker.readVMTargetFromMemberName(vmentry);
+				name = vmtarget.getName();
+				lvt[0] = _this; // Replace 'this' with new handle
+			}
 
-			InstanceJavaClass owner = vmtarget.getOwner();
 			Value result;
 			if ((vmtarget.getAccess() & ACC_STATIC) == 0) {
 				int flags = vmentry.getInt("flags");

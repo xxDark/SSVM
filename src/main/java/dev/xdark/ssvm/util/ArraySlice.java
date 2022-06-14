@@ -82,4 +82,14 @@ public class ArraySlice<V> {
 		}
 		return index;
 	}
+
+	/**
+	 * Fills the array with some value.
+	 *
+	 * @param value
+	 *      Value to fill the array with.
+	 */
+	public void fill(V value) {
+		Arrays.fill(array, fromIndex, toIndex, value);
+	}
 }

@@ -178,4 +178,5 @@ public interface VMSymbols {
 	InstanceJavaClass java_io_FileNotFoundException();
 
 	InstanceJavaClass java_lang_InstantiationError();
+	InstanceJavaClass internal_reflect_Reflection();
 }

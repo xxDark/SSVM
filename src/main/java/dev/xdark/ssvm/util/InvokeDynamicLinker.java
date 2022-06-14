@@ -269,13 +269,24 @@ public final class InvokeDynamicLinker {
 	 * @return Method handle target.
 	 * Throws VM exception if handle is not initialized.
 	 */
-	public JavaMethod readVMTarget(InstanceValue handle) {
+	public JavaMethod readVMTargetFromHandle(InstanceValue handle) {
 		VMHelper helper = vm.getHelper();
 		InstanceValue form = helper.checkNotNull(handle.getValue("form", "Ljava/lang/invoke/LambdaForm;"));
 		InstanceValue vmentry = helper.checkNotNull(form.getValue("vmentry", "Ljava/lang/invoke/MemberName;"));
+		return readVMTargetFromMemberName(vmentry);
+	}
+
+	/**
+	 * Reads method handle target.
+	 *
+	 * @param vmentry Member name to read target from.
+	 * @return Method handle target.
+	 * Throws VM exception if handle is not initialized.
+	 */
+	public JavaMethod readVMTargetFromMemberName(InstanceValue vmentry) {
+		VMHelper helper = vm.getHelper();
 		InstanceValue resolved = helper.checkNotNull(vmentry.getValue("method", vm.getSymbols().java_lang_invoke_ResolvedMethodName().getDescriptor()));
 		InstanceJavaClass clazz = ((JavaValue<InstanceJavaClass>) vmentry.getValue("clazz", "Ljava/lang/Class;")).getValue();
-		JavaMethod vmtarget = helper.getMethodBySlot(clazz, ((InstanceValue) resolved.getValue(NativeJava.VM_TARGET, "Ljava/lang/Object;")).getInt("value"));
-		return vmtarget;
+		return helper.getMethodBySlot(clazz, ((InstanceValue) resolved.getValue(NativeJava.VM_TARGET, "Ljava/lang/Object;")).getInt("value"));
 	}
 }

@@ -437,6 +437,11 @@ final class DelegatingVMSymbols implements VMSymbols {
 		return symbols.java_lang_InstantiationError();
 	}
 
+	@Override
+	public InstanceJavaClass internal_reflect_Reflection() {
+		return symbols.internal_reflect_Reflection();
+	}
+
 	/**
 	 * @param symbols New symbols.
 	 */

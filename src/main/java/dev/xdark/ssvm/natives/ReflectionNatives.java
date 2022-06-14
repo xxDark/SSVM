@@ -28,13 +28,7 @@ public class ReflectionNatives {
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		InstanceJavaClass reflection = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/Reflection");
-		if (reflection == null) {
-			reflection = (InstanceJavaClass) vm.findBootstrapClass("sun/reflect/Reflection");
-			if (reflection == null) {
-				throw new IllegalStateException("Unable to locate Reflection class");
-			}
-		}
+		InstanceJavaClass reflection = vm.getSymbols().internal_reflect_Reflection();
 		vmi.setInvoker(reflection, "getCallerClass", "()Ljava/lang/Class;", getCallerClass(false));
 		vmi.setInvoker(reflection, "getCallerClass", "(I)Ljava/lang/Class;", getCallerClass(true));
 		vmi.setInvoker(reflection, "getClassAccessFlags", "(Ljava/lang/Class;)I", ctx -> {

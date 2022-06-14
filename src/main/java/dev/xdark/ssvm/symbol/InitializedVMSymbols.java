@@ -99,6 +99,7 @@ public final class InitializedVMSymbols implements VMSymbols {
 	private final InstanceJavaClass java_lang_IncompatibleClassChangeError;
 	private final InstanceJavaClass java_io_FileNotFoundException;
 	private final InstanceJavaClass java_lang_InstantiationError;
+	private final InstanceJavaClass internal_reflect_Reflection;
 
 	/**
 	 * @param vm VM instance.
@@ -207,6 +208,14 @@ public final class InitializedVMSymbols implements VMSymbols {
 		java_lang_IncompatibleClassChangeError = (InstanceJavaClass) vm.findBootstrapClass("java/lang/IncompatibleClassChangeError");
 		java_io_FileNotFoundException = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileNotFoundException");
 		java_lang_InstantiationError = (InstanceJavaClass) vm.findBootstrapClass("java/lang/InstantiationError");
+		InstanceJavaClass internal_reflect_Reflection = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/Reflection");
+		if (internal_reflect_Reflection == null) {
+			internal_reflect_Reflection = (InstanceJavaClass) vm.findBootstrapClass("sun/reflect/Reflection");
+			if (internal_reflect_Reflection == null) {
+				throw new IllegalStateException("Unable to locate Reflection class");
+			}
+		}
+		this.internal_reflect_Reflection =  internal_reflect_Reflection;
 	}
 
 	@Override
@@ -632,6 +641,11 @@ public final class InitializedVMSymbols implements VMSymbols {
 	@Override
 	public InstanceJavaClass java_lang_InstantiationError() {
 		return java_lang_InstantiationError;
+	}
+
+	@Override
+	public InstanceJavaClass internal_reflect_Reflection() {
+		return internal_reflect_Reflection;
 	}
 
 	private static InstanceJavaClass resolvedMemberName(VirtualMachine vm) {

@@ -5,9 +5,12 @@ import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.tlc.ThreadLocalStorage;
+import dev.xdark.ssvm.util.InvokeDynamicLinker;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
+import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
@@ -16,6 +19,7 @@ import me.coley.cafedude.classfile.ClassFile;
 import me.coley.cafedude.io.ClassFileReader;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -980,33 +984,32 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	private JavaMethod lookupMethodIn(MethodLayout layout, MemberKey key) {
 		Map<MemberKey, JavaMethod> methods = layout.getMethods();
 		JavaMethod jm = methods.get(key);
-		if (jm == null) {
-			jm = methods.get(new SimpleMemberKey(this, key.getName(), POLYMORPHIC_DESC));
-			if (jm != null) {
-				if (!jm.isPolymorphic()) {
-					jm = null;
-				} else {
-					jm = new JavaMethod(this, jm.getNode(), key.getDesc(), jm.getSlot());
-				}
-			}
-		}
-		return jm;
+		return alternativeLookupMethodIn(jm, methods, key.getName(), key.getDesc());
 	}
 
 	private JavaMethod lookupMethodIn(MethodLayout layout, String name, String desc) {
 		Map<MemberKey, JavaMethod> methods = layout.getMethods();
 		JavaMethod jm = methods.get(new SimpleMemberKey(this, name, desc));
+		return alternativeLookupMethodIn(jm, methods, name, desc);
+	}
+
+	private JavaMethod alternativeLookupMethodIn(JavaMethod jm, Map<MemberKey, JavaMethod> methods, String name, String desc) {
 		if (jm == null) {
 			jm = methods.get(new SimpleMemberKey(this, name, POLYMORPHIC_DESC));
 			if (jm != null) {
 				if (!jm.isPolymorphic()) {
 					jm = null;
 				} else {
-					jm = new JavaMethod(this, jm.getNode(), desc, jm.getSlot());
+					return linkPolymorphicCall(jm, name, desc);
 				}
 			}
 		}
 		return jm;
+	}
+
+	private JavaMethod linkPolymorphicCall(JavaMethod original, String name, String desc) {
+		InstanceJavaClass owner = original.getOwner();
+		return new JavaMethod(owner, original.getNode(), desc, original.getSlot());
 	}
 
 	private void markFailedInitialization(VMException ex) {

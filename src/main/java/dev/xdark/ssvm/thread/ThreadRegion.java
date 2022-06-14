@@ -28,6 +28,7 @@ public final class ThreadRegion extends ArraySlice<Value> implements AutoCloseab
 
 	@Override
 	public void dispose() {
+		fill(null);
 		storage.pop(length());
 	}
 }

@@ -29,6 +29,7 @@ public class TestUtil {
 
 	public void test(Class<?> klass, boolean bootstrap, Consumer<InstanceJavaClass> init) {
 		VirtualMachine vm = newVirtualMachine();
+		vm.getProperties().setProperty("java.lang.invoke.MethodHandle.TRACE_METHOD_LINKAGE", "true");
 		if (bootstrap) {
 			vm.bootstrap();
 		} else {

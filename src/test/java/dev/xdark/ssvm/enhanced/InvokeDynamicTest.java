@@ -2,8 +2,13 @@ package dev.xdark.ssvm.enhanced;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.Serializable;
+import java.time.chrono.ChronoLocalDate;
+import java.time.chrono.ChronoLocalDateTime;
+import java.time.chrono.ChronoZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,9 +39,9 @@ public class InvokeDynamicTest {
 	@VMTest
 	private static void testStream() {
 		List<Integer> list = IntStream.range(0, 6)
-				.filter(x -> true)
-				.map(x -> x)
-				.boxed().collect(Collectors.toList());
+			.filter(x -> true)
+			.map(x -> x)
+			.boxed().collect(Collectors.toList());
 		if (!list.equals(Arrays.asList(0, 1, 2, 3, 4, 5))) {
 			throw new IllegalStateException();
 		}
@@ -48,7 +53,8 @@ public class InvokeDynamicTest {
 		AtomicInteger counter = new AtomicInteger();
 		IntStream.range(0, v).forEach(counter::addAndGet);
 		int x = 0;
-		for (int i = 0; i < v; x += i++) ;
+		for (int i = 0; i < v; x += i++)
+			;
 		if (x != counter.get()) {
 			throw new IllegalStateException();
 		}
@@ -58,8 +64,8 @@ public class InvokeDynamicTest {
 	private static void testMethodRef2() {
 		int v = ThreadLocalRandom.current().nextInt(8) + 8;
 		ArrayList<String> list = IntStream.range(0, v)
-				.mapToObj(Integer::toString)
-				.collect(Collectors.toCollection(ArrayList::new));
+			.mapToObj(Integer::toString)
+			.collect(Collectors.toCollection(ArrayList::new));
 		List<String> copy = Arrays.asList(new String[v]);
 		while (v-- != 0) {
 			copy.set(v, Integer.toString(v));
@@ -73,8 +79,8 @@ public class InvokeDynamicTest {
 	private static void testMethodRef3() {
 		int v = ThreadLocalRandom.current().nextInt(8) + 8;
 		String[] array = IntStream.range(0, v)
-				.mapToObj(Integer::toHexString)
-				.toArray(String[]::new);
+			.mapToObj(Integer::toHexString)
+			.toArray(String[]::new);
 		String[] copy = new String[v];
 		while (v-- != 0) {
 			copy[v] = Integer.toHexString(v);
@@ -158,6 +164,36 @@ public class InvokeDynamicTest {
 		if (result != v) {
 			throw new IllegalStateException();
 		}
+	}
+
+	@VMTest
+	private static void testArray() {
+		IntStream.range(1, 100).mapToObj(Integer::valueOf).toArray(Integer[]::new);
+	}
+
+	@VMTest
+	private static void testAltMetafactory() {
+		Comparator<ChronoLocalDate> DATE_ORDER =
+			(Comparator<ChronoLocalDate> & Serializable) (date1, date2) -> {
+				return Long.compare(date1.toEpochDay(), date2.toEpochDay());
+			};
+		Comparator<ChronoLocalDateTime<? extends ChronoLocalDate>> DATE_TIME_ORDER =
+			(Comparator<ChronoLocalDateTime<? extends ChronoLocalDate>> & Serializable) (dateTime1, dateTime2) -> {
+				int cmp = Long.compare(dateTime1.toLocalDate().toEpochDay(), dateTime2.toLocalDate().toEpochDay());
+				if (cmp == 0) {
+					cmp = Long.compare(dateTime1.toLocalTime().toNanoOfDay(), dateTime2.toLocalTime().toNanoOfDay());
+				}
+				return cmp;
+			};
+		Comparator<ChronoZonedDateTime<?>> INSTANT_ORDER =
+			(Comparator<ChronoZonedDateTime<?>> & Serializable) (dateTime1, dateTime2) -> {
+				int cmp = Long.compare(dateTime1.toEpochSecond(), dateTime2.toEpochSecond());
+				if (cmp == 0) {
+					cmp = Long.compare(dateTime1.toLocalTime().getNano(), dateTime2.toLocalTime().getNano());
+				}
+				return cmp;
+			};
+
 	}
 
 	private static void setResult(Long value) {

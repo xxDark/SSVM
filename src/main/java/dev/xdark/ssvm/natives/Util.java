@@ -4,11 +4,6 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ArrayValue;
-import dev.xdark.ssvm.value.DoubleValue;
-import dev.xdark.ssvm.value.FloatValue;
-import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.LongValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.TopValue;
 import dev.xdark.ssvm.value.Value;
@@ -31,15 +26,6 @@ import java.io.IOException;
 @UtilityClass
 final class Util {
 
-	private final Type LONG = Type.getType(Long.class);
-	private final Type DOUBLE = Type.getType(Double.class);
-	private final Type INT = Type.getType(Integer.class);
-	private final Type FLOAT = Type.getType(Float.class);
-	private final Type CHAR = Type.getType(Character.class);
-	private final Type SHORT = Type.getType(Short.class);
-	private final Type BOOLEAN = Type.getType(Boolean.class);
-	private final Type BYTE = Type.getType(Byte.class);
-
 	/**
 	 * Converts array of values back to their original
 	 * values.
@@ -61,7 +47,7 @@ final class Util {
 		int x = 0;
 		for (int i = 0; i < argTypes.length; i++) {
 			JavaClass originalClass = helper.findClass(loader, argTypes[i].getInternalName(), true);
-			ObjectValue value = (ObjectValue) array.getValue(i);
+			ObjectValue value = array.getValue(i);
 			if (value.isNull() || !originalClass.isPrimitive()) {
 				result[x++] = value;
 			} else {
@@ -71,70 +57,6 @@ final class Util {
 			}
 		}
 		return result;
-	}
-
-	/**
-	 * Performs argument conversion to its
-	 * wrapper/primitive type if needed.
-	 *
-	 * @param helper VM helper.
-	 * @param type   Argument type.
-	 * @param arg    Argument.
-	 * @return boxed/unboxed argument or itself,
-	 * if conversion is not needed.
-	 */
-	Value convertInvokeDynamicArgument(VMHelper helper, Type type, Value arg) {
-		if (!(arg instanceof ObjectValue)) {
-			if (LONG.equals(type)) {
-				return helper.boxLong(arg);
-			} else if (DOUBLE.equals(type)) {
-				return helper.boxDouble(arg);
-			} else if (INT.equals(type)) {
-				return helper.boxInt(arg);
-			} else if (FLOAT.equals(type)) {
-				return helper.boxFloat(arg);
-			} else if (CHAR.equals(type)) {
-				return helper.boxChar(arg);
-			} else if (SHORT.equals(type)) {
-				return helper.boxShort(arg);
-			} else if (BYTE.equals(type)) {
-				return helper.boxByte(arg);
-			} else if (BOOLEAN.equals(type)) {
-				return helper.boxBoolean(arg);
-			}
-			if (type.getSort() == Type.OBJECT) {
-				if (arg instanceof DoubleValue) {
-					return helper.boxDouble(arg);
-				} else if (arg instanceof LongValue) {
-					return helper.boxLong(arg);
-				} else if (arg instanceof IntValue) {
-					return helper.boxInt(arg);
-				} else if (arg instanceof FloatValue) {
-					return helper.boxFloat(arg);
-				}
-			}
-		} else if (arg instanceof InstanceValue) {
-			InstanceValue obj = (InstanceValue) arg;
-			switch (type.getSort()) {
-				case Type.LONG:
-					return helper.unboxLong(obj);
-				case Type.DOUBLE:
-					return helper.unboxDouble(obj);
-				case Type.INT:
-					return helper.unboxInt(obj);
-				case Type.FLOAT:
-					return helper.unboxFloat(obj);
-				case Type.CHAR:
-					return helper.unboxChar(obj);
-				case Type.SHORT:
-					return helper.unboxShort(obj);
-				case Type.BYTE:
-					return helper.unboxByte(obj);
-				case Type.BOOLEAN:
-					return helper.unboxBoolean(obj);
-			}
-		}
-		return arg;
 	}
 
 	/**

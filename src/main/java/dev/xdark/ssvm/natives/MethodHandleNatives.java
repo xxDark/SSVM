@@ -155,9 +155,7 @@ public class MethodHandleNatives {
 			} else {
 				result = helper.invokeStatic(vmtarget, new Value[0], lvt).getResult();
 			}
-			JavaMethod m = ctx.getMethod();
-			result = Util.convertInvokeDynamicArgument(helper, m.getReturnType(), result);
-			ctx.setResult(voidAsNull(result, m));
+			ctx.setResult(result);
 			return Result.ABORT;
 		};
 		vmi.setInvoker(mh, "invoke", "([Ljava/lang/Object;)Ljava/lang/Object;", invoke);
@@ -189,8 +187,7 @@ public class MethodHandleNatives {
 				result = helper.invokeStatic(vmtarget, new Value[0], args).getResult();
 			}
 			JavaMethod m = ctx.getMethod();
-			result = Util.convertInvokeDynamicArgument(helper, m.getReturnType(), result);
-			ctx.setResult(voidAsNull(result, m));
+			ctx.setResult(result);
 			return Result.ABORT;
 		};
 

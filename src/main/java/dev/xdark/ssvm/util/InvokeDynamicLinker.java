@@ -135,6 +135,10 @@ public final class InvokeDynamicLinker {
 	public Value dynamicCall(Value[] args, String desc, InstanceValue handle) {
 		VirtualMachine vm = this.vm;
 		VMHelper helper = vm.getHelper();
+		if (vm.getSymbols().java_lang_invoke_CallSite().isAssignableFrom(handle.getJavaClass())) {
+			// See linkCallSiteImpl
+			handle = helper.checkNotNull(helper.invokeVirtual("getTarget", "()Ljava/lang/invoke/MethodHandle;", new Value[0], new Value[]{handle}).getResult());
+		}
 		if (args[0] == null) {
 			// The slot was reserved, use it
 			args[0] = handle;

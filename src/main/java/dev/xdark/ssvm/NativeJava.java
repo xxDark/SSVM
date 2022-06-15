@@ -294,13 +294,13 @@ public final class NativeJava {
 		vmi.setProcessor(FMUL, new BiFloatProcessor((v1, v2) -> v1 * v2));
 		vmi.setProcessor(DMUL, new BiDoubleProcessor((v1, v2) -> v1 * v2));
 
-		vmi.setProcessor(IDIV, new BiIntProcessor((v1, v2) -> v1 / v2));
-		vmi.setProcessor(LDIV, new BiLongProcessor((v1, v2) -> v1 / v2));
+		vmi.setProcessor(IDIV, new IntDivisionProcessor());
+		vmi.setProcessor(LDIV, new LongDivisionProcessor());
 		vmi.setProcessor(FDIV, new BiFloatProcessor((v1, v2) -> v1 / v2));
 		vmi.setProcessor(DDIV, new BiDoubleProcessor((v1, v2) -> v1 / v2));
 
-		vmi.setProcessor(IREM, new BiIntProcessor((v1, v2) -> v1 % v2));
-		vmi.setProcessor(LREM, new BiLongProcessor((v1, v2) -> v1 % v2));
+		vmi.setProcessor(IREM, new IntRemainderProcessor());
+		vmi.setProcessor(LREM, new LongRemainderProcessor());
 		vmi.setProcessor(FREM, new BiFloatProcessor((v1, v2) -> v1 % v2));
 		vmi.setProcessor(DREM, new BiDoubleProcessor((v1, v2) -> v1 % v2));
 

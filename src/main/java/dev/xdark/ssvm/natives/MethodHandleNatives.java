@@ -11,7 +11,6 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaField;
 import dev.xdark.ssvm.mirror.JavaMethod;
-import dev.xdark.ssvm.thread.StackFrame;
 import dev.xdark.ssvm.util.InvokeDynamicLinker;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
@@ -126,7 +125,7 @@ public class MethodHandleNatives {
 			ExecutionContext last = vm.currentThread().getBacktrace().last().getExecutionContext();
 			JavaMethod callerMethod = last.getMethod();
 			String callName = callerMethod.getName();
-			if (mh.isAssignableFrom(_this.getJavaClass()) && "invoke".equals(callName)) {
+			if ("invoke".equals(callName)) {
 				// Ask VM about caller
 				// TODO move to VMHelper?
 				JavaClass jc = ((JavaValue<JavaClass>) helper.invokeStatic(symbols.internal_reflect_Reflection(), "getCallerClass", "()Ljava/lang/Class;", new Value[0], new Value[0]).getResult()).getValue();

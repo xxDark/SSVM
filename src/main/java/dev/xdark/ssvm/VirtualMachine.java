@@ -25,7 +25,7 @@ import dev.xdark.ssvm.memory.management.SimpleMemoryManager;
 import dev.xdark.ssvm.memory.management.SimpleStringPool;
 import dev.xdark.ssvm.memory.management.StringPool;
 import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
-import dev.xdark.ssvm.memory.allocation.SimpleMemoryAllocator;
+import dev.xdark.ssvm.memory.allocation.NavigableMemoryAllocator;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
@@ -45,6 +45,7 @@ import dev.xdark.ssvm.thread.VMThread;
 import dev.xdark.ssvm.tz.SimpleTimeManager;
 import dev.xdark.ssvm.tz.TimeManager;
 import dev.xdark.ssvm.util.InvokeDynamicLinker;
+import dev.xdark.ssvm.util.Reflection;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.InstanceValue;
@@ -92,6 +93,7 @@ public class VirtualMachine {
 	private final VMOperations operations;
 	private final LinkResolver linkResolver;
 	private final InvokeDynamicLinker invokeDynamicLinker;
+	private final Reflection reflection;
 	private volatile InstanceValue systemThreadGroup;
 	private volatile InstanceValue mainThreadGroup;
 
@@ -121,6 +123,7 @@ public class VirtualMachine {
 		executionEngine = createExecutionEngine();
 		linkResolver = new LinkResolver(this);
 		invokeDynamicLinker = new InvokeDynamicLinker(this);
+		reflection = new Reflection(this);
 		operations = new VMOperations(this);
 
 		(properties = new Properties()).putAll(System.getProperties());
@@ -372,6 +375,15 @@ public class VirtualMachine {
 	 */
 	public InvokeDynamicLinker getInvokeDynamicLinker() {
 		return invokeDynamicLinker;
+	}
+
+	/**
+	 * Returns reflection helper.
+	 *
+	 * @return reflection helper.
+	 */
+	public Reflection getReflection() {
+		return reflection;
 	}
 
 	/**
@@ -632,7 +644,7 @@ public class VirtualMachine {
 	 * @return memory allocator.
 	 */
 	protected MemoryAllocator createMemoryAllocator() {
-		return new SimpleMemoryAllocator();
+		return new NavigableMemoryAllocator();
 	}
 
 	/**

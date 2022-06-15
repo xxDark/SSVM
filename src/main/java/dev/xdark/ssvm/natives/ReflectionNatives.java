@@ -4,13 +4,9 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.asm.Modifier;
-import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
-import dev.xdark.ssvm.mirror.JavaMethod;
-import dev.xdark.ssvm.thread.Backtrace;
-import dev.xdark.ssvm.thread.StackFrame;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.JavaValue;
 import lombok.experimental.UtilityClass;
@@ -40,30 +36,8 @@ public class ReflectionNatives {
 
 	private static MethodInvoker getCallerClass(boolean useDepth) {
 		return ctx -> {
-			VirtualMachine vm = ctx.getVM();
-			Backtrace backtrace = vm.currentThread().getBacktrace();
-			int count = backtrace.count();
 			int callerOffset = useDepth ? ctx.getLocals().load(0).asInt() + 1 : 2;
-			JavaMethod caller = backtrace.get(count - callerOffset).getExecutionContext().getMethod();
-			if (!useDepth) {
-				callerOffset++;
-			}
-			if (caller.isCallerSensitive()) {
-				while (true) {
-					StackFrame frame = backtrace.get(count - callerOffset);
-					ExecutionContext frameCtx = frame.getExecutionContext();
-					if (frameCtx == null) {
-						break;
-					}
-					JavaMethod method = frameCtx.getMethod();
-					if (Modifier.isCallerSensitive(method.getAccess())) {
-						callerOffset++;
-					} else {
-						break;
-					}
-				}
-			}
-			ctx.setResult(backtrace.get(count - callerOffset).getDeclaringClass().getOop());
+			ctx.setResult(ctx.getVM().getReflection().getCallerFrame(callerOffset).getDeclaringClass().getOop());
 			return Result.ABORT;
 		};
 	}

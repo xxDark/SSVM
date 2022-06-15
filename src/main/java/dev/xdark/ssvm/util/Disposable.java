@@ -5,7 +5,12 @@ package dev.xdark.ssvm.util;
  *
  * @author xDark
  */
-public interface Disposable {
+public interface Disposable extends AutoCloseable {
 
 	void dispose();
+
+	@Override
+	default void close() {
+		dispose();
+	}
 }

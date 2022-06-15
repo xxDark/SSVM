@@ -7,7 +7,7 @@ import dev.xdark.ssvm.value.Value;
 /**
  * @see ArraySlice
  */
-public final class ThreadRegion extends ArraySlice<Value> implements AutoCloseable, Disposable {
+public final class ThreadRegion extends ArraySlice<Value> implements Disposable {
 
 	private final ThreadStorage storage;
 
@@ -19,11 +19,6 @@ public final class ThreadRegion extends ArraySlice<Value> implements AutoCloseab
 	@Override
 	public ThreadRegion slice(int fromIndex, int toIndex) {
 		return new ThreadRegion(array, map(fromIndex), this.fromIndex + toIndex, storage);
-	}
-
-	@Override
-	public void close() {
-		dispose();
 	}
 
 	@Override

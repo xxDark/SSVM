@@ -84,11 +84,6 @@ public final class ThreadLocals implements Locals, AutoCloseable, Disposable {
 	}
 
 	@Override
-	public void close() {
-		dispose();
-	}
-
-	@Override
 	public void dispose() {
 		table.dispose();
 	}
@@ -122,7 +117,7 @@ public final class ThreadLocals implements Locals, AutoCloseable, Disposable {
 		int cursor = table.length();
 		for (int i = 0; i < cursor; i++) {
 			result *= 31;
-			result += Objects.hashCode(table.get(i).hashCode());
+			result += Objects.hashCode(table.get(i));
 		}
 		return result;
 	}

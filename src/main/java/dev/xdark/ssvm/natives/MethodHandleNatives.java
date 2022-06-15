@@ -127,8 +127,7 @@ public class MethodHandleNatives {
 			String callName = callerMethod.getName();
 			if ("invoke".equals(callName)) {
 				// Ask VM about caller
-				// TODO move to VMHelper?
-				JavaClass jc = ((JavaValue<JavaClass>) helper.invokeStatic(symbols.internal_reflect_Reflection(), "getCallerClass", "()Ljava/lang/Class;", new Value[0], new Value[0]).getResult()).getValue();
+				JavaClass jc = vm.getReflection().getCallerFrame(2).getDeclaringClass();
 				// Construct MT
 				InstanceValue mt = helper.methodType(jc.getClassLoader(), callerMethod.getType());
 				// Invoke asType

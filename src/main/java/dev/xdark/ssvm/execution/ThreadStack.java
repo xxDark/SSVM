@@ -156,11 +156,6 @@ public final class ThreadStack implements Stack, AutoCloseable, Disposable {
 	}
 
 	@Override
-	public void close() {
-		dispose();
-	}
-
-	@Override
 	public void dispose() {
 		stack.dispose();
 	}
@@ -193,7 +188,7 @@ public final class ThreadStack implements Stack, AutoCloseable, Disposable {
 		ThreadRegion stack = this.stack;
 		for (int i = 0; i < cursor; i++) {
 			result *= 31;
-			result += Objects.hashCode(stack.get(i).hashCode());
+			result += Objects.hashCode(stack.get(i));
 		}
 		return result;
 	}

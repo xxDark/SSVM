@@ -2,10 +2,8 @@ package dev.xdark.ssvm.memory.allocation;
 
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.tlc.ThreadLocalStorage;
-import dev.xdark.ssvm.util.UnsafeUtil;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -17,34 +15,19 @@ import java.util.concurrent.ThreadLocalRandom;
  *
  * @author xDark
  */
-public class SimpleMemoryAllocator implements MemoryAllocator {
-	protected static final ByteOrder ORDER = ByteOrder.nativeOrder();
-	protected static final int PAGE_SIZE = UnsafeUtil.get().pageSize();
-	protected static final int ADDRESS_SIZE = 8;
+public class NavigableMemoryAllocator extends AbstractMemoryAllocator {
 
-	private final MemoryBlock emptyHeap = makeBlock(0L, 0L, true);
-	private final MemoryBlock emptyDirect = makeBlock(0L, 0L, false);
 	private final NavigableMap<MemoryAddress, MemoryBlock> allocatedBlocks;
 
 	/**
 	 * @param allocatedBlocks Backing map.
 	 */
-	public SimpleMemoryAllocator(NavigableMap<MemoryAddress, MemoryBlock> allocatedBlocks) {
+	public NavigableMemoryAllocator(NavigableMap<MemoryAddress, MemoryBlock> allocatedBlocks) {
 		this.allocatedBlocks = allocatedBlocks;
 	}
 
-	public SimpleMemoryAllocator() {
+	public NavigableMemoryAllocator() {
 		this(new TreeMap<>());
-	}
-
-	@Override
-	public MemoryBlock emptyHeapBlock() {
-		return emptyHeap;
-	}
-
-	@Override
-	public MemoryBlock emptyDirectBlock() {
-		return emptyDirect;
 	}
 
 	@Override
@@ -124,36 +107,11 @@ public class SimpleMemoryAllocator implements MemoryAllocator {
 	}
 
 	@Override
-	public ByteOrder getByteOrder() {
-		return ORDER;
-	}
-
-	@Override
-	public int addressSize() {
-		return ADDRESS_SIZE;
-	}
-
-	@Override
-	public int pageSize() {
-		return PAGE_SIZE;
-	}
-
-	/**
-	 * @param bytes Amount of bytes to allocate.
-	 * @return {@code true} if the amount of bytes can be allocated.
-	 */
 	protected boolean canAllocate(long bytes) {
 		return bytes < Integer.MAX_VALUE;
 	}
 
-	/**
-	 * Allocates new memory block.
-	 *
-	 * @param address Block address.
-	 * @param bytes   Size of the block, in bytes.
-	 * @param heap    Whether the block is a heap block.
-	 * @return allocated block.
-	 */
+	@Override
 	protected MemoryBlock makeBlock(long address, long bytes, boolean heap) {
 		return new SimpleMemoryBlock(address, MemoryData.buffer(ByteBuffer.allocate((int) bytes).order(ORDER)), heap);
 	}
@@ -163,8 +121,7 @@ public class SimpleMemoryAllocator implements MemoryAllocator {
 		Map.Entry<MemoryAddress, MemoryBlock> entry = allocatedBlocks.floorEntry(wrapper);
 		if (entry != null) {
 			MemoryBlock block = entry.getValue();
-			long diff = address - block.getAddress();
-			if (heap == block.isHeap() && diff < block.getData().length()) {
+			if (heap == block.isHeap() && address - block.getAddress() < block.getData().length()) {
 				return entry;
 			}
 		}

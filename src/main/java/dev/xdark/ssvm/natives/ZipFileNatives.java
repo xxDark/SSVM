@@ -237,6 +237,22 @@ public class ZipFileNatives {
 				ctx.setResult(LongValue.of(zip.makeHandle(entry)));
 				return Result.ABORT;
 			});
+			vmi.setInvoker(zf, "getManifestNum", "(J)I", ctx -> {
+				Locals locals = ctx.getLocals();
+				long handle = locals.load(0).asLong();
+				ZipFile zip = vm.getFileDescriptorManager().getZipFile(handle);
+				if (zip == null) {
+					throw new PanicException("Segfault");
+				}
+				long count = zip.stream()
+					.filter(x -> "META-INF/MANIFEST.MF".equalsIgnoreCase(x.getName()))
+					.count();
+				if (count > Integer.MAX_VALUE) {
+					count = Integer.MAX_VALUE;
+				}
+				ctx.setResult(IntValue.of((int) count));
+				return Result.ABORT;
+			});
 			vmi.setInvoker(zf, "close", "(J)V", ctx -> {
 				try {
 					if (!vm.getFileDescriptorManager().close(ctx.getLocals().load(0).asLong())) {

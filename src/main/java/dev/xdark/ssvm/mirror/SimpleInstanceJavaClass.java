@@ -5,12 +5,9 @@ import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.tlc.ThreadLocalStorage;
-import dev.xdark.ssvm.util.InvokeDynamicLinker;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
-import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
@@ -19,7 +16,6 @@ import me.coley.cafedude.classfile.ClassFile;
 import me.coley.cafedude.io.ClassFileReader;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -71,9 +67,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	private InstanceJavaClass[] interfaces;
 	private ArrayJavaClass arrayClass;
 
-	// Initialization
 	private volatile State state = State.PENDING;
-	private volatile Thread initializer;
 
 	// Stuff to cache
 	private String normalName;
@@ -164,7 +158,8 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	public void initialize() {
 		Lock lock = initializationLock;
 		lock.lock();
-		if (state == State.COMPLETE) {
+		State state = this.state;
+		if (state == State.COMPLETE || state == State.IN_PROGRESS) {
 			lock.unlock();
 			return;
 		}
@@ -173,28 +168,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 			VirtualMachine vm = this.vm;
 			vm.getHelper().throwException(vm.getSymbols().java_lang_ExceptionInInitializerError(), getInternalName());
 		}
-		if (state == State.IN_PROGRESS) {
-			if (Thread.currentThread() == initializer) {
-				lock.unlock();
-				return;
-			}
-			// Wait for initialization to complete
-			// and invoke initialize again
-			// 'cause maybe we crashed
-			Condition signal = this.signal;
-			while (true) {
-				try {
-					signal.await();
-					break;
-				} catch (InterruptedException ignored) {
-				}
-			}
-			lock.unlock();
-			initialize();
-			return;
-		}
-		state = State.IN_PROGRESS;
-		initializer = Thread.currentThread();
+		this.state = State.IN_PROGRESS;
 		VirtualMachine vm = this.vm;
 		VMHelper helper = vm.getHelper();
 		// Build class layout
@@ -209,13 +183,12 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 			if (clinit != null) {
 				helper.invokeStatic(clinit, new Value[0], new Value[0]);
 			}
-			state = State.COMPLETE;
+			this.state = State.COMPLETE;
 		} catch (VMException ex) {
 			markFailedInitialization(ex);
 		} finally {
 			signal.signalAll();
 			lock.unlock();
-			initializer = null;
 		}
 	}
 

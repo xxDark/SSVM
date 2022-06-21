@@ -65,7 +65,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 
 	private InstanceJavaClass superClass;
 	private InstanceJavaClass[] interfaces;
-	private ArrayJavaClass arrayClass;
+	private volatile ArrayJavaClass arrayClass;
 
 	private volatile State state = State.PENDING;
 
@@ -338,9 +338,14 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	public ArrayJavaClass newArrayClass() {
 		ArrayJavaClass arrayClass = this.arrayClass;
 		if (arrayClass == null) {
-			VirtualMachine vm = this.vm;
-			arrayClass = this.arrayClass = new ArrayJavaClass(vm, '[' + getDescriptor(), 1, this);
-			vm.getHelper().setComponentType(arrayClass, this);
+			synchronized (this) {
+				arrayClass = this.arrayClass;
+				if (arrayClass == null) {
+					VirtualMachine vm = this.vm;
+					arrayClass = this.arrayClass = new ArrayJavaClass(vm, '[' + getDescriptor(), 1, this);
+					vm.getHelper().setComponentType(arrayClass, this);
+				}
+			}
 		}
 		return arrayClass;
 	}

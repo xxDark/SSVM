@@ -11,16 +11,13 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaField;
 import dev.xdark.ssvm.mirror.JavaMethod;
-import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.util.UnsafeUtil;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.DoubleValue;
 import dev.xdark.ssvm.value.FloatValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.LongValue;
-import dev.xdark.ssvm.value.NullValue;
 import dev.xdark.ssvm.value.TopValue;
 import dev.xdark.ssvm.value.Value;
 import lombok.AccessLevel;
@@ -95,7 +92,6 @@ public final class JitCompiler {
 
 	private static final ClassType LOCALS = ClassType.of(Locals.class);
 	private static final ClassType VALUE = ClassType.of(Value.class);
-	private static final ClassType NULL = ClassType.of(NullValue.class);
 	private static final ClassType INT = ClassType.of(IntValue.class);
 	private static final ClassType LONG = ClassType.of(LongValue.class);
 	private static final ClassType FLOAT = ClassType.of(FloatValue.class);
@@ -106,7 +102,6 @@ public final class JitCompiler {
 	private static final ClassType VM_EXCEPTION = ClassType.of(VMException.class);
 	private static final ClassType INSTANCE = ClassType.of(InstanceValue.class);
 	private static final ClassType TOP = ClassType.of(TopValue.class);
-	private static final ClassType THREAD_STORAGE = ClassType.of(ThreadStorage.class);
 	private static final ClassType STACK = ClassType.of(Stack.class);
 
 	// ctx methods
@@ -114,7 +109,6 @@ public final class JitCompiler {
 	private static final Access GET_HELPER = interfaceCall(CTX, "getHelper", VM_HELPER);
 	private static final Access SET_RESULT = interfaceCall(CTX, "setResult", J_VOID, VALUE);
 	private static final Access SET_LINE = interfaceCall(CTX, "setLineNumber", J_VOID, J_INT);
-	private static final Access GET_THREAD_STORAGE = interfaceCall(CTX, "getThreadStorage", THREAD_STORAGE);
 
 	// locals methods
 	private static final Access LOAD = interfaceCall(LOCALS, "load", VALUE, J_INT);
@@ -267,6 +261,11 @@ public final class JitCompiler {
 
 	private static final Access NEW_MULTI_ARRAY_INTRINSIC = staticCall(JIT_HELPER, "multiNewArray", VALUE, J_OBJECT, J_INT_ARRAY, CTX);
 	private static final Access NEW_MULTI_ARRAY = staticCall(JIT_HELPER, "multiNewArray", VALUE, J_STRING, J_INT_ARRAY, CTX);
+
+	private static final Access DIV_INT = staticCall(JIT_HELPER, "divInt", J_INT, J_INT, J_INT, CTX);
+	private static final Access DIV_LONG = staticCall(JIT_HELPER, "divLong", J_LONG, J_LONG, J_LONG, CTX);
+	private static final Access REM_INT = staticCall(JIT_HELPER, "remInt", J_INT, J_INT, J_INT, CTX);
+	private static final Access REM_LONG = staticCall(JIT_HELPER, "remLong", J_LONG, J_LONG, J_LONG, CTX);
 
 	private static final Access GET_TOP = getStatic(TOP, "INSTANCE", TOP);
 
@@ -455,90 +454,21 @@ public final class JitCompiler {
 				case ACONST_NULL:
 					loadNull();
 					break;
-				case ICONST_M1:
-				case ICONST_0:
-				case ICONST_1:
-				case ICONST_2:
-				case ICONST_3:
-				case ICONST_4:
-				case ICONST_5:
-				case LCONST_0:
-				case LCONST_1:
-				case FCONST_0:
-				case FCONST_1:
-				case FCONST_2:
-				case DCONST_0:
-				case DCONST_1:
-				case POP:
-				case POP2:
-				case DUP:
-				case DUP_X1:
-				case DUP_X2:
-				case DUP2:
-				case DUP2_X1:
-				case DUP2_X2:
-				case SWAP:
-				case LXOR:
-				case IADD:
-				case LADD:
-				case FADD:
-				case DADD:
-				case ISUB:
-				case LSUB:
-				case FSUB:
-				case DSUB:
-				case IMUL:
-				case LMUL:
-				case FMUL:
-				case DMUL:
-				case FDIV:
-				case DDIV:
-				case IREM:
-				case LREM:
-				case FREM:
-				case DREM:
-				case INEG:
-				case LNEG:
-				case FNEG:
-				case DNEG:
-				case ISHL:
-				case LSHL:
-				case ISHR:
-				case LSHR:
-				case IUSHR:
-				case LUSHR:
-				case IAND:
-				case LAND:
-				case IOR:
-				case LOR:
-				case IXOR:
-				case I2L:
-				case F2L:
-				case I2F:
-				case I2D:
-				case F2D:
-				case L2I:
-				case D2I:
-				case L2F:
-				case D2F:
-				case L2D:
-				case F2I:
-				case D2L:
-				case I2B:
-				case I2C:
-				case I2S:
-				case LCMP:
-				case FCMPL:
-				case FCMPG:
-				case DCMPL:
-				case DCMPG:
 				case IDIV:
-				case LDIV:
-					jit.visitInsn(opcode);
+					loadCtx();
+					DIV_INT.emit(jit);
 					break;
-				case BIPUSH:
-				case SIPUSH:
-					insn.accept(jit);
+				case LDIV:
+					loadCtx();
+					DIV_LONG.emit(jit);
+					break;
+				case IREM:
+					loadCtx();
+					REM_INT.emit(jit);
+					break;
+				case LREM:
+					loadCtx();
+					REM_LONG.emit(jit);
 					break;
 				case LDC:
 					ldcOf(((LdcInsnNode) insn).cst);
@@ -748,6 +678,8 @@ public final class JitCompiler {
 				case INVOKEDYNAMIC:
 					invokeDynamic((InvokeDynamicInsnNode) insn);
 					break;
+				default:
+					insn.accept(jit);
 			}
 		}
 	}

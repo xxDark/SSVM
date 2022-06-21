@@ -638,6 +638,34 @@ public class JitHelper {
 		return ctx.getThreadStorage().newStack(count);
 	}
 
+	public int divInt(int a, int b, ExecutionContext ctx) {
+		if (b == 0) {
+			ctx.getHelper().throwException(ctx.getSymbols().java_lang_ArithmeticException(), "/ by zero");
+		}
+		return a / b;
+	}
+
+	public int remInt(int a, int b, ExecutionContext ctx) {
+		if (b == 0) {
+			ctx.getHelper().throwException(ctx.getSymbols().java_lang_ArithmeticException(), "/ by zero");
+		}
+		return a % b;
+	}
+
+	public long divLong(long a, long b, ExecutionContext ctx) {
+		if (b == 0L) {
+			ctx.getHelper().throwException(ctx.getSymbols().java_lang_ArithmeticException(), "/ by zero");
+		}
+		return a / b;
+	}
+
+	public long remLong(long a, long b, ExecutionContext ctx) {
+		if (b == 0L) {
+			ctx.getHelper().throwException(ctx.getSymbols().java_lang_ArithmeticException(), "/ by zero");
+		}
+		return a % b;
+	}
+
 	private static JavaMethod resolveStaticMethod(String owner, String name, String desc, ExecutionContext ctx) {
 		VirtualMachine vm = ctx.getVM();
 		VMHelper helper = vm.getHelper();

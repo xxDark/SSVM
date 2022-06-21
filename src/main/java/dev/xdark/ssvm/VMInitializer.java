@@ -38,7 +38,7 @@ public interface VMInitializer {
 	/**
 	 * Called after {@link NativeJava} initialization is complete.
 	 *
-	 * @param vm VM being initialized.o
+	 * @param vm VM being initialized.
 	 */
 	default void nativeInit(VirtualMachine vm) {
 	}

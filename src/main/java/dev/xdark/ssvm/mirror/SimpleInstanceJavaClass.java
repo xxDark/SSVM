@@ -176,6 +176,12 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		if (vrtFieldLayout == null) {
 			vrtFieldLayout = createVirtualFieldLayout();
 		}
+		// Initialize all hierarchy
+		InstanceJavaClass superClass = this.superClass;
+		if (superClass != null) {
+			superClass.initialize();
+		}
+		// note: interfaces are *not* initialized here
 		helper.initializeStaticFields(this);
 		helper.setupHiddenFrames(this);
 		JavaMethod clinit = getStaticMethod("<clinit>", "()V");
@@ -324,13 +330,11 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 
 	@Override
 	public InstanceJavaClass getSuperClass() {
-		initialize();
 		return superClass;
 	}
 
 	@Override
 	public InstanceJavaClass[] getInterfaces() {
-		initialize();
 		return interfaces;
 	}
 

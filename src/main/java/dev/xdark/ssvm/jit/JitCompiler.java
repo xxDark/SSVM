@@ -242,8 +242,6 @@ public final class JitCompiler {
 	private static final Access PUT_FIELD_BOOLEAN_DIRECT = staticCall(JIT_HELPER, "putFieldZ", J_VOID, VALUE, J_BOOLEAN, J_LONG, CTX);
 	private static final Access PUT_FIELD_VALUE_DIRECT = staticCall(JIT_HELPER, "putFieldA", J_VOID, VALUE, VALUE, J_LONG, CTX);
 
-	private static final Access INVOKE_STATIC_INTRINSIC = staticCall(JIT_HELPER, "invokeStatic", VALUE, VALUES, J_OBJECT, CTX);
-	private static final Access INVOKE_SPECIAL_INTRINSIC = staticCall(JIT_HELPER, "invokeSpecial", VALUE, VALUES, J_OBJECT, CTX);
 	private static final Access INVOKE_VIRTUAL_INTRINSIC = staticCall(JIT_HELPER, "invokeVirtual", VALUE, VALUES, J_OBJECT, J_OBJECT, CTX);
 	private static final Access INVOKE_STATIC_SLOW = staticCall(JIT_HELPER, "invokeStatic", VALUE, VALUES, J_STRING, J_STRING, J_STRING, CTX);
 	private static final Access INVOKE_SPECIAL_SLOW = staticCall(JIT_HELPER, "invokeSpecial", VALUE, VALUES, J_STRING, J_STRING, J_STRING, CTX);
@@ -1192,7 +1190,7 @@ public final class JitCompiler {
 			NEW_LOCALS.emit(jit);
 			collectStaticCallArgsToLocals(desc);
 			// Make stack
-			emitInt(mn.getNode().maxStack, jit);
+			emitInt(mn.getMaxStack(), jit);
 			loadCtx();
 			NEW_STACK.emit(jit);
 			loadCompilerConstant(mn);
@@ -1233,7 +1231,7 @@ public final class JitCompiler {
 			NEW_LOCALS.emit(jit);
 			collectVirtualCallArgsToLocals(desc);
 			// Make stack
-			emitInt(mn.getNode().maxStack, jit);
+			emitInt(mn.getMaxStack(), jit);
 			loadCtx();
 			NEW_STACK.emit(jit);
 			loadCompilerConstant(mn);

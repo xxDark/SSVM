@@ -187,6 +187,13 @@ public final class JavaMethod {
 	}
 
 	/**
+	 * @return the maximum amount of stack values.
+	 */
+	public int getMaxStack() {
+		return node.maxStack;
+	}
+
+	/**
 	 * @return the maximum amount of local variables.
 	 */
 	public int getMaxLocals() {

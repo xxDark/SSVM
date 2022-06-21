@@ -78,7 +78,7 @@ public final class VMHelper {
 		if ((method.getAccess() & Opcodes.ACC_STATIC) == 0) {
 			throw new IllegalStateException("Method is not static");
 		}
-		ExecutionContext ctx = createContext(method, locals);
+		ExecutionContext ctx = createContext(method);
 		contextPrepare(ctx, stack, locals);
 		vm.execute(ctx);
 		return ctx;
@@ -154,7 +154,7 @@ public final class VMHelper {
 		if ((method.getAccess() & Opcodes.ACC_STATIC) != 0) {
 			throw new IllegalStateException("Method is static");
 		}
-		ExecutionContext ctx = createContext(method, locals);
+		ExecutionContext ctx = createContext(method);
 		contextPrepare(ctx, stack, locals);
 		vm.execute(ctx);
 		return ctx;
@@ -1878,21 +1878,16 @@ public final class VMHelper {
 		}
 	}
 
-	private static ExecutionContext createContext(JavaMethod jm, Value[] locals) {
-		MethodNode mn = jm.getNode();
+	private static ExecutionContext createContext(JavaMethod jm) {
 		VirtualMachine vm = jm.getOwner().getVM();
 		ThreadStorage storage = vm.getThreadStorage();
-		int maxStack = mn.maxStack;
-		int maxLocals = getMaxLocals(jm, locals);
+		int maxStack = jm.getMaxStack();
+		int maxLocals = jm.getMaxLocals();
 		return vm.getExecutionEngine().createContext(
 			jm,
 			storage.newStack(maxStack),
 			storage.newLocals(maxLocals)
 		);
-	}
-
-	private static int getMaxLocals(JavaMethod jm, Value[] locals) {
-		return Math.max(AsmUtil.getMaxLocals(jm), locals.length);
 	}
 
 	private static void makeHiddenMethod(InstanceJavaClass jc, String name, String desc) {

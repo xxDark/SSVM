@@ -16,12 +16,6 @@ public final class ExecutionOptions {
 	@Default
 	private final boolean setLineNumbers = true;
 	/**
-	 * Whether the VM should search for VMI invokers.
-	 */
-	@Deprecated
-	@Default
-	private final boolean useInvokers = true;
-	/**
 	 * Whether the VM should notify the hooks
 	 * about method enter/exit.
 	 */
@@ -36,11 +30,6 @@ public final class ExecutionOptions {
 
 	public boolean setLineNumbers() {
 		return setLineNumbers;
-	}
-
-	@Deprecated
-	public boolean searchForHooks() {
-		return useInvokers;
 	}
 
 	public boolean useInvocationHooks() {

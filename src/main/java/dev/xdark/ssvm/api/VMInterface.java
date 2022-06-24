@@ -9,6 +9,7 @@ import dev.xdark.ssvm.mirror.JavaMethod;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -34,6 +35,10 @@ public final class VMInterface {
 	private final Map<JavaMethod, MethodInvocation> methodExit = new HashMap<>();
 	private final List<InstructionInterceptor> interceptors = new ArrayList<>();
 	private final List<InstructionInterceptor> interceptorsView = Collections.unmodifiableList(interceptors);
+
+	public VMInterface() {
+		Arrays.fill(processors, new UnknownInstructionProcessor());
+	}
 
 	/**
 	 * Gets an instruction processor.

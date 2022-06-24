@@ -25,11 +25,10 @@ import java.util.List;
 @UtilityClass
 public class Interpreter {
 
-
 	/**
 	 * Processes {@link ExecutionContext}.
 	 *
-	 * @param ctx     Context to process.
+	 * @param ctx Context to process.
 	 */
 	public void execute(ExecutionContext ctx) {
 		JavaMethod jm = ctx.getMethod();
@@ -74,7 +73,6 @@ public class Interpreter {
 		List<TryCatchBlockNode> tryCatchBlocks = mn.tryCatchBlocks;
 		int index = ctx.getInsnPosition() - 1;
 		VirtualMachine vm = ctx.getVM();
-		// int lastIndex = -1;
 		boolean shouldRepeat;
 		search:
 		do {

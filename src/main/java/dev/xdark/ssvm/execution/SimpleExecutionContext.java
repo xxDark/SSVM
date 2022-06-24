@@ -133,6 +133,7 @@ public final class SimpleExecutionContext implements ExecutionContext, Disposabl
 					try {
 						value.monitorExit();
 					} catch (IllegalMonitorStateException ignored) {
+						break;
 					}
 				}
 			}

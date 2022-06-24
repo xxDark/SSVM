@@ -4,6 +4,12 @@ import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import org.objectweb.asm.Opcodes;
 
+/**
+ * Invoker that passes the control to
+ * the interpreter to run a method.
+ *
+ * @author xDark
+ */
 public final class InterpretedInvoker implements MethodInvoker {
 
 	@Override

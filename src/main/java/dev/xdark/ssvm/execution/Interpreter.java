@@ -57,59 +57,53 @@ public class Interpreter {
 					continue;
 				}
 				InstructionProcessor<AbstractInsnNode> processor = vmi.getProcessor(insn);
-				if (processor == null) {
-					ctx.getHelper().throwException(ctx.getSymbols().java_lang_InternalError(), "No implemented processor for " + insn.getOpcode());
-					continue;
-				}
 				if (processor.execute(insn, ctx) == Result.ABORT) {
 					ctx.pollSafePointAndSuspend();
 					break;
 				}
 			} catch (VMException ex) {
-				ctx.unwind();
-				InstanceValue oop = ex.getOop();
-				InstanceJavaClass exceptionType = oop.getJavaClass();
-				List<TryCatchBlockNode> tryCatchBlocks = mn.tryCatchBlocks;
-				int index = ctx.getInsnPosition() - 1;
-				VirtualMachine vm = ctx.getVM();
-				// int lastIndex = -1;
-				boolean shouldRepeat;
-				search:
-				do {
-					shouldRepeat = false;
-					for (int i = 0, j = tryCatchBlocks.size(); i < j; i++) {
-						TryCatchBlockNode block = tryCatchBlocks.get(i);
-						if (index < AsmUtil.getIndex(block.start) || index > AsmUtil.getIndex(block.end)) {
-							continue;
-						}
-						String type = block.type;
-						boolean handle = type == null;
-						if (!handle) {
-							try {
-								JavaClass candidate = vm.findClass(ctx.getOwner().getClassLoader(), type, false);
-								handle = candidate.isAssignableFrom(exceptionType);
-							} catch (VMException hex) {
-								index = AsmUtil.getIndex(block.handler);
-								/*
-								if (lastIndex == index) {
-									throw ex;
-								}
-								lastIndex = index;
-								*/
-								shouldRepeat = true;
-								continue search;
-							}
-						}
-						if (handle) {
-							ctx.getStack().push(oop);
-							ctx.setInsnPosition(AsmUtil.getIndex(block.handler));
-							ctx.pollSafePointAndSuspend();
-							continue exec;
-						}
-					}
-				} while (shouldRepeat);
-				throw ex;
+				handleExceptionCaught(ctx, mn, ex);
 			}
 		}
+	}
+
+	private static void handleExceptionCaught(ExecutionContext ctx, MethodNode mn, VMException ex) {
+		ctx.unwind();
+		InstanceValue oop = ex.getOop();
+		InstanceJavaClass exceptionType = oop.getJavaClass();
+		List<TryCatchBlockNode> tryCatchBlocks = mn.tryCatchBlocks;
+		int index = ctx.getInsnPosition() - 1;
+		VirtualMachine vm = ctx.getVM();
+		// int lastIndex = -1;
+		boolean shouldRepeat;
+		search:
+		do {
+			shouldRepeat = false;
+			for (int i = 0, j = tryCatchBlocks.size(); i < j; i++) {
+				TryCatchBlockNode block = tryCatchBlocks.get(i);
+				if (index < AsmUtil.getIndex(block.start) || index > AsmUtil.getIndex(block.end)) {
+					continue;
+				}
+				String type = block.type;
+				boolean handle = type == null;
+				if (!handle) {
+					try {
+						JavaClass candidate = vm.findClass(ctx.getOwner().getClassLoader(), type, false);
+						handle = candidate.isAssignableFrom(exceptionType);
+					} catch (VMException hex) {
+						index = AsmUtil.getIndex(block.handler);
+						shouldRepeat = true;
+						continue search;
+					}
+				}
+				if (handle) {
+					ctx.getStack().push(oop);
+					ctx.setInsnPosition(AsmUtil.getIndex(block.handler));
+					ctx.pollSafePointAndSuspend();
+					return;
+				}
+			}
+		} while (shouldRepeat);
+		throw ex;
 	}
 }

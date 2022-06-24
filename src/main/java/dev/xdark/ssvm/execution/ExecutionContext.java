@@ -201,4 +201,9 @@ public interface ExecutionContext {
 	 * unlocks object monitors, if any.
 	 */
 	void unwind();
+
+	/**
+	 * @return execution options.
+	 */
+	ExecutionOptions getOptions();
 }

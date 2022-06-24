@@ -21,7 +21,6 @@ import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
 
 import java.util.Map;
-import java.util.Properties;
 
 /**
  * Initializes java/lang/System.
@@ -79,16 +78,16 @@ public class SystemNatives {
 			InstanceValue value = ctx.getLocals().<InstanceValue>load(0);
 			InstanceJavaClass jc = value.getJavaClass();
 			JavaMethod mn = vm.getLinkResolver().resolveVirtualMethod(jc, value.getJavaClass(), "setProperty", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;");
-			Properties properties = vm.getProperties();
+			Map<String, String> properties = vm.getProperties();
 			VMHelper helper = vm.getHelper();
 
-			for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-				Object key = entry.getKey();
-				Object property = entry.getValue();
+			for (Map.Entry<String, String> entry : properties.entrySet()) {
+				String key = entry.getKey();
+				String property = entry.getValue();
 				helper.invokeExact(mn, new Value[0], new Value[]{
 					value,
-					helper.newUtf8(key.toString()),
-					helper.newUtf8(property.toString())
+					helper.newUtf8(key),
+					helper.newUtf8(property)
 				});
 			}
 			ctx.setResult(value);

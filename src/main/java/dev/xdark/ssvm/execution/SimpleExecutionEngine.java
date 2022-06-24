@@ -19,7 +19,7 @@ import org.objectweb.asm.Opcodes;
  */
 public class SimpleExecutionEngine implements ExecutionEngine {
 
-	private static final ExecutionContextOptions DEFAULT_OPTIONS = ExecutionContextOptions.builder().build();
+	private static final ExecutionOptions DEFAULT_OPTIONS = ExecutionOptions.builder().build();
 	protected final VirtualMachine vm;
 
 	/**
@@ -30,13 +30,14 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 	}
 
 	@Override
-	public void execute(ExecutionContext ctx, ExecutionContextOptions options) {
+	public void execute(ExecutionContext ctx) {
 		JavaMethod jm = ctx.getMethod();
 		int access = jm.getAccess();
 		boolean isNative = (access & Opcodes.ACC_NATIVE) != 0;
 		if (isNative) {
 			ctx.setLineNumber(-2);
 		}
+		ExecutionOptions options = ctx.getOptions();
 		VirtualMachine vm = this.vm;
 		ThreadManager threadManager = vm.getThreadManager();
 		Backtrace backtrace = threadManager.currentThread().getBacktrace();
@@ -60,22 +61,14 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 					invocation.handle(ctx);
 				}
 			}
-			if (options.searchForHooks()) {
-				MethodInvoker invoker = vmi.getInvoker(jm);
-				if (invoker != null) {
-					Result result = invoker.intercept(ctx);
-					if (result == Result.ABORT) {
-						return;
-					}
+			MethodInvoker invoker = vmi.getInvoker(jm);
+			if (invoker != null) {
+				Result result = invoker.intercept(ctx);
+				if (result == Result.ABORT) {
+					return;
 				}
 			}
-			if (isNative) {
-				vm.getHelper().throwException(vm.getSymbols().java_lang_UnsatisfiedLinkError(), ctx.getOwner().getInternalName() + '.' + jm.getName() + jm.getDesc());
-			}
-			if ((access & Opcodes.ACC_ABSTRACT) != 0) {
-				vm.getHelper().throwException(vm.getSymbols().java_lang_AbstractMethodError(), ctx.getOwner().getInternalName() + '.' + jm.getName() + jm.getDesc());
-			}
-			Interpreter.execute(ctx, options);
+			vm.getHelper().throwException(vm.getSymbols().java_lang_InternalError(), "No invoker for " + jm);
 		} catch (VMException ex) {
 			throw ex;
 		} catch (Exception ex) {
@@ -111,12 +104,12 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 	}
 
 	@Override
-	public ExecutionContext createContext(JavaMethod method, Stack stack, Locals locals) {
-		return new SimpleExecutionContext(method, stack, locals);
+	public ExecutionContext createContext(ExecutionRequest request) {
+		return new SimpleExecutionContext(request.getOptions(), request.getMethod(), request.getStack(), request.getLocals());
 	}
 
 	@Override
-	public ExecutionContextOptions defaultOptions() {
+	public ExecutionOptions defaultOptions() {
 		return DEFAULT_OPTIONS;
 	}
 }

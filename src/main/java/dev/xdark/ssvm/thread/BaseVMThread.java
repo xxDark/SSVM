@@ -3,9 +3,6 @@ package dev.xdark.ssvm.thread;
 import dev.xdark.ssvm.value.InstanceValue;
 import lombok.Getter;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
 /**
  * Basic VMThread implementation.
  *
@@ -14,8 +11,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public abstract class BaseVMThread implements VMThread {
 
 	private final Backtrace backtrace = createBacktrace();
-	@Getter
-	private final Queue<Runnable> taskQueue = new ConcurrentLinkedQueue<>();
 	@Getter
 	private final ThreadStorage threadStorage = createThreadStorage();
 

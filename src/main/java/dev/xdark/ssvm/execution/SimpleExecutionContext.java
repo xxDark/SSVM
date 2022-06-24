@@ -18,6 +18,7 @@ public final class SimpleExecutionContext implements ExecutionContext, Disposabl
 
 	private final Map<ObjectValue, LockCount> lockMap = new IdentityHashMap<>();
 	private final VirtualMachine virtualMachine;
+	private final ExecutionOptions options;
 	private final JavaMethod method;
 	private final Stack stack;
 	private final Locals locals;
@@ -30,7 +31,8 @@ public final class SimpleExecutionContext implements ExecutionContext, Disposabl
 	 * @param stack  Execution stack.
 	 * @param locals Local variable table.
 	 */
-	public SimpleExecutionContext(JavaMethod method, Stack stack, Locals locals) {
+	public SimpleExecutionContext(ExecutionOptions options, JavaMethod method, Stack stack, Locals locals) {
+		this.options = options;
 		this.virtualMachine = method.getOwner().getVM();
 		this.method = method;
 		this.stack = stack;
@@ -145,6 +147,11 @@ public final class SimpleExecutionContext implements ExecutionContext, Disposabl
 	@Override
 	public void unwind() {
 		stack.clear();
+	}
+
+	@Override
+	public ExecutionOptions getOptions() {
+		return options;
 	}
 
 	@Override

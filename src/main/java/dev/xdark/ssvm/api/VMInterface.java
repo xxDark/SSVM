@@ -3,10 +3,10 @@ package dev.xdark.ssvm.api;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.asm.VirtualInsnNode;
 import dev.xdark.ssvm.execution.InstructionProcessor;
+import dev.xdark.ssvm.execution.InterpretedInvoker;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.MethodNode;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,6 +24,7 @@ import java.util.Objects;
  */
 public final class VMInterface {
 
+	private static final MethodInvoker FALLBACK_INVOKER = new InterpretedInvoker();
 	private static final int MAX_INSNS = 1024;
 	private final InstructionProcessor[] processors = new InstructionProcessor[MAX_INSNS];
 	private final Map<JavaMethod, MethodInvoker> invokerMap = new HashMap<>();
@@ -67,26 +68,23 @@ public final class VMInterface {
 	}
 
 	/**
-	 * Returns method invoker based off call info.
+	 * Returns method invoker based off a method.
 	 *
-	 * @param call Call info.
+	 * @param method method to search invoker for.
 	 * @return method invoker.
 	 */
-	public MethodInvoker getInvoker(JavaMethod call) {
-		return invokerMap.get(call);
+	public MethodInvoker getInvoker(JavaMethod method) {
+		return invokerMap.getOrDefault(method, FALLBACK_INVOKER);
 	}
 
 	/**
 	 * Sets an invoker for the method.
 	 *
-	 * @param call    Call information.
+	 * @param method  Method to set invoker for.
 	 * @param invoker Method invoker.
-	 * @see Modifier#ACC_JIT
 	 */
-	public void setInvoker(JavaMethod call, MethodInvoker invoker) {
-		invokerMap.put(call, invoker);
-		MethodNode node = call.getNode();
-		node.access |= Modifier.ACC_JIT;
+	public void setInvoker(JavaMethod method, MethodInvoker invoker) {
+		invokerMap.put(method, invoker);
 	}
 
 	/**

@@ -9,8 +9,6 @@ import dev.xdark.ssvm.classloading.ClassParseResult;
 import dev.xdark.ssvm.classloading.RuntimeBootClassLoader;
 import dev.xdark.ssvm.classloading.SimpleClassDefiner;
 import dev.xdark.ssvm.classloading.SimpleClassLoaders;
-import dev.xdark.ssvm.execution.ExecutionContext;
-import dev.xdark.ssvm.execution.ExecutionContextOptions;
 import dev.xdark.ssvm.execution.ExecutionEngine;
 import dev.xdark.ssvm.execution.NoopSafePoint;
 import dev.xdark.ssvm.execution.SafePoint;
@@ -59,16 +57,11 @@ import org.objectweb.asm.tree.ClassNode;
 import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
-import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 public class VirtualMachine {
 
-	private static final ExecutionContextOptions USE_INVOKERS = ExecutionContextOptions.builder().build();
-	private static final ExecutionContextOptions NO_INVOKERS = ExecutionContextOptions.builder()
-		.useInvokers(false)
-		.build();
 	private final AtomicReference<InitializationState> state = new AtomicReference<>(InitializationState.UNINITIALIZED);
 	private final BootClassLoaderHolder bootClassLoader;
 	private final VMInterface vmInterface;
@@ -85,7 +78,7 @@ public class VirtualMachine {
 	private final ManagementInterface managementInterface;
 	private final TimeManager timeManager;
 	private final ClassLoaders classLoaders;
-	private final Properties properties;
+	private final Map<String, String> properties;
 	private final Map<String, String> env;
 	private final VMInitializer initializer;
 	private final ExecutionEngine executionEngine;
@@ -126,7 +119,7 @@ public class VirtualMachine {
 		reflection = new Reflection(this);
 		operations = new VMOperations(this);
 
-		(properties = new Properties()).putAll(System.getProperties());
+		properties = System.getProperties().entrySet().stream().collect(Collectors.toMap(x -> x.getKey().toString(), x -> x.getValue().toString()));
 		env = new HashMap<>(System.getenv());
 	}
 
@@ -291,7 +284,7 @@ public class VirtualMachine {
 	 *
 	 * @return system properties.
 	 */
-	public Properties getProperties() {
+	public Map<String, String> getProperties() {
 		return properties;
 	}
 
@@ -580,51 +573,6 @@ public class VirtualMachine {
 			}
 		}
 		return jc;
-	}
-
-	/**
-	 * Processes {@link ExecutionContext}.
-	 *
-	 * @param ctx     Context to process.
-	 * @param options Execution options.
-	 */
-	public void execute(ExecutionContext ctx, ExecutionContextOptions options) {
-		executionEngine.execute(ctx, options);
-	}
-
-	/**
-	 * Processes {@link ExecutionContext}.
-	 *
-	 * @param ctx Context to process.
-	 */
-	public void execute(ExecutionContext ctx) {
-		ExecutionEngine executionEngine = this.executionEngine;
-		executionEngine.execute(ctx, executionEngine.defaultOptions());
-	}
-
-	/**
-	 * Processes {@link ExecutionContext}.
-	 *
-	 * @param ctx         Context to process.
-	 * @param useInvokers Should VM search for VMI hooks.
-	 * @deprecated Use {@link VirtualMachine#execute(ExecutionContext, ExecutionContextOptions)} instead.
-	 */
-	@Deprecated
-	public void execute(ExecutionContext ctx, boolean useInvokers) {
-		executionEngine.execute(ctx, useInvokers ? USE_INVOKERS : NO_INVOKERS);
-	}
-
-	/**
-	 * Causes the tasks of current thread to execute.
-	 *
-	 * @see VMThread#getTaskQueue()
-	 */
-	public void drainTaskQueue() {
-		Queue<Runnable> queue = currentThread().getTaskQueue();
-		Runnable r;
-		while ((r = queue.poll()) != null) {
-			r.run();
-		}
 	}
 
 	/**

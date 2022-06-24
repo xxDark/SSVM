@@ -1,5 +1,6 @@
 package dev.xdark.ssvm;
 
+import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.memory.gc.GarbageCollector;
 import dev.xdark.ssvm.memory.gc.MarkAndSweepGarbageCollector;
@@ -26,12 +27,12 @@ public class MemoryTest {
 			}
 		};
 		vm.initialize();
-		vm.getInterface().setInvoker(vm.getSymbols().java_lang_System(), "loadLibrary", "(Ljava/lang/String;)V", ctx -> {
+		vm.getInterface().setInvoker(vm.getSymbols().java_lang_System(), "loadLibrary", "(Ljava/lang/String;)V", MethodInvoker.interpreted(ctx -> {
 			if ("zip".equals(vm.getHelper().readUtf8(ctx.getLocals().load(0)))) {
 				invokeGC(vm.getMemoryManager());
 			}
 			return Result.CONTINUE;
-		});
+		}));
 		vm.bootstrap();
 		MemoryManager memoryManager = vm.getMemoryManager();
 		invokeGC(memoryManager);

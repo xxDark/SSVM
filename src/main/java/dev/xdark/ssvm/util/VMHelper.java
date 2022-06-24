@@ -7,7 +7,9 @@ import dev.xdark.ssvm.classloading.ClassLoaderData;
 import dev.xdark.ssvm.classloading.ClassLoaders;
 import dev.xdark.ssvm.classloading.ClassParseResult;
 import dev.xdark.ssvm.execution.ExecutionContext;
+import dev.xdark.ssvm.execution.ExecutionEngine;
 import dev.xdark.ssvm.execution.Locals;
+import dev.xdark.ssvm.execution.SimpleExecutionRequest;
 import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.memory.management.MemoryManager;
@@ -78,10 +80,7 @@ public final class VMHelper {
 		if ((method.getAccess() & Opcodes.ACC_STATIC) == 0) {
 			throw new IllegalStateException("Method is not static");
 		}
-		ExecutionContext ctx = createContext(method);
-		contextPrepare(ctx, stack, locals);
-		vm.execute(ctx);
-		return ctx;
+		return invokeDirect(method, stack, locals);
 	}
 
 	/**
@@ -154,10 +153,7 @@ public final class VMHelper {
 		if ((method.getAccess() & Opcodes.ACC_STATIC) != 0) {
 			throw new IllegalStateException("Method is static");
 		}
-		ExecutionContext ctx = createContext(method);
-		contextPrepare(ctx, stack, locals);
-		vm.execute(ctx);
-		return ctx;
+		return invokeDirect(method, stack, locals);
 	}
 
 	/**
@@ -169,8 +165,31 @@ public final class VMHelper {
 	 * @return invocation result.
 	 */
 	public ExecutionContext invokeDirect(JavaMethod method, Stack stack, Locals locals) {
-		ExecutionContext ctx = vm.getExecutionEngine().createContext(method, stack, locals);
-		vm.execute(ctx);
+		ExecutionEngine engine = vm.getExecutionEngine();
+		ExecutionContext ctx = engine.createContext(new SimpleExecutionRequest(method, stack, locals, engine.defaultOptions()));
+		engine.execute(ctx);
+		return ctx;
+	}
+
+	/**
+	 * Makes direct call.
+	 *
+	 * @param method Method to invoke.
+	 * @param stack  Execution stack.
+	 * @param locals Local variable table.
+	 * @return invocation result.
+	 */
+	public ExecutionContext invokeDirect(JavaMethod method, Value[] stack, Value[] locals) {
+		ExecutionEngine engine = vm.getExecutionEngine();
+		ThreadStorage storage = vm.getThreadStorage();
+		int maxStack = method.getMaxStack();
+		int maxLocals = method.getMaxLocals();
+		Stack vmStack = storage.newStack(maxStack);
+		Locals vmLocals = storage.newLocals(maxLocals);
+		vmLocals.copyFrom(locals);
+		vmStack.copyFrom(stack);
+		ExecutionContext ctx = engine.createContext(new SimpleExecutionRequest(method, vmStack, vmLocals, engine.defaultOptions()));
+		engine.execute(ctx);
 		return ctx;
 	}
 
@@ -1867,27 +1886,6 @@ public final class VMHelper {
 			array.setValue(length, newMultiArrayInner((ArrayJavaClass) newType, lengths, next));
 		}
 		return array;
-	}
-
-	private static void contextPrepare(ExecutionContext ctx, Value[] stack, Value[] locals) {
-		ctx.getOwner().initialize();
-		ctx.getLocals().copyFrom(locals);
-		Stack $stack = ctx.getStack();
-		for (Value value : stack) {
-			$stack.pushRaw(value);
-		}
-	}
-
-	private static ExecutionContext createContext(JavaMethod jm) {
-		VirtualMachine vm = jm.getOwner().getVM();
-		ThreadStorage storage = vm.getThreadStorage();
-		int maxStack = jm.getMaxStack();
-		int maxLocals = jm.getMaxLocals();
-		return vm.getExecutionEngine().createContext(
-			jm,
-			storage.newStack(maxStack),
-			storage.newLocals(maxLocals)
-		);
 	}
 
 	private static void makeHiddenMethod(InstanceJavaClass jc, String name, String desc) {

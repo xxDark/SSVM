@@ -399,28 +399,11 @@ public class JitHelper {
 		return result.getResult();
 	}
 
-	public Value invokeStatic(Value[] locals, Object method, ExecutionContext ctx) {
-		VMHelper helper = ctx.getHelper();
-		JavaMethod mn = (JavaMethod) method;
-		Stack stack = ctx.getStack();
-		ExecutionContext result = helper.invokeStatic(mn, NO_VALUES, locals);
-		return result.getResult();
-	}
-
 	public Value invokeStatic(Value[] locals, String owner, String name, String desc, ExecutionContext ctx) {
 		VMHelper helper = ctx.getHelper();
 		JavaMethod mn = resolveStaticMethod(owner, name, desc, ctx);
 		Stack stack = ctx.getStack();
 		ExecutionContext result = helper.invokeStatic(mn, NO_VALUES, locals);
-		return result.getResult();
-	}
-
-	public Value invokeSpecial(Value[] locals, Object method, ExecutionContext ctx) {
-		VirtualMachine vm = ctx.getVM();
-		VMHelper helper = vm.getHelper();
-		Stack stack = ctx.getStack();
-		JavaMethod mn = (JavaMethod) method;
-		ExecutionContext result = helper.invokeExact(mn, NO_VALUES, locals);
 		return result.getResult();
 	}
 

@@ -156,6 +156,33 @@ public final class ThreadStack implements Stack, AutoCloseable, Disposable {
 	}
 
 	@Override
+	public void copyFrom(Value[] locals) {
+		ThreadRegion stack = this.stack;
+		if (stack.length() == 0) {
+			if (locals.length != 0) {
+				throw new IllegalStateException();
+			}
+			return;
+		}
+		Value[] array = stack.getArray();
+		System.arraycopy(locals, 0, array, stack.map(0), locals.length);
+		cursor += locals.length;
+	}
+
+	@Override
+	public void copyFrom(Value[] locals, int offset, int length) {
+		ThreadRegion stack = this.stack;
+		if (stack.length() == 0) {
+			if (length != 0) {
+				throw new IllegalStateException();
+			}
+			return;
+		}
+		System.arraycopy(locals, offset, stack.getArray(), stack.map(0), length);
+		cursor += length;
+	}
+
+	@Override
 	public void dispose() {
 		stack.dispose();
 	}

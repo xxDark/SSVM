@@ -37,10 +37,10 @@ public class ClassLoaderNatives {
 		VMSymbols symbols = vm.getSymbols();
 		InstanceJavaClass classLoader = symbols.java_lang_ClassLoader();
 		vmi.setInvoker(classLoader, "registerNatives", "()V", MethodInvoker.noop());
-		MethodInvoker initHook = ctx -> {
+		MethodInvoker initHook = MethodInvoker.interpreted(ctx -> {
 			vm.getClassLoaders().setClassLoaderData(ctx.getLocals().load(0));
 			return Result.CONTINUE;
-		};
+		});
 		if (!vmi.setInvoker(classLoader, "<init>", "(Ljava/lang/Void;Ljava/lang/String;Ljava/lang/ClassLoader;)V", initHook)) {
 			if (!vmi.setInvoker(classLoader, "<init>", "(Ljava/lang/Void;Ljava/lang/ClassLoader;)V", initHook)) {
 				throw new IllegalStateException("Unable to locate ClassLoader init constructor");

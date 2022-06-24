@@ -307,4 +307,20 @@ public interface Stack {
 	 * @param count  Locals count.
 	 */
 	void sinkInto(Locals locals, int count);
+
+	/**
+	 * Copies contents into this stack.
+	 *
+	 * @param stack Content to copy.
+	 */
+	void copyFrom(Value[] stack);
+
+	/**
+	 * Copies contents into this stack.
+	 *
+	 * @param stack Content to copy.
+	 * @param offset Content offset.
+	 * @param length Content length.
+	 */
+	void copyFrom(Value[] stack, int offset, int length);
 }

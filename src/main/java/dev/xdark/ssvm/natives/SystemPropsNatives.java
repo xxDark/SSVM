@@ -9,7 +9,6 @@ import dev.xdark.ssvm.value.ArrayValue;
 import lombok.experimental.UtilityClass;
 
 import java.util.Map;
-import java.util.Properties;
 
 /**
  * Initializes jdk/internal/util/SystemProps.
@@ -72,13 +71,13 @@ public class SystemPropsNatives {
 				return Result.ABORT;
 			});
 			vmi.setInvoker(jc, "vmProperties", "()[Ljava/lang/String;", ctx -> {
-				Properties properties = vm.getProperties();
+				Map<String, String> properties = vm.getProperties();
 				VMHelper helper = vm.getHelper();
 				ArrayValue array = helper.newArray(vm.getSymbols().java_lang_String(), properties.size() * 2);
 				int i = 0;
-				for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-					array.setValue(i++, helper.newUtf8(entry.getKey().toString()));
-					array.setValue(i++, helper.newUtf8(entry.getValue().toString()));
+				for (Map.Entry<String, String> entry : properties.entrySet()) {
+					array.setValue(i++, helper.newUtf8(entry.getKey()));
+					array.setValue(i++, helper.newUtf8(entry.getValue()));
 				}
 				ctx.setResult(array);
 				return Result.ABORT;

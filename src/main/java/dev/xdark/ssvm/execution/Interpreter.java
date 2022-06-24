@@ -30,14 +30,14 @@ public class Interpreter {
 	 * Processes {@link ExecutionContext}.
 	 *
 	 * @param ctx     Context to process.
-	 * @param options Execution options.
 	 */
-	public void execute(ExecutionContext ctx, ExecutionContextOptions options) {
+	public void execute(ExecutionContext ctx) {
 		JavaMethod jm = ctx.getMethod();
 		VMInterface vmi = ctx.getVM().getInterface();
 		MethodNode mn = jm.getNode();
 		InsnList instructions = mn.instructions;
 		List<InstructionInterceptor> interceptors = vmi.getInterceptors();
+		ExecutionOptions options = ctx.getOptions();
 		boolean updateLineNumbers = options.setLineNumbers();
 		exec:
 		while (true) {

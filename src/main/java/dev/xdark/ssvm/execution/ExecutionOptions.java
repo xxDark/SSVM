@@ -9,7 +9,7 @@ import lombok.Builder.Default;
  * @author xDark
  */
 @Builder
-public final class ExecutionContextOptions {
+public final class ExecutionOptions {
 	/**
 	 * Whether line numbers should be updated.
 	 */
@@ -18,6 +18,7 @@ public final class ExecutionContextOptions {
 	/**
 	 * Whether the VM should search for VMI invokers.
 	 */
+	@Deprecated
 	@Default
 	private final boolean useInvokers = true;
 	/**
@@ -37,6 +38,7 @@ public final class ExecutionContextOptions {
 		return setLineNumbers;
 	}
 
+	@Deprecated
 	public boolean searchForHooks() {
 		return useInvokers;
 	}

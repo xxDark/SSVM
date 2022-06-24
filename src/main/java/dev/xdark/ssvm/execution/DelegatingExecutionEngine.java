@@ -1,7 +1,5 @@
 package dev.xdark.ssvm.execution;
 
-import dev.xdark.ssvm.mirror.JavaMethod;
-
 /**
  * Delegating execution engine.
  *
@@ -19,17 +17,17 @@ public class DelegatingExecutionEngine implements ExecutionEngine {
 	}
 
 	@Override
-	public void execute(ExecutionContext ctx, ExecutionContextOptions options) {
-		delegate.execute(ctx, options);
+	public void execute(ExecutionContext ctx) {
+		delegate.execute(ctx);
 	}
 
 	@Override
-	public ExecutionContext createContext(JavaMethod method, Stack stack, Locals locals) {
-		return delegate.createContext(method, stack, locals);
+	public ExecutionContext createContext(ExecutionRequest request) {
+		return delegate.createContext(request);
 	}
 
 	@Override
-	public ExecutionContextOptions defaultOptions() {
+	public ExecutionOptions defaultOptions() {
 		return delegate.defaultOptions();
 	}
 }

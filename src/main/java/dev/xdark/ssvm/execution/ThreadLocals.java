@@ -57,6 +57,7 @@ public final class ThreadLocals implements Locals, AutoCloseable, Disposable {
 			}
 			return;
 		}
+		destOffset = table.map(destOffset);
 		Value[] array = table.getArray();
 		if ((!(locals instanceof ThreadLocals))) {
 			Value[] from = locals.getTable();
@@ -68,7 +69,7 @@ public final class ThreadLocals implements Locals, AutoCloseable, Disposable {
 	}
 
 	@Override
-	public void copyFrom(Value[] locals, int offset, int length) {
+	public void copyFrom(Value[] locals, int srcOffset, int destOffset, int length) {
 		ThreadRegion table = this.table;
 		if (table.length() == 0) {
 			if (length != 0) {
@@ -76,7 +77,8 @@ public final class ThreadLocals implements Locals, AutoCloseable, Disposable {
 			}
 			return;
 		}
-		System.arraycopy(locals, offset, table.getArray(), table.map(0), length);
+		Value[] array = table.getArray();
+		System.arraycopy(locals, srcOffset, array, table.map(destOffset), length);
 	}
 
 	@Override

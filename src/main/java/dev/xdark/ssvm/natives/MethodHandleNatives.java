@@ -149,7 +149,7 @@ public class MethodHandleNatives {
 				}
 			}
 			Locals table = vm.getThreadStorage().newLocals(vmtarget);
-			table.copyFrom(lvt, 0, lvt.length);
+			table.copyFrom(lvt, 0, 0, lvt.length);
 			Value result = helper.invoke(vmtarget, table).getResult();
 			ctx.setResult(result);
 			return Result.ABORT;
@@ -178,7 +178,7 @@ public class MethodHandleNatives {
 				}
 			}
 			Locals newLocals = vm.getThreadStorage().newLocals(vmtarget.getMaxLocals());
-			newLocals.copyFrom(table, 0, table.length - 1);
+			newLocals.copyFrom(table, 0, 0, table.length - 1);
 			Value result = helper.invoke(vmtarget, newLocals).getResult();
 
 			ctx.setResult(result);

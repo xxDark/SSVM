@@ -48,10 +48,11 @@ public interface Locals {
 	 * Copies contents into this locals.
 	 *
 	 * @param locals Content to copy.
-	 * @param offset Content offset.
+	 * @param srcOffset Content srcOffset.
+	 * @param destOffset Offset to copy to.
 	 * @param length Content length.
 	 */
-	void copyFrom(Value[] locals, int offset, int length);
+	void copyFrom(Value[] locals, int srcOffset, int destOffset, int length);
 
 	/**
 	 * @return underlying content of this LVT.

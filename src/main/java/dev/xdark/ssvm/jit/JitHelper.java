@@ -404,7 +404,7 @@ public class JitHelper {
 		VMHelper helper = vm.getHelper();
 		JavaMethod mn = resolveStaticMethod(owner, name, desc, ctx);
 		Locals table = vm.getThreadStorage().newLocals(mn);
-		table.copyFrom(locals, 0, locals.length);
+		table.copyFrom(locals, 0, 0, locals.length);
 		ExecutionContext result = helper.invoke(mn, table);
 		return result.getResult();
 	}
@@ -414,7 +414,7 @@ public class JitHelper {
 		VMHelper helper = vm.getHelper();
 		JavaMethod method = vm.getLinkResolver().resolveInterfaceMethod(helper.checkNotNull(locals[0]), name, desc, true);
 		Locals table = vm.getThreadStorage().newLocals(method);
-		table.copyFrom(locals, 0, locals.length);
+		table.copyFrom(locals, 0, 0, locals.length);
 		ExecutionContext result = helper.invoke(method, table);
 		return result.getResult();
 	}
@@ -425,7 +425,7 @@ public class JitHelper {
 		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
 		JavaMethod method = vm.getLinkResolver().resolveVirtualMethod(helper.checkNotNull(locals[0]).getJavaClass(), klass, name, desc);
 		Locals table = vm.getThreadStorage().newLocals(method);
-		table.copyFrom(locals, 0, locals.length);
+		table.copyFrom(locals, 0, 0, locals.length);
 		ExecutionContext result = helper.invoke(method, table);
 		return result.getResult();
 	}

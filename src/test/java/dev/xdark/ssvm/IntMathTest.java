@@ -115,7 +115,7 @@ public class IntMathTest {
 		mv.visitInsn(IRETURN);
 		mv.visitMaxs(2, 0);
 		InstanceJavaClass jc = TestUtil.createClass(vm, node);
-		ExecutionContext result = vm.getHelper().invokeStatic(jc, "test", "()I", new Value[0], new Value[0]);
+		ExecutionContext result = vm.getHelper().invokeStatic(jc, "test", "()I", new Value[0]);
 		return result.getResult().asInt();
 	}
 
@@ -128,7 +128,7 @@ public class IntMathTest {
 		mv.visitInsn(IRETURN);
 		mv.visitMaxs(1, 0);
 		InstanceJavaClass jc = TestUtil.createClass(vm, node);
-		ExecutionContext result = vm.getHelper().invokeStatic(jc, "test", "()I", new Value[0], new Value[0]);
+		ExecutionContext result = vm.getHelper().invokeStatic(jc, "test", "()I", new Value[0]);
 		return result.getResult().asInt();
 	}
 

@@ -33,7 +33,6 @@ public class MethodHandleNatives {
 
 	private final String VM_INDEX = NativeJava.VM_INDEX;
 	private final String VM_TARGET = NativeJava.VM_TARGET;
-	private final String VM_HOLDER = NativeJava.VM_HOLDER;
 
 	/**
 	 * @param vm VM instance.
@@ -131,7 +130,7 @@ public class MethodHandleNatives {
 				// Construct MT
 				InstanceValue mt = helper.methodType(jc.getClassLoader(), callerMethod.getType());
 				// Invoke asType
-				_this = (InstanceValue) helper.invokeVirtual("asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;", new Value[0], new Value[]{
+				_this = (InstanceValue) helper.invokeVirtual("asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;", new Value[]{
 					_this,
 					mt
 				}).getResult();
@@ -148,12 +147,12 @@ public class MethodHandleNatives {
 				int flags = vmentry.getInt("flags");
 				int refKind = (flags >> MN_REFERENCE_KIND_SHIFT) & MN_REFERENCE_KIND_MASK;
 				if (refKind == REF_invokeSpecial || refKind == REF_newInvokeSpecial) {
-					result = helper.invokeExact(vmtarget, new Value[0], lvt).getResult();
+					result = helper.invokeExact(vmtarget, lvt).getResult();
 				} else {
-					result = helper.invokeVirtual(name, vmtarget.getDesc(), new Value[0], lvt).getResult();
+					result = helper.invokeVirtual(name, vmtarget.getDesc(), lvt).getResult();
 				}
 			} else {
-				result = helper.invokeStatic(vmtarget, new Value[0], lvt).getResult();
+				result = helper.invokeStatic(vmtarget, lvt).getResult();
 			}
 			ctx.setResult(result);
 			return Result.ABORT;
@@ -179,12 +178,12 @@ public class MethodHandleNatives {
 				int flags = memberName.getInt("flags");
 				int refKind = (flags >> MN_REFERENCE_KIND_SHIFT) & MN_REFERENCE_KIND_MASK;
 				if (refKind == REF_invokeSpecial) {
-					result = helper.invokeExact(vmtarget, new Value[0], args).getResult();
+					result = helper.invokeExact(vmtarget, args).getResult();
 				} else {
-					result = helper.invokeVirtual(vmtarget.getName(), vmtarget.getDesc(), new Value[0], args).getResult();
+					result = helper.invokeVirtual(vmtarget.getName(), vmtarget.getDesc(), args).getResult();
 				}
 			} else {
-				result = helper.invokeStatic(vmtarget, new Value[0], args).getResult();
+				result = helper.invokeStatic(vmtarget, args).getResult();
 			}
 			JavaMethod m = ctx.getMethod();
 			ctx.setResult(result);
@@ -289,7 +288,7 @@ public class MethodHandleNatives {
 	private void initMethodMember(int refKind, VirtualMachine vm, InstanceValue memberName, InstanceJavaClass clazz, String name, Value methodType, int type, boolean speculativeResolve0) {
 		VMHelper helper = vm.getHelper();
 		VMSymbols symbols = vm.getSymbols();
-		String desc = helper.readUtf8(helper.invokeExact(symbols.java_lang_invoke_MethodType(), "toMethodDescriptorString", "()Ljava/lang/String;", new Value[0], new Value[]{
+		String desc = helper.readUtf8(helper.invokeExact(symbols.java_lang_invoke_MethodType(), "toMethodDescriptorString", "()Ljava/lang/String;", new Value[]{
 			methodType
 		}).getResult());
 		JavaMethod handle;

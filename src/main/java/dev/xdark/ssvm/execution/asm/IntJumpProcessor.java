@@ -26,7 +26,7 @@ public final class IntJumpProcessor implements InstructionProcessor<JumpInsnNode
 
 	@Override
 	public Result execute(JumpInsnNode insn, ExecutionContext ctx) {
-		if (condition.test(ctx.getStack().pop().asInt())) {
+		if (condition.test(ctx.getStack().popInt())) {
 			ctx.setInsnPosition(AsmUtil.getIndex(insn.label));
 		}
 		return Result.CONTINUE;

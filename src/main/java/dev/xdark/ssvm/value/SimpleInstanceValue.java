@@ -133,6 +133,11 @@ public class SimpleInstanceValue extends SimpleObjectValue implements InstanceVa
 	}
 
 	@Override
+	public boolean isNull() {
+		return false;
+	}
+
+	@Override
 	public String toString() {
 		return getJavaClass().getInternalName();
 	}

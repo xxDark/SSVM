@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static dev.xdark.ssvm.asm.Modifier.ACC_VM_HIDDEN;
@@ -235,9 +236,8 @@ public class UnsafeNatives {
 			ctx.setResult(result ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
-		MethodInvoker putObjectVolatile = (MethodInvoker) ctx -> {
+		MethodInvoker putObjectVolatile = ctx -> {
 			Locals locals = ctx.getLocals();
-			MemoryManager memoryManager = vm.getMemoryManager();
 			long offset = locals.load(2).asLong();
 			MemoryData buffer = getDataNonNull(locals.load(1), offset);
 			buffer.writeLongVolatile(0L, locals.<ObjectValue>load(4).getMemory().getAddress());
@@ -282,9 +282,9 @@ public class UnsafeNatives {
 			if (fn != null) {
 				long offset = vm.getMemoryManager().valueBaseOffset(declaringClass) + fn.getOffset();
 				ctx.setResult(LongValue.of(offset));
-				return Result.ABORT;
+			} else {
+				ctx.setResult(LongValue.M_ONE);
 			}
-			ctx.setResult(LongValue.M_ONE);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, uhelper.staticFieldOffset(), "(Ljava/lang/reflect/Field;)J", ctx -> {
@@ -296,9 +296,9 @@ public class UnsafeNatives {
 			if (fn != null) {
 				long offset = vm.getMemoryManager().getStaticOffset(declaringClass) + fn.getOffset();
 				ctx.setResult(LongValue.of(offset));
-				return Result.ABORT;
+			} else {
+				ctx.setResult(LongValue.M_ONE);
 			}
-			ctx.setResult(LongValue.M_ONE);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "putByte", "(JB)V", ctx -> {
@@ -414,12 +414,11 @@ public class UnsafeNatives {
 						tmp.add(null);
 					}
 				}
-				Map<String, List<LdcInsnNode>> strings = generated.getNode().methods
+				Map<String, List<LdcInsnNode>> strings = ((Stream<LdcInsnNode>) (Stream) generated.getNode().methods
 					.stream()
 					.map(x -> x.instructions)
 					.flatMap(x -> StreamSupport.stream(x.spliterator(), false))
-					.filter(x -> x instanceof LdcInsnNode)
-					.map(x -> (LdcInsnNode) x)
+					.filter(x -> x instanceof LdcInsnNode))
 					.filter(x -> x.cst instanceof String)
 					.collect(Collectors.groupingBy(x -> (String) x.cst, Collectors.mapping(Function.identity(), Collectors.toList())));
 				for (int i = 1; i < values.length; i++) {
@@ -537,8 +536,7 @@ public class UnsafeNatives {
 		});
 	}
 
-
-	public static MemoryData getDataNonNull(Value instance, long offset) {
+	private static MemoryData getDataNonNull(Value instance, long offset) {
 		if (instance.isNull()) {
 			throw new PanicException("Segfault");
 		}
@@ -546,7 +544,7 @@ public class UnsafeNatives {
 		return data.slice(offset, data.length() - offset);
 	}
 
-	public static MemoryData getData(MemoryAllocator allocator, Value instance, long offset) {
+	private static MemoryData getData(MemoryAllocator allocator, Value instance, long offset) {
 		MemoryData data;
 		if (instance.isNull()) {
 			MemoryBlock memory = nonNull(allocator.findDirectBlock(offset));

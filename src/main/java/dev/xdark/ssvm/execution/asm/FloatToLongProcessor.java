@@ -16,7 +16,7 @@ public final class FloatToLongProcessor implements InstructionProcessor<Abstract
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
-		stack.pushLong(stack.pop().asLong());
+		stack.pushLong((long) stack.popFloat());
 		return Result.CONTINUE;
 	}
 }

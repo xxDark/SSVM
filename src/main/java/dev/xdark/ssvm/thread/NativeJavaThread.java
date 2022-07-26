@@ -53,7 +53,7 @@ public class NativeJavaThread extends Thread {
 		VMHelper helper = vm.getHelper();
 		oop.setInt("threadStatus", ThreadState.JVMTI_THREAD_STATE_ALIVE | ThreadState.JVMTI_THREAD_STATE_RUNNABLE);
 		try {
-			helper.invokeVirtual("run", "()V", new Value[0], new Value[]{oop});
+			helper.invokeVirtual("run", "()V", new Value[]{oop});
 		} catch (VMException ex) {
 			ObjectValue uncaughtExceptionHandler = oop.getValue("uncaughtExceptionHandler", "Ljava/lang/Thread$UncaughtExceptionHandler;");
 			if (uncaughtExceptionHandler.isNull()) {
@@ -61,7 +61,7 @@ public class NativeJavaThread extends Thread {
 			}
 			if (!uncaughtExceptionHandler.isNull()) {
 				try {
-					helper.invokeVirtual("uncaughtException", "(Ljava/lang/Thread;Ljava/lang/Throwable;)V", new Value[0], new Value[]{
+					helper.invokeVirtual("uncaughtException", "(Ljava/lang/Thread;Ljava/lang/Throwable;)V", new Value[]{
 						oop,
 						ex.getOop()
 					});

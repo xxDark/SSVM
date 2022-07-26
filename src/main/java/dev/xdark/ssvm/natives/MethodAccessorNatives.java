@@ -71,9 +71,9 @@ public class MethodAccessorNatives {
 			String desc = mn.getDesc();
 			ExecutionContext executed;
 			if (isStatic) {
-				executed = helper.invokeStatic(declaringClass, name, desc, new Value[0], args);
+				executed = helper.invokeStatic(declaringClass, name, desc, args);
 			} else {
-				executed = helper.invokeVirtual(name, desc, new Value[0], args);
+				executed = helper.invokeVirtual(name, desc, args);
 			}
 			Value result = executed.getResult();
 			if (result.isVoid()) {

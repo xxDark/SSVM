@@ -16,7 +16,7 @@ public final class DoubleToLongProcessor implements InstructionProcessor<Abstrac
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
-		stack.pushLong(stack.popWide().asLong());
+		stack.pushLong((long) stack.popDouble());
 		return Result.CONTINUE;
 	}
 }

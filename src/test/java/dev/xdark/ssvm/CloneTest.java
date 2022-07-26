@@ -24,7 +24,7 @@ public class CloneTest {
 		VMHelper helper = vm.getHelper();
 		byte[] bytes = "Hello, World".getBytes(StandardCharsets.UTF_8);
 		ArrayValue array = helper.toVMBytes(bytes);
-		ArrayValue copy = (ArrayValue) helper.invokeVirtual("clone", "()Ljava/lang/Object;", new Value[0], new Value[]{array}).getResult();
+		ArrayValue copy = (ArrayValue) helper.invokeVirtual("clone", "()Ljava/lang/Object;", new Value[]{array}).getResult();
 		assertArrayEquals(bytes, helper.toJavaBytes(copy));
 	}
 }

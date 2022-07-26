@@ -13,12 +13,12 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * @author xDark
  */
-public class SimpleObjectValue implements ObjectValue {
+public abstract class SimpleObjectValue implements ObjectValue {
 
 	private final ReentrantLock lock;
 	private final Condition signal;
 	private final MemoryManager memoryManager;
-	private final MemoryBlock memory;
+	protected final MemoryBlock memory;
 
 	/**
 	 * @param memoryManager Memory manager.
@@ -39,16 +39,6 @@ public class SimpleObjectValue implements ObjectValue {
 
 	@Override
 	public boolean isWide() {
-		return false;
-	}
-
-	@Override
-	public boolean isUninitialized() {
-		return false;
-	}
-
-	@Override
-	public boolean isNull() {
 		return false;
 	}
 

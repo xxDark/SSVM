@@ -622,7 +622,7 @@ public class IntrinsicsNatives {
 					Value value = array.getValue(i);
 					result *= 31;
 					if (!value.isNull()) {
-						result += helper.invokeVirtual("hashCode", "()I", new Value[0], new Value[]{value}).getResult().asInt();
+						result += helper.invokeVirtual("hashCode", "()I", new Value[]{value}).getResult().asInt();
 					}
 				}
 				ctx.setResult(IntValue.of(result));
@@ -833,7 +833,7 @@ public class IntrinsicsNatives {
 			Value v2 = b.getValue(length);
 			if (v1 != v2) {
 				if (!v1.isNull()) {
-					boolean eq = helper.invokeVirtual("equals", "(Ljava/lang/Object;)Z", new Value[0], new Value[]{
+					boolean eq = helper.invokeVirtual("equals", "(Ljava/lang/Object;)Z", new Value[]{
 						v1, v2
 					}).getResult().asBoolean();
 					if (!eq) {

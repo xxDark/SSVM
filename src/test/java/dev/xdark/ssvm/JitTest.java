@@ -80,7 +80,7 @@ public class JitTest {
 			throw new IllegalStateException(ex);
 		}
 		try {
-			helper.invokeStatic(m, new Value[0], new Value[]{
+			helper.invokeStatic(m, new Value[]{
 				LongValue.of(a),
 				TopValue.INSTANCE,
 				IntValue.of(b),
@@ -90,7 +90,7 @@ public class JitTest {
 				IntValue.of(e)
 			});
 		} catch (VMException ex) {
-			helper.invokeVirtual("printStackTrace", "()V", new Value[0], new Value[]{ex.getOop()});
+			helper.invokeVirtual("printStackTrace", "()V", new Value[]{ex.getOop()});
 			throw ex;
 		}
 		assertEquals(a, jc.getStaticValue("a", "J").asLong());

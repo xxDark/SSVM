@@ -120,7 +120,7 @@ public final class InvokeDynamicLinker {
 			};
 		}
 
-		helper.invokeStatic(method, new Value[0], linkArgs);
+		helper.invokeStatic(method, linkArgs);
 		return (InstanceValue) appendix.getValue(0);
 	}
 
@@ -137,7 +137,7 @@ public final class InvokeDynamicLinker {
 		VMHelper helper = vm.getHelper();
 		if (vm.getSymbols().java_lang_invoke_CallSite().isAssignableFrom(handle.getJavaClass())) {
 			// See linkCallSiteImpl
-			handle = helper.checkNotNull(helper.invokeVirtual("getTarget", "()Ljava/lang/invoke/MethodHandle;", new Value[0], new Value[]{handle}).getResult());
+			handle = helper.checkNotNull(helper.invokeVirtual("getTarget", "()Ljava/lang/invoke/MethodHandle;", new Value[]{handle}).getResult());
 		}
 		if (args[0] == null) {
 			// The slot was reserved, use it
@@ -149,7 +149,7 @@ public final class InvokeDynamicLinker {
 			copy[0] = handle;
 			args = copy;
 		}
-		return helper.invokeVirtual("invokeExact", desc, new Value[0], args).getResult();
+		return helper.invokeVirtual("invokeExact", desc, args).getResult();
 	}
 
 	/**

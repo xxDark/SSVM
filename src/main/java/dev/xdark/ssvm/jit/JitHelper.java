@@ -32,8 +32,6 @@ import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 @UtilityClass
 public class JitHelper {
 
-	private static final Value[] NO_VALUES = {};
-
 	public int arrayLoadInt(Value array, int index, ExecutionContext ctx) {
 		return ctx.getOperations().arrayLoadInt((ObjectValue) array, index);
 	}
@@ -395,7 +393,7 @@ public class JitHelper {
 		VirtualMachine vm = ctx.getVM();
 		VMHelper helper = vm.getHelper();
 		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
-		ExecutionContext result = helper.invokeExact(klass, name, desc, NO_VALUES, locals);
+		ExecutionContext result = helper.invokeExact(klass, name, desc, locals);
 		return result.getResult();
 	}
 
@@ -403,14 +401,14 @@ public class JitHelper {
 		VMHelper helper = ctx.getHelper();
 		JavaMethod mn = resolveStaticMethod(owner, name, desc, ctx);
 		Stack stack = ctx.getStack();
-		ExecutionContext result = helper.invokeStatic(mn, NO_VALUES, locals);
+		ExecutionContext result = helper.invokeStatic(mn, locals);
 		return result.getResult();
 	}
 
 	public Value invokeVirtual(Value[] locals, Object name, Object desc, ExecutionContext ctx) {
 		VirtualMachine vm = ctx.getVM();
 		Stack stack = ctx.getStack();
-		ExecutionContext result = vm.getHelper().invokeVirtual((String) name, (String) desc, NO_VALUES, locals);
+		ExecutionContext result = vm.getHelper().invokeVirtual((String) name, (String) desc, locals);
 		return result.getResult();
 	}
 
@@ -418,7 +416,7 @@ public class JitHelper {
 		VirtualMachine vm = ctx.getVM();
 		VMHelper helper = vm.getHelper();
 		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
-		ExecutionContext result = helper.invokeInterface(klass, name, desc, NO_VALUES, locals);
+		ExecutionContext result = helper.invokeInterface(klass, name, desc, locals);
 		return result.getResult();
 	}
 

@@ -87,7 +87,7 @@ public class FieldTest {
 		InstanceJavaClass c = TestUtil.createClass(vm, node);
 		InstanceValue instance = vm.getMemoryManager().newInstance(c);
 		VMHelper helper = vm.getHelper();
-		helper.invokeExact(c, "<init>", "()V", new Value[0], new Value[]{instance});
+		helper.invokeExact(c, "<init>", "()V", new Value[]{instance});
 		assertEquals(stringCst, vm.getHelper().readUtf8(instance.getValue("string", "Ljava/lang/String;")));
 		assertEquals(longCst, instance.getLong("long"));
 		assertEquals(doubleCst, instance.getDouble("double"));
@@ -131,7 +131,7 @@ public class FieldTest {
 		InstanceJavaClass c = TestUtil.createClass(vm, node);
 		InstanceValue instance = vm.getMemoryManager().newInstance(c);
 		VMHelper helper = vm.getHelper();
-		helper.invokeExact(c, "<init>", "()V", new Value[0], new Value[]{instance});
+		helper.invokeExact(c, "<init>", "()V", new Value[]{instance});
 		assertEquals(staticStringCst, helper.readUtf8(c.getStaticValue("string", "Ljava/lang/String;")));
 		assertEquals(staticDouble, c.getStaticValue("double", "D").asDouble());
 		assertEquals(virtualStringCst, helper.readUtf8(instance.getValue("string1", "Ljava/lang/String;")));

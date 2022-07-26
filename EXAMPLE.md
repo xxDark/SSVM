@@ -71,7 +71,6 @@ public class MyApplication {
                   symbols.java_lang_ClassLoader,
                   "getSystemClassLoader",
                   "()Ljava/lang/ClassLoader;",
-                  new Value[0],
                   new Value[0])
               .getResult();
       addURL(vm, cl, "c:\\Users\\User\\obf.jar");
@@ -81,9 +80,9 @@ public class MyApplication {
       val method = klass.getStaticMethod("main", "([Ljava/lang/String;)V");
 
       helper.invokeStatic(
-          klass, method, new Value[0], new Value[] {helper.emptyArray(symbols.java_lang_String)});
+          klass, method, new Value[] {helper.emptyArray(symbols.java_lang_String)});
     } catch (VMException ex) {
-      helper.invokeVirtual("printStackTrace", "()V", new Value[0], new Value[] {ex.getOop()});
+      helper.invokeVirtual("printStackTrace", "()V", new Value[] {ex.getOop()});
     }
   }
 
@@ -106,17 +105,16 @@ public class MyApplication {
         fileClass,
         "<init>",
         "(Ljava/lang/String;)V",
-        new Value[0],
         new Value[] {file, helper.newUtf8(path)});
     val uri =
         helper
-            .invokeVirtual("toURI", "()Ljava/net/URI;", new Value[0], new Value[] {file})
+            .invokeVirtual("toURI", "()Ljava/net/URI;", new Value[] {file})
             .getResult();
     val url =
         helper
-            .invokeVirtual("toURL", "()Ljava/net/URL;", new Value[0], new Value[] {uri})
+            .invokeVirtual("toURL", "()Ljava/net/URL;", new Value[] {uri})
             .getResult();
-    helper.invokeVirtual("addURL", "(Ljava/net/URL;)V", new Value[0], new Value[] {loader, url});
+    helper.invokeVirtual("addURL", "(Ljava/net/URL;)V", new Value[] {loader, url});
   }
 }
 ```

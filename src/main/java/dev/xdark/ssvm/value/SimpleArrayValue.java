@@ -137,6 +137,16 @@ public final class SimpleArrayValue extends SimpleObjectValue implements ArrayVa
 		return getMemoryManager().readArrayLength(this);
 	}
 
+	@Override
+	public boolean isUninitialized() {
+		return false;
+	}
+
+	@Override
+	public boolean isNull() {
+		return false;
+	}
+
 	private long dataOffset(long offset) {
 		if (offset == -1L) {
 			return offset;

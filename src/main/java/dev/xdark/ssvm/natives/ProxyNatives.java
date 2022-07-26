@@ -49,7 +49,7 @@ public class ProxyNatives {
 				ObjectValue nullValue = vm.getMemoryManager().nullValue();
 				result = helper.newInstanceClass(nullValue, nullValue, parsed.getClassReader(), parsed.getNode());
 			} else {
-				result = ((JavaValue<InstanceJavaClass>) helper.invokeVirtual("defineClass", "(Ljava/lang/String;[BII)Ljava/lang/Class;", new Value[0], new Value[]{
+				result = ((JavaValue<InstanceJavaClass>) helper.invokeVirtual("defineClass", "(Ljava/lang/String;[BII)Ljava/lang/Class;", new Value[]{
 					loader,
 					name,
 					bytes,

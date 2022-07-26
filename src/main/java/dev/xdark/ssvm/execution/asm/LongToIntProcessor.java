@@ -16,7 +16,7 @@ public final class LongToIntProcessor implements InstructionProcessor<AbstractIn
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
-		stack.pushInt(stack.popWide().asInt());
+		stack.pushInt((int) stack.popLong());
 		return Result.CONTINUE;
 	}
 }

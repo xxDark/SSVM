@@ -5,7 +5,6 @@ import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.util.BiFloatToFloatFunction;
-import dev.xdark.ssvm.value.FloatValue;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 /**
@@ -27,9 +26,9 @@ public final class BiFloatProcessor implements InstructionProcessor<AbstractInsn
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
-		float v2 = stack.pop().asFloat();
-		float v1 = stack.pop().asFloat();
-		stack.push(new FloatValue(op.apply(v1, v2)));
+		float v2 = stack.popFloat();
+		float v1 = stack.popFloat();
+		stack.pushFloat(op.apply(v1, v2));
 		return Result.CONTINUE;
 	}
 }

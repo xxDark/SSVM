@@ -13,5 +13,4 @@ abstract class CallProcessor implements InstructionProcessor<MethodInsnNode> {
 	// TODO make all processors use VM specific instruction to cache argument types
 	// Also merge locals creation in one method in attempt to use
 	// thread regions directly
-	protected static final Value[] NO_VALUES = {};
 }

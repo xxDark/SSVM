@@ -27,7 +27,7 @@ public class PerfNatives {
 		InstanceJavaClass jc = symbols.perf_Perf();
 		vmi.setInvoker(jc, "registerNatives", "()V", MethodInvoker.noop());
 		vmi.setInvoker(jc, "createLong", "(Ljava/lang/String;IIJ)Ljava/nio/ByteBuffer;", ctx -> {
-			Value buf = vm.getHelper().invokeStatic(symbols.java_nio_ByteBuffer(), "allocateDirect", "(I)Ljava/nio/ByteBuffer;", new Value[0], new Value[]{IntValue.of(8)}).getResult();
+			Value buf = vm.getHelper().invokeStatic(symbols.java_nio_ByteBuffer(), "allocateDirect", "(I)Ljava/nio/ByteBuffer;", new Value[]{IntValue.of(8)}).getResult();
 			ctx.setResult(buf);
 			return Result.ABORT;
 		});

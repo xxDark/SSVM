@@ -35,8 +35,8 @@ public class ProcessEnvironmentNatives {
 			for (Map.Entry<String, String> entry : env.entrySet()) {
 				ObjectValue key = helper.newUtf8(entry.getKey());
 				ObjectValue value = helper.newUtf8(entry.getValue());
-				ArrayValue keyBytes = (ArrayValue) helper.invokeVirtual("getBytes", "()[B", new Value[0], new Value[]{key}).getResult();
-				ArrayValue valueBytes = (ArrayValue) helper.invokeVirtual("getBytes", "()[B", new Value[0], new Value[]{value}).getResult();
+				ArrayValue keyBytes = (ArrayValue) helper.invokeVirtual("getBytes", "()[B", new Value[]{key}).getResult();
+				ArrayValue valueBytes = (ArrayValue) helper.invokeVirtual("getBytes", "()[B", new Value[]{value}).getResult();
 				array.setValue(idx++, keyBytes);
 				array.setValue(idx++, valueBytes);
 			}

@@ -457,7 +457,7 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	private void outOfMemory() {
 		VirtualMachine vm = this.vm;
-		vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError(), "heap size");
+		vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError(), "heap space");
 	}
 
 	private MemoryBlock allocateObjectMemory(JavaClass javaClass) {

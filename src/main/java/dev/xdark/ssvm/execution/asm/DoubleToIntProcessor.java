@@ -16,7 +16,7 @@ public final class DoubleToIntProcessor implements InstructionProcessor<Abstract
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
-		stack.pushInt(stack.popWide().asInt());
+		stack.pushInt((int) stack.popDouble());
 		return Result.CONTINUE;
 	}
 }

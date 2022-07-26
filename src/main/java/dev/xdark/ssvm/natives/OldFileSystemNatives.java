@@ -52,7 +52,7 @@ public class OldFileSystemNatives {
 			Value value = ctx.getLocals().load(1);
 			helper.checkNotNull(value);
 			try {
-				String path = helper.readUtf8(helper.invokeVirtual("getAbsolutePath", "()Ljava/lang/String;", new Value[0], new Value[]{value}).getResult());
+				String path = helper.readUtf8(helper.invokeVirtual("getAbsolutePath", "()Ljava/lang/String;", new Value[]{value}).getResult());
 				BasicFileAttributes attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
 				if (attributes == null) {
 					ctx.setResult(IntValue.ZERO);
@@ -96,7 +96,7 @@ public class OldFileSystemNatives {
 			Value value = ctx.getLocals().load(1);
 			helper.checkNotNull(value);
 			try {
-				String path = helper.readUtf8(helper.invokeVirtual("getAbsolutePath", "()Ljava/lang/String;", new Value[0], new Value[]{value}).getResult());
+				String path = helper.readUtf8(helper.invokeVirtual("getAbsolutePath", "()Ljava/lang/String;", new Value[]{value}).getResult());
 				BasicFileAttributes attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
 				if (attributes == null) {
 					ctx.setResult(LongValue.ZERO);
@@ -113,7 +113,7 @@ public class OldFileSystemNatives {
 			Value value = ctx.getLocals().load(1);
 			helper.checkNotNull(value);
 			try {
-				String path = helper.readUtf8(helper.invokeVirtual("getAbsolutePath", "()Ljava/lang/String;", new Value[0], new Value[]{value}).getResult());
+				String path = helper.readUtf8(helper.invokeVirtual("getAbsolutePath", "()Ljava/lang/String;", new Value[]{value}).getResult());
 				BasicFileAttributes attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
 				if (attributes == null) {
 					ctx.setResult(LongValue.ZERO);

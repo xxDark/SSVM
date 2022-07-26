@@ -25,7 +25,6 @@ import dev.xdark.ssvm.value.Value;
  */
 public class VMOperations {
 
-	private static final Value[] NO_VALUES = {};
 	private final VMSymbols symbols;
 	private final VMPrimitives primitives;
 	private final VMHelper helper;
@@ -443,7 +442,7 @@ public class VMOperations {
 			InstanceJavaClass exceptionClass = symbols.java_lang_NullPointerException();
 			exceptionClass.initialize();
 			value = memoryManager.newInstance(exceptionClass);
-			helper.invokeExact(exceptionClass, "<init>", "()V", NO_VALUES, new Value[]{value});
+			helper.invokeExact(exceptionClass, "<init>", "()V", new Value[]{value});
 		}
 		throw new VMException((InstanceValue) value);
 	}

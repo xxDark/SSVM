@@ -60,7 +60,7 @@ public class ConstructorAccessorNatives {
 			Value[] args = new Value[converted.length + 1];
 			System.arraycopy(converted, 0, args, 1, converted.length);
 			args[0] = instance;
-			helper.invokeExact(declaringClass, "<init>", mn.getDesc(), new Value[0], args);
+			helper.invokeExact(declaringClass, "<init>", mn.getDesc(), args);
 			ctx.setResult(instance);
 			return Result.ABORT;
 		});

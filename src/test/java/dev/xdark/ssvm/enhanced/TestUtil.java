@@ -64,11 +64,11 @@ public class TestUtil {
 				continue;
 			}
 			try {
-				helper.invokeStatic(m, new Value[0], new Value[0]);
+				helper.invokeStatic(m, new Value[0]);
 			} catch(VMException ex) {
 				System.err.println(ex.getOop());
 				try {
-					helper.invokeVirtual("printStackTrace", "()V", new Value[0], new Value[]{ex.getOop()});
+					helper.invokeVirtual("printStackTrace", "()V", new Value[]{ex.getOop()});
 				} catch(VMException ex1) {
 					System.err.println(ex1.getOop());
 					helper.toJavaException(ex1.getOop()).printStackTrace();

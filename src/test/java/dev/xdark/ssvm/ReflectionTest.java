@@ -35,12 +35,12 @@ public class ReflectionTest {
 		String str = "Hello, World";
 		ArrayValue chars = helper.toVMChars(str.toCharArray());
 		ArrayValue parameters = helper.toVMValues(new ObjectValue[]{vm.getPrimitives().charPrimitive().newArrayClass().getOop()});
-		InstanceValue constructor = (InstanceValue) helper.invokeVirtual("getConstructor", "([Ljava/lang/Class;)Ljava/lang/reflect/Constructor;", new Value[0], new Value[]{
+		InstanceValue constructor = (InstanceValue) helper.invokeVirtual("getConstructor", "([Ljava/lang/Class;)Ljava/lang/reflect/Constructor;", new Value[]{
 				c.getOop(),
 				parameters
 		}).getResult();
 		constructor.setBoolean("override", true);
-		Value value = helper.invokeVirtual("newInstance", "([Ljava/lang/Object;)Ljava/lang/Object;", new Value[0], new Value[]{
+		Value value = helper.invokeVirtual("newInstance", "([Ljava/lang/Object;)Ljava/lang/Object;", new Value[]{
 				constructor,
 				helper.toVMValues(new ObjectValue[]{chars})
 		}).getResult();
@@ -56,13 +56,13 @@ public class ReflectionTest {
 		String str = "Hello, World";
 		ObjectValue instance = helper.newUtf8(str);
 		ArrayValue parameters = helper.emptyArray(symbols.java_lang_Class());
-		InstanceValue method = (InstanceValue) helper.invokeVirtual("getMethod", "(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;", new Value[0], new Value[]{
+		InstanceValue method = (InstanceValue) helper.invokeVirtual("getMethod", "(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;", new Value[]{
 				c.getOop(),
 				helper.newUtf8("toUpperCase"),
 				parameters
 		}).getResult();
 		method.setBoolean("override", true);
-		Value lower = helper.invokeVirtual("invoke", "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;", new Value[0], new Value[]{
+		Value lower = helper.invokeVirtual("invoke", "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;", new Value[]{
 				method,
 				instance,
 				helper.emptyArray(symbols.java_lang_Object())
@@ -78,12 +78,12 @@ public class ReflectionTest {
 		InstanceJavaClass c = symbols.java_lang_Integer();
 		int primitive = ThreadLocalRandom.current().nextInt();
 		Value instance = helper.boxInt(IntValue.of(primitive));
-		InstanceValue field = (InstanceValue) helper.invokeVirtual("getDeclaredField", "(Ljava/lang/String;)Ljava/lang/reflect/Field;", new Value[0], new Value[]{
+		InstanceValue field = (InstanceValue) helper.invokeVirtual("getDeclaredField", "(Ljava/lang/String;)Ljava/lang/reflect/Field;", new Value[]{
 				c.getOop(),
 				helper.newUtf8("value"),
 		}).getResult();
 		field.setBoolean("override", true);
-		Value backing = helper.invokeVirtual("getInt", "(Ljava/lang/Object;)I", new Value[0], new Value[]{
+		Value backing = helper.invokeVirtual("getInt", "(Ljava/lang/Object;)I", new Value[]{
 				field,
 				instance,
 		}).getResult();

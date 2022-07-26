@@ -84,7 +84,7 @@ public class SystemNatives {
 			for (Map.Entry<String, String> entry : properties.entrySet()) {
 				String key = entry.getKey();
 				String property = entry.getValue();
-				helper.invokeExact(mn, new Value[0], new Value[]{
+				helper.invokeExact(mn, new Value[]{
 					value,
 					helper.newUtf8(key),
 					helper.newUtf8(property)

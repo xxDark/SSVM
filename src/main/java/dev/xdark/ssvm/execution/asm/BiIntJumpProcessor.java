@@ -27,8 +27,8 @@ public final class BiIntJumpProcessor implements InstructionProcessor<JumpInsnNo
 	@Override
 	public Result execute(JumpInsnNode insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
-		int v2 = stack.pop().asInt();
-		int v1 = stack.pop().asInt();
+		int v2 = stack.popInt();
+		int v1 = stack.popInt();
 		if (condition.test(v1, v2)) {
 			ctx.setInsnPosition(AsmUtil.getIndex(insn.label));
 		}

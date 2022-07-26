@@ -7,7 +7,6 @@ import dev.xdark.ssvm.execution.ThreadStack;
 import dev.xdark.ssvm.thread.SimpleThreadStorage;
 import dev.xdark.ssvm.thread.ThreadRegion;
 import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.LongValue;
 import dev.xdark.ssvm.value.TopValue;
 import dev.xdark.ssvm.value.Value;
 import org.junit.jupiter.api.Test;
@@ -27,8 +26,8 @@ public class ThreadStorageTest {
 			Stack stack = new ThreadStack(stackRegion);
 			Locals locals = new ThreadLocals(localsRegion);
 			assertDoesNotThrow(() -> {
-				stack.pushWide(LongValue.ZERO);
-				stack.push(IntValue.ZERO);
+				stack.pushLong(0L);
+				stack.pushInt(0);
 			});
 			assertDoesNotThrow(() -> {
 				for (int i = 0; i < maxLocals; i++) {

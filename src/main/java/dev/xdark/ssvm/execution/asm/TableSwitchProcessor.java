@@ -15,7 +15,7 @@ public final class TableSwitchProcessor implements InstructionProcessor<TableSwi
 
 	@Override
 	public Result execute(TableSwitchInsnNode insn, ExecutionContext ctx) {
-		int value = ctx.getStack().pop().asInt();
+		int value = ctx.getStack().popInt();
 		if (value < insn.min || value > insn.max) {
 			ctx.setInsnPosition(AsmUtil.getIndex(insn.dflt));
 		} else {

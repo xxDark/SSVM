@@ -67,7 +67,7 @@ public class FloatMathTest {
 		mv.visitInsn(FRETURN);
 		mv.visitMaxs(2, 0);
 		InstanceJavaClass jc = TestUtil.createClass(vm, node);
-		ExecutionContext result = vm.getHelper().invokeStatic(jc, "test", "()F", new Value[0], new Value[0]);
+		ExecutionContext result = vm.getHelper().invokeStatic(jc, "test", "()F", new Value[0]);
 		return result.getResult().asFloat();
 	}
 

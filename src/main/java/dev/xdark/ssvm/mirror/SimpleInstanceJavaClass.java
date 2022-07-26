@@ -187,7 +187,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		JavaMethod clinit = getStaticMethod("<clinit>", "()V");
 		try {
 			if (clinit != null) {
-				helper.invokeStatic(clinit, new Value[0], new Value[0]);
+				helper.invokeStatic(clinit, new Value[0]);
 			}
 			this.state = State.COMPLETE;
 		} catch (VMException ex) {
@@ -559,74 +559,6 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		return hasVirtualField(new SimpleMemberKey(this, name, desc));
 	}
 
-	/**
-	 * Sets virtual class layout.
-	 *
-	 * @param layout Layout to use.
-	 */
-	public void setVirtualFieldLayout(FieldLayout layout) {
-		this.vrtFieldLayout = layout;
-	}
-
-	/**
-	 * Sets static class layout.
-	 *
-	 * @param layout Layout to use.
-	 */
-	public void setStaticFieldLayout(FieldLayout layout) {
-		this.staticFieldLayout = layout;
-	}
-
-	/**
-	 * Builds static class layout.
-	 *
-	 * @return static class layout.
-	 */
-	public FieldLayout createStaticFieldLayout() {
-		Map<MemberKey, JavaField> map = new HashMap<>();
-		long offset = 0L;
-		int slot = getVirtualFieldCount();
-		VMHelper helper = vm.getHelper();
-		List<FieldNode> fields = node.fields;
-		for (FieldNode field : fields) {
-			if ((field.access & Opcodes.ACC_STATIC) != 0) {
-				String desc = field.desc;
-				map.put(new SimpleMemberKey(this, field.name, desc), new JavaField(this, field, slot++, offset));
-				offset += helper.getDescriptorSize(desc);
-			}
-		}
-		return new FieldLayout(Collections.unmodifiableMap(map), offset);
-	}
-
-	/**
-	 * Builds virtual class layout.
-	 *
-	 * @return virtual class layout.
-	 */
-	public FieldLayout createVirtualFieldLayout() {
-		HashMap<MemberKey, JavaField> map = new HashMap<MemberKey, JavaField>();
-		ArrayDeque<InstanceJavaClass> deque = new ArrayDeque<InstanceJavaClass>();
-		long offset = 0L;
-		InstanceJavaClass javaClass = this;
-		while (javaClass != null) {
-			deque.addFirst(javaClass);
-			javaClass = javaClass.getSuperclassWithoutResolving();
-		}
-		VMHelper helper = vm.getHelper();
-		int slot = 0;
-		while ((javaClass = deque.pollFirst()) != null) {
-			List<FieldNode> fields = javaClass.getNode().fields;
-			for (FieldNode field : fields) {
-				if ((field.access & Opcodes.ACC_STATIC) == 0) {
-					String desc = field.desc;
-					map.put(new SimpleMemberKey(javaClass, field.name, desc), new JavaField(javaClass, field, slot++, offset));
-					offset += helper.getDescriptorSize(desc);
-				}
-			}
-		}
-		return new FieldLayout(Collections.unmodifiableMap(map), offset);
-	}
-
 	@Override
 	public ClassNode getNode() {
 		return node;
@@ -637,9 +569,6 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		return classReader;
 	}
 
-	/**
-	 * Loads hierarchy of classes without marking them as resolved.
-	 */
 	@Override
 	public void loadNoResolve() {
 		Lock lock = this.initializationLock;
@@ -852,6 +781,54 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		return getName();
 	}
 
+	public void setVirtualFieldLayout(FieldLayout layout) {
+		this.vrtFieldLayout = layout;
+	}
+
+	public void setStaticFieldLayout(FieldLayout layout) {
+		this.staticFieldLayout = layout;
+	}
+
+	public FieldLayout createStaticFieldLayout() {
+		Map<MemberKey, JavaField> map = new HashMap<>();
+		long offset = 0L;
+		int slot = getVirtualFieldCount();
+		VMHelper helper = vm.getHelper();
+		List<FieldNode> fields = node.fields;
+		for (FieldNode field : fields) {
+			if ((field.access & Opcodes.ACC_STATIC) != 0) {
+				String desc = field.desc;
+				map.put(new SimpleMemberKey(this, field.name, desc), new JavaField(this, field, slot++, offset));
+				offset += helper.getDescriptorSize(desc);
+			}
+		}
+		return new FieldLayout(Collections.unmodifiableMap(map), offset);
+	}
+
+	public FieldLayout createVirtualFieldLayout() {
+		HashMap<MemberKey, JavaField> map = new HashMap<MemberKey, JavaField>();
+		ArrayDeque<InstanceJavaClass> deque = new ArrayDeque<InstanceJavaClass>();
+		long offset = 0L;
+		InstanceJavaClass javaClass = this;
+		while (javaClass != null) {
+			deque.addFirst(javaClass);
+			javaClass = javaClass.getSuperclassWithoutResolving();
+		}
+		VMHelper helper = vm.getHelper();
+		int slot = 0;
+		while ((javaClass = deque.pollFirst()) != null) {
+			List<FieldNode> fields = javaClass.getNode().fields;
+			for (FieldNode field : fields) {
+				if ((field.access & Opcodes.ACC_STATIC) == 0) {
+					String desc = field.desc;
+					map.put(new SimpleMemberKey(javaClass, field.name, desc), new JavaField(javaClass, field, slot++, offset));
+					offset += helper.getDescriptorSize(desc);
+				}
+			}
+		}
+		return new FieldLayout(Collections.unmodifiableMap(map), offset);
+	}
+
 	private boolean checkAllocationStatus() {
 		int acc = getModifiers();
 		if ((acc & Opcodes.ACC_ABSTRACT) == 0 && (acc & Opcodes.ACC_INTERFACE) == 0) {
@@ -1004,7 +981,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 			InstanceJavaClass jc = symbols.java_lang_ExceptionInInitializerError();
 			jc.initialize();
 			oop = vm.getMemoryManager().newInstance(jc);
-			vm.getHelper().invokeExact(jc, "<init>", "(Ljava/lang/Throwable;)V", new Value[0], new Value[]{
+			vm.getHelper().invokeExact(jc, "<init>", "(Ljava/lang/Throwable;)V", new Value[]{
 				oop, cause
 			});
 			throw new VMException(oop);

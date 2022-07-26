@@ -46,7 +46,7 @@ public class NativeLibraryNatives {
 				}
 				return false;
 			}
-			InstanceValue _this = locals.<InstanceValue>load(0);
+			InstanceValue _this = locals.load(0);
 			_this.setLong("handle", handle);
 			_this.setInt("jniVersion", result.getJniVersion());
 			return true;
@@ -58,7 +58,7 @@ public class NativeLibraryNatives {
 			InstanceJavaClass librariesClass = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/loader/NativeLibraries");
 			findEntryClass = librariesClass;
 			findBuiltinLibClass = librariesClass;
-			vmi.setInvoker(librariesClass, "load", "(Ljdk/internal/loader/NativeLibraries$NativeLibraryImpl;Ljava/lang/String;Z)", ctx -> {
+			vmi.setInvoker(librariesClass, "load", "(Ljdk/internal/loader/NativeLibraries$NativeLibraryImpl;Ljava/lang/String;Z)Z", ctx -> {
 				ctx.setResult(load.test(ctx) ? IntValue.ONE : IntValue.ZERO);
 				return Result.ABORT;
 			});
@@ -73,7 +73,7 @@ public class NativeLibraryNatives {
 			});
 		} else {
 			if (!vmi.setInvoker(libraryClass, "load", "(Ljava/lang/String;Z)V", ctx -> {
-				InstanceValue _this = ctx.getLocals().<InstanceValue>load(0);
+				InstanceValue _this = ctx.getLocals().load(0);
 				_this.setBoolean("loaded", load.test(ctx));
 				return Result.ABORT;
 			})) {

@@ -393,31 +393,35 @@ public class JitHelper {
 		VirtualMachine vm = ctx.getVM();
 		VMHelper helper = vm.getHelper();
 		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
-		ExecutionContext result = helper.invokeExact(klass, name, desc, locals);
-		return result.getResult();
+		//ExecutionContext result = helper.invokeExact(klass, name, desc, locals);
+		//return result.getResult();
+		throw new UnsupportedOperationException("TODO FIXME");
 	}
 
 	public Value invokeStatic(Value[] locals, String owner, String name, String desc, ExecutionContext ctx) {
 		VMHelper helper = ctx.getHelper();
 		JavaMethod mn = resolveStaticMethod(owner, name, desc, ctx);
 		Stack stack = ctx.getStack();
-		ExecutionContext result = helper.invokeStatic(mn, locals);
-		return result.getResult();
+		//ExecutionContext result = helper.invokeStatic(mn, locals);
+		//return result.getResult();
+		throw new UnsupportedOperationException("TODO FIXME");
 	}
 
 	public Value invokeVirtual(Value[] locals, Object name, Object desc, ExecutionContext ctx) {
 		VirtualMachine vm = ctx.getVM();
 		Stack stack = ctx.getStack();
-		ExecutionContext result = vm.getHelper().invokeVirtual((String) name, (String) desc, locals);
-		return result.getResult();
+		//ExecutionContext result = vm.getHelper().invokeVirtual((String) name, (String) desc, locals);
+		//return result.getResult();
+		throw new UnsupportedOperationException("TODO FIXME");
 	}
 
 	public Value invokeInterface(Value[] locals, String owner, String name, String desc, ExecutionContext ctx) {
 		VirtualMachine vm = ctx.getVM();
 		VMHelper helper = vm.getHelper();
 		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
-		ExecutionContext result = helper.invokeInterface(klass, name, desc, locals);
-		return result.getResult();
+		//ExecutionContext result = helper.invokeInterface(klass, name, desc, locals);
+		//return result.getResult();
+		throw new UnsupportedOperationException("TODO FIXME");
 	}
 
 	public ObjectValue allocateInstance(InstanceJavaClass klass, ExecutionContext ctx) {
@@ -608,7 +612,7 @@ public class JitHelper {
 	public Value invokeDirect(Locals locals, Stack stack, Object method, ExecutionContext ctx) {
 		JavaMethod jm = (JavaMethod) method;
 		jm.getOwner().initialize();
-		return ctx.getHelper().invokeDirect(jm, stack, locals).getResult();
+		return ctx.getHelper().invokeDirect(jm, locals).getResult();
 	}
 
 	public Locals newLocals(int count, ExecutionContext ctx) {

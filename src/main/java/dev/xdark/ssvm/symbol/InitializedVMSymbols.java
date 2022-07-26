@@ -101,6 +101,7 @@ public final class InitializedVMSymbols implements VMSymbols {
 	private final InstanceJavaClass java_lang_InstantiationError;
 	private final InstanceJavaClass internal_reflect_Reflection;
 	private final InstanceJavaClass java_lang_ArithmeticException;
+	private final InstanceJavaClass java_io_FileOutputStream;
 
 	/**
 	 * @param vm VM instance.
@@ -218,6 +219,7 @@ public final class InitializedVMSymbols implements VMSymbols {
 		}
 		this.internal_reflect_Reflection =  internal_reflect_Reflection;
 		java_lang_ArithmeticException = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ArithmeticException");
+		java_io_FileOutputStream = (InstanceJavaClass) vm.findBootstrapClass("java/io/FileOutputStream");
 	}
 
 	@Override
@@ -653,6 +655,11 @@ public final class InitializedVMSymbols implements VMSymbols {
 	@Override
 	public InstanceJavaClass java_lang_ArithmeticException() {
 		return java_lang_ArithmeticException;
+	}
+
+	@Override
+	public InstanceJavaClass java_io_FileOutputStream() {
+		return java_io_FileOutputStream;
 	}
 
 	private static InstanceJavaClass resolvedMemberName(VirtualMachine vm) {

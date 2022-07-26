@@ -2,7 +2,6 @@ package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.value.Value;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.Label;
@@ -53,7 +52,7 @@ public class BiObjectComparisonTest {
 		mv.visitInsn(IRETURN);
 		mv.visitMaxs(2, 0);
 		InstanceJavaClass jc = TestUtil.createClass(vm, node);
-		ExecutionContext result = vm.getHelper().invokeStatic(jc, "test", "()Z", new Value[0]);
+		ExecutionContext result = vm.getHelper().invokeStatic(jc, "test", "()Z", vm.getThreadStorage().newLocals(0));
 		return result.getResult().asBoolean();
 	}
 }

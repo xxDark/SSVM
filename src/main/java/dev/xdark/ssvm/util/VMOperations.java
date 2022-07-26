@@ -439,10 +439,7 @@ public class VMOperations {
 	public void throwException(ObjectValue value) {
 		if (value.isNull()) {
 			// NPE it is then.
-			InstanceJavaClass exceptionClass = symbols.java_lang_NullPointerException();
-			exceptionClass.initialize();
-			value = memoryManager.newInstance(exceptionClass);
-			helper.invokeExact(exceptionClass, "<init>", "()V", new Value[]{value});
+			value = helper.newException(symbols.java_lang_NullPointerException());
 		}
 		throw new VMException((InstanceValue) value);
 	}

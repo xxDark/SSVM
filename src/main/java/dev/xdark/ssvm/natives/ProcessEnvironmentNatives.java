@@ -2,8 +2,11 @@ package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.VMInterface;
+import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -32,11 +35,22 @@ public class ProcessEnvironmentNatives {
 			int idx = 0;
 			int len = env.size();
 			ArrayValue array = helper.newArray(vm.getPrimitives().bytePrimitive().newArrayClass(), len * 2);
+			JavaMethod getBytes = vm.getLinkResolver().resolveSpecialMethod(vm.getSymbols().java_lang_String(), "getBytes", "()[B");
+			ThreadStorage ts = vm.getThreadStorage();
 			for (Map.Entry<String, String> entry : env.entrySet()) {
 				ObjectValue key = helper.newUtf8(entry.getKey());
 				ObjectValue value = helper.newUtf8(entry.getValue());
-				ArrayValue keyBytes = (ArrayValue) helper.invokeVirtual("getBytes", "()[B", new Value[]{key}).getResult();
-				ArrayValue valueBytes = (ArrayValue) helper.invokeVirtual("getBytes", "()[B", new Value[]{value}).getResult();
+				ArrayValue keyBytes, valueBytes;
+				{
+					Locals locals = ts.newLocals(getBytes);
+					locals.set(0, key);
+					keyBytes = (ArrayValue) helper.invokeDirect(getBytes, locals).getResult();
+				}
+				{
+					Locals locals = ts.newLocals(getBytes);
+					locals.set(0, value);
+					valueBytes = (ArrayValue) helper.invokeDirect(getBytes, locals).getResult();
+				}
 				array.setValue(idx++, keyBytes);
 				array.setValue(idx++, valueBytes);
 			}

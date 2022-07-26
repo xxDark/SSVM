@@ -49,16 +49,22 @@ public final class ThreadLocals implements Locals, AutoCloseable, Disposable {
 	}
 
 	@Override
-	public void copyFrom(Value[] locals) {
+	public void copyFrom(Locals locals, int srcOffset, int destOffset, int length) {
 		ThreadRegion table = this.table;
 		if (table.length() == 0) {
-			if (locals.length != 0) {
+			if (length != 0) {
 				throw new IllegalStateException();
 			}
 			return;
 		}
 		Value[] array = table.getArray();
-		System.arraycopy(locals, 0, array, table.map(0), locals.length);
+		if ((!(locals instanceof ThreadLocals))) {
+			Value[] from = locals.getTable();
+			System.arraycopy(from, srcOffset, array, destOffset, length);
+		} else {
+			ThreadLocals tl = (ThreadLocals) locals;
+			System.arraycopy(tl.table.getArray(), tl.table.map(srcOffset), array, destOffset, length);
+		}
 	}
 
 	@Override

@@ -247,7 +247,6 @@ public final class JitCompiler {
 	private static final Access INVOKE_SPECIAL_SLOW = staticCall(JIT_HELPER, "invokeSpecial", VALUE, VALUES, J_STRING, J_STRING, J_STRING, CTX);
 	private static final Access INVOKE_DIRECT = staticCall(JIT_HELPER, "invokeDirect", VALUE, LOCALS, STACK, J_OBJECT, CTX);
 	private static final Access NEW_LOCALS = staticCall(JIT_HELPER, "newLocals", LOCALS, J_INT, CTX);
-	private static final Access NEW_STACK = staticCall(JIT_HELPER, "newStack", STACK, J_INT, CTX);
 
 	private static final Access EXCEPTION_CAUGHT = staticCall(JIT_HELPER, "exceptionCaught", VM_EXCEPTION, VM_EXCEPTION, J_OBJECT, CTX);
 	private static final Access GET_EXCEPTION_OOP = virtualCall(VM_EXCEPTION, "getOop", INSTANCE);
@@ -1189,10 +1188,6 @@ public final class JitCompiler {
 			loadCtx();
 			NEW_LOCALS.emit(jit);
 			collectStaticCallArgsToLocals(desc);
-			// Make stack
-			emitInt(mn.getMaxStack(), jit);
-			loadCtx();
-			NEW_STACK.emit(jit);
 			loadCompilerConstant(mn);
 			loadCtx();
 			INVOKE_DIRECT.emit(jit);
@@ -1230,10 +1225,6 @@ public final class JitCompiler {
 			loadCtx();
 			NEW_LOCALS.emit(jit);
 			collectVirtualCallArgsToLocals(desc);
-			// Make stack
-			emitInt(mn.getMaxStack(), jit);
-			loadCtx();
-			NEW_STACK.emit(jit);
 			loadCompilerConstant(mn);
 			loadCtx();
 			INVOKE_DIRECT.emit(jit);

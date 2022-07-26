@@ -10,6 +10,7 @@ import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
@@ -81,14 +82,15 @@ public class SystemNatives {
 			Map<String, String> properties = vm.getProperties();
 			VMHelper helper = vm.getHelper();
 
+			ThreadStorage ts = vm.getThreadStorage();
 			for (Map.Entry<String, String> entry : properties.entrySet()) {
 				String key = entry.getKey();
 				String property = entry.getValue();
-				helper.invokeExact(mn, new Value[]{
-					value,
-					helper.newUtf8(key),
-					helper.newUtf8(property)
-				});
+				Locals locals = ts.newLocals(mn);
+				locals.set(0, value);
+				locals.set(1, helper.newUtf8(key));
+				locals.set(2, helper.newUtf8(property));
+				helper.invokeDirect(mn, locals);
 			}
 			ctx.setResult(value);
 			return Result.ABORT;

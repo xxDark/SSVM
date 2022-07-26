@@ -1,9 +1,5 @@
 package dev.xdark.ssvm.util;
 
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
-
 import java.util.Arrays;
 
 /**
@@ -12,13 +8,22 @@ import java.util.Arrays;
  * @param <V> Component type.
  * @author xDark
  */
-@RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PROTECTED, makeFinal = true)
 public class ArraySlice<V> {
 
-	V[] array;
-	int fromIndex;
-	int toIndex;
+	protected final V[] array;
+	protected int fromIndex;
+	protected int toIndex;
+
+	/**
+	 * @param array     Array value.
+	 * @param fromIndex From index.
+	 * @param toIndex   To index.
+	 */
+	public ArraySlice(V[] array, int fromIndex, int toIndex) {
+		this.array = array;
+		this.fromIndex = fromIndex;
+		this.toIndex = toIndex;
+	}
 
 	/**
 	 * Sets element.
@@ -86,10 +91,20 @@ public class ArraySlice<V> {
 	/**
 	 * Fills the array with some value.
 	 *
-	 * @param value
-	 *      Value to fill the array with.
+	 * @param value Value to fill the array with.
 	 */
 	public void fill(V value) {
 		Arrays.fill(array, fromIndex, toIndex, value);
+	}
+
+	/**
+	 * Relocates slice location.
+	 *
+	 * @param fromIndex New from index.
+	 * @param toIndex   New to index.
+	 */
+	public void relocate(int fromIndex, int toIndex) {
+		this.fromIndex = fromIndex;
+		this.toIndex = toIndex;
 	}
 }

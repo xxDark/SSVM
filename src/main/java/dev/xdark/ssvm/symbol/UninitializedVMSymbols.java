@@ -455,6 +455,11 @@ public final class UninitializedVMSymbols implements VMSymbols {
 		return uninitialized();
 	}
 
+	@Override
+	public InstanceJavaClass java_io_FileOutputStream() {
+		return uninitialized();
+	}
+
 	private static InstanceJavaClass uninitialized() {
 		throw new IllegalStateException("VM is not initialized!");
 	}

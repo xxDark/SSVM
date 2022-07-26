@@ -1,7 +1,9 @@
 package dev.xdark.ssvm.thread;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.VMException;
+import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -52,8 +54,12 @@ public class NativeJavaThread extends Thread {
 		VirtualMachine vm = oop.getJavaClass().getVM();
 		VMHelper helper = vm.getHelper();
 		oop.setInt("threadStatus", ThreadState.JVMTI_THREAD_STATE_ALIVE | ThreadState.JVMTI_THREAD_STATE_RUNNABLE);
+		ThreadStorage ts = vmThread.getThreadStorage();
 		try {
-			helper.invokeVirtual("run", "()V", new Value[]{oop});
+			JavaMethod method = vm.getLinkResolver().resolveVirtualMethod(oop, "run", "()V");
+			Locals locals = ts.newLocals(method);
+			locals.set(0, oop);
+			helper.invokeDirect(method, locals);
 		} catch (VMException ex) {
 			ObjectValue uncaughtExceptionHandler = oop.getValue("uncaughtExceptionHandler", "Ljava/lang/Thread$UncaughtExceptionHandler;");
 			if (uncaughtExceptionHandler.isNull()) {
@@ -61,10 +67,11 @@ public class NativeJavaThread extends Thread {
 			}
 			if (!uncaughtExceptionHandler.isNull()) {
 				try {
-					helper.invokeVirtual("uncaughtException", "(Ljava/lang/Thread;Ljava/lang/Throwable;)V", new Value[]{
-						oop,
-						ex.getOop()
-					});
+					JavaMethod method = vm.getLinkResolver().resolveVirtualMethod(oop, "uncaughtException", "(Ljava/lang/Thread;Ljava/lang/Throwable;)V");
+					Locals locals = ts.newLocals(method);
+					locals.set(0, oop);
+					locals.set(1, ex.getOop());
+					helper.invokeDirect(method, locals);
 				} catch (VMException uex) {
 					OutputStream os = vm.getFileDescriptorManager().getStreamOut(2);
 					if (os != null) {

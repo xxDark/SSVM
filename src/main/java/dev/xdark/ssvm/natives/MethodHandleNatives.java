@@ -130,10 +130,11 @@ public class MethodHandleNatives {
 				// Construct MT
 				InstanceValue mt = helper.methodType(jc.getClassLoader(), callerMethod.getType());
 				// Invoke asType
-				_this = (InstanceValue) helper.invokeVirtual("asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;", new Value[]{
-					_this,
-					mt
-				}).getResult();
+				JavaMethod asType = vm.getLinkResolver().resolveVirtualMethod(_this, "asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;");
+				Locals table = vm.getThreadStorage().newLocals(asType);
+				table.set(0, _this);
+				table.set(1, mt);
+				_this = (InstanceValue) helper.invokeDirect(asType, table).getResult();
 				// Re-read method target
 				form = helper.checkNotNull(_this.getValue("form", "Ljava/lang/invoke/LambdaForm;"));
 				vmentry = helper.checkNotNull(form.getValue("vmentry", "Ljava/lang/invoke/MemberName;"));
@@ -142,18 +143,16 @@ public class MethodHandleNatives {
 				lvt[0] = _this; // Replace 'this' with new handle
 			}
 
-			Value result;
 			if ((vmtarget.getAccess() & ACC_STATIC) == 0) {
 				int flags = vmentry.getInt("flags");
 				int refKind = (flags >> MN_REFERENCE_KIND_SHIFT) & MN_REFERENCE_KIND_MASK;
-				if (refKind == REF_invokeSpecial || refKind == REF_newInvokeSpecial) {
-					result = helper.invokeExact(vmtarget, lvt).getResult();
-				} else {
-					result = helper.invokeVirtual(name, vmtarget.getDesc(), lvt).getResult();
+				if (refKind != REF_invokeSpecial && refKind != REF_newInvokeSpecial) {
+					vmtarget = vm.getLinkResolver().resolveVirtualMethod(_this, name, vmtarget.getDesc());
 				}
-			} else {
-				result = helper.invokeStatic(vmtarget, lvt).getResult();
 			}
+			Locals table = vm.getThreadStorage().newLocals(vmtarget);
+			table.copyFrom(lvt, 0, lvt.length);
+			Value result = helper.invokeDirect(vmtarget, table).getResult();
 			ctx.setResult(result);
 			return Result.ABORT;
 		};
@@ -171,21 +170,19 @@ public class MethodHandleNatives {
 			InstanceJavaClass clazz = ((JavaValue<InstanceJavaClass>) memberName.getValue("clazz", "Ljava/lang/Class;")).getValue();
 			JavaMethod vmtarget = helper.getMethodBySlot(clazz, ((InstanceValue) resolved.getValue(VM_TARGET, "Ljava/lang/Object;")).getInt("value"));
 
-			Value[] args = Arrays.copyOfRange(table, 0, length - 1);
-
-			Value result;
 			if ((vmtarget.getAccess() & ACC_STATIC) == 0) {
 				int flags = memberName.getInt("flags");
 				int refKind = (flags >> MN_REFERENCE_KIND_SHIFT) & MN_REFERENCE_KIND_MASK;
-				if (refKind == REF_invokeSpecial) {
-					result = helper.invokeExact(vmtarget, args).getResult();
-				} else {
-					result = helper.invokeVirtual(vmtarget.getName(), vmtarget.getDesc(), args).getResult();
+				if (refKind != REF_invokeSpecial) {
+					ObjectValue instance = locals.load(0);
+					helper.checkNotNull(instance);
+					vmtarget = vm.getLinkResolver().resolveVirtualMethod(instance, vmtarget.getName(), vmtarget.getDesc());
 				}
-			} else {
-				result = helper.invokeStatic(vmtarget, args).getResult();
 			}
-			JavaMethod m = ctx.getMethod();
+			Locals newLocals = vm.getThreadStorage().newLocals(vmtarget.getMaxLocals());
+			newLocals.copyFrom(table, 0, table.length - 1);
+			Value result = helper.invokeDirect(vmtarget, newLocals).getResult();
+
 			ctx.setResult(result);
 			return Result.ABORT;
 		};
@@ -285,12 +282,13 @@ public class MethodHandleNatives {
 		vm.getInvokeDynamicLinker().initFieldMember(refKind, memberName, field);
 	}
 
-	private void initMethodMember(int refKind, VirtualMachine vm, InstanceValue memberName, InstanceJavaClass clazz, String name, Value methodType, int type, boolean speculativeResolve0) {
+	private void initMethodMember(int refKind, VirtualMachine vm, InstanceValue memberName, InstanceJavaClass clazz, String name, ObjectValue methodType, int type, boolean speculativeResolve0) {
 		VMHelper helper = vm.getHelper();
 		VMSymbols symbols = vm.getSymbols();
-		String desc = helper.readUtf8(helper.invokeExact(symbols.java_lang_invoke_MethodType(), "toMethodDescriptorString", "()Ljava/lang/String;", new Value[]{
-			methodType
-		}).getResult());
+		JavaMethod method = vm.getLinkResolver().resolveVirtualMethod(methodType, "toMethodDescriptorString", "()Ljava/lang/String;");
+		Locals locals = vm.getThreadStorage().newLocals(method);
+		locals.set(0, methodType);
+		String desc = helper.readUtf8(helper.invokeDirect(method, locals).getResult());
 		JavaMethod handle;
 		switch (refKind) {
 			case REF_invokeStatic:

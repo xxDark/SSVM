@@ -6,6 +6,8 @@ import dev.xdark.ssvm.mirror.JavaField;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.value.ArrayValue;
+import dev.xdark.ssvm.value.ObjectValue;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -46,6 +48,26 @@ public final class LinkResolver {
 			helper.throwException(symbols.java_lang_IncompatibleClassChangeError(), "Expected non-static method " + formatMethod(klass, name, desc));
 		}
 		return method;
+	}
+
+	public JavaMethod resolveVirtualMethod(JavaClass klass, ObjectValue value, String name, String desc) {
+		JavaClass current;
+		if (value instanceof ArrayValue) {
+			current = symbols.java_lang_Object();
+		} else {
+			current = value.getJavaClass();
+		}
+		return resolveVirtualMethod(klass, current, name, desc);
+	}
+
+	public JavaMethod resolveVirtualMethod(ObjectValue value, String name, String desc) {
+		JavaClass current;
+		if (value instanceof ArrayValue) {
+			current = symbols.java_lang_Object();
+		} else {
+			current = value.getJavaClass();
+		}
+		return resolveVirtualMethod(current, current, name, desc);
 	}
 
 	public JavaMethod resolveInterfaceMethod(JavaClass klass, String name, String desc, boolean nonStatic) {

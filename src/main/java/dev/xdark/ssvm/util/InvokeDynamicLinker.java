@@ -1,14 +1,17 @@
 package dev.xdark.ssvm.util;
 
+import dev.xdark.ssvm.LinkResolver;
 import dev.xdark.ssvm.NativeJava;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
+import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.memory.management.StringPool;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaField;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
@@ -95,32 +98,30 @@ public final class InvokeDynamicLinker {
 		ArrayValue appendix = helper.newArray(symbols.java_lang_Object(), 1);
 		InstanceJavaClass natives = symbols.java_lang_invoke_MethodHandleNatives();
 		JavaMethod method = natives.getStaticMethod("linkCallSite", "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/invoke/MemberName;");
-		Value[] linkArgs;
+		Locals linkArgs;
 		if (method == null) {
 			// Bogus cp index entry which was removed
 			// shortly after it was added, shaking
 			method = natives.getStaticMethod("linkCallSite", "(Ljava/lang/Object;ILjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/invoke/MemberName;");
-			linkArgs = new Value[]{
-				caller.getOop(),
-				IntValue.ZERO,
-				linker,
-				stringPool.intern(insn.name),
-				helper.methodType(caller.getClassLoader(), Type.getMethodType(insn.desc)),
-				bsmArgs,
-				appendix
-			};
+			linkArgs = vm.getThreadStorage().newLocals(method);
+			linkArgs.set(0, caller.getOop());
+			linkArgs.set(1, IntValue.ZERO);
+			linkArgs.set(2, linker);
+			linkArgs.set(3, stringPool.intern(insn.name));
+			linkArgs.set(4, helper.methodType(caller.getClassLoader(), Type.getMethodType(insn.desc)));
+			linkArgs.set(5, bsmArgs);
+			linkArgs.set(6, appendix);
 		} else {
-			linkArgs = new Value[]{
-				caller.getOop(),
-				linker,
-				stringPool.intern(insn.name),
-				helper.methodType(caller.getClassLoader(), Type.getMethodType(insn.desc)),
-				bsmArgs,
-				appendix
-			};
+			linkArgs = vm.getThreadStorage().newLocals(method);
+			linkArgs.set(0, caller.getOop());
+			linkArgs.set(1, linker);
+			linkArgs.set(2, stringPool.intern(insn.name));
+			linkArgs.set(3, helper.methodType(caller.getClassLoader(), Type.getMethodType(insn.desc)));
+			linkArgs.set(4, bsmArgs);
+			linkArgs.set(5, appendix);
 		}
 
-		helper.invokeStatic(method, linkArgs);
+		helper.invokeDirect(method, linkArgs);
 		return (InstanceValue) appendix.getValue(0);
 	}
 
@@ -135,21 +136,23 @@ public final class InvokeDynamicLinker {
 	public Value dynamicCall(Value[] args, String desc, InstanceValue handle) {
 		VirtualMachine vm = this.vm;
 		VMHelper helper = vm.getHelper();
+		LinkResolver linkResolver = vm.getLinkResolver();
+		ThreadStorage ts = vm.getThreadStorage();
 		if (vm.getSymbols().java_lang_invoke_CallSite().isAssignableFrom(handle.getJavaClass())) {
 			// See linkCallSiteImpl
-			handle = helper.checkNotNull(helper.invokeVirtual("getTarget", "()Ljava/lang/invoke/MethodHandle;", new Value[]{handle}).getResult());
+			JavaMethod getTarget = linkResolver.resolveVirtualMethod(handle, "getTarget", "()Ljava/lang/invoke/MethodHandle;");
+			Locals locals = ts.newLocals(getTarget);
+			locals.set(0, handle);
+			handle = helper.checkNotNull(helper.invokeDirect(getTarget, locals).getResult());
 		}
-		if (args[0] == null) {
-			// The slot was reserved, use it
-			args[0] = handle;
-		} else {
-			// Need to copy
-			Value[] copy = new Value[args.length + 1];
-			System.arraycopy(args, 0, copy, 1, args.length);
-			copy[0] = handle;
-			args = copy;
+		JavaMethod invokeExact = linkResolver.resolveVirtualMethod(handle, "invokeExact", desc);
+		Locals locals = ts.newLocals(invokeExact);
+		locals.set(0, handle);
+		int index = args[0] == null ? 1 : 0;
+		for (int i = 1; index < args.length; index++) {
+			locals.set(i++, args[index]);
 		}
-		return helper.invokeVirtual("invokeExact", desc, args).getResult();
+		return helper.invokeDirect(invokeExact, locals).getResult();
 	}
 
 	/**

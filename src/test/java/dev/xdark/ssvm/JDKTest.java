@@ -1,7 +1,10 @@
 package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.execution.ExecutionContext;
+import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -25,7 +28,10 @@ public class JDKTest {
 		InstanceJavaClass c = (InstanceJavaClass) vm.findBootstrapClass("java/util/HashMap", true);
 		VMHelper helper = vm.getHelper();
 		InstanceValue instance = vm.getMemoryManager().newInstance(c);
-		helper.invokeExact(c, "<init>", "()V", new Value[]{instance});
+		JavaMethod init = vm.getLinkResolver().resolveSpecialMethod(c, "<init>", "()V");
+		Locals locals = vm.getThreadStorage().newLocals(init);
+		locals.set(0, instance);
+		helper.invokeDirect(init, locals);
 		testMapImplementation(instance);
 	}
 
@@ -34,7 +40,10 @@ public class JDKTest {
 		InstanceJavaClass c = (InstanceJavaClass) vm.findBootstrapClass("java/util/concurrent/ConcurrentHashMap", true);
 		VMHelper helper = vm.getHelper();
 		InstanceValue instance = vm.getMemoryManager().newInstance(c);
-		helper.invokeExact(c, "<init>", "()V", new Value[]{instance});
+		JavaMethod init = vm.getLinkResolver().resolveSpecialMethod(c, "<init>", "()V");
+		Locals locals = vm.getThreadStorage().newLocals(init);
+		locals.set(0, instance);
+		helper.invokeDirect(init, locals);
 		testMapImplementation(instance);
 	}
 
@@ -43,7 +52,10 @@ public class JDKTest {
 		InstanceJavaClass c = (InstanceJavaClass) vm.findBootstrapClass("java/util/TreeMap", true);
 		VMHelper helper = vm.getHelper();
 		InstanceValue instance = vm.getMemoryManager().newInstance(c);
-		helper.invokeExact(c, "<init>", "()V", new Value[]{instance});
+		JavaMethod init = vm.getLinkResolver().resolveSpecialMethod(c, "<init>", "()V");
+		Locals locals = vm.getThreadStorage().newLocals(init);
+		locals.set(0, instance);
+		helper.invokeDirect(init, locals);
 		testMapImplementation(instance);
 	}
 
@@ -51,15 +63,34 @@ public class JDKTest {
 		String keyBase = "key";
 		String valueBase = "value";
 		VMHelper helper = vm.getHelper();
+		LinkResolver linkResolver = vm.getLinkResolver();
+		ThreadStorage ts = vm.getThreadStorage();
+		JavaMethod put = linkResolver.resolveVirtualMethod(map, "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+		JavaMethod get = linkResolver.resolveVirtualMethod(map, "get", "(Ljava/lang/Object;)Ljava/lang/Object;");
 		for (int i = 0; i < 100; i++) {
 			ObjectValue key = helper.newUtf8(keyBase + i);
 			String $value = valueBase + i;
 			ObjectValue value = helper.newUtf8($value);
-			helper.invokeVirtual("put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", new Value[]{map, key, value});
-			ExecutionContext v = helper.invokeVirtual("get", "(Ljava/lang/Object;)Ljava/lang/Object;", new Value[]{map, key});
+			{
+				Locals locals = ts.newLocals(put);
+				locals.set(0, map);
+				locals.set(1, key);
+				locals.set(2, value);
+				helper.invokeDirect(put, locals);
+			}
+			Locals locals = ts.newLocals(get);
+			locals.set(0 ,map);
+			locals.set(1, key);
+			ExecutionContext v = helper.invokeDirect(get, locals);
 			assertEquals($value, helper.readUtf8(v.getResult()));
 		}
-		helper.invokeVirtual("clear", "()V", new Value[]{map});
-		assertTrue(helper.invokeVirtual("isEmpty", "()Z", new Value[]{map}).getResult().asBoolean());
+		JavaMethod clear = linkResolver.resolveVirtualMethod(map, "clear", "()V");
+		Locals locals = ts.newLocals(clear);
+		locals.set(0, map);
+		helper.invokeDirect(clear, locals);
+		JavaMethod isEmpty = linkResolver.resolveVirtualMethod(map, "isEmpty", "()Z");
+		locals = ts.newLocals(isEmpty);
+		locals.set(0, map);
+		assertTrue(helper.invokeDirect(isEmpty, locals).getResult().asBoolean());
 	}
 }

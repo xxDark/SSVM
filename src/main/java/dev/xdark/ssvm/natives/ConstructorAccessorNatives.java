@@ -57,10 +57,12 @@ public class ConstructorAccessorNatives {
 				converted = new Value[0];
 			}
 			InstanceValue instance = vm.getMemoryManager().newInstance(declaringClass);
-			Value[] args = new Value[converted.length + 1];
-			System.arraycopy(converted, 0, args, 1, converted.length);
-			args[0] = instance;
-			helper.invokeExact(declaringClass, "<init>", mn.getDesc(), args);
+			Locals args = vm.getThreadStorage().newLocals(mn);
+			args.set(0, instance);
+			for (int i = 0; i < converted.length; i++) {
+				args.set(i + 1, converted[i]);
+			}
+			helper.invokeDirect(mn, args);
 			ctx.setResult(instance);
 			return Result.ABORT;
 		});

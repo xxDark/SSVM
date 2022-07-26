@@ -2,6 +2,7 @@ package dev.xdark.ssvm.mirror;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
+import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.tlc.ThreadLocalStorage;
@@ -187,7 +188,8 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		JavaMethod clinit = getStaticMethod("<clinit>", "()V");
 		try {
 			if (clinit != null) {
-				helper.invokeStatic(clinit, new Value[0]);
+				Locals locals = vm.getThreadStorage().newLocals(clinit);
+				helper.invokeStatic(clinit, locals);
 			}
 			this.state = State.COMPLETE;
 		} catch (VMException ex) {
@@ -977,13 +979,15 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		VirtualMachine vm = this.vm;
 		VMSymbols symbols = vm.getSymbols();
 		if (!symbols.java_lang_Error().isAssignableFrom(oop.getJavaClass())) {
-			InstanceValue cause = oop;
 			InstanceJavaClass jc = symbols.java_lang_ExceptionInInitializerError();
 			jc.initialize();
 			oop = vm.getMemoryManager().newInstance(jc);
-			vm.getHelper().invokeExact(jc, "<init>", "(Ljava/lang/Throwable;)V", new Value[]{
-				oop, cause
-			});
+			// Can't use newException here
+			JavaMethod init = vm.getLinkResolver().resolveSpecialMethod(jc, "<init>", "(Ljava/lang/Throwable;)V");
+			Locals locals = vm.getThreadStorage().newLocals(init);
+			locals.set(0, oop);
+			locals.set(1, oop);
+			vm.getHelper().invokeDirect(init, locals);
 			throw new VMException(oop);
 		}
 		throw ex;

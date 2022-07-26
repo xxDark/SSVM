@@ -38,8 +38,11 @@ public interface Locals {
 	 * Copies contents into this locals.
 	 *
 	 * @param locals Content to copy.
+	 * @param srcOffset Content offset.
+	 * @param destOffset Offset to copy to.
+	 * @param length Content length.
 	 */
-	void copyFrom(Value[] locals);
+	void copyFrom(Locals locals, int srcOffset, int destOffset, int length);
 
 	/**
 	 * Copies contents into this locals.

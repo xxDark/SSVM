@@ -447,6 +447,11 @@ final class DelegatingVMSymbols implements VMSymbols {
 		return symbols.java_lang_ArithmeticException();
 	}
 
+	@Override
+	public InstanceJavaClass java_io_FileOutputStream() {
+		return symbols.java_io_FileOutputStream();
+	}
+
 	/**
 	 * @param symbols New symbols.
 	 */

@@ -1,6 +1,8 @@
 package dev.xdark.ssvm;
 
+import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.Value;
@@ -87,7 +89,10 @@ public class FieldTest {
 		InstanceJavaClass c = TestUtil.createClass(vm, node);
 		InstanceValue instance = vm.getMemoryManager().newInstance(c);
 		VMHelper helper = vm.getHelper();
-		helper.invokeExact(c, "<init>", "()V", new Value[]{instance});
+		JavaMethod init = vm.getLinkResolver().resolveSpecialMethod(c, "<init>", "()V");
+		Locals locals = vm.getThreadStorage().newLocals(init);
+		locals.set(0, instance);
+		helper.invokeDirect(init, locals);
 		assertEquals(stringCst, vm.getHelper().readUtf8(instance.getValue("string", "Ljava/lang/String;")));
 		assertEquals(longCst, instance.getLong("long"));
 		assertEquals(doubleCst, instance.getDouble("double"));
@@ -131,7 +136,10 @@ public class FieldTest {
 		InstanceJavaClass c = TestUtil.createClass(vm, node);
 		InstanceValue instance = vm.getMemoryManager().newInstance(c);
 		VMHelper helper = vm.getHelper();
-		helper.invokeExact(c, "<init>", "()V", new Value[]{instance});
+		JavaMethod init = vm.getLinkResolver().resolveSpecialMethod(c, "<init>", "()V");
+		Locals locals = vm.getThreadStorage().newLocals(init);
+		locals.set(0, instance);
+		helper.invokeDirect(init, locals);
 		assertEquals(staticStringCst, helper.readUtf8(c.getStaticValue("string", "Ljava/lang/String;")));
 		assertEquals(staticDouble, c.getStaticValue("double", "D").asDouble());
 		assertEquals(virtualStringCst, helper.readUtf8(instance.getValue("string1", "Ljava/lang/String;")));

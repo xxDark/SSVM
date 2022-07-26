@@ -178,6 +178,10 @@ public interface VMSymbols {
 	InstanceJavaClass java_io_FileNotFoundException();
 
 	InstanceJavaClass java_lang_InstantiationError();
+
 	InstanceJavaClass internal_reflect_Reflection();
+
 	InstanceJavaClass java_lang_ArithmeticException();
+
+	InstanceJavaClass java_io_FileOutputStream();
 }

@@ -6,6 +6,7 @@ import dev.xdark.ssvm.classloading.ClassParseResult;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
@@ -49,13 +50,14 @@ public class ProxyNatives {
 				ObjectValue nullValue = vm.getMemoryManager().nullValue();
 				result = helper.newInstanceClass(nullValue, nullValue, parsed.getClassReader(), parsed.getNode());
 			} else {
-				result = ((JavaValue<InstanceJavaClass>) helper.invokeVirtual("defineClass", "(Ljava/lang/String;[BII)Ljava/lang/Class;", new Value[]{
-					loader,
-					name,
-					bytes,
-					off,
-					len
-				}).getResult()).getValue();
+				JavaMethod method = vm.getLinkResolver().resolveVirtualMethod(loader, "defineClass", "(Ljava/lang/String;[BII)Ljava/lang/Class;");
+				Locals table = vm.getThreadStorage().newLocals(method);
+				table.set(0, loader);
+				table.set(1, name);
+				table.set(2, bytes);
+				table.set(3, off);
+				table.set(4, len);
+				result = ((JavaValue<InstanceJavaClass>) helper.invokeDirect(method, table).getResult()).getValue();
 			}
 			vm.getClassLoaders().getClassLoaderData(loader).forceLinkClass(result);
 			result.link();

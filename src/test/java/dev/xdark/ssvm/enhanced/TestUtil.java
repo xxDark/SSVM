@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.enhanced;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.fs.FileDescriptorManager;
 import dev.xdark.ssvm.fs.HostFileDescriptorManager;
@@ -10,9 +11,10 @@ import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.memory.management.SynchronizedMemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -57,6 +59,7 @@ public class TestUtil {
 		if (init != null) {
 			init.accept(res);
 		}
+		ThreadStorage ts = vm.getThreadStorage();
 		for (JavaMethod m : res.getStaticMethodLayout().getAll()) {
 			MethodNode node = m.getNode();
 			List<AnnotationNode> annotations = node.visibleAnnotations;
@@ -64,11 +67,15 @@ public class TestUtil {
 				continue;
 			}
 			try {
-				helper.invokeStatic(m, new Value[0]);
+				helper.invokeStatic(m, ts.newLocals(m));
 			} catch(VMException ex) {
-				System.err.println(ex.getOop());
+				InstanceValue oop = ex.getOop();
+				System.err.println(oop);
 				try {
-					helper.invokeVirtual("printStackTrace", "()V", new Value[]{ex.getOop()});
+					JavaMethod printStackTrace = vm.getLinkResolver().resolveVirtualMethod(oop, "printStackTrace", "()V");
+					Locals locals = ts.newLocals(printStackTrace);
+					locals.set(0, oop);
+					helper.invokeDirect(printStackTrace, locals);
 				} catch(VMException ex1) {
 					System.err.println(ex1.getOop());
 					helper.toJavaException(ex1.getOop()).printStackTrace();

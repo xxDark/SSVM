@@ -1,5 +1,6 @@
 package dev.xdark.ssvm;
 
+import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.fs.FileDescriptorManager;
 import dev.xdark.ssvm.fs.HostFileDescriptorManager;
@@ -9,11 +10,12 @@ import dev.xdark.ssvm.jit.JitInstaller;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.LongValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.TopValue;
-import dev.xdark.ssvm.value.Value;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.Type;
 
@@ -24,6 +26,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@Disabled
 public class JitTest {
 
 	private static long a;
@@ -80,17 +83,21 @@ public class JitTest {
 			throw new IllegalStateException(ex);
 		}
 		try {
-			helper.invokeStatic(m, new Value[]{
-				LongValue.of(a),
-				TopValue.INSTANCE,
-				IntValue.of(b),
-				helper.newUtf8(c),
-				LongValue.of(d),
-				TopValue.INSTANCE,
-				IntValue.of(e)
-			});
+			Locals locals =vm.getThreadStorage().newLocals(m);
+			locals.set(0, LongValue.of(a));
+			locals.set(1, TopValue.INSTANCE);
+			locals.set(2, IntValue.of(b));
+			locals.set(3, helper.newUtf8(c));
+			locals.set(4, LongValue.of(d));
+			locals.set(5, TopValue.INSTANCE);
+			locals.set(6, IntValue.of(e));
+			helper.invokeDirect(m, locals);
 		} catch (VMException ex) {
-			helper.invokeVirtual("printStackTrace", "()V", new Value[]{ex.getOop()});
+			InstanceValue oop = ex.getOop();
+			JavaMethod printStackTrace = vm.getLinkResolver().resolveVirtualMethod(oop, "printStackTrace", "()V");
+			Locals locals = vm.getThreadStorage().newLocals(printStackTrace);
+			locals.set(0, oop);
+			helper.invokeDirect(printStackTrace, locals);
 			throw ex;
 		}
 		assertEquals(a, jc.getStaticValue("a", "J").asLong());

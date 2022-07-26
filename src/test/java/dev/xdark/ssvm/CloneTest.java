@@ -1,5 +1,7 @@
 package dev.xdark.ssvm;
 
+import dev.xdark.ssvm.execution.Locals;
+import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.Value;
@@ -24,7 +26,10 @@ public class CloneTest {
 		VMHelper helper = vm.getHelper();
 		byte[] bytes = "Hello, World".getBytes(StandardCharsets.UTF_8);
 		ArrayValue array = helper.toVMBytes(bytes);
-		ArrayValue copy = (ArrayValue) helper.invokeVirtual("clone", "()Ljava/lang/Object;", new Value[]{array}).getResult();
+		JavaMethod clone = vm.getLinkResolver().resolveVirtualMethod(array, "clone", "()Ljava/lang/Object;");
+		Locals locals = vm.getThreadStorage().newLocals(clone);
+		locals.set(0, array);
+		ArrayValue copy = (ArrayValue) helper.invokeDirect(clone, locals).getResult();
 		assertArrayEquals(bytes, helper.toJavaBytes(copy));
 	}
 }

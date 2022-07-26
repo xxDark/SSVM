@@ -45,7 +45,7 @@ public class MethodAccessorNatives {
 			if (mn == null) {
 				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 			}
-			Value instance = locals.load(1);
+			ObjectValue instance = locals.load(1);
 			boolean isStatic = (mn.getAccess() & ACC_STATIC) != 0;
 			if (!isStatic && instance.isNull()) {
 				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
@@ -67,14 +67,23 @@ public class MethodAccessorNatives {
 				args[0] = instance;
 				System.arraycopy(prev, 0, args, 1, prev.length);
 			}
+			Locals table;
 			String name = mn.getName();
 			String desc = mn.getDesc();
-			ExecutionContext executed;
+			int offset;
 			if (isStatic) {
-				executed = helper.invokeStatic(declaringClass, name, desc, args);
+				offset = 0;
+				table = vm.getThreadStorage().newLocals(mn);
 			} else {
-				executed = helper.invokeVirtual(name, desc, args);
+				mn = vm.getLinkResolver().resolveVirtualMethod(instance, name, desc);
+				offset = 1;
+				table = vm.getThreadStorage().newLocals(mn);
+				table.set(0, instance);
 			}
+			for (int i = 0; i < args.length; i++) {
+				table.set(i + offset, args[i]);
+			}
+			ExecutionContext executed = helper.invokeDirect(mn, table);
 			Value result = executed.getResult();
 			if (result.isVoid()) {
 				result = vm.getMemoryManager().nullValue(); // void

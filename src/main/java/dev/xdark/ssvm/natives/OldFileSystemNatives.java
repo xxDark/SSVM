@@ -5,6 +5,7 @@ import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.*;
 import lombok.experimental.UtilityClass;
@@ -49,10 +50,10 @@ public class OldFileSystemNatives {
 		});
 		vmi.setInvoker(fs, unix ? "getBooleanAttributes0" : "getBooleanAttributes", "(Ljava/io/File;)I", ctx -> {
 			VMHelper helper = vm.getHelper();
-			Value value = ctx.getLocals().load(1);
+			ObjectValue value = ctx.getLocals().load(1);
 			helper.checkNotNull(value);
 			try {
-				String path = helper.readUtf8(helper.invokeVirtual("getAbsolutePath", "()Ljava/lang/String;", new Value[]{value}).getResult());
+				String path = helper.readUtf8(((InstanceValue) value).getValue("path", "Ljava/lang/String;"));
 				BasicFileAttributes attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
 				if (attributes == null) {
 					ctx.setResult(IntValue.ZERO);
@@ -96,7 +97,7 @@ public class OldFileSystemNatives {
 			Value value = ctx.getLocals().load(1);
 			helper.checkNotNull(value);
 			try {
-				String path = helper.readUtf8(helper.invokeVirtual("getAbsolutePath", "()Ljava/lang/String;", new Value[]{value}).getResult());
+				String path = helper.readUtf8(((InstanceValue) value).getValue("path", "Ljava/lang/String;"));
 				BasicFileAttributes attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
 				if (attributes == null) {
 					ctx.setResult(LongValue.ZERO);
@@ -113,7 +114,7 @@ public class OldFileSystemNatives {
 			Value value = ctx.getLocals().load(1);
 			helper.checkNotNull(value);
 			try {
-				String path = helper.readUtf8(helper.invokeVirtual("getAbsolutePath", "()Ljava/lang/String;", new Value[]{value}).getResult());
+				String path = helper.readUtf8(((InstanceValue) value).getValue("path", "Ljava/lang/String;"));
 				BasicFileAttributes attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
 				if (attributes == null) {
 					ctx.setResult(LongValue.ZERO);

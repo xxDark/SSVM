@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.natives;
 
+import dev.xdark.ssvm.LinkResolver;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
@@ -8,7 +9,9 @@ import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.mirror.PrimitiveClass;
+import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.DoubleValue;
@@ -615,14 +618,18 @@ public class IntrinsicsNatives {
 			if (arr.isNull()) {
 				ctx.setResult(IntValue.ZERO);
 			} else {
+				LinkResolver linkResolver = vm.getLinkResolver();
 				ArrayValue array = (ArrayValue) arr;
 				VMHelper helper = ctx.getHelper();
 				int result = 1;
 				for (int i = 0, j = array.getLength(); i < j; i++) {
-					Value value = array.getValue(i);
+					ObjectValue value = array.getValue(i);
 					result *= 31;
 					if (!value.isNull()) {
-						result += helper.invokeVirtual("hashCode", "()I", new Value[]{value}).getResult().asInt();
+						JavaMethod method = linkResolver.resolveVirtualMethod(value, "hashCode", "()I");
+						Locals locals = vm.getThreadStorage().newLocals(method);
+						locals.set(0, value);
+						result += helper.invokeDirect(method, locals).getResult().asInt();
 					}
 				}
 				ctx.setResult(IntValue.of(result));
@@ -769,7 +776,7 @@ public class IntrinsicsNatives {
 			Locals locals = ctx.getLocals();
 			Value $a = locals.load(0);
 			Value $a2 = locals.load(1);
-			ctx.setResult(instanceArraysEqual(vm.getHelper(), $a, $a2));
+			ctx.setResult(instanceArraysEqual(vm, $a, $a2));
 			return Result.ABORT;
 		});
 	}
@@ -816,7 +823,7 @@ public class IntrinsicsNatives {
 		return IntValue.ONE;
 	}
 
-	private IntValue instanceArraysEqual(VMHelper helper, Value $a, Value $b) {
+	private IntValue instanceArraysEqual(VirtualMachine vm, Value $a, Value $b) {
 		if ($a == $b) {
 			return IntValue.ONE;
 		} else if ($a.isNull() || $b.isNull()) {
@@ -828,14 +835,19 @@ public class IntrinsicsNatives {
 		if (length != b.getLength()) {
 			return IntValue.ZERO;
 		}
+		VMHelper helper = vm.getHelper();
+		LinkResolver linkResolver = vm.getLinkResolver();
+		ThreadStorage ts = vm.getThreadStorage();
 		while (length-- != 0) {
-			Value v1 = a.getValue(length);
-			Value v2 = b.getValue(length);
+			ObjectValue v1 = a.getValue(length);
+			ObjectValue v2 = b.getValue(length);
 			if (v1 != v2) {
 				if (!v1.isNull()) {
-					boolean eq = helper.invokeVirtual("equals", "(Ljava/lang/Object;)Z", new Value[]{
-						v1, v2
-					}).getResult().asBoolean();
+					JavaMethod method = linkResolver.resolveVirtualMethod(v1, "equals", "(Ljava/lang/Object;)Z");
+					Locals locals = ts.newLocals(method);
+					locals.set(0, v1);
+					locals.set(1, v2);
+					boolean eq = helper.invokeDirect(method, locals).getResult().asBoolean();
 					if (!eq) {
 						return IntValue.ZERO;
 					}

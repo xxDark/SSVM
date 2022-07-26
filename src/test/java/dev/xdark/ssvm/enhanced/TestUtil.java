@@ -67,7 +67,7 @@ public class TestUtil {
 				continue;
 			}
 			try {
-				helper.invokeStatic(m, ts.newLocals(m));
+				helper.invokeDirect(m, ts.newLocals(m));
 			} catch(VMException ex) {
 				InstanceValue oop = ex.getOop();
 				System.err.println(oop);

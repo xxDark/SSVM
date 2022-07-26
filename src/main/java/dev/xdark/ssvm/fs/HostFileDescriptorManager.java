@@ -161,7 +161,7 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 		// Only use 32 bits for zip handles,
 		// see SimpleZipFile
 		int fd = (int) newFD0(0xffffffff);
-		ZipFile zf = new SimpleZipFile(new java.util.zip.ZipFile(new File(path), mode), fd);
+		ZipFile zf = new SimpleZipFile(fd, new java.util.zip.ZipFile(new File(path), mode));
 		zipFiles.put(Handle.of(fd), zf);
 		return fd;
 	}

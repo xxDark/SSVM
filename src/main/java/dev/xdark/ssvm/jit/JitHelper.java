@@ -399,29 +399,34 @@ public class JitHelper {
 	}
 
 	public Value invokeStatic(Value[] locals, String owner, String name, String desc, ExecutionContext ctx) {
-		VMHelper helper = ctx.getHelper();
+		VirtualMachine vm = ctx.getVM();
+		VMHelper helper = vm.getHelper();
 		JavaMethod mn = resolveStaticMethod(owner, name, desc, ctx);
-		Stack stack = ctx.getStack();
-		//ExecutionContext result = helper.invokeStatic(mn, locals);
-		//return result.getResult();
-		throw new UnsupportedOperationException("TODO FIXME");
+		Locals table = vm.getThreadStorage().newLocals(mn);
+		table.copyFrom(locals, 0, locals.length);
+		ExecutionContext result = helper.invokeDirect(mn, table);
+		return result.getResult();
 	}
 
-	public Value invokeVirtual(Value[] locals, Object name, Object desc, ExecutionContext ctx) {
+	public Value invokeVirtual(Value[] locals, String name, String desc, ExecutionContext ctx) {
 		VirtualMachine vm = ctx.getVM();
-		Stack stack = ctx.getStack();
-		//ExecutionContext result = vm.getHelper().invokeVirtual((String) name, (String) desc, locals);
-		//return result.getResult();
-		throw new UnsupportedOperationException("TODO FIXME");
+		VMHelper helper = vm.getHelper();
+		JavaMethod method = vm.getLinkResolver().resolveInterfaceMethod(helper.checkNotNull(locals[0]), name, desc, true);
+		Locals table = vm.getThreadStorage().newLocals(method);
+		table.copyFrom(locals, 0, locals.length);
+		ExecutionContext result = helper.invokeDirect(method, table);
+		return result.getResult();
 	}
 
 	public Value invokeInterface(Value[] locals, String owner, String name, String desc, ExecutionContext ctx) {
 		VirtualMachine vm = ctx.getVM();
 		VMHelper helper = vm.getHelper();
 		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
-		//ExecutionContext result = helper.invokeInterface(klass, name, desc, locals);
-		//return result.getResult();
-		throw new UnsupportedOperationException("TODO FIXME");
+		JavaMethod method = vm.getLinkResolver().resolveVirtualMethod(helper.checkNotNull(locals[0]).getJavaClass(), klass, name, desc);
+		Locals table = vm.getThreadStorage().newLocals(method);
+		table.copyFrom(locals, 0, locals.length);
+		ExecutionContext result = helper.invokeDirect(method, table);
+		return result.getResult();
 	}
 
 	public ObjectValue allocateInstance(InstanceJavaClass klass, ExecutionContext ctx) {
@@ -609,7 +614,7 @@ public class JitHelper {
 		return ctx.getMemoryManager().nullValue();
 	}
 
-	public Value invokeDirect(Locals locals, Stack stack, Object method, ExecutionContext ctx) {
+	public Value invokeDirect(Locals locals, Object method, ExecutionContext ctx) {
 		JavaMethod jm = (JavaMethod) method;
 		jm.getOwner().initialize();
 		return ctx.getHelper().invokeDirect(jm, locals).getResult();

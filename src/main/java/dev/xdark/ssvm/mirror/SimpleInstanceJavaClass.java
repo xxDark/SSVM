@@ -189,7 +189,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		try {
 			if (clinit != null) {
 				Locals locals = vm.getThreadStorage().newLocals(clinit);
-				helper.invokeStatic(clinit, locals);
+				helper.invokeDirect(clinit, locals);
 			}
 			this.state = State.COMPLETE;
 		} catch (VMException ex) {

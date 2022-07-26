@@ -95,52 +95,6 @@ public final class VMHelper {
 	}
 
 	/**
-	 * Invokes virtual method.
-	 *
-	 * @param name   Method name.
-	 * @param desc   Method descriptor.
-	 * @param locals Local variable table.
-	 * @return invocation result.
-	 */
-	public ExecutionContext invokeVirtual(String name, String desc, Locals locals) {
-		ObjectValue instance = checkNotNull(locals.load(0));
-		JavaMethod m = vm.getLinkResolver().resolveVirtualMethod(instance, name, desc);
-		return invokeExact(m, locals);
-	}
-
-	/**
-	 * Invokes interface method.
-	 *
-	 * @param javaClass Class to search method in.
-	 * @param name      Method name.
-	 * @param desc      Method descriptor.
-	 * @param locals    Local variable table.
-	 * @return invocation result.
-	 */
-	public ExecutionContext invokeInterface(InstanceJavaClass javaClass, String name, String desc, Locals locals) {
-		Value instance = locals.load(0);
-		checkNotNull(instance);
-		InstanceJavaClass prioritized = ((InstanceValue) instance).getJavaClass();
-		JavaMethod mn = vm.getLinkResolver().resolveVirtualMethod(prioritized, javaClass, name, desc);
-		return invokeExact(mn, locals);
-	}
-
-	/**
-	 * Invokes exact method.
-	 *
-	 * @param method Method to invoke.
-	 * @param locals Local variable table.
-	 * @return invocation result.
-	 */
-	public ExecutionContext invokeExact(JavaMethod method, Locals locals) {
-		checkNotNull(locals.load(0));
-		if ((method.getAccess() & Opcodes.ACC_STATIC) != 0) {
-			throw new IllegalStateException("Method is static");
-		}
-		return invokeDirect(method, locals);
-	}
-
-	/**
 	 * Makes direct call.
 	 *
 	 * @param method Method to invoke.
@@ -152,20 +106,6 @@ public final class VMHelper {
 		ExecutionContext ctx = engine.createContext(new SimpleExecutionRequest(method, vm.getThreadStorage().newStack(method.getMaxStack()), locals, engine.defaultOptions()));
 		engine.execute(ctx);
 		return ctx;
-	}
-
-	/**
-	 * Invokes exact method.
-	 *
-	 * @param javaClass Class to search method in.
-	 * @param name      Method name.
-	 * @param desc      Method descriptor.
-	 * @param locals    Local variable table.
-	 * @return invocation result.
-	 */
-	public ExecutionContext invokeExact(InstanceJavaClass javaClass, String name, String desc, Locals locals) {
-		JavaMethod mn = vm.getLinkResolver().resolveSpecialMethod(javaClass, name, desc);
-		return invokeExact(mn, locals);
 	}
 
 	/**

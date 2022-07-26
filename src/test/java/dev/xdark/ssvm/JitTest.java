@@ -26,7 +26,6 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Disabled
 public class JitTest {
 
 	private static long a;

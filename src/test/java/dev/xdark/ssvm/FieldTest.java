@@ -5,7 +5,6 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.Value;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.MethodVisitor;
@@ -92,7 +91,7 @@ public class FieldTest {
 		JavaMethod init = vm.getLinkResolver().resolveSpecialMethod(c, "<init>", "()V");
 		Locals locals = vm.getThreadStorage().newLocals(init);
 		locals.set(0, instance);
-		helper.invokeDirect(init, locals);
+		helper.invoke(init, locals);
 		assertEquals(stringCst, vm.getHelper().readUtf8(instance.getValue("string", "Ljava/lang/String;")));
 		assertEquals(longCst, instance.getLong("long"));
 		assertEquals(doubleCst, instance.getDouble("double"));
@@ -139,7 +138,7 @@ public class FieldTest {
 		JavaMethod init = vm.getLinkResolver().resolveSpecialMethod(c, "<init>", "()V");
 		Locals locals = vm.getThreadStorage().newLocals(init);
 		locals.set(0, instance);
-		helper.invokeDirect(init, locals);
+		helper.invoke(init, locals);
 		assertEquals(staticStringCst, helper.readUtf8(c.getStaticValue("string", "Ljava/lang/String;")));
 		assertEquals(staticDouble, c.getStaticValue("double", "D").asDouble());
 		assertEquals(virtualStringCst, helper.readUtf8(instance.getValue("string1", "Ljava/lang/String;")));

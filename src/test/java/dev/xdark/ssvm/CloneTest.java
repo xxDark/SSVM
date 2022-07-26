@@ -4,7 +4,6 @@ import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ArrayValue;
-import dev.xdark.ssvm.value.Value;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +28,7 @@ public class CloneTest {
 		JavaMethod clone = vm.getLinkResolver().resolveVirtualMethod(array, "clone", "()Ljava/lang/Object;");
 		Locals locals = vm.getThreadStorage().newLocals(clone);
 		locals.set(0, array);
-		ArrayValue copy = (ArrayValue) helper.invokeDirect(clone, locals).getResult();
+		ArrayValue copy = (ArrayValue) helper.invoke(clone, locals).getResult();
 		assertArrayEquals(bytes, helper.toJavaBytes(copy));
 	}
 }

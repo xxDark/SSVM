@@ -62,7 +62,7 @@ public class ConstructorAccessorNatives {
 			for (int i = 0; i < converted.length; i++) {
 				args.set(i + 1, converted[i]);
 			}
-			helper.invokeDirect(mn, args);
+			helper.invoke(mn, args);
 			ctx.setResult(instance);
 			return Result.ABORT;
 		});

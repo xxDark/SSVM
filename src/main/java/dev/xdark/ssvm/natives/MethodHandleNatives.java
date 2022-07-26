@@ -18,8 +18,6 @@ import dev.xdark.ssvm.value.*;
 import lombok.experimental.UtilityClass;
 import org.objectweb.asm.Type;
 
-import java.util.Arrays;
-
 import static org.objectweb.asm.Opcodes.*;
 import static dev.xdark.ssvm.util.InvokeDynamicLinker.*;
 
@@ -134,7 +132,7 @@ public class MethodHandleNatives {
 				Locals table = vm.getThreadStorage().newLocals(asType);
 				table.set(0, _this);
 				table.set(1, mt);
-				_this = (InstanceValue) helper.invokeDirect(asType, table).getResult();
+				_this = (InstanceValue) helper.invoke(asType, table).getResult();
 				// Re-read method target
 				form = helper.checkNotNull(_this.getValue("form", "Ljava/lang/invoke/LambdaForm;"));
 				vmentry = helper.checkNotNull(form.getValue("vmentry", "Ljava/lang/invoke/MemberName;"));
@@ -152,7 +150,7 @@ public class MethodHandleNatives {
 			}
 			Locals table = vm.getThreadStorage().newLocals(vmtarget);
 			table.copyFrom(lvt, 0, lvt.length);
-			Value result = helper.invokeDirect(vmtarget, table).getResult();
+			Value result = helper.invoke(vmtarget, table).getResult();
 			ctx.setResult(result);
 			return Result.ABORT;
 		};
@@ -181,7 +179,7 @@ public class MethodHandleNatives {
 			}
 			Locals newLocals = vm.getThreadStorage().newLocals(vmtarget.getMaxLocals());
 			newLocals.copyFrom(table, 0, table.length - 1);
-			Value result = helper.invokeDirect(vmtarget, newLocals).getResult();
+			Value result = helper.invoke(vmtarget, newLocals).getResult();
 
 			ctx.setResult(result);
 			return Result.ABORT;
@@ -288,7 +286,7 @@ public class MethodHandleNatives {
 		JavaMethod method = vm.getLinkResolver().resolveVirtualMethod(methodType, "toMethodDescriptorString", "()Ljava/lang/String;");
 		Locals locals = vm.getThreadStorage().newLocals(method);
 		locals.set(0, methodType);
-		String desc = helper.readUtf8(helper.invokeDirect(method, locals).getResult());
+		String desc = helper.readUtf8(helper.invoke(method, locals).getResult());
 		JavaMethod handle;
 		switch (refKind) {
 			case REF_invokeStatic:

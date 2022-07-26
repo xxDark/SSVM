@@ -8,7 +8,6 @@ import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +30,7 @@ public class JDKTest {
 		JavaMethod init = vm.getLinkResolver().resolveSpecialMethod(c, "<init>", "()V");
 		Locals locals = vm.getThreadStorage().newLocals(init);
 		locals.set(0, instance);
-		helper.invokeDirect(init, locals);
+		helper.invoke(init, locals);
 		testMapImplementation(instance);
 	}
 
@@ -43,7 +42,7 @@ public class JDKTest {
 		JavaMethod init = vm.getLinkResolver().resolveSpecialMethod(c, "<init>", "()V");
 		Locals locals = vm.getThreadStorage().newLocals(init);
 		locals.set(0, instance);
-		helper.invokeDirect(init, locals);
+		helper.invoke(init, locals);
 		testMapImplementation(instance);
 	}
 
@@ -55,7 +54,7 @@ public class JDKTest {
 		JavaMethod init = vm.getLinkResolver().resolveSpecialMethod(c, "<init>", "()V");
 		Locals locals = vm.getThreadStorage().newLocals(init);
 		locals.set(0, instance);
-		helper.invokeDirect(init, locals);
+		helper.invoke(init, locals);
 		testMapImplementation(instance);
 	}
 
@@ -76,21 +75,21 @@ public class JDKTest {
 				locals.set(0, map);
 				locals.set(1, key);
 				locals.set(2, value);
-				helper.invokeDirect(put, locals);
+				helper.invoke(put, locals);
 			}
 			Locals locals = ts.newLocals(get);
 			locals.set(0 ,map);
 			locals.set(1, key);
-			ExecutionContext v = helper.invokeDirect(get, locals);
+			ExecutionContext v = helper.invoke(get, locals);
 			assertEquals($value, helper.readUtf8(v.getResult()));
 		}
 		JavaMethod clear = linkResolver.resolveVirtualMethod(map, "clear", "()V");
 		Locals locals = ts.newLocals(clear);
 		locals.set(0, map);
-		helper.invokeDirect(clear, locals);
+		helper.invoke(clear, locals);
 		JavaMethod isEmpty = linkResolver.resolveVirtualMethod(map, "isEmpty", "()Z");
 		locals = ts.newLocals(isEmpty);
 		locals.set(0, map);
-		assertTrue(helper.invokeDirect(isEmpty, locals).getResult().asBoolean());
+		assertTrue(helper.invoke(isEmpty, locals).getResult().asBoolean());
 	}
 }

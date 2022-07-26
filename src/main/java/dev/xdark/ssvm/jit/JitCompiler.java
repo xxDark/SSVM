@@ -97,6 +97,7 @@ public final class JitCompiler {
 	private static final ClassType FLOAT = ClassType.of(FloatValue.class);
 	private static final ClassType DOUBLE = ClassType.of(DoubleValue.class);
 	private static final ClassType VM_HELPER = ClassType.of(VMHelper.class);
+	@SuppressWarnings("deprecation")
 	private static final ClassType JIT_HELPER = ClassType.of(JitHelper.class);
 	private static final ClassType VALUES = ClassType.of(Value[].class);
 	private static final ClassType VM_EXCEPTION = ClassType.of(VMException.class);

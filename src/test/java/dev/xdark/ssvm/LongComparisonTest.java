@@ -68,7 +68,7 @@ public class LongComparisonTest {
 		mv.visitInsn(IRETURN);
 		mv.visitMaxs(4, 0);
 		InstanceJavaClass jc = TestUtil.createClass(vm, node);
-		ExecutionContext result = vm.getHelper().invokeDirect(vm.getLinkResolver().resolveStaticMethod(jc, "test", "()Z"), vm.getThreadStorage().newLocals(0));
+		ExecutionContext result = vm.getHelper().invoke(vm.getLinkResolver().resolveStaticMethod(jc, "test", "()Z"), vm.getThreadStorage().newLocals(0));
 		return result.getResult().asBoolean();
 	}
 

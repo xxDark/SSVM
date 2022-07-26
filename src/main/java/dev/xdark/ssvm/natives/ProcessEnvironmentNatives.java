@@ -10,7 +10,6 @@ import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
 
 import java.util.Map;
@@ -44,12 +43,12 @@ public class ProcessEnvironmentNatives {
 				{
 					Locals locals = ts.newLocals(getBytes);
 					locals.set(0, key);
-					keyBytes = (ArrayValue) helper.invokeDirect(getBytes, locals).getResult();
+					keyBytes = (ArrayValue) helper.invoke(getBytes, locals).getResult();
 				}
 				{
 					Locals locals = ts.newLocals(getBytes);
 					locals.set(0, value);
-					valueBytes = (ArrayValue) helper.invokeDirect(getBytes, locals).getResult();
+					valueBytes = (ArrayValue) helper.invoke(getBytes, locals).getResult();
 				}
 				array.setValue(idx++, keyBytes);
 				array.setValue(idx++, valueBytes);

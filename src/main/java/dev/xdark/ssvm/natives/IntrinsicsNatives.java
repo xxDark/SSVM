@@ -629,7 +629,7 @@ public class IntrinsicsNatives {
 						JavaMethod method = linkResolver.resolveVirtualMethod(value, "hashCode", "()I");
 						Locals locals = vm.getThreadStorage().newLocals(method);
 						locals.set(0, value);
-						result += helper.invokeDirect(method, locals).getResult().asInt();
+						result += helper.invoke(method, locals).getResult().asInt();
 					}
 				}
 				ctx.setResult(IntValue.of(result));
@@ -847,7 +847,7 @@ public class IntrinsicsNatives {
 					Locals locals = ts.newLocals(method);
 					locals.set(0, v1);
 					locals.set(1, v2);
-					boolean eq = helper.invokeDirect(method, locals).getResult().asBoolean();
+					boolean eq = helper.invoke(method, locals).getResult().asBoolean();
 					if (!eq) {
 						return IntValue.ZERO;
 					}

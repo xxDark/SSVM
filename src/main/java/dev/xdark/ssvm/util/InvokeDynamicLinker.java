@@ -121,7 +121,7 @@ public final class InvokeDynamicLinker {
 			linkArgs.set(5, appendix);
 		}
 
-		helper.invokeDirect(method, linkArgs);
+		helper.invoke(method, linkArgs);
 		return (InstanceValue) appendix.getValue(0);
 	}
 
@@ -143,7 +143,7 @@ public final class InvokeDynamicLinker {
 			JavaMethod getTarget = linkResolver.resolveVirtualMethod(handle, "getTarget", "()Ljava/lang/invoke/MethodHandle;");
 			Locals locals = ts.newLocals(getTarget);
 			locals.set(0, handle);
-			handle = helper.checkNotNull(helper.invokeDirect(getTarget, locals).getResult());
+			handle = helper.checkNotNull(helper.invoke(getTarget, locals).getResult());
 		}
 		JavaMethod invokeExact = linkResolver.resolveVirtualMethod(handle, "invokeExact", desc);
 		Locals locals = ts.newLocals(invokeExact);
@@ -152,7 +152,7 @@ public final class InvokeDynamicLinker {
 		for (int i = 1; index < args.length; index++) {
 			locals.set(i++, args[index]);
 		}
-		return helper.invokeDirect(invokeExact, locals).getResult();
+		return helper.invoke(invokeExact, locals).getResult();
 	}
 
 	/**

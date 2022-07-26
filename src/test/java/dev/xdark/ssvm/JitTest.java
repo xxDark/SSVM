@@ -15,7 +15,6 @@ import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.LongValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.TopValue;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.Type;
 
@@ -90,13 +89,13 @@ public class JitTest {
 			locals.set(4, LongValue.of(d));
 			locals.set(5, TopValue.INSTANCE);
 			locals.set(6, IntValue.of(e));
-			helper.invokeDirect(m, locals);
+			helper.invoke(m, locals);
 		} catch (VMException ex) {
 			InstanceValue oop = ex.getOop();
 			JavaMethod printStackTrace = vm.getLinkResolver().resolveVirtualMethod(oop, "printStackTrace", "()V");
 			Locals locals = vm.getThreadStorage().newLocals(printStackTrace);
 			locals.set(0, oop);
-			helper.invokeDirect(printStackTrace, locals);
+			helper.invoke(printStackTrace, locals);
 			throw ex;
 		}
 		assertEquals(a, jc.getStaticValue("a", "J").asLong());

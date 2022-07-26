@@ -83,7 +83,7 @@ public class MethodAccessorNatives {
 			for (int i = 0; i < args.length; i++) {
 				table.set(i + offset, args[i]);
 			}
-			ExecutionContext executed = helper.invokeDirect(mn, table);
+			ExecutionContext executed = helper.invoke(mn, table);
 			Value result = executed.getResult();
 			if (result.isVoid()) {
 				result = vm.getMemoryManager().nullValue(); // void

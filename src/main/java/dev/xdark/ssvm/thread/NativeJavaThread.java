@@ -7,7 +7,6 @@ import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -59,7 +58,7 @@ public class NativeJavaThread extends Thread {
 			JavaMethod method = vm.getLinkResolver().resolveVirtualMethod(oop, "run", "()V");
 			Locals locals = ts.newLocals(method);
 			locals.set(0, oop);
-			helper.invokeDirect(method, locals);
+			helper.invoke(method, locals);
 		} catch (VMException ex) {
 			ObjectValue uncaughtExceptionHandler = oop.getValue("uncaughtExceptionHandler", "Ljava/lang/Thread$UncaughtExceptionHandler;");
 			if (uncaughtExceptionHandler.isNull()) {
@@ -71,7 +70,7 @@ public class NativeJavaThread extends Thread {
 					Locals locals = ts.newLocals(method);
 					locals.set(0, oop);
 					locals.set(1, ex.getOop());
-					helper.invokeDirect(method, locals);
+					helper.invoke(method, locals);
 				} catch (VMException uex) {
 					OutputStream os = vm.getFileDescriptorManager().getStreamOut(2);
 					if (os != null) {

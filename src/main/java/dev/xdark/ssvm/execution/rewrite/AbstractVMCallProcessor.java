@@ -33,7 +33,7 @@ abstract class AbstractVMCallProcessor implements InstructionProcessor<VMCallIns
 		int maxArgs = method.getMaxArgs();
 		Locals locals = storage.newLocals(method);
 		callerStack.sinkInto(locals, maxArgs);
-		Value result = vm.getHelper().invokeDirect(method, locals).getResult();
+		Value result = vm.getHelper().invoke(method, locals).getResult();
 		if (!result.isVoid()) {
 			callerStack.pushGeneric(result);
 		}

@@ -23,8 +23,8 @@ import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
-import me.coley.cafedude.Constants;
 import me.coley.cafedude.classfile.ClassFile;
+import me.coley.cafedude.classfile.AttributeConstants;
 import me.coley.cafedude.classfile.ClassMember;
 import me.coley.cafedude.classfile.ConstPool;
 import me.coley.cafedude.classfile.Method;
@@ -436,7 +436,7 @@ public class ClassNatives {
 
 	private ObjectValue getAnnotationsIn(VirtualMachine vm, ConstPool cp, List<Attribute> attributes) {
 		return attributes.stream()
-			.filter(x -> Constants.Attributes.RUNTIME_VISIBLE_ANNOTATIONS.equals(cp.getUtf(x.getNameIndex())))
+			.filter(x -> AttributeConstants.RUNTIME_VISIBLE_ANNOTATIONS.equals(cp.getUtf(x.getNameIndex())))
 			.findFirst()
 			.map(x -> readAnnotation(x, vm))
 			.orElse(vm.getMemoryManager().nullValue());
@@ -485,11 +485,11 @@ public class ClassNatives {
 			}
 			for (Attribute attr : candidate.getAttributes()) {
 				String attrName = cp.getUtf(attr.getNameIndex());
-				if (Constants.Attributes.RUNTIME_VISIBLE_ANNOTATIONS.equals(attrName)) {
+				if (AttributeConstants.RUNTIME_VISIBLE_ANNOTATIONS.equals(attrName)) {
 					data.annotations = readAnnotation(attr, vm);
-				} else if (Constants.Attributes.RUNTIME_VISIBLE_PARAMETER_ANNOTATIONS.equals(attrName)) {
+				} else if (AttributeConstants.RUNTIME_VISIBLE_PARAMETER_ANNOTATIONS.equals(attrName)) {
 					data.parameterAnnotations = readParameterAnnotations(attr, vm);
-				} else if (includeDefault && Constants.Attributes.ANNOTATION_DEFAULT.equals(attrName)) {
+				} else if (includeDefault && AttributeConstants.ANNOTATION_DEFAULT.equals(attrName)) {
 					data.annotationDefault = readAnnotationDefault(attr, vm);
 				}
 				if (data.isComplete(includeDefault)) {

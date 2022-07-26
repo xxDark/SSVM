@@ -67,7 +67,7 @@ public class TestUtil {
 				continue;
 			}
 			try {
-				helper.invokeDirect(m, ts.newLocals(m));
+				helper.invoke(m, ts.newLocals(m));
 			} catch(VMException ex) {
 				InstanceValue oop = ex.getOop();
 				System.err.println(oop);
@@ -75,7 +75,7 @@ public class TestUtil {
 					JavaMethod printStackTrace = vm.getLinkResolver().resolveVirtualMethod(oop, "printStackTrace", "()V");
 					Locals locals = ts.newLocals(printStackTrace);
 					locals.set(0, oop);
-					helper.invokeDirect(printStackTrace, locals);
+					helper.invoke(printStackTrace, locals);
 				} catch(VMException ex1) {
 					System.err.println(ex1.getOop());
 					helper.toJavaException(ex1.getOop()).printStackTrace();

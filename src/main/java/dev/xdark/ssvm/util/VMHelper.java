@@ -36,7 +36,6 @@ import dev.xdark.ssvm.value.TopValue;
 import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Handle;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -67,43 +66,15 @@ public final class VMHelper {
 	}
 
 	/**
-	 * Invokes static method.
-	 *
-	 * @param method Method to invoke.
-	 * @param locals Local variable table.
-	 * @return invocation result.
-	 */
-	public ExecutionContext invokeStatic(JavaMethod method, Locals locals) {
-		if ((method.getAccess() & Opcodes.ACC_STATIC) == 0) {
-			throw new IllegalStateException("Method is not static");
-		}
-		return invokeDirect(method, locals);
-	}
-
-	/**
-	 * Invokes static method.
-	 *
-	 * @param javaClass Class to search method in.
-	 * @param name      Method name.
-	 * @param desc      Method descriptor.
-	 * @param locals    Local variable table.
-	 * @return invocation result.
-	 */
-	public ExecutionContext invokeStatic(InstanceJavaClass javaClass, String name, String desc, Locals locals) {
-		JavaMethod m = vm.getLinkResolver().resolveStaticMethod(javaClass, name, desc);
-		return invokeStatic(m, locals);
-	}
-
-	/**
 	 * Makes direct call.
 	 *
 	 * @param method Method to invoke.
 	 * @param locals Local variable table.
 	 * @return invocation result.
 	 */
-	public ExecutionContext invokeDirect(JavaMethod method, Locals locals) {
+	public ExecutionContext invoke(JavaMethod method, Locals locals) {
 		ExecutionEngine engine = vm.getExecutionEngine();
-		ExecutionContext ctx = engine.createContext(new SimpleExecutionRequest(method, vm.getThreadStorage().newStack(method.getMaxStack()), locals, engine.defaultOptions()));
+		ExecutionContext ctx = engine.createContext(new SimpleExecutionRequest(method, vm.getThreadStorage().newStack(method), locals, engine.defaultOptions()));
 		engine.execute(ctx);
 		return ctx;
 	}
@@ -146,9 +117,6 @@ public final class VMHelper {
 			switch (sort) {
 				case Type.OBJECT:
 					String internalName = type.getInternalName();
-					if (caller != null && Modifier.isHiddenMember(caller.getModifiers()) && internalName.equals(caller.getInternalName())) {
-						return caller.getOop();
-					}
 					return vm.findClass(loader, internalName, false).getOop();
 				case Type.METHOD:
 					return methodType(loader, type);
@@ -572,7 +540,7 @@ public final class VMHelper {
 			JavaMethod toCharArray = vm.getLinkResolver().resolveVirtualMethod(jc, jc, "toCharArray", "()[C");
 			Locals locals = vm.getThreadStorage().newLocals(toCharArray);
 			locals.set(0, value);
-			array = (ArrayValue) invokeDirect(toCharArray, locals).getResult();
+			array = (ArrayValue) invoke(toCharArray, locals).getResult();
 		}
 		return new String(toJavaChars(array));
 	}
@@ -631,7 +599,7 @@ public final class VMHelper {
 				Locals locals = vm.getThreadStorage().newLocals(init);
 				locals.set(0, wrapper);
 				locals.set(1, toVMChars(str));
-				invokeDirect(init, locals);
+				invoke(init, locals);
 			}
 		}
 		return wrapper;
@@ -669,7 +637,7 @@ public final class VMHelper {
 			Locals locals = vm.getThreadStorage().newLocals(init);
 			locals.set(0, wrapper);
 			locals.set(1, chars);
-			invokeDirect(init, locals);
+			invoke(init, locals);
 		}
 		return wrapper;
 	}
@@ -757,7 +725,7 @@ public final class VMHelper {
 		JavaMethod init = vm.getLinkResolver().resolveSpecialMethod(javaClass, "<init>", "()V");
 		Locals locals = vm.getThreadStorage().newLocals(init);
 		locals.set(0, instance);
-		invokeDirect(init, locals);
+		invoke(init, locals);
 		if (message != null) {
 			instance.setValue("detailMessage", "Ljava/lang/String;", newUtf8(message));
 		}
@@ -1012,7 +980,7 @@ public final class VMHelper {
 			Locals locals = vm.getThreadStorage().newLocals(add);
 			locals.set(0, classes);
 			locals.set(1, javaClass.getOop());
-			invokeDirect(add, locals);
+			invoke(add, locals);
 		}
 		return javaClass;
 	}
@@ -1061,17 +1029,18 @@ public final class VMHelper {
 		if (!cause.isNull() && cause != oop) {
 			exception.initCause(toJavaException((InstanceValue) cause));
 		}
-		/*
 		ObjectValue suppressedExceptions = oop.getValue("suppressedExceptions", "Ljava/util/List;");
 		if (!suppressedExceptions.isNull()) {
-			InstanceJavaClass list = (InstanceJavaClass) vm.findBootstrapClass("java/util/List");
-			int size = invokeInterface(list, "size", "()I", new Value[]{suppressedExceptions}).getResult().asInt();
-			for (int i = 0; i < size; i++) {
-				Value ex = invokeInterface(list, "get", "(I)Ljava/lang/Object;", new Value[]{suppressedExceptions, IntValue.of(i)}).getResult();
-				exception.addSuppressed(toJavaException((InstanceValue) ex));
+			InstanceJavaClass cl = (InstanceJavaClass) vm.findBootstrapClass("java/util/ArrayList");
+			if (cl == suppressedExceptions.getJavaClass()) {
+				InstanceValue value = (InstanceValue) suppressedExceptions;
+				int size = value.getInt("size");
+				ArrayValue array = (ArrayValue) value.getValue("elementData", "[Ljava/lang/Object;");
+				for (int i = 0; i < size; i++) {
+					exception.addSuppressed(toJavaException((InstanceValue) array.getValue(i)));
+				}
 			}
 		}
-		*/
 		return exception;
 	}
 
@@ -1100,7 +1069,7 @@ public final class VMHelper {
 		locals.set(2, newUtf8(methodName));
 		locals.set(3, newUtf8(sourceFile));
 		locals.set(4, IntValue.of(lineNumber));
-		invokeDirect(init, locals);
+		invoke(init, locals);
 		long offset;
 		if (injectDeclaringClass && (offset = element.getFieldOffset("declaringClassObject", "Ljava/lang/Class;")) != -1L) {
 			InstanceValue oop = owner.getOop();
@@ -1493,7 +1462,7 @@ public final class VMHelper {
 		JavaMethod getFD = vm.getLinkResolver().resolveVirtualMethod(fos, "getFD", "()Ljava/io/FileDescriptor;");
 		Locals locals = vm.getThreadStorage().newLocals(getFD);
 		locals.set(0, fos);
-		Value fd = invokeDirect(getFD, locals).getResult();
+		Value fd = invoke(getFD, locals).getResult();
 		return this.<InstanceValue>checkNotNull(fd).getLong("handle");
 	}
 
@@ -1510,7 +1479,7 @@ public final class VMHelper {
 		Locals locals = vm.getThreadStorage().newLocals(method);
 		locals.set(0, rt.getOop());
 		locals.set(1, parameters);
-		return (InstanceValue) invokeDirect(method, locals).getResult();
+		return (InstanceValue) invoke(method, locals).getResult();
 	}
 
 	/**
@@ -1669,7 +1638,7 @@ public final class VMHelper {
 		locals.set(2, findClass(caller.getClassLoader(), handle.getOwner(), false).getOop());
 		locals.set(3, newUtf8(handle.getName()));
 		locals.set(4, methodType(caller.getClassLoader(), Type.getMethodType(handle.getDesc())));
-		return (InstanceValue) invokeDirect(link, locals).getResult();
+		return (InstanceValue) invoke(link, locals).getResult();
 	}
 
 	/**
@@ -1810,7 +1779,7 @@ public final class VMHelper {
 		JavaMethod method = vm.getLinkResolver().resolveVirtualMethod(value, name, desc);
 		Locals locals = vm.getThreadStorage().newLocals(method);
 		locals.set(0, value);
-		return invokeDirect(method, locals).getResult();
+		return invoke(method, locals).getResult();
 	}
 
 	private ObjectValue invokeBox(InstanceJavaClass jc, Value value, String name , String desc) {
@@ -1821,7 +1790,7 @@ public final class VMHelper {
 		if (value.isWide()) {
 			locals.set(1, TopValue.INSTANCE);
 		}
-		return (ObjectValue) invokeDirect(method, locals).getResult();
+		return (ObjectValue) invoke(method, locals).getResult();
 	}
 
 	private static void makeHiddenMethod(InstanceJavaClass jc, String name, String desc) {

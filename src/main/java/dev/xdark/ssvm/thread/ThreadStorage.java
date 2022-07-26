@@ -43,10 +43,22 @@ public interface ThreadStorage extends Iterable<Value> {
 	 */
 	Locals newLocals(int size);
 
+	/**
+	 * Creates new stack.
+	 *
+	 * @param method Method to create stack for.
+	 * @return new stack.
+	 */
 	default Stack newStack(JavaMethod method) {
 		return newStack(method.getMaxStack());
 	}
 
+	/**
+	 * Creates new locals.
+	 *
+	 * @param method Method to create locals for.
+	 * @return new locals.
+	 */
 	default Locals newLocals(JavaMethod method) {
 		return newLocals(method.getMaxLocals());
 	}

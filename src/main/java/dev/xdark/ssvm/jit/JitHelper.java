@@ -26,8 +26,11 @@ import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 /**
  * JIT helper.
  *
+ * @deprecated For use by generated classes.
+ *
  * @author xDark
  */
+@Deprecated
 @SuppressWarnings("unused")
 @UtilityClass
 public class JitHelper {
@@ -104,7 +107,6 @@ public class JitHelper {
 		return vm.getOperations().getStaticField(klass, name, desc);
 	}
 
-	// special intrinsic versions.
 	public void getStaticFail(Object owner, Object field, long offset, ExecutionContext ctx) {
 		if (owner instanceof String) {
 			// Class was not found
@@ -343,7 +345,6 @@ public class JitHelper {
 		ctx.getOperations().putBooleanField((ObjectValue) instance, klass, name, value);
 	}
 
-	// TODO GC
 	public void putFieldA(Value instance, Value value, long offset, ExecutionContext ctx) {
 		ObjectValue o = nonNull(instance, ctx);
 		ctx.getVM().getMemoryManager().writeValue(o, offset, (ObjectValue) value);
@@ -404,7 +405,7 @@ public class JitHelper {
 		JavaMethod mn = resolveStaticMethod(owner, name, desc, ctx);
 		Locals table = vm.getThreadStorage().newLocals(mn);
 		table.copyFrom(locals, 0, locals.length);
-		ExecutionContext result = helper.invokeDirect(mn, table);
+		ExecutionContext result = helper.invoke(mn, table);
 		return result.getResult();
 	}
 
@@ -414,7 +415,7 @@ public class JitHelper {
 		JavaMethod method = vm.getLinkResolver().resolveInterfaceMethod(helper.checkNotNull(locals[0]), name, desc, true);
 		Locals table = vm.getThreadStorage().newLocals(method);
 		table.copyFrom(locals, 0, locals.length);
-		ExecutionContext result = helper.invokeDirect(method, table);
+		ExecutionContext result = helper.invoke(method, table);
 		return result.getResult();
 	}
 
@@ -425,19 +426,14 @@ public class JitHelper {
 		JavaMethod method = vm.getLinkResolver().resolveVirtualMethod(helper.checkNotNull(locals[0]).getJavaClass(), klass, name, desc);
 		Locals table = vm.getThreadStorage().newLocals(method);
 		table.copyFrom(locals, 0, locals.length);
-		ExecutionContext result = helper.invokeDirect(method, table);
+		ExecutionContext result = helper.invoke(method, table);
 		return result.getResult();
 	}
 
 	public ObjectValue allocateInstance(InstanceJavaClass klass, ExecutionContext ctx) {
-		VirtualMachine vm = ctx.getVM();
-		// TODO checks like in UnsafeNatives
-		MemoryManager memoryManager = vm.getMemoryManager();
-		klass.initialize();
-		return memoryManager.newInstance(klass);
+		return ctx.getOperations().allocateInstance(klass);
 	}
 
-	// For JIT to avoid checkcasts in generated code, do not use
 	public Value allocateInstance(Object type, ExecutionContext ctx) {
 		return allocateInstance((InstanceJavaClass) type, ctx);
 	}
@@ -617,7 +613,7 @@ public class JitHelper {
 	public Value invokeDirect(Locals locals, Object method, ExecutionContext ctx) {
 		JavaMethod jm = (JavaMethod) method;
 		jm.getOwner().initialize();
-		return ctx.getHelper().invokeDirect(jm, locals).getResult();
+		return ctx.getHelper().invoke(jm, locals).getResult();
 	}
 
 	public Locals newLocals(int count, ExecutionContext ctx) {

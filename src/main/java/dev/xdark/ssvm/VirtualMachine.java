@@ -212,7 +212,7 @@ public class VirtualMachine {
 					JavaMethod init = linkResolver.resolveSpecialMethod(groupClass, "<init>", "()V");
 					Locals locals = ts.newLocals(init);
 					locals.set(0, sysGroup);
-					helper.invokeDirect(init, locals);
+					helper.invoke(init, locals);
 				}
 				systemThreadGroup = sysGroup;
 				// Initialize main group
@@ -224,7 +224,7 @@ public class VirtualMachine {
 					locals.set(0, mainGroup);
 					locals.set(1, sysGroup);
 					locals.set(2, helper.newUtf8("main"));
-					helper.invokeDirect(init, locals);
+					helper.invoke(init, locals);
 				}
 				mainThreadGroup = mainGroup;
 				// Initialize main thread
@@ -240,7 +240,7 @@ public class VirtualMachine {
 				JavaMethod initializeSystemClass = sysClass.getStaticMethod("initializeSystemClass", "()V");
 				if (initializeSystemClass != null) {
 					// pre JDK 9 boot
-					helper.invokeDirect(initializeSystemClass, ts.newLocals(initializeSystemClass));
+					helper.invoke(initializeSystemClass, ts.newLocals(initializeSystemClass));
 				} else {
 					findBootstrapClass("java/lang/StringUTF16", true);
 
@@ -251,11 +251,11 @@ public class VirtualMachine {
 						Locals locals = ts.newLocals(add);
 						locals.set(0, mainGroup);
 						locals.set(1, mainThread.getOop());
-						helper.invokeDirect(add, locals);
+						helper.invoke(add, locals);
 					}
 					{
 						JavaMethod initPhase1 = linkResolver.resolveStaticMethod(sysClass, "initPhase1", "()V");
-						helper.invokeDirect(initPhase1, ts.newLocals(initPhase1));
+						helper.invoke(initPhase1, ts.newLocals(initPhase1));
 					}
 					findBootstrapClass("java/lang/invoke/MethodHandle", true);
 					findBootstrapClass("java/lang/invoke/ResolvedMethodName", true);
@@ -268,19 +268,19 @@ public class VirtualMachine {
 						Locals locals = ts.newLocals(initPhase2);
 						locals.set(0, IntValue.ONE);
 						locals.set(1, IntValue.ONE);
-						result = helper.invokeDirect(initPhase2, locals).getResult().asInt();
+						result = helper.invoke(initPhase2, locals).getResult().asInt();
 					}
 					if (result != 0) {
 						throw new IllegalStateException("VM bootstrapping failed, initPhase2 returned " + result);
 					}
 					{
 						JavaMethod initPhase3 = linkResolver.resolveStaticMethod(sysClass, "initPhase3", "()V");
-						helper.invokeDirect(initPhase3, ts.newLocals(initPhase3));
+						helper.invoke(initPhase3, ts.newLocals(initPhase3));
 					}
 				}
 				{
 					JavaMethod getSystemClassLoader = linkResolver.resolveStaticMethod(symbols.java_lang_ClassLoader(), "getSystemClassLoader", "()Ljava/lang/ClassLoader;");
-					helper.invokeDirect(getSystemClassLoader, ts.newLocals(getSystemClassLoader));
+					helper.invoke(getSystemClassLoader, ts.newLocals(getSystemClassLoader));
 				}
 				state.set(InitializationState.BOOTED);
 			} catch (Exception ex) {
@@ -604,7 +604,7 @@ public class VirtualMachine {
 				locals.set(0, loader);
 				locals.set(1, helper.newUtf8(name.replace('/', '.')));
 				locals.set(2, initialize ? IntValue.ONE : IntValue.ZERO);
-				jc = ((JavaValue<JavaClass>) helper.invokeDirect(method, locals).getResult()).getValue();
+				jc = ((JavaValue<JavaClass>) helper.invoke(method, locals).getResult()).getValue();
 			} else if (initialize) {
 				jc.initialize();
 			}

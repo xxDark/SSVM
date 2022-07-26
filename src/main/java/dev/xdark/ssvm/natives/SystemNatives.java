@@ -90,7 +90,7 @@ public class SystemNatives {
 				locals.set(0, value);
 				locals.set(1, helper.newUtf8(key));
 				locals.set(2, helper.newUtf8(property));
-				helper.invokeDirect(mn, locals);
+				helper.invoke(mn, locals);
 			}
 			ctx.setResult(value);
 			return Result.ABORT;

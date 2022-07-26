@@ -58,10 +58,15 @@ public class NativeLibraryNatives {
 			InstanceJavaClass librariesClass = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/loader/NativeLibraries");
 			findEntryClass = librariesClass;
 			findBuiltinLibClass = librariesClass;
-			vmi.setInvoker(librariesClass, "load", "(Ljdk/internal/loader/NativeLibraries$NativeLibraryImpl;Ljava/lang/String;Z)Z", ctx -> {
+			MethodInvoker doLoad = ctx -> {
 				ctx.setResult(load.test(ctx) ? IntValue.ONE : IntValue.ZERO);
 				return Result.ABORT;
-			});
+			};
+			if (!vmi.setInvoker(librariesClass, "load", "(Ljdk/internal/loader/NativeLibraries$NativeLibraryImpl;Ljava/lang/String;Z)Z", doLoad)) {
+				if (!vmi.setInvoker(librariesClass, "load", "(Ljdk/internal/loader/NativeLibraries$NativeLibraryImpl;Ljava/lang/String;ZZ)Z", doLoad)) {
+					throw new IllegalArgumentException("Unable to locate NativeLibraries#load method");
+				}
+			}
 			vmi.setInvoker(librariesClass, "unload", "(Ljava/lang/String;ZJ)V", ctx -> {
 				VMHelper helper = ctx.getHelper();
 				Locals locals = ctx.getLocals();

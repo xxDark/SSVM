@@ -216,6 +216,10 @@ public final class LinkResolver {
 			if (field != null) {
 				return field;
 			}
+			InstanceJavaClass parent = current.getSuperClass();
+			if (parent != null) {
+				deque.push(parent);
+			}
 			deque.addAll(Arrays.asList(current.getInterfaces()));
 		}
 		return null;

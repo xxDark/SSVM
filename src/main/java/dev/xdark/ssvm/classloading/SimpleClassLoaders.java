@@ -64,17 +64,13 @@ public class SimpleClassLoaders implements ClassLoaders {
 	}
 
 	@Override
-	public InstanceJavaClass constructClass(ObjectValue classLoader, ClassReader classReader, ClassNode node) {
-		return new SimpleInstanceJavaClass(vm, classLoader, classReader, node);
-	}
-
-	@Override
 	public void setClassOop(InstanceJavaClass javaClass) {
 		javaClass.setOop(vm.getMemoryManager().newClassOop(javaClass));
 	}
 
 	@Override
 	public void initializeBootClass(InstanceJavaClass javaClass) {
+		// TODO remove hack
 		SimpleInstanceJavaClass jc = (SimpleInstanceJavaClass) javaClass;
 		jc.setVirtualFieldLayout(jc.createVirtualFieldLayout());
 		jc.setStaticFieldLayout(jc.createStaticFieldLayout());

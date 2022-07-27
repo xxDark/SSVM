@@ -62,7 +62,7 @@ public class ThrowableNatives {
 		vmi.setInvoker(throwable, "getStackTraceElement", "(I)Ljava/lang/StackTraceElement;", ctx -> {
 			Locals locals = ctx.getLocals();
 			Backtrace backtrace = ((JavaValue<Backtrace>) ((InstanceValue) locals.load(0)).getValue("backtrace", "Ljava/lang/Object;")).getValue();
-			int idx = locals.load(1).asInt();
+			int idx = locals.loadInt(1);
 			VMHelper helper = vm.getHelper();
 			int len = backtrace.count();
 			helper.rangeCheck(idx, 0, len);

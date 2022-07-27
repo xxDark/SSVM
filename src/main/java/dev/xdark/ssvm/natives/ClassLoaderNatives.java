@@ -64,7 +64,7 @@ public class ClassLoaderNatives {
 			BiFunction<ExecutionContext, Boolean, InstanceJavaClass> defineClass0New = makeClassDefiner(1, false);
 			vmi.setInvoker(classLoader, "defineClass0", "(Ljava/lang/ClassLoader;Ljava/lang/Class;Ljava/lang/String;[BIILjava/security/ProtectionDomain;ZILjava/lang/Object;)Ljava/lang/Class;", ctx -> {
 				Locals locals = ctx.getLocals();
-				int flags = locals.load(8).asInt();
+				int flags = locals.loadInt(8);
 				boolean hidden = (flags & 0x2) != 0;
 				InstanceJavaClass jc = defineClass0New.apply(ctx, !hidden);
 				ObjectValue classData = locals.load(9);
@@ -122,8 +122,8 @@ public class ClassLoaderNatives {
 			ObjectValue loader = locals.load(0);
 			ObjectValue name = locals.load(argOffset + 1);
 			ArrayValue b = helper.checkNotNull(locals.load(argOffset + 2));
-			int off = locals.load(argOffset + 3).asInt();
-			int length = locals.load(argOffset + 4).asInt();
+			int off = locals.loadInt(argOffset + 3);
+			int length = locals.loadInt(argOffset + 4);
 			ObjectValue pd = locals.load(argOffset + 5);
 			ObjectValue source = withSource ? locals.load(argOffset + 6) : ctx.getMemoryManager().nullValue();
 			byte[] bytes = helper.toJavaBytes(b);

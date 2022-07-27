@@ -111,7 +111,7 @@ public class ConstantPoolNatives {
 	}
 
 	private int cpRangeCheck(ExecutionContext ctx, ClassFile cf) {
-		int index = ctx.getLocals().load(2).asInt();
+		int index = ctx.getLocals().loadInt(2);
 		if (index < 0 || index >= cf.getPool().size()) {
 			VirtualMachine vm = ctx.getVM();
 			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException());

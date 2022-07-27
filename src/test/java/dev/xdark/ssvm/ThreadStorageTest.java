@@ -45,7 +45,7 @@ public class ThreadStorageTest {
 			stack.clear();
 			assertTrue(stack.isEmpty());
 			assertTrue(stack.view().isEmpty());
-			assertThrows(IndexOutOfBoundsException.class, () -> locals.set(-1, IntValue.M_ONE));
+			assertThrows(IndexOutOfBoundsException.class, () -> locals.setInt(-1, -1));
 		}
 	}
 }

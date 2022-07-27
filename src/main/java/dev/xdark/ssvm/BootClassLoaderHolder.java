@@ -55,7 +55,7 @@ final class BootClassLoaderHolder {
 				}
 				VirtualMachine vm = this.vm;
 				ClassLoaders classLoaders = vm.getClassLoaders();
-				jc = classLoaders.constructClass(vm.getMemoryManager().nullValue(), result.getClassReader(), result.getNode());
+				jc = vm.getMirrorFactory().newInstanceClass(vm.getMemoryManager().nullValue(), result.getClassReader(), result.getNode());
 				classLoaders.setClassOop(jc);
 				data.linkClass(jc);
 			}

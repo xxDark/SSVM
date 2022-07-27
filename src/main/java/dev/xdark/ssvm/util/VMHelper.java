@@ -9,8 +9,10 @@ import dev.xdark.ssvm.classloading.ClassParseResult;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.ExecutionEngine;
 import dev.xdark.ssvm.execution.Locals;
+import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.SimpleExecutionRequest;
 import dev.xdark.ssvm.execution.VMException;
+import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
@@ -56,6 +58,7 @@ import java.util.stream.StreamSupport;
  */
 public final class VMHelper {
 
+	private static final int STRING_COPY_THRESHOLD = 256;
 	private final VirtualMachine vm;
 
 	/**
@@ -116,8 +119,7 @@ public final class VMHelper {
 			int sort = type.getSort();
 			switch (sort) {
 				case Type.OBJECT:
-					String internalName = type.getInternalName();
-					return vm.findClass(loader, internalName, false).getOop();
+					return vm.findClass(loader, type.getInternalName(), false).getOop();
 				case Type.METHOD:
 					return methodType(loader, type);
 				default:
@@ -130,7 +132,7 @@ public final class VMHelper {
 			return linkMethodHandleConstant(ctx.getDeclaringClass(), (Handle) cst);
 		}
 
-		throw new UnsupportedOperationException("TODO: " + cst + " (" + cst.getClass() + ')');
+		throw new PanicException("Unsupported constant " + cst + " " + cst.getClass());
 	}
 
 	/**
@@ -970,7 +972,7 @@ public final class VMHelper {
 	public InstanceJavaClass newInstanceClass(ObjectValue loader, ObjectValue protectionDomain, ClassReader reader, ClassNode node) {
 		VirtualMachine vm = this.vm;
 		ClassLoaders classLoaders = vm.getClassLoaders();
-		InstanceJavaClass javaClass = classLoaders.constructClass(loader, reader, node);
+		InstanceJavaClass javaClass = vm.getMirrorFactory().newInstanceClass(loader, reader, node);
 		classLoaders.setClassOop(javaClass);
 		InstanceValue oop = javaClass.getOop();
 		setClassFields(oop, loader, protectionDomain);
@@ -1068,7 +1070,7 @@ public final class VMHelper {
 		locals.set(1, newUtf8(className));
 		locals.set(2, newUtf8(methodName));
 		locals.set(3, newUtf8(sourceFile));
-		locals.set(4, IntValue.of(lineNumber));
+		locals.setInt(4, lineNumber);
 		invoke(init, locals);
 		long offset;
 		if (injectDeclaringClass && (offset = element.getFieldOffset("declaringClassObject", "Ljava/lang/Class;")) != -1L) {
@@ -1454,7 +1456,7 @@ public final class VMHelper {
 	/**
 	 * Returns file descriptor handle.
 	 *
-	 * @param fos File output stream to get handle from.
+	 * @param fos File stream to get handle from.
 	 * @return file descriptor handle.
 	 */
 	public long getFileStreamHandle(InstanceValue fos) {
@@ -1622,19 +1624,12 @@ public final class VMHelper {
 	 * @return linked method handle.
 	 */
 	public InstanceValue linkMethodHandleConstant(InstanceJavaClass caller, Handle handle) {
-		Value[] args = new Value[]{
-			caller.getOop(),
-			IntValue.of(handle.getTag()),
-			findClass(caller.getClassLoader(), handle.getOwner(), false).getOop(),
-			newUtf8(handle.getName()),
-			methodType(caller.getClassLoader(), Type.getMethodType(handle.getDesc()))
-		};
-
+		VirtualMachine vm = this.vm;
 		InstanceJavaClass natives = vm.getSymbols().java_lang_invoke_MethodHandleNatives();
 		JavaMethod link = vm.getLinkResolver().resolveStaticMethod(natives, "linkMethodHandleConstant", "(Ljava/lang/Class;ILjava/lang/Class;Ljava/lang/String;Ljava/lang/Object;)Ljava/lang/invoke/MethodHandle;");
 		Locals locals = vm.getThreadStorage().newLocals(link);
 		locals.set(0, caller.getOop());
-		locals.set(1, IntValue.of(handle.getTag()));
+		locals.setInt(1, handle.getTag());
 		locals.set(2, findClass(caller.getClassLoader(), handle.getOwner(), false).getOop());
 		locals.set(3, newUtf8(handle.getName()));
 		locals.set(4, methodType(caller.getClassLoader(), Type.getMethodType(handle.getDesc())));
@@ -1677,11 +1672,17 @@ public final class VMHelper {
 	 * @return VM array.
 	 */
 	public ArrayValue toVMChars(String str) {
-		int length = str.length();
 		VirtualMachine vm = this.vm;
+		int length = str.length();
 		ArrayValue wrapper = newArray(vm.getPrimitives().charPrimitive(), length);
-		while (length-- != 0) {
-			wrapper.setChar(length, str.charAt(length));
+		if (length <= STRING_COPY_THRESHOLD || UnsafeUtil.stringValueFieldAccessible()) {
+			MemoryData memory = wrapper.getMemory().getData();
+			char[] chars = UnsafeUtil.getChars(str);
+			memory.write(vm.getMemoryManager().arrayBaseOffset(wrapper), chars, 0, chars.length);
+		} else {
+			while (length-- != 0) {
+				wrapper.setChar(length, str.charAt(length));
+			}
 		}
 		return wrapper;
 	}

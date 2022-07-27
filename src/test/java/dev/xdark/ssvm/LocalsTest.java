@@ -10,11 +10,11 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class LocalsTest {
-	
+
 	@Test
 	public void testEquality() {
 		try (ThreadLocals locals1 = new ThreadLocals(6);
-			 ThreadLocals locals2 = new ThreadLocals(6)) {
+		     ThreadLocals locals2 = new ThreadLocals(6)) {
 			fillLocals(locals1);
 			fillLocals(locals2);
 			assertEquals(locals1, locals2);
@@ -22,9 +22,9 @@ public class LocalsTest {
 	}
 
 	private static void fillLocals(Locals locals) {
-		locals.set(0, IntValue.ONE);
-		locals.setWide(1, LongValue.ONE);
-		locals.set(3, IntValue.of(5));
-		locals.setWide(4, new DoubleValue(6.7D));
+		locals.setInt(0, 1);
+		locals.setLong(1, 1L);
+		locals.setInt(3, 5);
+		locals.setDouble(4, 6.7D);
 	}
 }

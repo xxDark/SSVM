@@ -28,10 +28,10 @@ public class CRC32Natives {
 		InstanceJavaClass jc = symbols.java_util_zip_CRC32();
 		vmi.setInvoker(jc, "updateBytes", "(I[BII)I", ctx -> {
 			Locals locals = ctx.getLocals();
-			int crc = locals.load(0).asInt();
+			int crc = locals.loadInt(0);
 			ArrayValue bytes = locals.load(1);
-			int off = locals.load(2).asInt();
-			int len = locals.load(3).asInt();
+			int off = locals.loadInt(2);
+			int len = locals.loadInt(3);
 			for (int x = off + len; off < x; off++) {
 				crc = CrcUtil.update(crc, bytes.getByte(off));
 			}

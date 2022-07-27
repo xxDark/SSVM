@@ -56,6 +56,8 @@ public final class ThreadLocals implements Locals, AutoCloseable, Disposable {
 				throw new IllegalStateException();
 			}
 			return;
+		} else if (length == 0) {
+			return;
 		}
 		destOffset = table.map(destOffset);
 		Value[] array = table.getArray();
@@ -75,6 +77,8 @@ public final class ThreadLocals implements Locals, AutoCloseable, Disposable {
 			if (length != 0) {
 				throw new IllegalStateException();
 			}
+			return;
+		} else if (length == 0) {
 			return;
 		}
 		Value[] array = table.getArray();

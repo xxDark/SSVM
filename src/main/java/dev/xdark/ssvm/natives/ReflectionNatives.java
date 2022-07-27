@@ -36,7 +36,7 @@ public class ReflectionNatives {
 
 	private static MethodInvoker getCallerClass(boolean useDepth) {
 		return ctx -> {
-			int callerOffset = useDepth ? ctx.getLocals().load(0).asInt() + 1 : 2;
+			int callerOffset = useDepth ? ctx.getLocals().loadInt(0) + 1 : 2;
 			ctx.setResult(ctx.getVM().getReflection().getCallerFrame(callerOffset).getDeclaringClass().getOop());
 			return Result.ABORT;
 		};

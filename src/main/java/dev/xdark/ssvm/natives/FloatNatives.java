@@ -27,11 +27,11 @@ public class FloatNatives {
 		VMSymbols symbols = vm.getSymbols();
 		InstanceJavaClass jc = symbols.java_lang_Float();
 		vmi.setInvoker(jc, "floatToRawIntBits", "(F)I", ctx -> {
-			ctx.setResult(IntValue.of(Float.floatToRawIntBits(ctx.getLocals().load(0).asFloat())));
+			ctx.setResult(IntValue.of(Float.floatToRawIntBits(ctx.getLocals().loadFloat(0))));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "intBitsToFloat", "(I)F", ctx -> {
-			ctx.setResult(new FloatValue(Float.intBitsToFloat(ctx.getLocals().load(0).asInt())));
+			ctx.setResult(new FloatValue(Float.intBitsToFloat(ctx.getLocals().loadInt(0))));
 			return Result.ABORT;
 		});
 	}

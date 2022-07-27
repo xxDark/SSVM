@@ -24,17 +24,6 @@ public final class VMVirtualCallProcessor extends AbstractVMCallProcessor {
 		Stack stack = ctx.getStack();
 		ObjectValue instance = stack.getAt(stack.position() - args - 1);
 		vm.getHelper().checkNotNull(instance);
-		JavaClass javaClass;
-		if (instance instanceof ArrayValue) {
-			javaClass = vm.getSymbols().java_lang_Object();
-		} else {
-			javaClass = instance.getJavaClass();
-		}
-		return vm.getLinkResolver().resolveVirtualMethod(javaClass, javaClass, callInfo.name, callInfo.desc);
-	}
-
-	@Override
-	protected boolean alwaysResolve() {
-		return true;
+		return vm.getLinkResolver().resolveVirtualMethod(instance, callInfo.name, callInfo.desc);
 	}
 }

@@ -35,9 +35,4 @@ public final class VMInterfaceCallProcessor extends AbstractVMCallProcessor {
 		InstanceJavaClass prioritized = ((InstanceValue) instance).getJavaClass();
 		return vm.getLinkResolver().resolveVirtualMethod(prioritized, javaClass, callInfo.name, callInfo.desc);
 	}
-
-	@Override
-	protected boolean alwaysResolve() {
-		return true;
-	}
 }

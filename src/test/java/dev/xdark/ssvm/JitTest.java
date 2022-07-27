@@ -82,13 +82,11 @@ public class JitTest {
 		}
 		try {
 			Locals locals =vm.getThreadStorage().newLocals(m);
-			locals.set(0, LongValue.of(a));
-			locals.set(1, TopValue.INSTANCE);
-			locals.set(2, IntValue.of(b));
+			locals.setLong(0, a);
+			locals.setInt(2, b);
 			locals.set(3, helper.newUtf8(c));
-			locals.set(4, LongValue.of(d));
-			locals.set(5, TopValue.INSTANCE);
-			locals.set(6, IntValue.of(e));
+			locals.setLong(4, d);
+			locals.setInt(6, e);
 			helper.invoke(m, locals);
 		} catch (VMException ex) {
 			InstanceValue oop = ex.getOop();

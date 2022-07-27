@@ -20,9 +20,4 @@ public final class VMSpecialCallProcessor extends AbstractVMCallProcessor {
 		insn.setResolved(method);
 		return method;
 	}
-
-	@Override
-	protected boolean alwaysResolve() {
-		return false;
-	}
 }

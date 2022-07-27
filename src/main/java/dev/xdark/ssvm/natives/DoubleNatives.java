@@ -25,11 +25,11 @@ public class DoubleNatives {
 		VMSymbols symbols = vm.getSymbols();
 		InstanceJavaClass jc = symbols.java_lang_Double();
 		vmi.setInvoker(jc, "doubleToRawLongBits", "(D)J", ctx -> {
-			ctx.setResult(LongValue.of(Double.doubleToRawLongBits(ctx.getLocals().load(0).asDouble())));
+			ctx.setResult(LongValue.of(Double.doubleToRawLongBits(ctx.getLocals().loadDouble(0))));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "longBitsToDouble", "(J)D", ctx -> {
-			ctx.setResult(new DoubleValue(Double.longBitsToDouble(ctx.getLocals().load(0).asLong())));
+			ctx.setResult(new DoubleValue(Double.longBitsToDouble(ctx.getLocals().loadLong(0))));
 			return Result.ABORT;
 		});
 	}

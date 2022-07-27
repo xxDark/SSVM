@@ -700,10 +700,11 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		if (vrtMethodLayout == null) {
 			Map<MemberKey, JavaMethod> map = new HashMap<>();
 			int slot = 0;
+			MirrorFactory factory = vm.getMirrorFactory();
 			List<MethodNode> methods = node.methods;
 			for (MethodNode method : methods) {
 				if ((method.access & Opcodes.ACC_STATIC) == 0) {
-					map.put(new SimpleMemberKey(this, method.name, method.desc), new JavaMethod(this, method, slot++));
+					map.put(new SimpleMemberKey(this, method.name, method.desc), factory.newMethod(this, method, slot++));
 				}
 			}
 			vrtMethodLayout = new MethodLayout(Collections.unmodifiableMap(map));
@@ -718,10 +719,11 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		if (staticMethodLayout == null) {
 			Map<MemberKey, JavaMethod> map = new HashMap<>();
 			int slot = getVirtualMethodCount();
+			MirrorFactory factory = vm.getMirrorFactory();
 			List<MethodNode> methods = node.methods;
 			for (MethodNode method : methods) {
 				if ((method.access & Opcodes.ACC_STATIC) != 0) {
-					map.put(new SimpleMemberKey(this, method.name, method.desc), new JavaMethod(this, method, slot++));
+					map.put(new SimpleMemberKey(this, method.name, method.desc), factory.newMethod(this, method, slot++));
 				}
 			}
 			staticMethodLayout = new MethodLayout(Collections.unmodifiableMap(map));
@@ -795,12 +797,14 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		Map<MemberKey, JavaField> map = new HashMap<>();
 		long offset = 0L;
 		int slot = getVirtualFieldCount();
+		VirtualMachine vm = this.vm;
 		VMHelper helper = vm.getHelper();
+		MirrorFactory factory = vm.getMirrorFactory();
 		List<FieldNode> fields = node.fields;
 		for (FieldNode field : fields) {
 			if ((field.access & Opcodes.ACC_STATIC) != 0) {
 				String desc = field.desc;
-				map.put(new SimpleMemberKey(this, field.name, desc), new JavaField(this, field, slot++, offset));
+				map.put(new SimpleMemberKey(this, field.name, desc), factory.newField(this, field, slot++, offset));
 				offset += helper.getDescriptorSize(desc);
 			}
 		}
@@ -816,14 +820,16 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 			deque.addFirst(javaClass);
 			javaClass = javaClass.getSuperclassWithoutResolving();
 		}
+		VirtualMachine vm = this.vm;
 		VMHelper helper = vm.getHelper();
+		MirrorFactory factory = vm.getMirrorFactory();
 		int slot = 0;
 		while ((javaClass = deque.pollFirst()) != null) {
 			List<FieldNode> fields = javaClass.getNode().fields;
 			for (FieldNode field : fields) {
 				if ((field.access & Opcodes.ACC_STATIC) == 0) {
 					String desc = field.desc;
-					map.put(new SimpleMemberKey(javaClass, field.name, desc), new JavaField(javaClass, field, slot++, offset));
+					map.put(new SimpleMemberKey(javaClass, field.name, desc), factory.newField(javaClass, field, slot++, offset));
 					offset += helper.getDescriptorSize(desc);
 				}
 			}
@@ -961,16 +967,15 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 				if (!jm.isPolymorphic()) {
 					jm = null;
 				} else {
-					return linkPolymorphicCall(jm, name, desc);
+					return linkPolymorphicCall(jm, desc);
 				}
 			}
 		}
 		return jm;
 	}
 
-	private JavaMethod linkPolymorphicCall(JavaMethod original, String name, String desc) {
-		InstanceJavaClass owner = original.getOwner();
-		return new JavaMethod(owner, original.getNode(), desc, original.getSlot());
+	private JavaMethod linkPolymorphicCall(JavaMethod original, String desc) {
+		return vm.getMirrorFactory().newPolymorphicMethod(original, desc);
 	}
 
 	private void markFailedInitialization(VMException ex) {

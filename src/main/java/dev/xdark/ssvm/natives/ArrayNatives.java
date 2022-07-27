@@ -51,7 +51,7 @@ public class ArrayNatives {
 			if (klass.isArray()) {
 				helper.throwException(symbols.java_lang_IllegalArgumentException());
 			}
-			int length = locals.load(1).asInt();
+			int length = locals.loadInt(1);
 			ArrayValue result = helper.newArray(klass, length);
 			ctx.setResult(result);
 			return Result.ABORT;

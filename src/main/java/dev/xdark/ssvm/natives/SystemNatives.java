@@ -52,9 +52,9 @@ public class SystemNatives {
 			Locals locals = ctx.getLocals();
 			ArrayValue src = helper.checkNotNull(locals.<ObjectValue>load(0));
 			ArrayValue dst = helper.checkNotNull(locals.<ObjectValue>load(2));
-			int srcPos = locals.load(1).asInt();
-			int dstPos = locals.load(3).asInt();
-			int length = locals.load(4).asInt();
+			int srcPos = locals.loadInt(1);
+			int dstPos = locals.loadInt(3);
+			int length = locals.loadInt(4);
 			MemoryManager memoryManager = vm.getMemoryManager();
 			JavaClass srcComponent = src.getJavaClass().getComponentType();
 			JavaClass dstComponent = dst.getJavaClass().getComponentType();

@@ -1,10 +1,13 @@
 package dev.xdark.ssvm.memory.allocation;
 
 import dev.xdark.ssvm.execution.PanicException;
+import dev.xdark.ssvm.util.UnsafeUtil;
 import dev.xdark.ssvm.util.VolatileBufferAccess;
 import lombok.RequiredArgsConstructor;
+import sun.misc.Unsafe;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 
 /**
@@ -15,6 +18,7 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 final class BufferMemoryData implements MemoryData {
 
+	private static final Unsafe UNSAFE = UnsafeUtil.get();
 	private static final int MEMSET_THRESHOLD = 256;
 	private final ByteBuffer buffer;
 	private VolatileBufferAccess volatileAccess;
@@ -169,6 +173,111 @@ final class BufferMemoryData implements MemoryData {
 	}
 
 	@Override
+	public void write(long dstOffset, long[] array, int arrayOffset, int length) {
+		ByteBuffer buffer = this.buffer;
+		checkIndex(dstOffset, length * 8);
+		if (buffer.hasArray() && isNativeOrder(buffer)) {
+			byte[] data = buffer.array();
+			UNSAFE.copyMemory(array, Unsafe.ARRAY_LONG_BASE_OFFSET + arrayOffset * 8L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset + buffer.arrayOffset(), length * 8L);
+		} else {
+			buffer = buffer.slice().order(buffer.order());
+			while (length-- != 0) {
+				buffer.putLong(array[arrayOffset++]);
+			}
+		}
+	}
+
+	@Override
+	public void write(long dstOffset, double[] array, int arrayOffset, int length) {
+		ByteBuffer buffer = this.buffer;
+		checkIndex(dstOffset, length * 8);
+		if (buffer.hasArray() && isNativeOrder(buffer)) {
+			byte[] data = buffer.array();
+			UNSAFE.copyMemory(array, Unsafe.ARRAY_DOUBLE_BASE_OFFSET + arrayOffset * 8L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset + buffer.arrayOffset(), length * 8L);
+		} else {
+			buffer = buffer.slice().order(buffer.order());
+			while (length-- != 0) {
+				buffer.putDouble(array[arrayOffset++]);
+			}
+		}
+	}
+
+	@Override
+	public void write(long dstOffset, int[] array, int arrayOffset, int length) {
+		ByteBuffer buffer = this.buffer;
+		checkIndex(dstOffset, length * 4);
+		if (buffer.hasArray() && isNativeOrder(buffer)) {
+			byte[] data = buffer.array();
+			UNSAFE.copyMemory(array, Unsafe.ARRAY_INT_BASE_OFFSET + arrayOffset * 4L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset + buffer.arrayOffset(), length * 4L);
+		} else {
+			buffer = buffer.slice().order(buffer.order());
+			while (length-- != 0) {
+				buffer.putInt(array[arrayOffset++]);
+			}
+		}
+	}
+
+	@Override
+	public void write(long dstOffset, float[] array, int arrayOffset, int length) {
+		ByteBuffer buffer = this.buffer;
+		checkIndex(dstOffset, length * 4);
+		if (buffer.hasArray() && isNativeOrder(buffer)) {
+			byte[] data = buffer.array();
+			UNSAFE.copyMemory(array, Unsafe.ARRAY_FLOAT_BASE_OFFSET + arrayOffset * 4L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset + buffer.arrayOffset(), length * 4L);
+		} else {
+			buffer = buffer.slice().order(buffer.order());
+			while (length-- != 0) {
+				buffer.putFloat(array[arrayOffset++]);
+			}
+		}
+	}
+
+	@Override
+	public void write(long dstOffset, char[] array, int arrayOffset, int length) {
+		ByteBuffer buffer = this.buffer;
+		checkIndex(dstOffset, length * 2);
+		if (buffer.hasArray() && isNativeOrder(buffer)) {
+			byte[] data = buffer.array();
+			UNSAFE.copyMemory(array, Unsafe.ARRAY_CHAR_BASE_OFFSET + arrayOffset * 2L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset + buffer.arrayOffset(), length * 2L);
+		} else {
+			buffer = buffer.slice().order(buffer.order());
+			while (length-- != 0) {
+				buffer.putChar(array[arrayOffset++]);
+			}
+		}
+	}
+
+	@Override
+	public void write(long dstOffset, short[] array, int arrayOffset, int length) {
+		ByteBuffer buffer = this.buffer;
+		checkIndex(dstOffset, length * 2);
+		if (buffer.hasArray() && isNativeOrder(buffer)) {
+			byte[] data = buffer.array();
+			UNSAFE.copyMemory(array, Unsafe.ARRAY_SHORT_BASE_OFFSET + arrayOffset * 2L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset + buffer.arrayOffset(), length * 2L);
+		} else {
+			buffer = buffer.slice().order(buffer.order());
+			while (length-- != 0) {
+				buffer.putShort(array[arrayOffset++]);
+			}
+		}
+	}
+
+	@Override
+	public void write(long dstOffset, boolean[] array, int arrayOffset, int length) {
+		ByteBuffer buffer = this.buffer;
+		checkIndex(dstOffset, length);
+		if (buffer.hasArray() && isNativeOrder(buffer)) {
+			byte[] data = buffer.array();
+			UNSAFE.copyMemory(array, Unsafe.ARRAY_BOOLEAN_BASE_OFFSET + arrayOffset, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset + buffer.arrayOffset(), length);
+		} else {
+			buffer = buffer.slice().order(buffer.order());
+			while (length-- != 0) {
+				buffer.put((byte) (array[arrayOffset++] ? 1 : 0));
+			}
+		}
+	}
+
+	@Override
 	public long length() {
 		return buffer.capacity();
 	}
@@ -222,5 +331,9 @@ final class BufferMemoryData implements MemoryData {
 			throw new PanicException("Segfault");
 		}
 		return (int) offset;
+	}
+
+	private static boolean isNativeOrder(ByteBuffer buffer) {
+		return buffer.order() == ByteOrder.nativeOrder();
 	}
 }

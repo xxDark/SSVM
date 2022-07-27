@@ -21,7 +21,7 @@ abstract class AbstractVMCallProcessor implements InstructionProcessor<VMCallIns
 	@Override
 	public final Result execute(VMCallInsnNode insn, ExecutionContext ctx) {
 		JavaMethod method = insn.getResolved();
-		if (method == null || alwaysResolve()) {
+		if (method == null) {
 			// The one who override the method
 			// must replace resolved field, if needed
 			method = resolveMethod(insn, ctx);
@@ -41,6 +41,4 @@ abstract class AbstractVMCallProcessor implements InstructionProcessor<VMCallIns
 	}
 
 	protected abstract JavaMethod resolveMethod(VMCallInsnNode insn, ExecutionContext ctx);
-
-	protected abstract boolean alwaysResolve();
 }

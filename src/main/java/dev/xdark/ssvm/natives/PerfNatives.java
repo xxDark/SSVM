@@ -31,7 +31,7 @@ public class PerfNatives {
 		vmi.setInvoker(jc, "createLong", "(Ljava/lang/String;IIJ)Ljava/nio/ByteBuffer;", ctx -> {
 			JavaMethod allocateDirect = vm.getLinkResolver().resolveStaticMethod(symbols.java_nio_ByteBuffer(), "allocateDirect", "(I)Ljava/nio/ByteBuffer;");
 			Locals locals = vm.getThreadStorage().newLocals(allocateDirect);
-			locals.set(0, IntValue.of(8));
+			locals.setInt(0, 8);
 			Value buf = vm.getHelper().invoke(allocateDirect, locals).getResult();
 			ctx.setResult(buf);
 			return Result.ABORT;

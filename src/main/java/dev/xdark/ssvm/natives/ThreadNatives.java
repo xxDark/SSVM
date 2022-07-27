@@ -43,7 +43,7 @@ public class ThreadNatives {
 		vmi.setInvoker(thread, "setPriority0", "(I)V", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMThread th = vm.getThreadManager().getVmThread(locals.<InstanceValue>load(0));
-			th.setPriority(locals.load(1).asInt());
+			th.setPriority(locals.loadInt(1));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "start0", "()V", ctx -> {
@@ -77,7 +77,7 @@ public class ThreadNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "sleep", "(J)V", ctx -> {
-			long time = ctx.getLocals().load(0).asLong();
+			long time = ctx.getLocals().loadLong(0);
 			if (time < 0L) {
 				vm.getHelper().throwException(symbols.java_lang_IllegalArgumentException(), "timeout value is negative");
 			}

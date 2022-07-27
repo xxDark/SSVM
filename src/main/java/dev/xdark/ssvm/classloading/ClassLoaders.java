@@ -36,16 +36,6 @@ public interface ClassLoaders {
 	Collection<InstanceValue> getAll();
 
 	/**
-	 * Constructs new instance class.
-	 *
-	 * @param classLoader Class loader which the class was loaded from.
-	 * @param classReader Class source.
-	 * @param node        Class node.
-	 * @return constructed class.
-	 */
-	InstanceJavaClass constructClass(ObjectValue classLoader, ClassReader classReader, ClassNode node);
-
-	/**
 	 * Sets class oop.
 	 *
 	 * @param javaClass Class to set oop for.

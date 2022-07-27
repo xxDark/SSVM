@@ -43,7 +43,7 @@ public class GenericFileSystemNatives {
 		InstanceJavaClass fd = vm.getSymbols().java_io_FileDescriptor();
 
 		MethodInvoker set = ctx -> {
-			ctx.setResult(LongValue.of(mapVMStream(vm, ctx.getLocals().load(0).asInt())));
+			ctx.setResult(LongValue.of(mapVMStream(vm, ctx.getLocals().loadInt(0))));
 			return Result.ABORT;
 		};
 		boolean lateinit = false;
@@ -65,7 +65,7 @@ public class GenericFileSystemNatives {
 		}
 
 		vmi.setInvoker(fd, "getAppend", "(I)Z", ctx -> {
-			ctx.setResult(vm.getFileDescriptorManager().isAppend(ctx.getLocals().load(0).asInt()) ? IntValue.ONE : IntValue.ZERO);
+			ctx.setResult(vm.getFileDescriptorManager().isAppend(ctx.getLocals().loadInt(0)) ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fd, "close0", "()V", ctx -> {
@@ -89,8 +89,8 @@ public class GenericFileSystemNatives {
 				return Result.ABORT;
 			}
 			byte[] bytes = helper.toJavaBytes(locals.load(1));
-			int off = locals.load(2).asInt();
-			int len = locals.load(3).asInt();
+			int off = locals.loadInt(2);
+			int len = locals.loadInt(3);
 			try {
 				out.write(bytes, off, len);
 			} catch (IOException ex) {
@@ -108,7 +108,7 @@ public class GenericFileSystemNatives {
 				return Result.ABORT;
 			}
 			try {
-				out.write(locals.load(1).asByte());
+				out.write(locals.loadInt(1));
 			} catch (IOException ex) {
 				helper.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 			}
@@ -119,7 +119,7 @@ public class GenericFileSystemNatives {
 			InstanceValue _this = locals.<InstanceValue>load(0);
 			VMHelper helper = vm.getHelper();
 			String path = helper.readUtf8(locals.load(1));
-			boolean append = locals.load(2).asBoolean();
+			boolean append = locals.loadInt(2) != 0;
 			try {
 				long handle = vm.getFileDescriptorManager().open(path, append ? FileDescriptorManager.APPEND : FileDescriptorManager.WRITE);
 				((InstanceValue) _this.getValue("fd", "Ljava/io/FileDescriptor;")).setLong("handle", handle);
@@ -154,8 +154,8 @@ public class GenericFileSystemNatives {
 				ctx.setResult(IntValue.M_ONE);
 			} else {
 				try {
-					int off = locals.load(2).asInt();
-					int len = locals.load(3).asInt();
+					int off = locals.loadInt(2);
+					int len = locals.loadInt(3);
 					byte[] bytes = new byte[len];
 					int read = in.read(bytes);
 					if (read > 0) {

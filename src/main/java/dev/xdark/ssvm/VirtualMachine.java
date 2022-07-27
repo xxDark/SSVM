@@ -28,6 +28,8 @@ import dev.xdark.ssvm.memory.allocation.NavigableMemoryAllocator;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.mirror.MirrorFactory;
+import dev.xdark.ssvm.mirror.SimpleMirrorFactory;
 import dev.xdark.ssvm.natives.IntrinsicsNatives;
 import dev.xdark.ssvm.nt.NativeLibraryManager;
 import dev.xdark.ssvm.nt.SimpleNativeLibraryManager;
@@ -87,6 +89,7 @@ public class VirtualMachine {
 	private final LinkResolver linkResolver;
 	private final InvokeDynamicLinker invokeDynamicLinker;
 	private final Reflection reflection;
+	private final MirrorFactory mirrorFactory;
 	private volatile InstanceValue systemThreadGroup;
 	private volatile InstanceValue mainThreadGroup;
 
@@ -96,6 +99,7 @@ public class VirtualMachine {
 		this.classLoaders = classLoaders;
 		memoryAllocator = createMemoryAllocator();
 		safePoint = createSafePoint();
+		mirrorFactory = createMirrorFactory();
 		memoryManager = createMemoryManager();
 		bootClassLoader = new BootClassLoaderHolder(this, createBootClassLoader(), classLoaders.setClassLoaderData(memoryManager.nullValue()));
 		vmInterface = new VMInterface();
@@ -511,6 +515,15 @@ public class VirtualMachine {
 	}
 
 	/**
+	 * Returns mirror factory.
+	 *
+	 * @return mirror factory.
+	 */
+	public MirrorFactory getMirrorFactory() {
+		return mirrorFactory;
+	}
+
+	/**
 	 * Returns system thread group.
 	 *
 	 * @return system thread group.
@@ -603,7 +616,7 @@ public class VirtualMachine {
 				Locals locals = getThreadStorage().newLocals(method);
 				locals.set(0, loader);
 				locals.set(1, helper.newUtf8(name.replace('/', '.')));
-				locals.set(2, initialize ? IntValue.ONE : IntValue.ZERO);
+				locals.setInt(2, initialize ? 1 : 0);
 				jc = ((JavaValue<JavaClass>) helper.invoke(method, locals).getResult()).getValue();
 			} else if (initialize) {
 				jc.initialize();
@@ -742,6 +755,16 @@ public class VirtualMachine {
 		return new NoopSafePoint();
 	}
 
+	/**
+	 * Creates mirror factory.
+	 * One may override this method.
+	 *
+	 * @return mirror factory.
+	 */
+	protected MirrorFactory createMirrorFactory() {
+		return new SimpleMirrorFactory(this);
+	}
+
 	private void init() {
 		try {
 			ClassLoaders classLoaders = this.classLoaders;
@@ -785,7 +808,7 @@ public class VirtualMachine {
 		}
 		ClassReader cr = result.getClassReader();
 		ClassNode node = result.getNode();
-		InstanceJavaClass jc = classLoaders.constructClass(memoryManager.nullValue(), cr, node);
+		InstanceJavaClass jc = mirrorFactory.newInstanceClass(memoryManager.nullValue(), cr, node);
 		bootClassLoader.forceLink(jc);
 		return jc;
 	}

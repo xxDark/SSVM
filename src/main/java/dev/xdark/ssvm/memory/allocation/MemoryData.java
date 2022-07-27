@@ -177,6 +177,76 @@ public interface MemoryData {
 	void write(long dstOffset, byte[] array, int arrayOffset, int length);
 
 	/**
+	 * Write array of longs at the specific offset.
+	 *
+	 * @param dstOffset   Data offset.
+	 * @param array       Array to write.
+	 * @param arrayOffset Array offset.
+	 * @param length      Array length.
+	 */
+	void write(long dstOffset, long[] array, int arrayOffset, int length);
+
+	/**
+	 * Write array of doubles at the specific offset.
+	 *
+	 * @param dstOffset   Data offset.
+	 * @param array       Array to write.
+	 * @param arrayOffset Array offset.
+	 * @param length      Array length.
+	 */
+	void write(long dstOffset, double[] array, int arrayOffset, int length);
+
+	/**
+	 * Write array of ints at the specific offset.
+	 *
+	 * @param dstOffset   Data offset.
+	 * @param array       Array to write.
+	 * @param arrayOffset Array offset.
+	 * @param length      Array length.
+	 */
+	void write(long dstOffset, int[] array, int arrayOffset, int length);
+
+	/**
+	 * Write array of floats at the specific offset.
+	 *
+	 * @param dstOffset   Data offset.
+	 * @param array       Array to write.
+	 * @param arrayOffset Array offset.
+	 * @param length      Array length.
+	 */
+	void write(long dstOffset, float[] array, int arrayOffset, int length);
+
+	/**
+	 * Write array of chars at the specific offset.
+	 *
+	 * @param dstOffset   Data offset.
+	 * @param array       Array to write.
+	 * @param arrayOffset Array offset.
+	 * @param length      Array length.
+	 */
+	void write(long dstOffset, char[] array, int arrayOffset, int length);
+
+	/**
+	 * Write array of shorts at the specific offset.
+	 *
+	 * @param dstOffset   Data offset.
+	 * @param array       Array to write.
+	 * @param arrayOffset Array offset.
+	 * @param length      Array length.
+	 */
+	void write(long dstOffset, short[] array, int arrayOffset, int length);
+
+	/**
+	 * Write array of booleans at the specific offset.
+	 *
+	 * @param dstOffset   Data offset.
+	 * @param array       Array to write.
+	 * @param arrayOffset Array offset.
+	 * @param length      Array length.
+	 */
+	void write(long dstOffset, boolean[] array, int arrayOffset, int length);
+
+	/**
 	 * @return size of this memory data.
 	 */
 	long length();

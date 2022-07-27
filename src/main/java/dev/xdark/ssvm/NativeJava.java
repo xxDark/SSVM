@@ -3,6 +3,14 @@ package dev.xdark.ssvm;
 //<editor-fold desc="Imports">
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.rewrite.BooleanArrayProcessor;
+import dev.xdark.ssvm.execution.rewrite.GetStaticByteProcessor;
+import dev.xdark.ssvm.execution.rewrite.GetStaticCharProcessor;
+import dev.xdark.ssvm.execution.rewrite.GetStaticDoubleProcessor;
+import dev.xdark.ssvm.execution.rewrite.GetStaticFloatProcessor;
+import dev.xdark.ssvm.execution.rewrite.GetStaticIntProcessor;
+import dev.xdark.ssvm.execution.rewrite.GetStaticLongProcessor;
+import dev.xdark.ssvm.execution.rewrite.GetStaticReferenceProcessor;
+import dev.xdark.ssvm.execution.rewrite.GetStaticShortProcessor;
 import dev.xdark.ssvm.execution.rewrite.ReferenceArrayProcessor;
 import dev.xdark.ssvm.execution.rewrite.ByteArrayProcessor;
 import dev.xdark.ssvm.execution.rewrite.CharArrayProcessor;
@@ -36,6 +44,15 @@ import static dev.xdark.ssvm.asm.VMOpcodes.VM_CHECKCAST;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_DOUBLE_NEW_ARRAY;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_DYNAMIC_CALL;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_FLOAT_NEW_ARRAY;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_GETSTATIC_BOOLEAN;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_GETSTATIC_BYTE;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_GETSTATIC_CHAR;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_GETSTATIC_DOUBLE;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_GETSTATIC_FLOAT;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_GETSTATIC_INT;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_GETSTATIC_LONG;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_GETSTATIC_REFERENCE;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_GETSTATIC_SHORT;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_INT_NEW_ARRAY;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_INVOKEINTERFACE;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_INVOKESPECIAL;
@@ -425,6 +442,15 @@ public final class NativeJava {
 		vmi.setProcessor(VM_INVOKEVIRTUAL, new VMVirtualCallProcessor());
 		vmi.setProcessor(VM_INVOKEINTERFACE, new VMInterfaceCallProcessor());
 		vmi.setProcessor(VM_CHECKCAST, new VMCastProcessor());
+		vmi.setProcessor(VM_GETSTATIC_BOOLEAN, new GetStaticByteProcessor());
+		vmi.setProcessor(VM_GETSTATIC_CHAR, new GetStaticCharProcessor());
+		vmi.setProcessor(VM_GETSTATIC_BYTE, new GetStaticByteProcessor());
+		vmi.setProcessor(VM_GETSTATIC_SHORT, new GetStaticShortProcessor());
+		vmi.setProcessor(VM_GETSTATIC_INT, new GetStaticIntProcessor());
+		vmi.setProcessor(VM_GETSTATIC_FLOAT, new GetStaticFloatProcessor());
+		vmi.setProcessor(VM_GETSTATIC_LONG, new GetStaticLongProcessor());
+		vmi.setProcessor(VM_GETSTATIC_DOUBLE, new GetStaticDoubleProcessor());
+		vmi.setProcessor(VM_GETSTATIC_REFERENCE, new GetStaticReferenceProcessor());
 		//</editor-fold>
 	}
 }

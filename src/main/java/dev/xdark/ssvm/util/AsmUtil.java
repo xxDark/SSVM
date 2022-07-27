@@ -67,6 +67,14 @@ public class AsmUtil {
 	}
 
 	/**
+	 * @param insnNode Instruction to check.
+	 * @return {@code true} if instruction is valid.
+	 */
+	public boolean isValid(AbstractInsnNode insnNode) {
+		return getIndex(insnNode) != -1;
+	}
+
+	/**
 	 * Returns opcode name.
 	 *
 	 * @param opcode Opcode to get name from.

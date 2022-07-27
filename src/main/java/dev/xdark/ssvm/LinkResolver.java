@@ -12,6 +12,8 @@ import dev.xdark.ssvm.value.ObjectValue;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.objectweb.asm.Opcodes.*;
 
@@ -111,12 +113,17 @@ public final class LinkResolver {
 	}
 
 	public JavaField resolveStaticField(InstanceJavaClass klass, String name, String desc) {
+		InstanceJavaClass current = klass;
 		while (klass != null) {
 			JavaField field = klass.getStaticField(name, desc);
 			if (field != null) {
 				return field;
 			}
 			klass = klass.getSuperClass();
+		}
+		JavaField field = slowResolveStaticField(name, desc, current);
+		if (field != null) {
+			return field;
 		}
 		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
 		return null;
@@ -197,6 +204,19 @@ public final class LinkResolver {
 				return method;
 			}
 			jc = jc.getSuperclassWithoutResolving();
+		}
+		return null;
+	}
+
+	private static JavaField slowResolveStaticField(String name, String desc, InstanceJavaClass current) {
+		Deque<InstanceJavaClass> deque = new ArrayDeque<>();
+		deque.push(current);
+		while ((current = deque.poll()) != null) {
+			JavaField field = current.getStaticField(name, desc);
+			if (field != null) {
+				return field;
+			}
+			deque.addAll(Arrays.asList(current.getInterfaces()));
 		}
 		return null;
 	}

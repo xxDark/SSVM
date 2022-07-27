@@ -1,7 +1,6 @@
 package dev.xdark.ssvm.asm;
 
 import dev.xdark.ssvm.mirror.JavaField;
-import dev.xdark.ssvm.mirror.JavaMethod;
 import org.objectweb.asm.tree.FieldInsnNode;
 
 /**
@@ -11,27 +10,22 @@ import org.objectweb.asm.tree.FieldInsnNode;
  */
 public final class VMFieldInsnNode extends DelegatingInsnNode<FieldInsnNode> {
 
-	private JavaField resolved;
+	private final JavaField resolved;
 
 	/**
 	 * @param delegate      Backing instruction.
 	 * @param virtualOpcode VM specific opcode.
+	 * @param resolved      Resolved field.
 	 */
-	public VMFieldInsnNode(FieldInsnNode delegate, int virtualOpcode) {
+	public VMFieldInsnNode(FieldInsnNode delegate, int virtualOpcode, JavaField resolved) {
 		super(delegate, virtualOpcode);
+		this.resolved = resolved;
 	}
 
 	/**
-	 * @return resolved field.
+	 * @return Resolved field.
 	 */
 	public JavaField getResolved() {
 		return resolved;
-	}
-
-	/**
-	 * @param resolved New resolved field.
-	 */
-	public void setResolved(JavaField resolved) {
-		this.resolved = resolved;
 	}
 }

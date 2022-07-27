@@ -1,10 +1,8 @@
 package dev.xdark.ssvm.execution;
 
-import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.InstructionInterceptor;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.value.InstanceValue;
@@ -13,7 +11,6 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.TryCatchBlockNode;
 
 import java.util.List;
 
@@ -47,7 +44,7 @@ public class Interpreter {
 				if (updateLineNumbers && insn instanceof LineNumberNode) {
 					ctx.setLineNumber(((LineNumberNode) insn).line);
 				}
-				for (int i = 0; i < interceptors.size(); i++) {
+				for (int i = 0, j = interceptors.size(); i < j; i++) {
 					if (interceptors.get(i).intercept(ctx, insn) == Result.ABORT) {
 						break exec;
 					}
@@ -61,42 +58,40 @@ public class Interpreter {
 					break;
 				}
 			} catch (VMException ex) {
-				handleExceptionCaught(ctx, mn, ex);
+				handleExceptionCaught(ctx, ex);
 			}
 		}
 	}
 
-	private static void handleExceptionCaught(ExecutionContext ctx, MethodNode mn, VMException ex) {
+	private static void handleExceptionCaught(ExecutionContext ctx, VMException ex) {
 		ctx.unwind();
 		InstanceValue oop = ex.getOop();
 		InstanceJavaClass exceptionType = oop.getJavaClass();
-		List<TryCatchBlockNode> tryCatchBlocks = mn.tryCatchBlocks;
+		List<VMTryCatchBlock> tryCatchBlocks = ctx.getMethod().getTryCatchBlocks();
 		int index = ctx.getInsnPosition() - 1;
-		VirtualMachine vm = ctx.getVM();
 		boolean shouldRepeat;
 		search:
 		do {
 			shouldRepeat = false;
 			for (int i = 0, j = tryCatchBlocks.size(); i < j; i++) {
-				TryCatchBlockNode block = tryCatchBlocks.get(i);
-				if (index < AsmUtil.getIndex(block.start) || index > AsmUtil.getIndex(block.end)) {
+				VMTryCatchBlock block = tryCatchBlocks.get(i);
+				if (index < AsmUtil.getIndex(block.getStart()) || index > AsmUtil.getIndex(block.getEnd())) {
 					continue;
 				}
-				String type = block.type;
-				boolean handle = type == null;
+				InstanceJavaClass candidate = block.getType();
+				boolean handle = candidate == null;
 				if (!handle) {
 					try {
-						JavaClass candidate = vm.findClass(ctx.getOwner().getClassLoader(), type, false);
 						handle = candidate.isAssignableFrom(exceptionType);
 					} catch (VMException hex) {
-						index = AsmUtil.getIndex(block.handler);
+						index = AsmUtil.getIndex(block.getHandler());
 						shouldRepeat = true;
 						continue search;
 					}
 				}
 				if (handle) {
 					ctx.getStack().push(oop);
-					ctx.setInsnPosition(AsmUtil.getIndex(block.handler));
+					ctx.setInsnPosition(AsmUtil.getIndex(block.getHandler()));
 					ctx.pollSafePointAndSuspend();
 					return;
 				}

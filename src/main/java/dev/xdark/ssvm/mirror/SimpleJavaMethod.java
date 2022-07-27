@@ -1,12 +1,18 @@
 package dev.xdark.ssvm.mirror;
 
+import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.execution.VMTryCatchBlock;
 import dev.xdark.ssvm.util.AsmUtil;
+import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TryCatchBlockNode;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Method info.
@@ -28,6 +34,7 @@ public final class SimpleJavaMethod implements JavaMethod {
 	private int invocationCount;
 	private Boolean callerSensitive;
 	private Boolean isConstructor;
+	private List<VMTryCatchBlock> tryCatchBlocks;
 
 	/**
 	 * @param owner Method owner.
@@ -161,6 +168,15 @@ public final class SimpleJavaMethod implements JavaMethod {
 	}
 
 	@Override
+	public List<VMTryCatchBlock> getTryCatchBlocks() {
+		List<VMTryCatchBlock> tryCatchBlocks = this.tryCatchBlocks;
+		if (tryCatchBlocks == null) {
+			tryCatchBlocks = resolveTryCatchBlocks();
+		}
+		return tryCatchBlocks;
+	}
+
+	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
 			return true;
@@ -183,5 +199,22 @@ public final class SimpleJavaMethod implements JavaMethod {
 	public String toString() {
 		MethodNode node = this.node;
 		return owner.getInternalName() + '.' + node.name + desc;
+	}
+
+	private List<VMTryCatchBlock> resolveTryCatchBlocks() {
+		List<VMTryCatchBlock> tryCatchBlocks;
+		List<TryCatchBlockNode> blocks = node.tryCatchBlocks;
+		if (blocks == null) {
+			tryCatchBlocks = Collections.emptyList();
+		} else {
+			InstanceJavaClass owner = this.owner;
+			ObjectValue loader = owner.getClassLoader();
+			VirtualMachine vm = owner.getVM();
+			tryCatchBlocks = blocks.stream()
+				.map(x -> new VMTryCatchBlock(x.start, x.end, x.handler, x.type, vm, loader))
+				.collect(Collectors.toList());
+		}
+		this.tryCatchBlocks = tryCatchBlocks;
+		return tryCatchBlocks;
 	}
 }

@@ -1,7 +1,10 @@
 package dev.xdark.ssvm.mirror;
 
+import dev.xdark.ssvm.execution.VMTryCatchBlock;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodNode;
+
+import java.util.List;
 
 /**
  * Java method.
@@ -132,4 +135,9 @@ public interface JavaMethod {
 	 * {@code false} otherwise.
 	 */
 	boolean isConstructor();
+
+	/**
+	 * @return a list of try/catch blocks.
+	 */
+	List<VMTryCatchBlock> getTryCatchBlocks();
 }

@@ -176,7 +176,7 @@ final class BufferMemoryData implements MemoryData {
 	public void write(long dstOffset, long[] array, int arrayOffset, int length) {
 		ByteBuffer buffer = this.buffer;
 		checkIndex(dstOffset, length * 8);
-		if (buffer.hasArray() && isNativeOrder(buffer)) {
+		if (fastWrite(buffer)) {
 			byte[] data = buffer.array();
 			UNSAFE.copyMemory(array, Unsafe.ARRAY_LONG_BASE_OFFSET + arrayOffset * 8L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset + buffer.arrayOffset(), length * 8L);
 		} else {
@@ -191,7 +191,7 @@ final class BufferMemoryData implements MemoryData {
 	public void write(long dstOffset, double[] array, int arrayOffset, int length) {
 		ByteBuffer buffer = this.buffer;
 		checkIndex(dstOffset, length * 8);
-		if (buffer.hasArray() && isNativeOrder(buffer)) {
+		if (fastWrite(buffer)) {
 			byte[] data = buffer.array();
 			UNSAFE.copyMemory(array, Unsafe.ARRAY_DOUBLE_BASE_OFFSET + arrayOffset * 8L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset + buffer.arrayOffset(), length * 8L);
 		} else {
@@ -206,7 +206,7 @@ final class BufferMemoryData implements MemoryData {
 	public void write(long dstOffset, int[] array, int arrayOffset, int length) {
 		ByteBuffer buffer = this.buffer;
 		checkIndex(dstOffset, length * 4);
-		if (buffer.hasArray() && isNativeOrder(buffer)) {
+		if (fastWrite(buffer)) {
 			byte[] data = buffer.array();
 			UNSAFE.copyMemory(array, Unsafe.ARRAY_INT_BASE_OFFSET + arrayOffset * 4L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset + buffer.arrayOffset(), length * 4L);
 		} else {
@@ -221,7 +221,7 @@ final class BufferMemoryData implements MemoryData {
 	public void write(long dstOffset, float[] array, int arrayOffset, int length) {
 		ByteBuffer buffer = this.buffer;
 		checkIndex(dstOffset, length * 4);
-		if (buffer.hasArray() && isNativeOrder(buffer)) {
+		if (fastWrite(buffer)) {
 			byte[] data = buffer.array();
 			UNSAFE.copyMemory(array, Unsafe.ARRAY_FLOAT_BASE_OFFSET + arrayOffset * 4L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset + buffer.arrayOffset(), length * 4L);
 		} else {
@@ -236,7 +236,7 @@ final class BufferMemoryData implements MemoryData {
 	public void write(long dstOffset, char[] array, int arrayOffset, int length) {
 		ByteBuffer buffer = this.buffer;
 		checkIndex(dstOffset, length * 2);
-		if (buffer.hasArray() && isNativeOrder(buffer)) {
+		if (fastWrite(buffer)) {
 			byte[] data = buffer.array();
 			UNSAFE.copyMemory(array, Unsafe.ARRAY_CHAR_BASE_OFFSET + arrayOffset * 2L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset + buffer.arrayOffset(), length * 2L);
 		} else {
@@ -251,7 +251,7 @@ final class BufferMemoryData implements MemoryData {
 	public void write(long dstOffset, short[] array, int arrayOffset, int length) {
 		ByteBuffer buffer = this.buffer;
 		checkIndex(dstOffset, length * 2);
-		if (buffer.hasArray() && isNativeOrder(buffer)) {
+		if (fastWrite(buffer)) {
 			byte[] data = buffer.array();
 			UNSAFE.copyMemory(array, Unsafe.ARRAY_SHORT_BASE_OFFSET + arrayOffset * 2L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset + buffer.arrayOffset(), length * 2L);
 		} else {
@@ -266,7 +266,7 @@ final class BufferMemoryData implements MemoryData {
 	public void write(long dstOffset, boolean[] array, int arrayOffset, int length) {
 		ByteBuffer buffer = this.buffer;
 		checkIndex(dstOffset, length);
-		if (buffer.hasArray() && isNativeOrder(buffer)) {
+		if (fastWrite(buffer)) {
 			byte[] data = buffer.array();
 			UNSAFE.copyMemory(array, Unsafe.ARRAY_BOOLEAN_BASE_OFFSET + arrayOffset, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset + buffer.arrayOffset(), length);
 		} else {
@@ -331,6 +331,10 @@ final class BufferMemoryData implements MemoryData {
 			throw new PanicException("Segfault");
 		}
 		return (int) offset;
+	}
+
+	private static boolean fastWrite(ByteBuffer buffer) {
+		return buffer.hasArray() && isNativeOrder(buffer);
 	}
 
 	private static boolean isNativeOrder(ByteBuffer buffer) {

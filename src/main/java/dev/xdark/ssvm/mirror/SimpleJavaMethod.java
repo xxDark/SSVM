@@ -53,6 +53,11 @@ public final class SimpleJavaMethod implements JavaMethod {
 	}
 
 	@Override
+	public String getDesc() {
+		return desc;
+	}
+
+	@Override
 	public int getSlot() {
 		return slot;
 	}

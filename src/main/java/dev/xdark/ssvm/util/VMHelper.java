@@ -1435,11 +1435,11 @@ public final class VMHelper {
 	 */
 	public long getFileStreamHandle(InstanceValue fs) {
 		VirtualMachine vm = this.vm;
-		JavaMethod getFD = vm.getPublicLinkResolver().resolveVirtualMethod(fs, "getFD", "()Ljava/io/FileDescriptor;");
+		JavaMethod getFD = vm.getTrustedLinkResolver().resolveVirtualMethod(fs, "getFD", "()Ljava/io/FileDescriptor;");
 		Locals locals = vm.getThreadStorage().newLocals(getFD);
 		locals.set(0, fs);
 		ObjectValue fd = (ObjectValue) invoke(getFD, locals).getResult();
-		return vm.getPublicOperations().getLong(fd, vm.getSymbols().java_io_FileDescriptor(), "handle");
+		return vm.getTrustedOperations().getLong(fd, vm.getSymbols().java_io_FileDescriptor(), "handle");
 	}
 
 	/**

@@ -54,7 +54,7 @@ public class GenericFileSystemNatives {
 		}
 		if (lateinit) {
 			vmi.setInvoker(fd, "initIDs", "()V", ctx -> {
-				VMOperations ops = vm.getPublicOperations();
+				VMOperations ops = vm.getTrustedOperations();
 				InstanceValue in = (InstanceValue) ops.getReference(fd, "in", "Ljava/io/FileDescriptor;");
 				ops.putLong(in, fd, "handle", mapVMStream(vm, 0));
 				InstanceValue out = (InstanceValue) ops.getReference(fd, "out", "Ljava/io/FileDescriptor;");
@@ -72,7 +72,7 @@ public class GenericFileSystemNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fd, "close0", "()V", ctx -> {
-			long handle = vm.getPublicOperations().getLong(ctx.getLocals().loadReference(0), fd, "handle");
+			long handle = vm.getTrustedOperations().getLong(ctx.getLocals().loadReference(0), fd, "handle");
 			try {
 				vm.getFileDescriptorManager().close(handle);
 			} catch (IOException ex) {
@@ -125,7 +125,7 @@ public class GenericFileSystemNatives {
 			boolean append = locals.loadInt(2) != 0;
 			try {
 				long handle = vm.getFileDescriptorManager().open(path, append ? FileDescriptorManager.APPEND : FileDescriptorManager.WRITE);
-				VMOperations ops = vm.getPublicOperations();
+				VMOperations ops = vm.getTrustedOperations();
 				ObjectValue _fd = ops.getReference(_this, fos, "fd", "Ljava/io/FileDescriptor;");
 				ops.putLong(_fd, fd, "handle", handle);
 			} catch (FileNotFoundException ex) {
@@ -218,7 +218,7 @@ public class GenericFileSystemNatives {
 			String path = helper.readUtf8(locals.loadReference(1));
 			try {
 				long handle = vm.getFileDescriptorManager().open(path, FileDescriptorManager.READ);
-				VMOperations ops = vm.getPublicOperations();
+				VMOperations ops = vm.getTrustedOperations();
 				ObjectValue _fd = ops.getReference(_this, fos, "fd", "Ljava/io/FileDescriptor;");
 				ops.putLong(_fd, fd, "handle", handle);
 			} catch (FileNotFoundException ex) {

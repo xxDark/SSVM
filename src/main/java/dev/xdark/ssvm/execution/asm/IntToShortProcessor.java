@@ -18,8 +18,9 @@ public final class IntToShortProcessor implements InstructionProcessor<AbstractI
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
 		Value v = stack.peek();
-		short s = v.asShort();
-		if (v.asInt() != s) {
+		int i = v.asInt();
+		short s = (short) i;
+		if (i != s) {
 			stack.pop();
 			stack.pushInt(s);
 		}

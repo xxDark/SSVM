@@ -19,8 +19,9 @@ public final class IntToByteProcessor implements InstructionProcessor<AbstractIn
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
 		Value v = stack.peek();
-		byte b = v.asByte();
-		if (v.asInt() != b) {
+		int i = v.asInt();
+		byte b = (byte) i;
+		if (i != b) {
 			stack.pop();
 			stack.pushInt(b);
 		}

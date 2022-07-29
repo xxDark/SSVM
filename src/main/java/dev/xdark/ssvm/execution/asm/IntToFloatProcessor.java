@@ -17,7 +17,7 @@ public final class IntToFloatProcessor implements InstructionProcessor<AbstractI
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
-		stack.pushFloat((float) stack.popInt());
+		stack.pushFloat(stack.popInt());
 		return Result.CONTINUE;
 	}
 }

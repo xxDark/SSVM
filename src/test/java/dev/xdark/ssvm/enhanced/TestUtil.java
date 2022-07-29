@@ -56,6 +56,7 @@ public class TestUtil {
 		} catch(VMException ex) {
 			throw new IllegalStateException(helper.toJavaException(ex.getOop()));
 		}
+		res.initialize();
 		if (init != null) {
 			init.accept(res);
 		}

@@ -78,7 +78,7 @@ public class UnsafeNatives {
 			if (block == null) {
 				vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError());
 			}
-			ctx.setResult(LongValue.of(block.getAddress()));
+			ctx.setResult(block.getAddress());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, uhelper.reallocateMemory(), "(JJ)J", ctx -> {
@@ -89,7 +89,7 @@ public class UnsafeNatives {
 			if (block == null) {
 				vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError());
 			}
-			ctx.setResult(LongValue.of(block.getAddress()));
+			ctx.setResult(block.getAddress());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "freeMemory", "(J)V", ctx -> {
@@ -129,20 +129,20 @@ public class UnsafeNatives {
 			if (component == null) {
 				vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 			} else {
-				ctx.setResult(IntValue.of(vm.getMemoryManager().sizeOfType(component)));
+				ctx.setResult(vm.getMemoryManager().sizeOfType(component));
 			}
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, uhelper.addressSize(), "()I", ctx -> {
-			ctx.setResult(IntValue.of(vm.getMemoryAllocator().addressSize()));
+			ctx.setResult(vm.getMemoryAllocator().addressSize());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "isBigEndian0", "()Z", ctx -> {
-			ctx.setResult(vm.getMemoryAllocator().getByteOrder() == ByteOrder.BIG_ENDIAN ? IntValue.ONE : IntValue.ZERO);
+			ctx.setResult(vm.getMemoryAllocator().getByteOrder() == ByteOrder.BIG_ENDIAN ? 1 : 0);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "unalignedAccess0", "()Z", ctx -> {
-			ctx.setResult(IntValue.ZERO);
+			ctx.setResult(0);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "objectFieldOffset1", "(Ljava/lang/Class;Ljava/lang/String;)J", ctx -> {
@@ -150,14 +150,14 @@ public class UnsafeNatives {
 			JavaValue<JavaClass> klass = locals.loadReference(1);
 			JavaClass wrapper = klass.getValue();
 			if (!(wrapper instanceof InstanceJavaClass)) {
-				ctx.setResult(LongValue.M_ONE);
+				ctx.setResult(-1L);
 			} else {
 				String utf = vm.getHelper().readUtf8(locals.loadReference(2));
 				long offset = ((InstanceJavaClass) wrapper).getVirtualFieldOffsetRecursively(utf);
 				if (offset != -1L) {
 					offset += vm.getMemoryManager().valueBaseOffset(klass);
 				}
-				ctx.setResult(LongValue.of(offset));
+				ctx.setResult(offset);
 			}
 			return Result.ABORT;
 		});
@@ -179,7 +179,7 @@ public class UnsafeNatives {
 			if (result) {
 				data.writeInt(offset, x);
 			}
-			ctx.setResult(result ? IntValue.ONE : IntValue.ZERO);
+			ctx.setResult(result ? 1 : 0);
 			return Result.ABORT;
 		});
 		MethodInvoker getObjectVolatile = ctx -> {
@@ -210,7 +210,7 @@ public class UnsafeNatives {
 			if (result) {
 				memoryManager.writeValue(obj, offset, x);
 			}
-			ctx.setResult(result ? IntValue.ONE : IntValue.ZERO);
+			ctx.setResult(result ? 1 : 0);
 			return Result.ABORT;
 		};
 		vmi.setInvoker(unsafe, uhelper.compareAndSetReference(), "(Ljava/lang/Object;JLjava/lang/Object;Ljava/lang/Object;)Z", compareAndSetReference);
@@ -232,7 +232,7 @@ public class UnsafeNatives {
 			if (result) {
 				data.writeLong(offset, x);
 			}
-			ctx.setResult(result ? IntValue.ONE : IntValue.ZERO);
+			ctx.setResult(result ? 1 : 0);
 			return Result.ABORT;
 		});
 		MethodInvoker putObjectVolatile = ctx -> {
@@ -251,7 +251,7 @@ public class UnsafeNatives {
 			Locals locals = ctx.getLocals();
 			long offset = locals.loadLong(2);
 			MemoryData data = getData(vm.getMemoryAllocator(), locals.loadReference(1), offset);
-			ctx.setResult(IntValue.of(data.readIntVolatile(0)));
+			ctx.setResult(data.readIntVolatile(0));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, uhelper.ensureClassInitialized(), "(Ljava/lang/Class;)V", ctx -> {
@@ -281,9 +281,9 @@ public class UnsafeNatives {
 			JavaField fn = declaringClass.getFieldBySlot(slot);
 			if (fn != null) {
 				long offset = vm.getMemoryManager().valueBaseOffset(declaringClass) + fn.getOffset();
-				ctx.setResult(LongValue.of(offset));
+				ctx.setResult(offset);
 			} else {
-				ctx.setResult(LongValue.M_ONE);
+				ctx.setResult(-1L);
 			}
 			return Result.ABORT;
 		});
@@ -296,9 +296,9 @@ public class UnsafeNatives {
 			JavaField fn = declaringClass.getFieldBySlot(slot);
 			if (fn != null) {
 				long offset = vm.getMemoryManager().getStaticOffset(declaringClass) + fn.getOffset();
-				ctx.setResult(LongValue.of(offset));
+				ctx.setResult(offset);
 			} else {
-				ctx.setResult(LongValue.M_ONE);
+				ctx.setResult(-1L);
 			}
 			return Result.ABORT;
 		});
@@ -320,7 +320,7 @@ public class UnsafeNatives {
 			Locals locals = ctx.getLocals();
 			long address = locals.loadLong(1);
 			MemoryBlock block = nonNull(vm.getMemoryAllocator().findDirectBlock(address));
-			ctx.setResult(IntValue.of(block.getData().readByte(address - block.getAddress())));
+			ctx.setResult(block.getData().readByte(address - block.getAddress()));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "putInt", "(Ljava/lang/Object;JI)V", ctx -> {
@@ -368,13 +368,13 @@ public class UnsafeNatives {
 			Locals locals = ctx.getLocals();
 			long offset = locals.loadLong(2);
 			MemoryData data = getData(vm.getMemoryAllocator(), locals.loadReference(1), offset);
-			ctx.setResult(LongValue.of(data.readLongVolatile(0L)));
+			ctx.setResult(data.readLongVolatile(0L));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "getLong", "(J)J", ctx -> {
 			long address = ctx.getLocals().loadLong(1);
 			MemoryBlock block = nonNull(vm.getMemoryAllocator().findDirectBlock(address));
-			ctx.setResult(LongValue.of(block.getData().readLong(address - block.getAddress())));
+			ctx.setResult(block.getData().readLong(address - block.getAddress()));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "defineAnonymousClass", "(Ljava/lang/Class;[B[Ljava/lang/Object;)Ljava/lang/Class;", ctx -> {
@@ -468,7 +468,7 @@ public class UnsafeNatives {
 			Locals locals = ctx.getLocals();
 			long offset = locals.loadLong(2);
 			MemoryData data = getData(vm.getMemoryAllocator(), locals.loadReference(1), offset);
-			ctx.setResult(LongValue.of(data.readLong(0L)));
+			ctx.setResult(data.readLong(0L));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, "getByte", "(Ljava/lang/Object;J)B", ctx -> {

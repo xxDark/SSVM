@@ -3,6 +3,7 @@ package dev.xdark.ssvm.thread;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.InstanceValue;
 
 /**
@@ -36,19 +37,20 @@ public class DetachedVMThread extends BaseVMThread {
 		InstanceValue oop = this.oop;
 		if (oop == null) {
 			VirtualMachine vm = this.vm;
+			VMOperations ops = vm.getPublicOperations();
 			InstanceJavaClass klass = vm.getSymbols().java_lang_Thread();
 			klass.initialize();
 			MemoryManager memoryManager = vm.getMemoryManager();
 			oop = memoryManager.newInstance(klass);
-			oop.setInt("threadStatus", ThreadState.JVMTI_THREAD_STATE_ALIVE | ThreadState.JVMTI_THREAD_STATE_RUNNABLE);
-			oop.setInt("priority", Thread.NORM_PRIORITY);
+			ops.putInt(oop, "threadStatus", ThreadState.JVMTI_THREAD_STATE_ALIVE | ThreadState.JVMTI_THREAD_STATE_RUNNABLE);
+			ops.putInt(oop, "priority", Thread.NORM_PRIORITY);
 			// Though we set the group, detached threads
 			// wont be visible in a thread list.
 			InstanceValue mainThreadGroup = vm.getMainThreadGroup();
 			if (mainThreadGroup != null) {
 				// Might be null if VM is still in boot state,
 				// will be set later.
-				oop.setValue("group", "Ljava/lang/ThreadGroup;", mainThreadGroup);
+				ops.putReference(oop, "group", "Ljava/lang/ThreadGroup;", mainThreadGroup);
 			}
 			oop.initialize();
 			return this.oop = oop;

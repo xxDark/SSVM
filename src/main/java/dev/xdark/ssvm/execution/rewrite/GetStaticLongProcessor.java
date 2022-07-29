@@ -20,7 +20,7 @@ public final class GetStaticLongProcessor implements InstructionProcessor<VMFiel
 		JavaField field = insn.getResolved();
 		InstanceJavaClass klass = field.getOwner();
 		MemoryManager memory = ctx.getMemoryManager();
-		long value = memory.readLong(klass.getOop(), memory.getStaticOffset(klass) + field.getOffset());
+		long value = klass.getOop().getData().readLong(memory.getStaticOffset(klass) + field.getOffset());
 		ctx.getStack().pushLong(value);
 		return Result.CONTINUE;
 	}

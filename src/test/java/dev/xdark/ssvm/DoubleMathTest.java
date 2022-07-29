@@ -66,7 +66,7 @@ public class DoubleMathTest {
 		mv.visitInsn(DRETURN);
 		mv.visitMaxs(4, 0);
 		InstanceJavaClass jc = TestUtil.createClass(vm, node);
-		ExecutionContext result = vm.getHelper().invoke(vm.getLinkResolver().resolveStaticMethod(jc, "test", "()D"), vm.getThreadStorage().newLocals(0));
+		ExecutionContext result = vm.getHelper().invoke(vm.getPublicLinkResolver().resolveStaticMethod(jc, "test", "()D"), vm.getThreadStorage().newLocals(0));
 		return result.getResult().asDouble();
 	}
 

@@ -3,7 +3,11 @@ package dev.xdark.ssvm.util;
 import lombok.experimental.UtilityClass;
 import sun.misc.Unsafe;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 /**
  * Unsafe utilities.
@@ -16,6 +20,7 @@ public class UnsafeUtil {
 	private final Unsafe UNSAFE;
 	public final int ARRAY_BYTE_BASE_OFFSET;
 	private final long STRING_CHARS_OFFSET;
+	private final MethodHandle NEW_STRING_FROM_CHARS;
 
 	/**
 	 * @return unsafe instance.
@@ -29,7 +34,7 @@ public class UnsafeUtil {
 	 * can be used to get string characters directly.
 	 */
 	public boolean stringValueFieldAccessible() {
-		return STRING_CHARS_OFFSET != -1;
+		return STRING_CHARS_OFFSET != -1L;
 	}
 
 	/**
@@ -38,7 +43,22 @@ public class UnsafeUtil {
 	 */
 	public char[] getChars(String str) {
 		long offset = STRING_CHARS_OFFSET;
-		return offset == -1 ? str.toCharArray() : (char[]) UNSAFE.getObject(str, offset);
+		return offset == -1L ? str.toCharArray() : (char[]) UNSAFE.getObject(str, offset);
+	}
+
+	/**
+	 * @param chars Character array to create string from.
+	 * @return new string.
+	 */
+	public String newString(char[] chars) {
+		if (NEW_STRING_FROM_CHARS != null) {
+			try {
+				return (String) NEW_STRING_FROM_CHARS.invokeExact(chars);
+			} catch (Throwable ex) {
+				throw new RuntimeException(ex);
+			}
+		}
+		return new String(chars);
 	}
 
 	static {
@@ -64,6 +84,18 @@ public class UnsafeUtil {
 			} catch (NoSuchFieldException ignored) {
 			}
 			STRING_CHARS_OFFSET = charsOffset;
+			MethodHandle newString;
+			try {
+				Class<?> sharedSecrets = Class.forName("sun.misc.SharedSecrets");
+				Method m = sharedSecrets.getMethod("getJavaLangAccess");
+				Object jla = m.invoke(null);
+				m = jla.getClass().getDeclaredMethod("newStringUnsafe", char[].class);
+				m.setAccessible(true);
+				newString = MethodHandles.lookup().unreflect(m).bindTo(jla);
+			} catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException e) {
+				newString = null;
+			}
+			NEW_STRING_FROM_CHARS = newString;
 			UNSAFE = unsafe;
 		} catch (IllegalAccessException ex) {
 			throw new ExceptionInInitializerError(ex);

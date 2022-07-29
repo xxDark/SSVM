@@ -5,12 +5,11 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.SimpleInstanceJavaClass;
+import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.RequiredArgsConstructor;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.tree.ClassNode;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -38,13 +37,14 @@ public class SimpleClassLoaders implements ClassLoaders {
 			}
 			return bootClassLoaderData = createClassLoaderData();
 		} else {
+			VMOperations ops = vm.getTrustedOperations();
 			InstanceValue instance = (InstanceValue) classLoader;
-			if (!instance.getValue(NativeJava.CLASS_LOADER_OOP, "Ljava/lang/Object;").isNull()) {
+			if (!ops.getReference(instance, NativeJava.CLASS_LOADER_OOP, "Ljava/lang/Object;").isNull()) {
 				throw new IllegalStateException("Class loader data for " + classLoader + " is already set");
 			}
 			ClassLoaderData data = createClassLoaderData();
 			JavaValue<ClassLoaderData> oop = vm.getMemoryManager().newJavaInstance(vm.getSymbols().java_lang_Object(), data);
-			instance.setValue(NativeJava.CLASS_LOADER_OOP, "Ljava/lang/Object;", oop);
+			ops.putReference(instance, NativeJava.CLASS_LOADER_OOP, "Ljava/lang/Object;", oop);
 			classLoaders.add(instance);
 			return data;
 		}

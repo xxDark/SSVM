@@ -114,7 +114,7 @@ public class IntrinsicsNatives {
 		InstanceJavaClass jc = vm.getSymbols().java_lang_Object();
 		vmi.setInvoker(jc, "equals", "(Ljava/lang/Object;)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			ctx.setResult(locals.load(0) == locals.load(1) ? IntValue.ONE : IntValue.ZERO);
+			ctx.setResult(locals.loadReference(0) == locals.loadReference(1) ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
 	}
@@ -128,28 +128,29 @@ public class IntrinsicsNatives {
 			int offset = memoryManager.valueBaseOffset(jc);
 			long lengthOffset = offset + jc.getVirtualFieldOffset("value", "[C");
 			vmi.setInvoker(jc, "length", "()I", ctx -> {
-				ArrayValue chars = (ArrayValue) memoryManager.readValue(ctx.getLocals().<InstanceValue>load(0), lengthOffset);
+				ArrayValue chars = (ArrayValue) memoryManager.readValue(ctx.getLocals().loadReference(0), lengthOffset);
 				ctx.setResult(IntValue.of(chars.getLength()));
 				return Result.ABORT;
 			});
 			long hashOffset = offset + jc.getVirtualFieldOffset("hash", "I");
 			long valueOffset = offset + jc.getVirtualFieldOffset("value", "[C");
 			vmi.setInvoker(jc, "hashCode", "()I", ctx -> {
-				InstanceValue _this = ctx.getLocals().load(0);
-				int hc = memoryManager.readInt(_this, hashOffset);
+				InstanceValue _this = ctx.getLocals().loadReference(0);
+				MemoryData data = _this.getData();
+				int hc = data.readInt(hashOffset);
 				if (hc == 0) {
 					ArrayValue value = (ArrayValue) memoryManager.readValue(_this, valueOffset);
 					for (int i = 0, j = value.getLength(); i < j; i++) {
 						hc = 31 * hc + value.getChar(i);
 					}
-					memoryManager.writeInt(_this, hashOffset, hc);
+					data.writeInt(hashOffset, hc);
 				}
 				ctx.setResult(IntValue.of(hc));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(jc, "lastIndexOf", "(II)I", ctx -> {
 				Locals locals = ctx.getLocals();
-				InstanceValue _this = locals.load(0);
+				InstanceValue _this = locals.loadReference(0);
 				ArrayValue chars = (ArrayValue) memoryManager.readValue(_this, valueOffset);
 				int ch = locals.loadInt(1);
 				int fromIndex = locals.loadInt(2);
@@ -158,10 +159,10 @@ public class IntrinsicsNatives {
 			});
 			vmi.setInvoker(jc, "indexOf", "([CII[CIII)I", ctx -> {
 				Locals locals = ctx.getLocals();
-				ArrayValue source = locals.load(0);
+				ArrayValue source = locals.loadReference(0);
 				int sourceOffset = locals.loadInt(1);
 				int sourceCount = locals.loadInt(2);
-				ArrayValue target = locals.load(3);
+				ArrayValue target = locals.loadReference(3);
 				int targetOffset = locals.loadInt(4);
 				int targetCount = locals.loadInt(5);
 				int fromIndex = locals.loadInt(6);
@@ -170,7 +171,7 @@ public class IntrinsicsNatives {
 			});
 			vmi.setInvoker(jc, "indexOf", "(II)I", ctx -> {
 				Locals locals = ctx.getLocals();
-				InstanceValue _this = locals.load(0);
+				InstanceValue _this = locals.loadReference(0);
 				ArrayValue chars = (ArrayValue) memoryManager.readValue(_this, valueOffset);
 				int ch = locals.loadInt(1);
 				int fromIndex = locals.loadInt(2);
@@ -179,7 +180,7 @@ public class IntrinsicsNatives {
 			});
 			vmi.setInvoker(jc, "indexOf", "(I)I", ctx -> {
 				Locals locals = ctx.getLocals();
-				InstanceValue _this = locals.load(0);
+				InstanceValue _this = locals.loadReference(0);
 				ArrayValue chars = (ArrayValue) memoryManager.readValue(_this, valueOffset);
 				int ch = locals.loadInt(1);
 				ctx.setResult(IntValue.of(indexOf(chars, ch, 0)));
@@ -189,11 +190,11 @@ public class IntrinsicsNatives {
 				ret:
 				{
 					Locals locals = ctx.getLocals();
-					ObjectValue other = locals.<ObjectValue>load(1);
+					ObjectValue other = locals.loadReference(1);
 					if (other.isNull() || other.getJavaClass() != jc) {
 						ctx.setResult(IntValue.ZERO);
 					} else {
-						InstanceValue _this = locals.<InstanceValue>load(0);
+						InstanceValue _this = locals.loadReference(0);
 						ArrayValue chars = (ArrayValue) memoryManager.readValue(_this, valueOffset);
 						ArrayValue chars2 = (ArrayValue) memoryManager.readValue(other, valueOffset);
 						int len = chars.getLength();
@@ -215,8 +216,8 @@ public class IntrinsicsNatives {
 			vmi.setInvoker(jc, "startsWith", "(Ljava/lang/String;I)Z", ctx -> {
 				Locals locals = ctx.getLocals();
 				VMHelper helper = vm.getHelper();
-				ArrayValue prefix = (ArrayValue) memoryManager.readValue(helper.<InstanceValue>checkNotNull(locals.load(1)), valueOffset);
-				ArrayValue _this = (ArrayValue) memoryManager.readValue(locals.<InstanceValue>load(0), valueOffset);
+				ArrayValue prefix = (ArrayValue) memoryManager.readValue(helper.<InstanceValue>checkNotNull(locals.loadReference(1)), valueOffset);
+				ArrayValue _this = (ArrayValue) memoryManager.readValue(locals.<InstanceValue>loadReference(0), valueOffset);
 				int toOffset = locals.loadInt(2);
 				ctx.setResult(startsWith(_this, prefix, toOffset) ? IntValue.ONE : IntValue.ZERO);
 				return Result.ABORT;
@@ -226,7 +227,7 @@ public class IntrinsicsNatives {
 				Locals locals = ctx.getLocals();
 				char oldChar = (char) locals.loadInt(1);
 				char newChar = (char) locals.loadInt(2);
-				InstanceValue _this = locals.load(0);
+				InstanceValue _this = locals.loadReference(0);
 				if (oldChar == newChar) {
 					ctx.setResult(_this);
 				} else {
@@ -502,7 +503,7 @@ public class IntrinsicsNatives {
 		VMInterface vmi = vm.getInterface();
 		InstanceJavaClass jc = (InstanceJavaClass) vm.findBootstrapClass("java/util/Arrays");
 		vmi.setInvoker(jc, "hashCode", "([J)I", ctx -> {
-			ObjectValue arr = ctx.getLocals().load(0);
+			ObjectValue arr = ctx.getLocals().loadReference(0);
 			if (arr.isNull()) {
 				ctx.setResult(IntValue.ZERO);
 			} else {
@@ -516,7 +517,7 @@ public class IntrinsicsNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "hashCode", "([D)I", ctx -> {
-			ObjectValue arr = ctx.getLocals().load(0);
+			ObjectValue arr = ctx.getLocals().loadReference(0);
 			if (arr.isNull()) {
 				ctx.setResult(IntValue.ZERO);
 			} else {
@@ -530,7 +531,7 @@ public class IntrinsicsNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "hashCode", "([I)I", ctx -> {
-			ObjectValue arr = ctx.getLocals().load(0);
+			ObjectValue arr = ctx.getLocals().loadReference(0);
 			if (arr.isNull()) {
 				ctx.setResult(IntValue.ZERO);
 			} else {
@@ -544,7 +545,7 @@ public class IntrinsicsNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "hashCode", "([F)I", ctx -> {
-			ObjectValue arr = ctx.getLocals().load(0);
+			ObjectValue arr = ctx.getLocals().loadReference(0);
 			if (arr.isNull()) {
 				ctx.setResult(IntValue.ZERO);
 			} else {
@@ -558,7 +559,7 @@ public class IntrinsicsNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "hashCode", "([C)I", ctx -> {
-			ObjectValue arr = ctx.getLocals().load(0);
+			ObjectValue arr = ctx.getLocals().loadReference(0);
 			if (arr.isNull()) {
 				ctx.setResult(IntValue.ZERO);
 			} else {
@@ -572,7 +573,7 @@ public class IntrinsicsNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "hashCode", "([S)I", ctx -> {
-			ObjectValue arr = ctx.getLocals().load(0);
+			ObjectValue arr = ctx.getLocals().loadReference(0);
 			if (arr.isNull()) {
 				ctx.setResult(IntValue.ZERO);
 			} else {
@@ -586,7 +587,7 @@ public class IntrinsicsNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "hashCode", "([B)I", ctx -> {
-			ObjectValue arr = ctx.getLocals().load(0);
+			ObjectValue arr = ctx.getLocals().loadReference(0);
 			if (arr.isNull()) {
 				ctx.setResult(IntValue.ZERO);
 			} else {
@@ -600,7 +601,7 @@ public class IntrinsicsNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "hashCode", "([Z)I", ctx -> {
-			ObjectValue arr = ctx.getLocals().load(0);
+			ObjectValue arr = ctx.getLocals().loadReference(0);
 			if (arr.isNull()) {
 				ctx.setResult(IntValue.ZERO);
 			} else {
@@ -614,11 +615,11 @@ public class IntrinsicsNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "hashCode", "([Ljava/lang/Object;)I", ctx -> {
-			ObjectValue arr = ctx.getLocals().load(0);
+			ObjectValue arr = ctx.getLocals().loadReference(0);
 			if (arr.isNull()) {
 				ctx.setResult(IntValue.ZERO);
 			} else {
-				LinkResolver linkResolver = vm.getLinkResolver();
+				LinkResolver linkResolver = vm.getPublicLinkResolver();
 				ArrayValue array = (ArrayValue) arr;
 				VMHelper helper = ctx.getHelper();
 				int result = 1;
@@ -639,8 +640,8 @@ public class IntrinsicsNatives {
 		vmi.setInvoker(jc, "fill", "([JJ)V", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
-			ArrayValue arr = helper.checkNotNull(locals.<ObjectValue>load(0));
-			long v = locals.load(1).asLong();
+			ArrayValue arr = helper.checkNotNull(locals.loadReference(0));
+			long v = locals.loadLong(1);
 			for (int j = arr.getLength(); j != 0; ) {
 				arr.setLong(--j, v);
 			}
@@ -649,8 +650,8 @@ public class IntrinsicsNatives {
 		vmi.setInvoker(jc, "fill", "([DD)V", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
-			ArrayValue arr = helper.checkNotNull(locals.<ObjectValue>load(0));
-			double v = locals.load(1).asDouble();
+			ArrayValue arr = helper.checkNotNull(locals.loadReference(0));
+			double v = locals.loadDouble(1);
 			for (int j = arr.getLength(); j != 0; ) {
 				arr.setDouble(--j, v);
 			}
@@ -659,7 +660,7 @@ public class IntrinsicsNatives {
 		vmi.setInvoker(jc, "fill", "([II)V", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
-			ArrayValue arr = helper.checkNotNull(locals.<ObjectValue>load(0));
+			ArrayValue arr = helper.checkNotNull(locals.loadReference(0));
 			int v = locals.loadInt(1);
 			for (int j = arr.getLength(); j != 0; ) {
 				arr.setInt(--j, v);
@@ -669,7 +670,7 @@ public class IntrinsicsNatives {
 		vmi.setInvoker(jc, "fill", "([FF)V", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
-			ArrayValue arr = helper.checkNotNull(locals.<ObjectValue>load(0));
+			ArrayValue arr = helper.checkNotNull(locals.loadReference(0));
 			float v = locals.loadFloat(1);
 			for (int j = arr.getLength(); j != 0; ) {
 				arr.setFloat(--j, v);
@@ -679,7 +680,7 @@ public class IntrinsicsNatives {
 		vmi.setInvoker(jc, "fill", "([CC)V", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
-			ArrayValue arr = helper.checkNotNull(locals.<ObjectValue>load(0));
+			ArrayValue arr = helper.checkNotNull(locals.loadReference(0));
 			char v = (char) locals.loadInt(1);
 			for (int j = arr.getLength(); j != 0; ) {
 				arr.setChar(--j, v);
@@ -689,7 +690,7 @@ public class IntrinsicsNatives {
 		vmi.setInvoker(jc, "fill", "([SS)V", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
-			ArrayValue arr = helper.checkNotNull(locals.<ObjectValue>load(0));
+			ArrayValue arr = helper.checkNotNull(locals.loadReference(0));
 			short v = (short) locals.loadInt(1);
 			for (int j = arr.getLength(); j != 0; ) {
 				arr.setShort(--j, v);
@@ -699,7 +700,7 @@ public class IntrinsicsNatives {
 		vmi.setInvoker(jc, "fill", "([BB)V", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
-			ArrayValue arr = helper.checkNotNull(locals.<ObjectValue>load(0));
+			ArrayValue arr = helper.checkNotNull(locals.loadReference(0));
 			byte v = (byte) locals.loadInt(1);
 			for (int j = arr.getLength(); j != 0; ) {
 				arr.setByte(--j, v);
@@ -709,7 +710,7 @@ public class IntrinsicsNatives {
 		vmi.setInvoker(jc, "fill", "([ZZ)V", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
-			ArrayValue arr = helper.checkNotNull(locals.<ObjectValue>load(0));
+			ArrayValue arr = helper.checkNotNull(locals.loadReference(0));
 			boolean v = locals.loadInt(1) != 0;
 			for (int j = arr.getLength(); j != 0; ) {
 				arr.setBoolean(--j, v);
@@ -718,64 +719,64 @@ public class IntrinsicsNatives {
 		});
 		vmi.setInvoker(jc, "equals", "([J[J)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			Value $a = locals.load(0);
-			Value $a2 = locals.load(1);
+			Value $a = locals.loadReference(0);
+			Value $a2 = locals.loadReference(1);
 			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "equals", "([D[D)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			Value $a = locals.load(0);
-			Value $a2 = locals.load(1);
+			Value $a = locals.loadReference(0);
+			Value $a2 = locals.loadReference(1);
 			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "equals", "([I[I)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			Value $a = locals.load(0);
-			Value $a2 = locals.load(1);
+			Value $a = locals.loadReference(0);
+			Value $a2 = locals.loadReference(1);
 			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "equals", "([F[F)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			Value $a = locals.load(0);
-			Value $a2 = locals.load(1);
+			Value $a = locals.loadReference(0);
+			Value $a2 = locals.loadReference(1);
 			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "equals", "([C[C)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			Value $a = locals.load(0);
-			Value $a2 = locals.load(1);
+			Value $a = locals.loadReference(0);
+			Value $a2 = locals.loadReference(1);
 			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "equals", "([S[S)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			Value $a = locals.load(0);
-			Value $a2 = locals.load(1);
+			Value $a = locals.loadReference(0);
+			Value $a2 = locals.loadReference(1);
 			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "equals", "([B[B)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			Value $a = locals.load(0);
-			Value $a2 = locals.load(1);
+			Value $a = locals.loadReference(0);
+			Value $a2 = locals.loadReference(1);
 			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "equals", "([Z[Z)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			Value $a = locals.load(0);
-			Value $a2 = locals.load(1);
+			Value $a = locals.loadReference(0);
+			Value $a2 = locals.loadReference(1);
 			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "equals", "([Ljava/lang/Object;[Ljava/lang/Object;)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			Value $a = locals.load(0);
-			Value $a2 = locals.load(1);
+			Value $a = locals.loadReference(0);
+			Value $a2 = locals.loadReference(1);
 			ctx.setResult(instanceArraysEqual(vm, $a, $a2));
 			return Result.ABORT;
 		});
@@ -836,7 +837,7 @@ public class IntrinsicsNatives {
 			return IntValue.ZERO;
 		}
 		VMHelper helper = vm.getHelper();
-		LinkResolver linkResolver = vm.getLinkResolver();
+		LinkResolver linkResolver = vm.getPublicLinkResolver();
 		ThreadStorage ts = vm.getThreadStorage();
 		while (length-- != 0) {
 			ObjectValue v1 = a.getValue(length);

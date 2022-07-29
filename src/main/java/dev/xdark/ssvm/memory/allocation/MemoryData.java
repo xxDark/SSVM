@@ -247,6 +247,86 @@ public interface MemoryData {
 	void write(long dstOffset, boolean[] array, int arrayOffset, int length);
 
 	/**
+	 * Copies data to the array.
+	 *
+	 * @param srcOffset   Data offset.
+	 * @param array       Array to read to.
+	 * @param arrayOffset Array offset.
+	 * @param length      Data length.
+	 */
+	void read(long srcOffset, byte[] array, int arrayOffset, int length);
+
+	/**
+	 * Copies data to the array.
+	 *
+	 * @param srcOffset   Data offset.
+	 * @param array       Array to read to.
+	 * @param arrayOffset Array offset.
+	 * @param length      Data length.
+	 */
+	void read(long srcOffset, long[] array, int arrayOffset, int length);
+
+	/**
+	 * Copies data to the array.
+	 *
+	 * @param srcOffset   Data offset.
+	 * @param array       Array to read to.
+	 * @param arrayOffset Array offset.
+	 * @param length      Data length.
+	 */
+	void read(long srcOffset, double[] array, int arrayOffset, int length);
+
+	/**
+	 * Copies data to the array.
+	 *
+	 * @param srcOffset   Data offset.
+	 * @param array       Array to read to.
+	 * @param arrayOffset Array offset.
+	 * @param length      Data length.
+	 */
+	void read(long srcOffset, int[] array, int arrayOffset, int length);
+
+	/**
+	 * Copies data to the array.
+	 *
+	 * @param srcOffset   Data offset.
+	 * @param array       Array to read to.
+	 * @param arrayOffset Array offset.
+	 * @param length      Data length.
+	 */
+	void read(long srcOffset, float[] array, int arrayOffset, int length);
+
+	/**
+	 * Copies data to the array.
+	 *
+	 * @param srcOffset   Data offset.
+	 * @param array       Array to read to.
+	 * @param arrayOffset Array offset.
+	 * @param length      Data length.
+	 */
+	void read(long srcOffset, char[] array, int arrayOffset, int length);
+
+	/**
+	 * Copies data to the array.
+	 *
+	 * @param srcOffset   Data offset.
+	 * @param array       Array to read to.
+	 * @param arrayOffset Array offset.
+	 * @param length      Data length.
+	 */
+	void read(long srcOffset, short[] array, int arrayOffset, int length);
+
+	/**
+	 * Copies data to the array.
+	 *
+	 * @param srcOffset   Data offset.
+	 * @param array       Array to read to.
+	 * @param arrayOffset Array offset.
+	 * @param length      Data length.
+	 */
+	void read(long srcOffset, boolean[] array, int arrayOffset, int length);
+
+	/**
 	 * @return size of this memory data.
 	 */
 	long length();

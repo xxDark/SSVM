@@ -27,7 +27,7 @@ public class StringNatives {
 		VMSymbols symbols = vm.getSymbols();
 		InstanceJavaClass string = symbols.java_lang_String();
 		vmi.setInvoker(string, "intern", "()Ljava/lang/String;", ctx -> {
-			InstanceValue str = ctx.getLocals().<InstanceValue>load(0);
+			InstanceValue str = ctx.getLocals().loadReference(0);
 			ctx.setResult(vm.getStringPool().intern(str));
 			return Result.ABORT;
 		});

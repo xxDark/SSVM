@@ -16,7 +16,6 @@ import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
 import org.objectweb.asm.Opcodes;
 
@@ -38,7 +37,7 @@ public class ClassLoaderNatives {
 		InstanceJavaClass classLoader = symbols.java_lang_ClassLoader();
 		vmi.setInvoker(classLoader, "registerNatives", "()V", MethodInvoker.noop());
 		MethodInvoker initHook = MethodInvoker.interpreted(ctx -> {
-			vm.getClassLoaders().setClassLoaderData(ctx.getLocals().load(0));
+			vm.getClassLoaders().setClassLoaderData(ctx.getLocals().loadReference(0));
 			return Result.CONTINUE;
 		});
 		if (!vmi.setInvoker(classLoader, "<init>", "(Ljava/lang/Void;Ljava/lang/String;Ljava/lang/ClassLoader;)V", initHook)) {
@@ -67,12 +66,12 @@ public class ClassLoaderNatives {
 				int flags = locals.loadInt(8);
 				boolean hidden = (flags & 0x2) != 0;
 				InstanceJavaClass jc = defineClass0New.apply(ctx, !hidden);
-				ObjectValue classData = locals.load(9);
+				ObjectValue classData = locals.loadReference(9);
 				if (hidden) {
 					jc.getNode().access |= Modifier.ACC_VM_HIDDEN;
 				}
 				vm.getClassLoaders().setClassData(jc, classData);
-				if (locals.load(7).asBoolean()) {
+				if (locals.loadInt(7) != 0) {
 					jc.initialize();
 				}
 				ctx.setResult(jc.getOop());
@@ -81,10 +80,10 @@ public class ClassLoaderNatives {
 		}
 		vmi.setInvoker(classLoader, "findLoadedClass0", "(Ljava/lang/String;)Ljava/lang/Class;", ctx -> {
 			Locals locals = ctx.getLocals();
-			Value name = locals.load(1);
+			ObjectValue name = locals.loadReference(1);
 			VMHelper helper = vm.getHelper();
 			helper.checkNotNull(name);
-			InstanceValue loader = locals.load(0);
+			InstanceValue loader = locals.loadReference(0);
 			ClassLoaderData data = vm.getClassLoaders().getClassLoaderData(loader);
 			InstanceJavaClass loadedClass = data.getClass(helper.readUtf8(name).replace('.', '/'));
 			if (loadedClass != null && Modifier.isHiddenMember(loadedClass.getModifiers())) {
@@ -96,7 +95,7 @@ public class ClassLoaderNatives {
 		vmi.setInvoker(classLoader, "findBootstrapClass", "(Ljava/lang/String;)Ljava/lang/Class;", ctx -> {
 			Locals locals = ctx.getLocals();
 			int idx = (ctx.getMethod().getAccess() & Opcodes.ACC_STATIC) != 0 ? 0 : 1;
-			Value name = locals.load(idx);
+			ObjectValue name = locals.loadReference(idx);
 			VMHelper helper = vm.getHelper();
 			helper.checkNotNull(name);
 			String s = helper.readUtf8(name);
@@ -108,7 +107,7 @@ public class ClassLoaderNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(classLoader, "resolveClass0", "(Ljava/lang/Class;)V", ctx -> {
-			Value c = ctx.getLocals().load(1);
+			ObjectValue c = ctx.getLocals().loadReference(1);
 			VMHelper helper = vm.getHelper();
 			helper.<JavaValue<JavaClass>>checkNotNull(c).getValue().initialize();
 			return Result.ABORT;
@@ -119,13 +118,13 @@ public class ClassLoaderNatives {
 		return (ctx, link) -> {
 			VMHelper helper = ctx.getHelper();
 			Locals locals = ctx.getLocals();
-			ObjectValue loader = locals.load(0);
-			ObjectValue name = locals.load(argOffset + 1);
-			ArrayValue b = helper.checkNotNull(locals.load(argOffset + 2));
+			ObjectValue loader = locals.loadReference(0);
+			ObjectValue name = locals.loadReference(argOffset + 1);
+			ArrayValue b = helper.checkNotNull(locals.loadReference(argOffset + 2));
 			int off = locals.loadInt(argOffset + 3);
 			int length = locals.loadInt(argOffset + 4);
-			ObjectValue pd = locals.load(argOffset + 5);
-			ObjectValue source = withSource ? locals.load(argOffset + 6) : ctx.getMemoryManager().nullValue();
+			ObjectValue pd = locals.loadReference(argOffset + 5);
+			ObjectValue source = withSource ? locals.loadReference(argOffset + 6) : ctx.getMemoryManager().nullValue();
 			byte[] bytes = helper.toJavaBytes(b);
 			return helper.defineClass(loader, helper.readUtf8(name), bytes, off, length, pd, helper.readUtf8(source), link);
 		};

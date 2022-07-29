@@ -14,19 +14,21 @@ import org.objectweb.asm.tree.AbstractInsnNode;
  * @author xDark
  */
 @Getter
-public class DelegatingInsnNode<I extends AbstractInsnNode> extends AbstractInsnNode implements VirtualInsnNode {
+public class DelegatingInsnNode<I extends AbstractInsnNode> extends AbstractInsnNode {
 
-	@Delegate(types = AbstractInsnNode.class)
+	@Delegate(types = AbstractInsnNode.class, excludes = Exclude.class)
 	protected final I delegate;
-	private final int virtualOpcode;
 
 	/**
 	 * @param delegate      Backing instruction.
 	 * @param virtualOpcode VM specific opcode.
 	 */
 	public DelegatingInsnNode(I delegate, int virtualOpcode) {
-		super(delegate.getOpcode());
+		super(virtualOpcode);
 		this.delegate = delegate;
-		this.virtualOpcode = virtualOpcode;
+	}
+
+	private interface Exclude {
+		int getOpcode();
 	}
 }

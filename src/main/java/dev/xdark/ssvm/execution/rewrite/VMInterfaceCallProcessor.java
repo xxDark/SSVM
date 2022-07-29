@@ -33,6 +33,6 @@ public final class VMInterfaceCallProcessor extends AbstractVMCallProcessor {
 		ObjectValue instance = stack.getAt(stack.position() - args - 1);
 		helper.checkNotNull(instance);
 		InstanceJavaClass prioritized = ((InstanceValue) instance).getJavaClass();
-		return vm.getLinkResolver().resolveVirtualMethod(prioritized, javaClass, callInfo.name, callInfo.desc);
+		return vm.getPublicLinkResolver().resolveVirtualMethod(prioritized, javaClass, callInfo.name, callInfo.desc);
 	}
 }

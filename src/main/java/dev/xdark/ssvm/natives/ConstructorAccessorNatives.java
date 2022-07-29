@@ -37,15 +37,15 @@ public class ConstructorAccessorNatives {
 		}
 		vmi.setInvoker(accessor, "newInstance0", "(Ljava/lang/reflect/Constructor;[Ljava/lang/Object;)Ljava/lang/Object;", ctx -> {
 			Locals locals = ctx.getLocals();
-			InstanceValue c = locals.<InstanceValue>load(0);
-			int slot = c.getInt("slot");
+			InstanceValue c = locals.loadReference(0);
+			int slot = vm.getPublicOperations().getInt(c, "slot");
 			InstanceJavaClass declaringClass = (InstanceJavaClass) ((JavaValue<JavaClass>) c.getValue("clazz", "Ljava/lang/Class;")).getValue();
 			VMHelper helper = vm.getHelper();
 			JavaMethod mn = helper.getMethodBySlot(declaringClass, slot);
 			if (mn == null || !"<init>".equals(mn.getName())) {
 				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 			}
-			Value values = locals.load(1);
+			Value values = locals.loadReference(1);
 			Value[] converted;
 			Type[] types = mn.getArgumentTypes();
 			if (!values.isNull()) {

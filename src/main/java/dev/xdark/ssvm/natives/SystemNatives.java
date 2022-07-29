@@ -15,10 +15,7 @@ import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.LongValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
 
 import java.util.Map;
@@ -40,18 +37,18 @@ public class SystemNatives {
 		InstanceJavaClass sys = symbols.java_lang_System();
 		vmi.setInvoker(sys, "registerNatives", "()V", MethodInvoker.noop());
 		vmi.setInvoker(sys, "currentTimeMillis", "()J", ctx -> {
-			ctx.setResult(LongValue.of(vm.getTimeManager().currentTimeMillis()));
+			ctx.setResult(vm.getTimeManager().currentTimeMillis());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "nanoTime", "()J", ctx -> {
-			ctx.setResult(LongValue.of(vm.getTimeManager().nanoTime()));
+			ctx.setResult(vm.getTimeManager().nanoTime());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "arraycopy", "(Ljava/lang/Object;ILjava/lang/Object;II)V", ctx -> {
 			VMHelper helper = vm.getHelper();
 			Locals locals = ctx.getLocals();
-			ArrayValue src = helper.checkNotNull(locals.<ObjectValue>load(0));
-			ArrayValue dst = helper.checkNotNull(locals.<ObjectValue>load(2));
+			ArrayValue src = helper.checkNotNull(locals.loadReference(0));
+			ArrayValue dst = helper.checkNotNull(locals.loadReference(2));
 			int srcPos = locals.loadInt(1);
 			int dstPos = locals.loadInt(3);
 			int length = locals.loadInt(4);
@@ -72,13 +69,13 @@ public class SystemNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "identityHashCode", "(Ljava/lang/Object;)I", ctx -> {
-			ctx.setResult(IntValue.of(ctx.getLocals().load(0).hashCode()));
+			ctx.setResult(ctx.getLocals().loadReference(0).hashCode());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "initProperties", "(Ljava/util/Properties;)Ljava/util/Properties;", ctx -> {
-			InstanceValue value = ctx.getLocals().<InstanceValue>load(0);
+			InstanceValue value = ctx.getLocals().loadReference(0);
 			InstanceJavaClass jc = value.getJavaClass();
-			JavaMethod mn = vm.getLinkResolver().resolveVirtualMethod(jc, value.getJavaClass(), "setProperty", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;");
+			JavaMethod mn = vm.getPublicLinkResolver().resolveVirtualMethod(jc, value.getJavaClass(), "setProperty", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;");
 			Map<String, String> properties = vm.getProperties();
 			VMHelper helper = vm.getHelper();
 
@@ -96,22 +93,22 @@ public class SystemNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "setIn0", "(Ljava/io/InputStream;)V", ctx -> {
-			Value stream = ctx.getLocals().load(0);
-			sys.setStaticFieldValue("in", "Ljava/io/InputStream;", stream);
+			ObjectValue stream = ctx.getLocals().loadReference(0);
+			ctx.getOperations().putReference(sys, "in", "Ljava/io/InputStream;", stream);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "setOut0", "(Ljava/io/PrintStream;)V", ctx -> {
-			Value stream = ctx.getLocals().load(0);
-			sys.setStaticFieldValue("out", "Ljava/io/PrintStream;", stream);
+			ObjectValue stream = ctx.getLocals().loadReference(0);
+			ctx.getOperations().putReference(sys, "out", "Ljava/io/PrintStream;", stream);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "setErr0", "(Ljava/io/PrintStream;)V", ctx -> {
-			Value stream = ctx.getLocals().load(0);
-			sys.setStaticFieldValue("err", "Ljava/io/PrintStream;", stream);
+			ObjectValue stream = ctx.getLocals().loadReference(0);
+			ctx.getOperations().putReference(sys, "err", "Ljava/io/PrintStream;", stream);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "mapLibraryName", "(Ljava/lang/String;)Ljava/lang/String;", ctx -> {
-			ObjectValue name = ctx.getLocals().<ObjectValue>load(0);
+			ObjectValue name = ctx.getLocals().loadReference(0);
 			VMHelper helper = vm.getHelper();
 			helper.checkNotNull(name);
 			ctx.setResult(helper.newUtf8(vm.getNativeLibraryManager().mapLibraryName(helper.readUtf8(name))));

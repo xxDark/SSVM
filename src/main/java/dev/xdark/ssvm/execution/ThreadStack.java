@@ -32,19 +32,11 @@ public final class ThreadStack implements Stack, AutoCloseable, Disposable {
 
 	@Override
 	public void push(Value value) {
-		checkValue(value);
-		if (value.isWide()) {
-			throw new IllegalStateException("Must use pushWide instead");
-		}
 		stack.set(cursor++, value);
 	}
 
 	@Override
 	public void pushWide(Value value) {
-		checkValue(value);
-		if (!value.isWide()) {
-			throw new IllegalStateException("Must use push instead");
-		}
 		ThreadRegion stack = this.stack;
 		int cursor = this.cursor;
 		stack.set(cursor++, value);
@@ -199,11 +191,5 @@ public final class ThreadStack implements Stack, AutoCloseable, Disposable {
 			"stack=" + Arrays.toString(stack.unwrap()) +
 			", cursor=" + cursor +
 			'}';
-	}
-
-	private static void checkValue(Value value) {
-		if (Objects.requireNonNull(value, "value").isVoid()) {
-			throw new IllegalStateException("Cannot push void value");
-		}
 	}
 }

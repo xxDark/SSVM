@@ -4,6 +4,7 @@ import dev.xdark.ssvm.value.DoubleValue;
 import dev.xdark.ssvm.value.FloatValue;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.LongValue;
+import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 
 /**
@@ -77,6 +78,16 @@ public interface Locals {
 	 * @return value at {@code index}.
 	 */
 	<V extends Value> V load(int index);
+
+	/**
+	 * Loads reference value from local variable.
+	 *
+	 * @param index Index of local variable.
+	 * @return value at {@code index}.
+	 */
+	default <V extends ObjectValue> V loadReference(int index) {
+		return load(index);
+	}
 
 	/**
 	 * Loads long value.

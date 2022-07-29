@@ -1183,7 +1183,7 @@ public final class JitCompiler {
 			VirtualMachine vm = owner.getVM();
 			InstanceJavaClass jc = (InstanceJavaClass) vm.getHelper().findClass(owner.getClassLoader(), node.owner, false);
 			String name = node.name;
-			JavaMethod mn = vm.getLinkResolver().resolveStaticMethod(jc, name, desc);
+			JavaMethod mn = vm.getPublicLinkResolver().resolveStaticMethod(jc, name, desc);
 			// Make locals
 			emitInt(mn.getMaxLocals(), jit);
 			loadCtx();
@@ -1220,7 +1220,7 @@ public final class JitCompiler {
 			VirtualMachine vm = owner.getVM();
 			InstanceJavaClass jc = (InstanceJavaClass) vm.getHelper().findClass(owner.getClassLoader(), node.owner, false);
 			String name = node.name;
-			JavaMethod mn = vm.getLinkResolver().resolveSpecialMethod(jc, name, desc);
+			JavaMethod mn = vm.getPublicLinkResolver().resolveSpecialMethod(jc, name, desc);
 			// Make locals
 			emitInt(mn.getMaxLocals(), jit);
 			loadCtx();

@@ -9,6 +9,7 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.*;
 import lombok.experimental.UtilityClass;
 import org.objectweb.asm.Type;
@@ -37,20 +38,21 @@ public class MethodAccessorNatives {
 		}
 		vmi.setInvoker(accessor, "invoke0", "(Ljava/lang/reflect/Method;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;", ctx -> {
 			Locals locals = ctx.getLocals();
-			InstanceValue m = locals.<InstanceValue>load(0);
-			int slot = m.getInt("slot");
-			InstanceJavaClass declaringClass = (InstanceJavaClass) ((JavaValue<JavaClass>) m.getValue("clazz", "Ljava/lang/Class;")).getValue();
+			VMOperations ops = vm.getPublicOperations();
+			InstanceValue m = locals.loadReference(0);
+			int slot = ops.getInt(m, "slot");
+			InstanceJavaClass declaringClass = (InstanceJavaClass) ((JavaValue<JavaClass>) ops.getReference(m, "clazz", "Ljava/lang/Class;")).getValue();
 			VMHelper helper = vm.getHelper();
-			JavaMethod mn = helper.getMethodBySlot(declaringClass, slot);
+			JavaMethod mn = declaringClass.getMethodBySlot(slot);
 			if (mn == null) {
 				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 			}
-			ObjectValue instance = locals.load(1);
+			ObjectValue instance = locals.loadReference(1);
 			boolean isStatic = (mn.getAccess() & ACC_STATIC) != 0;
 			if (!isStatic && instance.isNull()) {
 				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 			}
-			Value values = locals.load(2);
+			Value values = locals.loadReference(2);
 			Value[] args;
 			Type[] types = mn.getArgumentTypes();
 			if (!values.isNull()) {
@@ -61,12 +63,6 @@ public class MethodAccessorNatives {
 				helper.checkEquals(types.length, 0);
 				args = new Value[0];
 			}
-			if (!isStatic) {
-				Value[] prev = args;
-				args = new Value[args.length + 1];
-				args[0] = instance;
-				System.arraycopy(prev, 0, args, 1, prev.length);
-			}
 			Locals table;
 			String name = mn.getName();
 			String desc = mn.getDesc();
@@ -75,14 +71,12 @@ public class MethodAccessorNatives {
 				offset = 0;
 				table = vm.getThreadStorage().newLocals(mn);
 			} else {
-				mn = vm.getLinkResolver().resolveVirtualMethod(instance, name, desc);
+				mn = vm.getPublicLinkResolver().resolveVirtualMethod(instance, name, desc);
 				offset = 1;
 				table = vm.getThreadStorage().newLocals(mn);
 				table.set(0, instance);
 			}
-			for (int i = 0; i < args.length; i++) {
-				table.set(i + offset, args[i]);
-			}
+			table.copyFrom(args, offset, 0, args.length);
 			ExecutionContext executed = helper.invoke(mn, table);
 			Value result = executed.getResult();
 			if (result.isVoid()) {

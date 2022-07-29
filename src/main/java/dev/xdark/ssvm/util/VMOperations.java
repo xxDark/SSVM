@@ -1,48 +1,18 @@
 package dev.xdark.ssvm.util;
 
-import dev.xdark.ssvm.LinkResolver;
-import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.execution.VMException;
-import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
-import dev.xdark.ssvm.mirror.JavaField;
-import dev.xdark.ssvm.symbol.VMPrimitives;
-import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
-import dev.xdark.ssvm.value.DoubleValue;
-import dev.xdark.ssvm.value.FloatValue;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.LongValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 
 /**
- * Some VM operations implementations.
+ * VM operations.
  *
- * @author xDArk
+ * @author xDark
  */
-public class VMOperations {
-
-	private final VMSymbols symbols;
-	private final VMPrimitives primitives;
-	private final VMHelper helper;
-	private final MemoryManager memoryManager;
-	private final LinkResolver linkResolver;
-
-	/**
-	 * @param vm VM instance.
-	 */
-	public VMOperations(VirtualMachine vm) {
-		symbols = vm.getSymbols();
-		primitives = vm.getPrimitives();
-		helper = vm.getHelper();
-		memoryManager = vm.getMemoryManager();
-		linkResolver = vm.getLinkResolver();
-	}
-
-	//<editor-fold desc="Allocation methods">
+public interface VMOperations {
 
 	/**
 	 * Attempts to allocate new instance of a type of a class.
@@ -52,15 +22,7 @@ public class VMOperations {
 	 * @return allocated instance.
 	 * @see InstanceJavaClass#canAllocateInstance()
 	 */
-	public InstanceValue allocateInstance(JavaClass klass) {
-		InstanceJavaClass jc;
-		if (!(klass instanceof InstanceJavaClass) || !(jc = (InstanceJavaClass) klass).canAllocateInstance()) {
-			helper.throwException(symbols.java_lang_InstantiationError());
-			return null;
-		}
-		jc.initialize();
-		return memoryManager.newInstance(jc);
-	}
+	InstanceValue allocateInstance(JavaClass klass);
 
 	/**
 	 * Allocates new array with a specific length.
@@ -70,11 +32,7 @@ public class VMOperations {
 	 * @param length        Array length.
 	 * @return new array.
 	 */
-	public ArrayValue allocateArray(JavaClass componentType, int length) {
-		VMHelper helper = this.helper;
-		helper.checkArrayLength(length);
-		return helper.newArray(componentType, length);
-	}
+	ArrayValue allocateArray(JavaClass componentType, int length);
 
 	/**
 	 * Allocates new long array with a specific length.
@@ -83,9 +41,7 @@ public class VMOperations {
 	 * @param length Array length.
 	 * @return new array.
 	 */
-	public ArrayValue allocateLongArray(int length) {
-		return allocateArray(primitives.longPrimitive(), length);
-	}
+	ArrayValue allocateLongArray(int length);
 
 	/**
 	 * Allocates new double array with a specific length.
@@ -94,9 +50,7 @@ public class VMOperations {
 	 * @param length Array length.
 	 * @return new array.
 	 */
-	public ArrayValue allocateDoubleArray(int length) {
-		return allocateArray(primitives.doublePrimitive(), length);
-	}
+	ArrayValue allocateDoubleArray(int length);
 
 	/**
 	 * Allocates new int array with a specific length.
@@ -105,9 +59,7 @@ public class VMOperations {
 	 * @param length Array length.
 	 * @return new array.
 	 */
-	public ArrayValue allocateIntArray(int length) {
-		return allocateArray(primitives.intPrimitive(), length);
-	}
+	ArrayValue allocateIntArray(int length);
 
 	/**
 	 * Allocates new float array with a specific length.
@@ -116,9 +68,7 @@ public class VMOperations {
 	 * @param length Array length.
 	 * @return new array.
 	 */
-	public ArrayValue allocateFloatArray(int length) {
-		return allocateArray(primitives.floatPrimitive(), length);
-	}
+	ArrayValue allocateFloatArray(int length);
 
 	/**
 	 * Allocates new char array with a specific length.
@@ -127,9 +77,7 @@ public class VMOperations {
 	 * @param length Array length.
 	 * @return new array.
 	 */
-	public ArrayValue allocateCharArray(int length) {
-		return allocateArray(primitives.charPrimitive(), length);
-	}
+	ArrayValue allocateCharArray(int length);
 
 	/**
 	 * Allocates new short array with a specific length.
@@ -138,9 +86,7 @@ public class VMOperations {
 	 * @param length Array length.
 	 * @return new array.
 	 */
-	public ArrayValue allocateShortArray(int length) {
-		return allocateArray(primitives.shortPrimitive(), length);
-	}
+	ArrayValue allocateShortArray(int length);
 
 	/**
 	 * Allocates new byte array with a specific length.
@@ -149,9 +95,7 @@ public class VMOperations {
 	 * @param length Array length.
 	 * @return new array.
 	 */
-	public ArrayValue allocateByteArray(int length) {
-		return allocateArray(primitives.bytePrimitive(), length);
-	}
+	ArrayValue allocateByteArray(int length);
 
 	/**
 	 * Allocates new boolean array with a specific length.
@@ -160,12 +104,7 @@ public class VMOperations {
 	 * @param length Array length.
 	 * @return new array.
 	 */
-	public ArrayValue allocateBooleanArray(int length) {
-		return allocateArray(primitives.booleanPrimitive(), length);
-	}
-	//</editor-fold>
-
-	//<editor-fold desc="Array load methods">
+	ArrayValue allocateBooleanArray(int length);
 
 	/**
 	 * Loads value from the array.
@@ -176,9 +115,7 @@ public class VMOperations {
 	 * @param index Value index.
 	 * @return value from the array.
 	 */
-	public ObjectValue arrayLoadReference(ObjectValue array, int index) {
-		return verifyArrayAccess(array, index).getValue(index);
-	}
+	ObjectValue arrayLoadReference(ObjectValue array, int index);
 
 	/**
 	 * Loads value from the array.
@@ -189,9 +126,7 @@ public class VMOperations {
 	 * @param index Value index.
 	 * @return value from the array.
 	 */
-	public long arrayLoadLong(ObjectValue array, int index) {
-		return verifyArrayAccess(array, index).getLong(index);
-	}
+	long arrayLoadLong(ObjectValue array, int index);
 
 	/**
 	 * Loads value from the array.
@@ -202,9 +137,7 @@ public class VMOperations {
 	 * @param index Value index.
 	 * @return value from the array.
 	 */
-	public double arrayLoadDouble(ObjectValue array, int index) {
-		return verifyArrayAccess(array, index).getDouble(index);
-	}
+	double arrayLoadDouble(ObjectValue array, int index);
 
 	/**
 	 * Loads value from the array.
@@ -215,9 +148,7 @@ public class VMOperations {
 	 * @param index Value index.
 	 * @return value from the array.
 	 */
-	public int arrayLoadInt(ObjectValue array, int index) {
-		return verifyArrayAccess(array, index).getInt(index);
-	}
+	int arrayLoadInt(ObjectValue array, int index);
 
 	/**
 	 * Loads value from the array.
@@ -228,9 +159,7 @@ public class VMOperations {
 	 * @param index Value index.
 	 * @return value from the array.
 	 */
-	public float arrayLoadFloat(ObjectValue array, int index) {
-		return verifyArrayAccess(array, index).getFloat(index);
-	}
+	float arrayLoadFloat(ObjectValue array, int index);
 
 	/**
 	 * Loads value from the array.
@@ -241,9 +170,7 @@ public class VMOperations {
 	 * @param index Value index.
 	 * @return value from the array.
 	 */
-	public char arrayLoadChar(ObjectValue array, int index) {
-		return verifyArrayAccess(array, index).getChar(index);
-	}
+	char arrayLoadChar(ObjectValue array, int index);
 
 	/**
 	 * Loads value from the array.
@@ -254,9 +181,7 @@ public class VMOperations {
 	 * @param index Value index.
 	 * @return value from the array.
 	 */
-	public short arrayLoadShort(ObjectValue array, int index) {
-		return verifyArrayAccess(array, index).getShort(index);
-	}
+	short arrayLoadShort(ObjectValue array, int index);
 
 	/**
 	 * Loads value from the array.
@@ -267,9 +192,7 @@ public class VMOperations {
 	 * @param index Value index.
 	 * @return value from the array.
 	 */
-	public byte arrayLoadByte(ObjectValue array, int index) {
-		return verifyArrayAccess(array, index).getByte(index);
-	}
+	byte arrayLoadByte(ObjectValue array, int index);
 
 	/**
 	 * Loads value from the array.
@@ -280,12 +203,7 @@ public class VMOperations {
 	 * @param index Value index.
 	 * @return value from the array.
 	 */
-	public boolean arrayLoadBoolean(ObjectValue array, int index) {
-		return verifyArrayAccess(array, index).getBoolean(index);
-	}
-	//</editor-fold>
-
-	//<editor-fold desc="Array store methods">
+	boolean arrayLoadBoolean(ObjectValue array, int index);
 
 	/**
 	 * Sets value in the array.
@@ -296,17 +214,7 @@ public class VMOperations {
 	 * @param index Value index.
 	 * @param value Value to set.
 	 */
-	public void arrayStoreReference(ObjectValue array, int index, ObjectValue value) {
-		ArrayValue arrayValue = verifyArrayAccess(array, index);
-		if (!value.isNull()) {
-			JavaClass type = arrayValue.getJavaClass().getComponentType();
-			JavaClass valueType = value.getJavaClass();
-			if (!type.isAssignableFrom(valueType)) {
-				helper.throwException(symbols.java_lang_ArrayStoreException(), valueType.getName());
-			}
-		}
-		arrayValue.setValue(index, value);
-	}
+	void arrayStoreReference(ObjectValue array, int index, ObjectValue value);
 
 	/**
 	 * Sets value in the array.
@@ -317,9 +225,7 @@ public class VMOperations {
 	 * @param index Value index.
 	 * @param value Value to set.
 	 */
-	public void arrayStoreLong(ObjectValue array, int index, long value) {
-		verifyArrayAccess(array, index).setLong(index, value);
-	}
+	void arrayStoreLong(ObjectValue array, int index, long value);
 
 	/**
 	 * Sets value in the array.
@@ -330,9 +236,7 @@ public class VMOperations {
 	 * @param index Value index.
 	 * @param value Value to set.
 	 */
-	public void arrayStoreDouble(ObjectValue array, int index, double value) {
-		verifyArrayAccess(array, index).setDouble(index, value);
-	}
+	void arrayStoreDouble(ObjectValue array, int index, double value);
 
 	/**
 	 * Sets value in the array.
@@ -343,9 +247,7 @@ public class VMOperations {
 	 * @param index Value index.
 	 * @param value Value to set.
 	 */
-	public void arrayStoreInt(ObjectValue array, int index, int value) {
-		verifyArrayAccess(array, index).setInt(index, value);
-	}
+	void arrayStoreInt(ObjectValue array, int index, int value);
 
 	/**
 	 * Sets value in the array.
@@ -356,9 +258,7 @@ public class VMOperations {
 	 * @param index Value index.
 	 * @param value Value to set.
 	 */
-	public void arrayStoreFloat(ObjectValue array, int index, float value) {
-		verifyArrayAccess(array, index).setFloat(index, value);
-	}
+	void arrayStoreFloat(ObjectValue array, int index, float value);
 
 	/**
 	 * Sets value in the array.
@@ -369,9 +269,7 @@ public class VMOperations {
 	 * @param index Value index.
 	 * @param value Value to set.
 	 */
-	public void arrayStoreChar(ObjectValue array, int index, char value) {
-		verifyArrayAccess(array, index).setChar(index, value);
-	}
+	void arrayStoreChar(ObjectValue array, int index, char value);
 
 	/**
 	 * Sets value in the array.
@@ -382,9 +280,7 @@ public class VMOperations {
 	 * @param index Value index.
 	 * @param value Value to set.
 	 */
-	public void arrayStoreShort(ObjectValue array, int index, short value) {
-		verifyArrayAccess(array, index).setShort(index, value);
-	}
+	void arrayStoreShort(ObjectValue array, int index, short value);
 
 	/**
 	 * Sets value in the array.
@@ -395,9 +291,7 @@ public class VMOperations {
 	 * @param index Value index.
 	 * @param value Value to set.
 	 */
-	public void arrayStoreByte(ObjectValue array, int index, byte value) {
-		verifyArrayAccess(array, index).setByte(index, value);
-	}
+	void arrayStoreByte(ObjectValue array, int index, byte value);
 
 	/**
 	 * Sets value in the array.
@@ -408,10 +302,7 @@ public class VMOperations {
 	 * @param index Value index.
 	 * @param value Value to set.
 	 */
-	public void arrayStoreBoolean(ObjectValue array, int index, boolean value) {
-		verifyArrayAccess(array, index).setBoolean(index, value);
-	}
-	//</editor-fold>
+	void arrayStoreBoolean(ObjectValue array, int index, boolean value);
 
 	/**
 	 * Casts an object, throws
@@ -421,30 +312,14 @@ public class VMOperations {
 	 * @param klass Class to cast value to.
 	 * @return Same value.
 	 */
-	public ObjectValue checkCast(ObjectValue value, JavaClass klass) {
-		if (!value.isNull()) {
-			JavaClass against = value.getJavaClass();
-			if (!klass.isAssignableFrom(against)) {
-				helper.throwException(symbols.java_lang_ClassCastException(), against.getName() + " cannot be cast to " + klass.getName());
-			}
-		}
-		return value;
-	}
+	ObjectValue checkCast(ObjectValue value, JavaClass klass);
 
 	/**
 	 * Throws VM exception.
 	 *
 	 * @param value Exception to throw.
 	 */
-	public void throwException(ObjectValue value) {
-		if (value.isNull()) {
-			// NPE it is then.
-			value = helper.newException(symbols.java_lang_NullPointerException());
-		}
-		throw new VMException((InstanceValue) value);
-	}
-
-	//<editor-fold desc="Virtual field put methods">
+	void throwException(ObjectValue value);
 
 	/**
 	 * Sets generic value into an instance.
@@ -457,10 +332,19 @@ public class VMOperations {
 	 * @param desc     Field descriptor.
 	 * @param value    Value to set.
 	 */
-	public void putGenericField(ObjectValue instance, InstanceJavaClass klass, String name, String desc, Value value) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
-		writeGenericValue(instance, desc, value, offset);
-	}
+	void putGeneric(ObjectValue instance, InstanceJavaClass klass, String name, String desc, Value value);
+
+	/**
+	 * Sets generic value into an instance.
+	 * Throws VM exception if field was not found,
+	 * or an instance is {@code null}.
+	 *
+	 * @param instance Instance to set value in.
+	 * @param name     Field name.
+	 * @param desc     Field descriptor.
+	 * @param value    Value to set.
+	 */
+	void putGeneric(ObjectValue instance, String name, String desc, Value value);
 
 	/**
 	 * Sets reference value in an instance.
@@ -473,10 +357,19 @@ public class VMOperations {
 	 * @param desc     Field descriptor.
 	 * @param value    Value to set.
 	 */
-	public void putField(ObjectValue instance, InstanceJavaClass klass, String name, String desc, ObjectValue value) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
-		memoryManager.writeValue(instance, offset, value);
-	}
+	void putReference(ObjectValue instance, InstanceJavaClass klass, String name, String desc, ObjectValue value);
+
+	/**
+	 * Sets reference value in an instance.
+	 * Throws VM exception if field was not found,
+	 * or an instance is {@code null}.
+	 *
+	 * @param instance Instance to set value in.
+	 * @param name     Field name.
+	 * @param desc     Field descriptor.
+	 * @param value    Value to set.
+	 */
+	void putReference(ObjectValue instance, String name, String desc, ObjectValue value);
 
 	/**
 	 * Sets long value in an instance.
@@ -488,10 +381,18 @@ public class VMOperations {
 	 * @param name     Field name.
 	 * @param value    Value to set.
 	 */
-	public void putLongField(ObjectValue instance, InstanceJavaClass klass, String name, long value) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, "J");
-		memoryManager.writeLong(instance, offset, value);
-	}
+	void putLong(ObjectValue instance, InstanceJavaClass klass, String name, long value);
+
+	/**
+	 * Sets long value in an instance.
+	 * Throws VM exception if field was not found,
+	 * or an instance is {@code null}.
+	 *
+	 * @param instance Instance to set value in.
+	 * @param name     Field name.
+	 * @param value    Value to set.
+	 */
+	void putLong(ObjectValue instance, String name, long value);
 
 	/**
 	 * Sets double value in an instance.
@@ -503,10 +404,18 @@ public class VMOperations {
 	 * @param name     Field name.
 	 * @param value    Value to set.
 	 */
-	public void putDoubleField(ObjectValue instance, InstanceJavaClass klass, String name, double value) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, "D");
-		memoryManager.writeDouble(instance, offset, value);
-	}
+	void putDouble(ObjectValue instance, InstanceJavaClass klass, String name, double value);
+
+	/**
+	 * Sets double value in an instance.
+	 * Throws VM exception if field was not found,
+	 * or an instance is {@code null}.
+	 *
+	 * @param instance Instance to set value in.
+	 * @param name     Field name.
+	 * @param value    Value to set.
+	 */
+	void putDouble(ObjectValue instance, String name, double value);
 
 	/**
 	 * Sets int value in an instance.
@@ -518,10 +427,18 @@ public class VMOperations {
 	 * @param name     Field name.
 	 * @param value    Value to set.
 	 */
-	public void putIntField(ObjectValue instance, InstanceJavaClass klass, String name, int value) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, "I");
-		memoryManager.writeInt(instance, offset, value);
-	}
+	void putInt(ObjectValue instance, InstanceJavaClass klass, String name, int value);
+
+	/**
+	 * Sets int value in an instance.
+	 * Throws VM exception if field was not found,
+	 * or an instance is {@code null}.
+	 *
+	 * @param instance Instance to set value in.
+	 * @param name     Field name.
+	 * @param value    Value to set.
+	 */
+	void putInt(ObjectValue instance, String name, int value);
 
 	/**
 	 * Sets float value in an instance.
@@ -533,10 +450,18 @@ public class VMOperations {
 	 * @param name     Field name.
 	 * @param value    Value to set.
 	 */
-	public void putFloatField(ObjectValue instance, InstanceJavaClass klass, String name, float value) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, "F");
-		memoryManager.writeFloat(instance, offset, value);
-	}
+	void putFloat(ObjectValue instance, InstanceJavaClass klass, String name, float value);
+
+	/**
+	 * Sets float value in an instance.
+	 * Throws VM exception if field was not found,
+	 * or an instance is {@code null}.
+	 *
+	 * @param instance Instance to set value in.
+	 * @param name     Field name.
+	 * @param value    Value to set.
+	 */
+	void putFloat(ObjectValue instance, String name, float value);
 
 	/**
 	 * Sets char value in an instance.
@@ -548,10 +473,18 @@ public class VMOperations {
 	 * @param name     Field name.
 	 * @param value    Value to set.
 	 */
-	public void putCharField(ObjectValue instance, InstanceJavaClass klass, String name, char value) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, "C");
-		memoryManager.writeChar(instance, offset, value);
-	}
+	void putChar(ObjectValue instance, InstanceJavaClass klass, String name, char value);
+
+	/**
+	 * Sets char value in an instance.
+	 * Throws VM exception if field was not found,
+	 * or an instance is {@code null}.
+	 *
+	 * @param instance Instance to set value in.
+	 * @param name     Field name.
+	 * @param value    Value to set.
+	 */
+	void putChar(ObjectValue instance, String name, char value);
 
 	/**
 	 * Sets short value in an instance.
@@ -563,10 +496,18 @@ public class VMOperations {
 	 * @param name     Field name.
 	 * @param value    Value to set.
 	 */
-	public void putShortField(ObjectValue instance, InstanceJavaClass klass, String name, short value) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, "S");
-		memoryManager.writeShort(instance, offset, value);
-	}
+	void putShort(ObjectValue instance, InstanceJavaClass klass, String name, short value);
+
+	/**
+	 * Sets short value in an instance.
+	 * Throws VM exception if field was not found,
+	 * or an instance is {@code null}.
+	 *
+	 * @param instance Instance to set value in.
+	 * @param name     Field name.
+	 * @param value    Value to set.
+	 */
+	void putShort(ObjectValue instance, String name, short value);
 
 	/**
 	 * Sets byte value in an instance.
@@ -578,10 +519,18 @@ public class VMOperations {
 	 * @param name     Field name.
 	 * @param value    Value to set.
 	 */
-	public void putByteField(ObjectValue instance, InstanceJavaClass klass, String name, byte value) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, "B");
-		memoryManager.writeByte(instance, offset, value);
-	}
+	void putByte(ObjectValue instance, InstanceJavaClass klass, String name, byte value);
+
+	/**
+	 * Sets byte value in an instance.
+	 * Throws VM exception if field was not found,
+	 * or an instance is {@code null}.
+	 *
+	 * @param instance Instance to set value in.
+	 * @param name     Field name.
+	 * @param value    Value to set.
+	 */
+	void putByte(ObjectValue instance, String name, byte value);
 
 	/**
 	 * Sets boolean value in an instance.
@@ -593,13 +542,18 @@ public class VMOperations {
 	 * @param name     Field name.
 	 * @param value    Value to set.
 	 */
-	public void putBooleanField(ObjectValue instance, InstanceJavaClass klass, String name, boolean value) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, "Z");
-		memoryManager.writeBoolean(instance, offset, value);
-	}
-	//</editor-fold>
+	void putBoolean(ObjectValue instance, InstanceJavaClass klass, String name, boolean value);
 
-	//<editor-fold desc="Virtual field get methods">
+	/**
+	 * Sets boolean value in an instance.
+	 * Throws VM exception if field was not found,
+	 * or an instance is {@code null}.
+	 *
+	 * @param instance Instance to set value in.
+	 * @param name     Field name.
+	 * @param value    Value to set.
+	 */
+	void putBoolean(ObjectValue instance, String name, boolean value);
 
 	/**
 	 * Gets generic value from an instance.
@@ -612,10 +566,19 @@ public class VMOperations {
 	 * @param desc     Field desc.
 	 * @return field value.
 	 */
-	public Value getGenericField(ObjectValue instance, InstanceJavaClass klass, String name, String desc) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
-		return readGenericValue((InstanceValue) instance, desc, offset);
-	}
+	Value getGeneric(ObjectValue instance, InstanceJavaClass klass, String name, String desc);
+
+	/**
+	 * Gets generic value from an instance.
+	 * Throws VM exception if field was not found,
+	 * or an instance is {@code null}.
+	 *
+	 * @param instance Instance to get value from.
+	 * @param name     Field name.
+	 * @param desc     Field desc.
+	 * @return field value.
+	 */
+	Value getGeneric(ObjectValue instance, String name, String desc);
 
 	/**
 	 * Gets reference value from an instance.
@@ -628,10 +591,19 @@ public class VMOperations {
 	 * @param desc     Field desc.
 	 * @return field value.
 	 */
-	public ObjectValue getField(ObjectValue instance, InstanceJavaClass klass, String name, String desc) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
-		return memoryManager.readValue(instance, offset);
-	}
+	ObjectValue getReference(ObjectValue instance, InstanceJavaClass klass, String name, String desc);
+
+	/**
+	 * Gets reference value from an instance.
+	 * Throws VM exception if field was not found,
+	 * or an instance is {@code null}.
+	 *
+	 * @param instance Instance to get value from.
+	 * @param name     Field name.
+	 * @param desc     Field desc.
+	 * @return field value.
+	 */
+	ObjectValue getReference(ObjectValue instance, String name, String desc);
 
 	/**
 	 * Gets long value from an instance.
@@ -643,10 +615,18 @@ public class VMOperations {
 	 * @param name     Field name.
 	 * @return field value.
 	 */
-	public long getLongField(ObjectValue instance, InstanceJavaClass klass, String name) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, "J");
-		return memoryManager.readLong(instance, offset);
-	}
+	long getLong(ObjectValue instance, InstanceJavaClass klass, String name);
+
+	/**
+	 * Gets long value from an instance.
+	 * Throws VM exception if field was not found,
+	 * or an instance is {@code null}.
+	 *
+	 * @param instance Instance to get value from.
+	 * @param name     Field name.
+	 * @return field value.
+	 */
+	long getLong(ObjectValue instance, String name);
 
 	/**
 	 * Gets double value from an instance.
@@ -658,10 +638,18 @@ public class VMOperations {
 	 * @param name     Field name.
 	 * @return field value.
 	 */
-	public double getDoubleField(ObjectValue instance, InstanceJavaClass klass, String name) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, "D");
-		return memoryManager.readDouble(instance, offset);
-	}
+	double getDouble(ObjectValue instance, InstanceJavaClass klass, String name);
+
+	/**
+	 * Gets double value from an instance.
+	 * Throws VM exception if field was not found,
+	 * or an instance is {@code null}.
+	 *
+	 * @param instance Instance to get value from.
+	 * @param name     Field name.
+	 * @return field value.
+	 */
+	double getDouble(ObjectValue instance, String name);
 
 	/**
 	 * Gets int value from an instance.
@@ -673,10 +661,18 @@ public class VMOperations {
 	 * @param name     Field name.
 	 * @return field value.
 	 */
-	public int getIntField(ObjectValue instance, InstanceJavaClass klass, String name) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, "I");
-		return memoryManager.readInt(instance, offset);
-	}
+	int getInt(ObjectValue instance, InstanceJavaClass klass, String name);
+
+	/**
+	 * Gets int value from an instance.
+	 * Throws VM exception if field was not found,
+	 * or an instance is {@code null}.
+	 *
+	 * @param instance Instance to get value from.
+	 * @param name     Field name.
+	 * @return field value.
+	 */
+	int getInt(ObjectValue instance, String name);
 
 	/**
 	 * Gets float value from an instance.
@@ -688,10 +684,18 @@ public class VMOperations {
 	 * @param name     Field name.
 	 * @return field value.
 	 */
-	public float getFloatField(ObjectValue instance, InstanceJavaClass klass, String name) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, "F");
-		return memoryManager.readFloat(instance, offset);
-	}
+	float getFloat(ObjectValue instance, InstanceJavaClass klass, String name);
+
+	/**
+	 * Gets float value from an instance.
+	 * Throws VM exception if field was not found,
+	 * or an instance is {@code null}.
+	 *
+	 * @param instance Instance to get value from.
+	 * @param name     Field name.
+	 * @return field value.
+	 */
+	float getFloat(ObjectValue instance, String name);
 
 	/**
 	 * Gets char value from an instance.
@@ -703,10 +707,18 @@ public class VMOperations {
 	 * @param name     Field name.
 	 * @return field value.
 	 */
-	public char getCharField(ObjectValue instance, InstanceJavaClass klass, String name) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, "C");
-		return memoryManager.readChar(instance, offset);
-	}
+	char getChar(ObjectValue instance, InstanceJavaClass klass, String name);
+
+	/**
+	 * Gets char value from an instance.
+	 * Throws VM exception if field was not found,
+	 * or an instance is {@code null}.
+	 *
+	 * @param instance Instance to get value from.
+	 * @param name     Field name.
+	 * @return field value.
+	 */
+	char getChar(ObjectValue instance, String name);
 
 	/**
 	 * Gets short value from an instance.
@@ -718,10 +730,18 @@ public class VMOperations {
 	 * @param name     Field name.
 	 * @return field value.
 	 */
-	public short getShortField(ObjectValue instance, InstanceJavaClass klass, String name) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, "S");
-		return memoryManager.readShort(instance, offset);
-	}
+	short getShort(ObjectValue instance, InstanceJavaClass klass, String name);
+
+	/**
+	 * Gets short value from an instance.
+	 * Throws VM exception if field was not found,
+	 * or an instance is {@code null}.
+	 *
+	 * @param instance Instance to get value from.
+	 * @param name     Field name.
+	 * @return field value.
+	 */
+	short getShort(ObjectValue instance, String name);
 
 	/**
 	 * Gets byte value from an instance.
@@ -733,10 +753,18 @@ public class VMOperations {
 	 * @param name     Field name.
 	 * @return field value.
 	 */
-	public byte getByteField(ObjectValue instance, InstanceJavaClass klass, String name) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, "B");
-		return memoryManager.readByte(instance, offset);
-	}
+	byte getByte(ObjectValue instance, InstanceJavaClass klass, String name);
+
+	/**
+	 * Gets byte value from an instance.
+	 * Throws VM exception if field was not found,
+	 * or an instance is {@code null}.
+	 *
+	 * @param instance Instance to get value from.
+	 * @param name     Field name.
+	 * @return field value.
+	 */
+	byte getByte(ObjectValue instance, String name);
 
 	/**
 	 * Gets boolean value from an instance.
@@ -748,10 +776,18 @@ public class VMOperations {
 	 * @param name     Field name.
 	 * @return field value.
 	 */
-	public boolean getBooleanField(ObjectValue instance, InstanceJavaClass klass, String name) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, "Z");
-		return memoryManager.readBoolean(instance, offset);
-	}
+	boolean getBoolean(ObjectValue instance, InstanceJavaClass klass, String name);
+
+	/**
+	 * Gets boolean value from an instance.
+	 * Throws VM exception if field was not found,
+	 * or an instance is {@code null}.
+	 *
+	 * @param instance Instance to get value from.
+	 * @param name     Field name.
+	 * @return field value.
+	 */
+	boolean getBoolean(ObjectValue instance, String name);
 
 	/**
 	 * Gets static generic value from a class.
@@ -762,14 +798,7 @@ public class VMOperations {
 	 * @param desc  Field descriptor.
 	 * @return field value.
 	 */
-	public Value getGenericStaticField(InstanceJavaClass klass, String name, String desc) {
-		JavaField field = linkResolver.resolveStaticField(klass, name, desc);
-		klass = field.getOwner();
-		return readGenericValue(klass.getOop(), desc, field.getOffset() + memoryManager.getStaticOffset(klass));
-	}
-	//</editor-fold>
-
-	//<editor-fold desc="Static field get methods">
+	Value getGeneric(InstanceJavaClass klass, String name, String desc);
 
 	/**
 	 * Gets static reference value from a class.
@@ -780,18 +809,7 @@ public class VMOperations {
 	 * @param desc  Field descriptor.
 	 * @return field value.
 	 */
-	public Value getStaticField(InstanceJavaClass klass, String name, String desc) {
-		while (klass != null) {
-			long offset = klass.getStaticFieldOffset(name, desc);
-			if (offset != -1L) {
-				MemoryManager memoryManager = this.memoryManager;
-				return memoryManager.readValue(klass.getOop(), offset + memoryManager.getStaticOffset(klass));
-			}
-			klass = klass.getSuperClass();
-		}
-		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
-		return null;
-	}
+	ObjectValue getReference(InstanceJavaClass klass, String name, String desc);
 
 	/**
 	 * Gets static long value from a class.
@@ -801,18 +819,7 @@ public class VMOperations {
 	 * @param name  Field name.
 	 * @return field value.
 	 */
-	public long getStaticLongField(InstanceJavaClass klass, String name) {
-		while (klass != null) {
-			long offset = klass.getStaticFieldOffset(name, "J");
-			if (offset != -1L) {
-				MemoryManager memoryManager = this.memoryManager;
-				return memoryManager.readLong(klass.getOop(), offset + memoryManager.getStaticOffset(klass));
-			}
-			klass = klass.getSuperClass();
-		}
-		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
-		return 0L;
-	}
+	long getLong(InstanceJavaClass klass, String name);
 
 	/**
 	 * Gets static double value from a class.
@@ -822,18 +829,7 @@ public class VMOperations {
 	 * @param name  Field name.
 	 * @return field value.
 	 */
-	public double getStaticDoubleField(InstanceJavaClass klass, String name) {
-		while (klass != null) {
-			long offset = klass.getStaticFieldOffset(name, "D");
-			if (offset != -1L) {
-				MemoryManager memoryManager = this.memoryManager;
-				return memoryManager.readDouble(klass.getOop(), offset + memoryManager.getStaticOffset(klass));
-			}
-			klass = klass.getSuperClass();
-		}
-		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
-		return Double.NaN;
-	}
+	double getDouble(InstanceJavaClass klass, String name);
 
 	/**
 	 * Gets static int value from a class.
@@ -843,18 +839,7 @@ public class VMOperations {
 	 * @param name  Field name.
 	 * @return field value.
 	 */
-	public int getStaticIntField(InstanceJavaClass klass, String name) {
-		while (klass != null) {
-			long offset = klass.getStaticFieldOffset(name, "I");
-			if (offset != -1L) {
-				MemoryManager memoryManager = this.memoryManager;
-				return memoryManager.readInt(klass.getOop(), offset + memoryManager.getStaticOffset(klass));
-			}
-			klass = klass.getSuperClass();
-		}
-		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
-		return 0;
-	}
+	int getInt(InstanceJavaClass klass, String name);
 
 	/**
 	 * Gets static float value from a class.
@@ -864,18 +849,7 @@ public class VMOperations {
 	 * @param name  Field name.
 	 * @return field value.
 	 */
-	public float getStaticFloatField(InstanceJavaClass klass, String name) {
-		while (klass != null) {
-			long offset = klass.getStaticFieldOffset(name, "F");
-			if (offset != -1L) {
-				MemoryManager memoryManager = this.memoryManager;
-				return memoryManager.readFloat(klass.getOop(), offset + memoryManager.getStaticOffset(klass));
-			}
-			klass = klass.getSuperClass();
-		}
-		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
-		return 0.0F;
-	}
+	float getFloat(InstanceJavaClass klass, String name);
 
 	/**
 	 * Gets static char value from a class.
@@ -885,18 +859,7 @@ public class VMOperations {
 	 * @param name  Field name.
 	 * @return field value.
 	 */
-	public char getStaticCharField(InstanceJavaClass klass, String name) {
-		while (klass != null) {
-			long offset = klass.getStaticFieldOffset(name, "C");
-			if (offset != -1L) {
-				MemoryManager memoryManager = this.memoryManager;
-				return memoryManager.readChar(klass.getOop(), offset + memoryManager.getStaticOffset(klass));
-			}
-			klass = klass.getSuperClass();
-		}
-		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
-		return '\0';
-	}
+	char getChar(InstanceJavaClass klass, String name);
 
 	/**
 	 * Gets static short value from a class.
@@ -906,18 +869,7 @@ public class VMOperations {
 	 * @param name  Field name.
 	 * @return field value.
 	 */
-	public short getStaticShortField(InstanceJavaClass klass, String name) {
-		while (klass != null) {
-			long offset = klass.getStaticFieldOffset(name, "S");
-			if (offset != -1L) {
-				MemoryManager memoryManager = this.memoryManager;
-				return memoryManager.readShort(klass.getOop(), offset + memoryManager.getStaticOffset(klass));
-			}
-			klass = klass.getSuperClass();
-		}
-		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
-		return 0;
-	}
+	short getShort(InstanceJavaClass klass, String name);
 
 	/**
 	 * Gets static byte value from a class.
@@ -927,18 +879,7 @@ public class VMOperations {
 	 * @param name  Field name.
 	 * @return field value.
 	 */
-	public byte getStaticByteField(InstanceJavaClass klass, String name) {
-		while (klass != null) {
-			long offset = klass.getStaticFieldOffset(name, "B");
-			if (offset != -1L) {
-				MemoryManager memoryManager = this.memoryManager;
-				return memoryManager.readByte(klass.getOop(), offset + memoryManager.getStaticOffset(klass));
-			}
-			klass = klass.getSuperClass();
-		}
-		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
-		return 0;
-	}
+	byte getByte(InstanceJavaClass klass, String name);
 
 	/**
 	 * Gets static boolean value from a class.
@@ -948,21 +889,7 @@ public class VMOperations {
 	 * @param name  Field name.
 	 * @return field value.
 	 */
-	public boolean getStaticBooleanField(InstanceJavaClass klass, String name) {
-		while (klass != null) {
-			long offset = klass.getStaticFieldOffset(name, "Z");
-			if (offset != -1L) {
-				MemoryManager memoryManager = this.memoryManager;
-				return memoryManager.readBoolean(klass.getOop(), offset + memoryManager.getStaticOffset(klass));
-			}
-			klass = klass.getSuperClass();
-		}
-		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
-		return false;
-	}
-	//</editor-fold>
-
-	//<editor-fold desc="Static field put methods">
+	boolean getBoolean(InstanceJavaClass klass, String name);
 
 	/**
 	 * Sets static generic value in a class.
@@ -973,11 +900,7 @@ public class VMOperations {
 	 * @param desc  Field descriptor.
 	 * @param value Value to set.
 	 */
-	public void putStaticGenericField(InstanceJavaClass klass, String name, String desc, Value value) {
-		JavaField field = linkResolver.resolveStaticField(klass, name, desc);
-		klass = field.getOwner();
-		writeGenericValue(klass.getOop(), desc, value, field.getOffset() + memoryManager.getStaticOffset(field.getOwner()));
-	}
+	void putGeneric(InstanceJavaClass klass, String name, String desc, Value value);
 
 	/**
 	 * Sets static reference value in a class.
@@ -988,12 +911,7 @@ public class VMOperations {
 	 * @param desc  Field descriptor.
 	 * @param value Value to set.
 	 */
-	public void putStaticField(InstanceJavaClass klass, String name, String desc, ObjectValue value) {
-		JavaField field = linkResolver.resolveStaticField(klass, name, desc);
-		klass = field.getOwner();
-		MemoryManager memoryManager = this.memoryManager;
-		memoryManager.writeValue(klass.getOop(), field.getOffset() + memoryManager.getStaticOffset(klass), value);
-	}
+	void putReference(InstanceJavaClass klass, String name, String desc, ObjectValue value);
 
 	/**
 	 * Sets static long value in a class.
@@ -1003,12 +921,7 @@ public class VMOperations {
 	 * @param name  Field name.
 	 * @param value Value to set.
 	 */
-	public void putStaticLongField(InstanceJavaClass klass, String name, long value) {
-		JavaField field = linkResolver.resolveStaticField(klass, name, "J");
-		klass = field.getOwner();
-		MemoryManager memoryManager = this.memoryManager;
-		memoryManager.writeLong(klass.getOop(), field.getOffset() + memoryManager.getStaticOffset(klass), value);
-	}
+	void putLong(InstanceJavaClass klass, String name, long value);
 
 	/**
 	 * Sets static double value in a class.
@@ -1018,12 +931,7 @@ public class VMOperations {
 	 * @param name  Field name.
 	 * @param value Value to set.
 	 */
-	public void putStaticDoubleField(InstanceJavaClass klass, String name, double value) {
-		JavaField field = linkResolver.resolveStaticField(klass, name, "D");
-		klass = field.getOwner();
-		MemoryManager memoryManager = this.memoryManager;
-		memoryManager.writeDouble(klass.getOop(), field.getOffset() + memoryManager.getStaticOffset(klass), value);
-	}
+	void putDouble(InstanceJavaClass klass, String name, double value);
 
 	/**
 	 * Sets static int value in a class.
@@ -1033,12 +941,7 @@ public class VMOperations {
 	 * @param name  Field name.
 	 * @param value Value to set.
 	 */
-	public void putStaticIntField(InstanceJavaClass klass, String name, int value) {
-		JavaField field = linkResolver.resolveStaticField(klass, name, "I");
-		klass = field.getOwner();
-		MemoryManager memoryManager = this.memoryManager;
-		memoryManager.writeInt(klass.getOop(), field.getOffset() + memoryManager.getStaticOffset(klass), value);
-	}
+	void putInt(InstanceJavaClass klass, String name, int value);
 
 	/**
 	 * Sets static float value in a class.
@@ -1048,12 +951,7 @@ public class VMOperations {
 	 * @param name  Field name.
 	 * @param value Value to set.
 	 */
-	public void putStaticFloatField(InstanceJavaClass klass, String name, float value) {
-		JavaField field = linkResolver.resolveStaticField(klass, name, "F");
-		klass = field.getOwner();
-		MemoryManager memoryManager = this.memoryManager;
-		memoryManager.writeFloat(klass.getOop(), field.getOffset() + memoryManager.getStaticOffset(klass), value);
-	}
+	void putFloat(InstanceJavaClass klass, String name, float value);
 
 	/**
 	 * Sets static char value in a class.
@@ -1063,12 +961,7 @@ public class VMOperations {
 	 * @param name  Field name.
 	 * @param value Value to set.
 	 */
-	public void putStaticCharField(InstanceJavaClass klass, String name, char value) {
-		JavaField field = linkResolver.resolveStaticField(klass, name, "C");
-		klass = field.getOwner();
-		MemoryManager memoryManager = this.memoryManager;
-		memoryManager.writeChar(klass.getOop(), field.getOffset() + memoryManager.getStaticOffset(klass), value);
-	}
+	void putChar(InstanceJavaClass klass, String name, char value);
 
 	/**
 	 * Sets static short value in a class.
@@ -1078,12 +971,7 @@ public class VMOperations {
 	 * @param name  Field name.
 	 * @param value Value to set.
 	 */
-	public void putStaticShortField(InstanceJavaClass klass, String name, short value) {
-		JavaField field = linkResolver.resolveStaticField(klass, name, "S");
-		klass = field.getOwner();
-		MemoryManager memoryManager = this.memoryManager;
-		memoryManager.writeShort(klass.getOop(), field.getOffset() + memoryManager.getStaticOffset(klass), value);
-	}
+	void putShort(InstanceJavaClass klass, String name, short value);
 
 	/**
 	 * Sets static byte value in a class.
@@ -1093,12 +981,7 @@ public class VMOperations {
 	 * @param name  Field name.
 	 * @param value Value to set.
 	 */
-	public void putStaticByteField(InstanceJavaClass klass, String name, byte value) {
-		JavaField field = linkResolver.resolveStaticField(klass, name, "B");
-		klass = field.getOwner();
-		MemoryManager memoryManager = this.memoryManager;
-		memoryManager.writeByte(klass.getOop(), field.getOffset() + memoryManager.getStaticOffset(klass), value);
-	}
+	void putByte(InstanceJavaClass klass, String name, byte value);
 
 	/**
 	 * Sets static boolean value in a class.
@@ -1108,15 +991,7 @@ public class VMOperations {
 	 * @param name  Field name.
 	 * @param value Value to set.
 	 */
-	public void putStaticBooleanField(InstanceJavaClass klass, String name, boolean value) {
-		JavaField field = linkResolver.resolveStaticField(klass, name, "Z");
-		klass = field.getOwner();
-		MemoryManager memoryManager = this.memoryManager;
-		memoryManager.writeBoolean(klass.getOop(), field.getOffset() + memoryManager.getStaticOffset(klass), value);
-	}
-	//</editor-fold>
-
-	//<editor-fold desc="Generic read/write helpers">
+	void putBoolean(InstanceJavaClass klass, String name, boolean value);
 
 	/**
 	 * Reads generic value from the instance.
@@ -1125,39 +1000,7 @@ public class VMOperations {
 	 * @param desc     Type descriptor.
 	 * @param offset   Offset to read value from.
 	 */
-	public Value readGenericValue(InstanceValue instance, String desc, long offset) {
-		MemoryManager manager = this.memoryManager;
-		Value value;
-		switch (desc.charAt(0)) {
-			case 'J':
-				value = LongValue.of(manager.readLong(instance, offset));
-				break;
-			case 'D':
-				value = new DoubleValue(manager.readDouble(instance, offset));
-				break;
-			case 'I':
-				value = IntValue.of(manager.readInt(instance, offset));
-				break;
-			case 'F':
-				value = new FloatValue(manager.readFloat(instance, offset));
-				break;
-			case 'C':
-				value = IntValue.of(manager.readChar(instance, offset));
-				break;
-			case 'S':
-				value = IntValue.of(manager.readShort(instance, offset));
-				break;
-			case 'B':
-				value = IntValue.of(manager.readByte(instance, offset));
-				break;
-			case 'Z':
-				value = manager.readBoolean(instance, offset) ? IntValue.ONE : IntValue.ZERO;
-				break;
-			default:
-				value = manager.readValue(instance, offset);
-		}
-		return value;
-	}
+	Value readGenericValue(InstanceValue instance, String desc, long offset);
 
 	/**
 	 * Writes generic value to the instance.
@@ -1167,39 +1010,7 @@ public class VMOperations {
 	 * @param value    Value to write.
 	 * @param offset   Offset to write value to.
 	 */
-	public void writeGenericValue(ObjectValue instance, String desc, Value value, long offset) {
-		MemoryManager memoryManager = this.memoryManager;
-		switch (desc.charAt(0)) {
-			case 'J':
-				memoryManager.writeLong(instance, offset, value.asLong());
-				break;
-			case 'D':
-				memoryManager.writeDouble(instance, offset, value.asDouble());
-				break;
-			case 'I':
-				memoryManager.writeInt(instance, offset, value.asInt());
-				break;
-			case 'F':
-				memoryManager.writeFloat(instance, offset, value.asFloat());
-				break;
-			case 'C':
-				memoryManager.writeChar(instance, offset, value.asChar());
-				break;
-			case 'S':
-				memoryManager.writeShort(instance, offset, value.asShort());
-				break;
-			case 'B':
-				memoryManager.writeByte(instance, offset, value.asByte());
-				break;
-			case 'Z':
-				memoryManager.writeBoolean(instance, offset, value.asBoolean());
-				break;
-			default:
-				ObjectValue newValue = (ObjectValue) value;
-				memoryManager.writeValue(instance, offset, newValue);
-		}
-	}
-	//</editor-fold>
+	void writeGenericValue(ObjectValue instance, String desc, Value value, long offset);
 
 	/**
 	 * Attempts to unlock object monitor.
@@ -1208,12 +1019,7 @@ public class VMOperations {
 	 *
 	 * @param value Object to unlock.
 	 */
-	public void monitorExit(ObjectValue value) {
-		VMHelper helper = this.helper;
-		if (!helper.<InstanceValue>checkNotNull(value).monitorExit()) {
-			helper.throwException(symbols.java_lang_IllegalMonitorStateException());
-		}
-	}
+	void monitorExit(ObjectValue value);
 
 	/**
 	 * Performs {@code instanceof} check.
@@ -1222,27 +1028,5 @@ public class VMOperations {
 	 * @param javaClass Target type.
 	 * @return {@code true} if comparison is success.
 	 */
-	public boolean instanceofCheck(ObjectValue value, JavaClass javaClass) {
-		if (javaClass instanceof InstanceJavaClass) {
-			((InstanceJavaClass) javaClass).loadNoResolve();
-		}
-		if (value.isNull()) {
-			return false;
-		}
-		return javaClass.isAssignableFrom(value.getJavaClass());
-	}
-
-	private ArrayValue verifyArrayAccess(ObjectValue value, int index) {
-		VMHelper helper = this.helper;
-		ArrayValue array = helper.checkNotNullArray(value);
-		helper.rangeCheck(array, index);
-		return array;
-	}
-
-	private long getFieldOffsetForInstance(ObjectValue instance, InstanceJavaClass klass, String name, String desc) {
-		VMHelper helper = this.helper;
-		helper.checkNotNull(instance);
-		JavaField field = linkResolver.resolveVirtualField(klass, (InstanceJavaClass) instance.getJavaClass(), name, desc);
-		return field.getOffset() + memoryManager.valueBaseOffset(instance);
-	}
+	boolean instanceofCheck(ObjectValue value, JavaClass javaClass);
 }

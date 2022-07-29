@@ -18,7 +18,7 @@ public final class FloatArrayProcessor implements InstructionProcessor<Delegatin
 	public Result execute(DelegatingInsnNode<IntInsnNode> insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
 		int length = stack.popInt();
-		stack.push(ctx.getOperations().allocateFloatArray(length));
+		stack.pushReference(ctx.getOperations().allocateFloatArray(length));
 		return Result.CONTINUE;
 	}
 }

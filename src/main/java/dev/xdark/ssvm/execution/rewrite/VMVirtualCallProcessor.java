@@ -4,9 +4,7 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.VMCallInsnNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Stack;
-import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
-import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.tree.MethodInsnNode;
 
@@ -24,6 +22,6 @@ public final class VMVirtualCallProcessor extends AbstractVMCallProcessor {
 		Stack stack = ctx.getStack();
 		ObjectValue instance = stack.getAt(stack.position() - args - 1);
 		vm.getHelper().checkNotNull(instance);
-		return vm.getLinkResolver().resolveVirtualMethod(instance, callInfo.name, callInfo.desc);
+		return vm.getPublicLinkResolver().resolveVirtualMethod(instance, callInfo.name, callInfo.desc);
 	}
 }

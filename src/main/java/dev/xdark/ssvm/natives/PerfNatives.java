@@ -8,7 +8,6 @@ import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.symbol.VMSymbols;
-import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
 
@@ -29,7 +28,7 @@ public class PerfNatives {
 		InstanceJavaClass jc = symbols.perf_Perf();
 		vmi.setInvoker(jc, "registerNatives", "()V", MethodInvoker.noop());
 		vmi.setInvoker(jc, "createLong", "(Ljava/lang/String;IIJ)Ljava/nio/ByteBuffer;", ctx -> {
-			JavaMethod allocateDirect = vm.getLinkResolver().resolveStaticMethod(symbols.java_nio_ByteBuffer(), "allocateDirect", "(I)Ljava/nio/ByteBuffer;");
+			JavaMethod allocateDirect = vm.getPublicLinkResolver().resolveStaticMethod(symbols.java_nio_ByteBuffer(), "allocateDirect", "(I)Ljava/nio/ByteBuffer;");
 			Locals locals = vm.getThreadStorage().newLocals(allocateDirect);
 			locals.setInt(0, 8);
 			Value buf = vm.getHelper().invoke(allocateDirect, locals).getResult();

@@ -3,6 +3,7 @@ package dev.xdark.ssvm.thread;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.InstanceValue;
 
 import java.util.Map;
@@ -111,8 +112,9 @@ public class NativeThreadManager implements ThreadManager {
 		}
 		NativeVMThread vmThread = createMainThread(instance, thread);
 		vmThreads.put(instance, vmThread);
-		instance.setInt("threadStatus", ThreadState.JVMTI_THREAD_STATE_ALIVE | ThreadState.JVMTI_THREAD_STATE_RUNNABLE);
-		instance.setInt("priority", Thread.MAX_PRIORITY);
+		VMOperations ops = vm.getPublicOperations();
+		ops.putInt(instance, "threadStatus", ThreadState.JVMTI_THREAD_STATE_ALIVE | ThreadState.JVMTI_THREAD_STATE_RUNNABLE);
+		ops.putInt(instance, "priority", Thread.MAX_PRIORITY);
 		if (callInitialize) {
 			instance.initialize();
 		}

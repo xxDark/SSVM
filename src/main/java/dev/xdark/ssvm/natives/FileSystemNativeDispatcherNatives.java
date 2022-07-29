@@ -51,7 +51,7 @@ public class FileSystemNativeDispatcherNatives {
 					vmi.setInvoker(macDispatcher, "normalizepath", "([CI)[C", ctx -> {
 						Locals locals = ctx.getLocals();
 						VMHelper helper = vm.getHelper();
-						ArrayValue path = helper.checkNotNull(locals.<ObjectValue>load(0));
+						ArrayValue path = helper.checkNotNull(locals.loadReference(0));
 						// int form = locals.load(1).asInt();
 						ctx.setResult(path);
 						return Result.ABORT;

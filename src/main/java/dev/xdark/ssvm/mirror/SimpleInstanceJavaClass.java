@@ -4,14 +4,12 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.VMException;
-import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.tlc.ThreadLocalStorage;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
 import me.coley.cafedude.InvalidClassException;
 import me.coley.cafedude.classfile.ClassFile;
 import me.coley.cafedude.io.ClassFileReader;
@@ -481,42 +479,6 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	}
 
 	@Override
-	public Value getStaticValue(MemberKey field) {
-		initialize();
-
-		long offset = staticFieldLayout.getFieldOffset(field);
-		if (offset == -1L) {
-			return null;
-		}
-		MemoryManager memoryManager = vm.getMemoryManager();
-		long resultingOffset = memoryManager.getStaticOffset(this) + offset;
-		return vm.getOperations().readGenericValue(oop, field.getDesc(), resultingOffset);
-	}
-
-	@Override
-	public Value getStaticValue(String name, String desc) {
-		return getStaticValue(new SimpleMemberKey(this, name, desc));
-	}
-
-	@Override
-	public boolean setStaticFieldValue(MemberKey field, Value value) {
-		initialize();
-		long offset = staticFieldLayout.getFieldOffset(field);
-		if (offset == -1L) {
-			return false;
-		}
-		MemoryManager memoryManager = vm.getMemoryManager();
-		long resultingOffset = memoryManager.getStaticOffset(this) + offset;
-		vm.getOperations().writeGenericValue(oop, field.getDesc(), value, resultingOffset);
-		return true;
-	}
-
-	@Override
-	public boolean setStaticFieldValue(String name, String desc, Value value) {
-		return setStaticFieldValue(new SimpleMemberKey(this, name, desc), value);
-	}
-
-	@Override
 	public long getVirtualFieldOffset(String name, String desc) {
 		initialize();
 		return vrtFieldLayout.getFieldOffset(new SimpleMemberKey(this, name, desc));
@@ -815,7 +777,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		HashMap<MemberKey, JavaField> map = new HashMap<MemberKey, JavaField>();
 		ArrayDeque<InstanceJavaClass> deque = new ArrayDeque<InstanceJavaClass>();
 		long offset = 0L;
-		InstanceJavaClass javaClass = this;
+		InstanceJavaClass javaClass = getSuperclassWithoutResolving();
 		while (javaClass != null) {
 			deque.addFirst(javaClass);
 			javaClass = javaClass.getSuperclassWithoutResolving();
@@ -825,13 +787,18 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		MirrorFactory factory = vm.getMirrorFactory();
 		int slot = 0;
 		while ((javaClass = deque.pollFirst()) != null) {
-			List<FieldNode> fields = javaClass.getNode().fields;
-			for (FieldNode field : fields) {
-				if ((field.access & Opcodes.ACC_STATIC) == 0) {
-					String desc = field.desc;
-					map.put(new SimpleMemberKey(javaClass, field.name, desc), factory.newField(javaClass, field, slot++, offset));
-					offset += helper.getDescriptorSize(desc);
-				}
+			// Propagate parent virtual field layout
+			FieldLayout layout = javaClass.getVirtualFieldLayout();
+			map.putAll(layout.getFields());
+			offset += layout.getSize();
+			slot += layout.getAll().size();
+		}
+		List<FieldNode> fields = node.fields;
+		for (FieldNode field : fields) {
+			if ((field.access & Opcodes.ACC_STATIC) == 0) {
+				String desc = field.desc;
+				map.put(new SimpleMemberKey(this, field.name, desc), factory.newField(this, field, slot++, offset));
+				offset += helper.getDescriptorSize(desc);
 			}
 		}
 		return new FieldLayout(Collections.unmodifiableMap(map), offset);
@@ -988,7 +955,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 			jc.initialize();
 			oop = vm.getMemoryManager().newInstance(jc);
 			// Can't use newException here
-			JavaMethod init = vm.getLinkResolver().resolveSpecialMethod(jc, "<init>", "(Ljava/lang/Throwable;)V");
+			JavaMethod init = vm.getPublicLinkResolver().resolveSpecialMethod(jc, "<init>", "(Ljava/lang/Throwable;)V");
 			Locals locals = vm.getThreadStorage().newLocals(init);
 			locals.set(0, oop);
 			locals.set(1, oop);

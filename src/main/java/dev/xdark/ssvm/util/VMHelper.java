@@ -144,9 +144,7 @@ public final class VMHelper {
 	public long[] toJavaLongs(ArrayValue array) {
 		int length = array.getLength();
 		long[] result = new long[length];
-		while (length-- != 0) {
-			result[length] = array.getLong(length);
-		}
+		array.getMemory().getData().read(vm.getMemoryManager().arrayBaseOffset(array), result, 0, length);
 		return result;
 	}
 
@@ -159,9 +157,7 @@ public final class VMHelper {
 	public double[] toJavaDoubles(ArrayValue array) {
 		int length = array.getLength();
 		double[] result = new double[length];
-		while (length-- != 0) {
-			result[length] = array.getDouble(length);
-		}
+		array.getMemory().getData().read(vm.getMemoryManager().arrayBaseOffset(array), result, 0, length);
 		return result;
 	}
 
@@ -174,9 +170,7 @@ public final class VMHelper {
 	public int[] toJavaInts(ArrayValue array) {
 		int length = array.getLength();
 		int[] result = new int[length];
-		while (length-- != 0) {
-			result[length] = array.getInt(length);
-		}
+		array.getMemory().getData().read(vm.getMemoryManager().arrayBaseOffset(array), result, 0, length);
 		return result;
 	}
 
@@ -189,9 +183,7 @@ public final class VMHelper {
 	public float[] toJavaFloats(ArrayValue array) {
 		int length = array.getLength();
 		float[] result = new float[length];
-		while (length-- != 0) {
-			result[length] = array.getFloat(length);
-		}
+		array.getMemory().getData().read(vm.getMemoryManager().arrayBaseOffset(array), result, 0, length);
 		return result;
 	}
 
@@ -204,9 +196,7 @@ public final class VMHelper {
 	public char[] toJavaChars(ArrayValue array) {
 		int length = array.getLength();
 		char[] result = new char[length];
-		while (length-- != 0) {
-			result[length] = array.getChar(length);
-		}
+		array.getMemory().getData().read(vm.getMemoryManager().arrayBaseOffset(array), result, 0, length);
 		return result;
 	}
 
@@ -219,9 +209,7 @@ public final class VMHelper {
 	public short[] toJavaShorts(ArrayValue array) {
 		int length = array.getLength();
 		short[] result = new short[length];
-		while (length-- != 0) {
-			result[length] = array.getShort(length);
-		}
+		array.getMemory().getData().read(vm.getMemoryManager().arrayBaseOffset(array), result, 0, length);
 		return result;
 	}
 
@@ -234,9 +222,7 @@ public final class VMHelper {
 	public byte[] toJavaBytes(ArrayValue array) {
 		int length = array.getLength();
 		byte[] result = new byte[length];
-		while (length-- != 0) {
-			result[length] = array.getByte(length);
-		}
+		array.getMemory().getData().read(vm.getMemoryManager().arrayBaseOffset(array), result, 0, length);
 		return result;
 	}
 
@@ -249,9 +235,7 @@ public final class VMHelper {
 	public boolean[] toJavaBooleans(ArrayValue array) {
 		int length = array.getLength();
 		boolean[] result = new boolean[length];
-		while (length-- != 0) {
-			result[length] = array.getBoolean(length);
-		}
+		array.getMemory().getData().read(vm.getMemoryManager().arrayBaseOffset(array), result, 0, length);
 		return result;
 	}
 
@@ -282,9 +266,7 @@ public final class VMHelper {
 		int newLength = endIndex - startIndex;
 		VirtualMachine vm = this.vm;
 		ArrayValue wrapper = newArray(vm.getPrimitives().longPrimitive(), newLength);
-		for (int i = 0; startIndex < endIndex; startIndex++) {
-			wrapper.setLong(i++, array[startIndex]);
-		}
+		wrapper.getMemory().getData().write(vm.getMemoryManager().arrayBaseOffset(wrapper), array, startIndex, newLength);
 		return wrapper;
 	}
 
@@ -310,9 +292,7 @@ public final class VMHelper {
 		int newLength = endIndex - startIndex;
 		VirtualMachine vm = this.vm;
 		ArrayValue wrapper = newArray(vm.getPrimitives().doublePrimitive(), newLength);
-		for (int i = 0; startIndex < endIndex; startIndex++) {
-			wrapper.setDouble(i++, array[startIndex]);
-		}
+		wrapper.getMemory().getData().write(vm.getMemoryManager().arrayBaseOffset(wrapper), array, startIndex, newLength);
 		return wrapper;
 	}
 
@@ -338,9 +318,7 @@ public final class VMHelper {
 		int newLength = endIndex - startIndex;
 		VirtualMachine vm = this.vm;
 		ArrayValue wrapper = newArray(vm.getPrimitives().intPrimitive(), newLength);
-		for (int i = 0; startIndex < endIndex; startIndex++) {
-			wrapper.setInt(i++, array[startIndex]);
-		}
+		wrapper.getMemory().getData().write(vm.getMemoryManager().arrayBaseOffset(wrapper), array, startIndex, newLength);
 		return wrapper;
 	}
 
@@ -366,9 +344,7 @@ public final class VMHelper {
 		int newLength = endIndex - startIndex;
 		VirtualMachine vm = this.vm;
 		ArrayValue wrapper = newArray(vm.getPrimitives().floatPrimitive(), newLength);
-		for (int i = 0; startIndex < endIndex; startIndex++) {
-			wrapper.setFloat(i++, array[startIndex]);
-		}
+		wrapper.getMemory().getData().write(vm.getMemoryManager().arrayBaseOffset(wrapper), array, startIndex, newLength);
 		return wrapper;
 	}
 
@@ -394,9 +370,7 @@ public final class VMHelper {
 		int newLength = endIndex - startIndex;
 		VirtualMachine vm = this.vm;
 		ArrayValue wrapper = newArray(vm.getPrimitives().charPrimitive(), newLength);
-		for (int i = 0; startIndex < endIndex; startIndex++) {
-			wrapper.setChar(i++, array[startIndex]);
-		}
+		wrapper.getMemory().getData().write(vm.getMemoryManager().arrayBaseOffset(wrapper), array, startIndex, newLength);
 		return wrapper;
 	}
 
@@ -422,9 +396,7 @@ public final class VMHelper {
 		int newLength = endIndex - startIndex;
 		VirtualMachine vm = this.vm;
 		ArrayValue wrapper = newArray(vm.getPrimitives().shortPrimitive(), newLength);
-		for (int i = 0; startIndex < endIndex; startIndex++) {
-			wrapper.setShort(i++, array[startIndex]);
-		}
+		wrapper.getMemory().getData().write(vm.getMemoryManager().arrayBaseOffset(wrapper), array, startIndex, newLength);
 		return wrapper;
 	}
 
@@ -450,9 +422,7 @@ public final class VMHelper {
 		int newLength = endIndex - startIndex;
 		VirtualMachine vm = this.vm;
 		ArrayValue wrapper = newArray(vm.getPrimitives().bytePrimitive(), newLength);
-		for (int i = 0; startIndex < endIndex; startIndex++) {
-			wrapper.setByte(i++, array[startIndex]);
-		}
+		wrapper.getMemory().getData().write(vm.getMemoryManager().arrayBaseOffset(wrapper), array, startIndex, newLength);
 		return wrapper;
 	}
 
@@ -478,9 +448,7 @@ public final class VMHelper {
 		int newLength = endIndex - startIndex;
 		VirtualMachine vm = this.vm;
 		ArrayValue wrapper = newArray(vm.getPrimitives().booleanPrimitive(), newLength);
-		for (int i = 0; startIndex < endIndex; startIndex++) {
-			wrapper.setBoolean(i++, array[startIndex]);
-		}
+		wrapper.getMemory().getData().write(vm.getMemoryManager().arrayBaseOffset(wrapper), array, startIndex, newLength);
 		return wrapper;
 	}
 
@@ -539,12 +507,12 @@ public final class VMHelper {
 		if (off != -1L) {
 			array = (ArrayValue) vm.getMemoryManager().readValue(value, off);
 		} else {
-			JavaMethod toCharArray = vm.getLinkResolver().resolveVirtualMethod(jc, jc, "toCharArray", "()[C");
+			JavaMethod toCharArray = vm.getPublicLinkResolver().resolveVirtualMethod(jc, jc, "toCharArray", "()[C");
 			Locals locals = vm.getThreadStorage().newLocals(toCharArray);
 			locals.set(0, value);
 			array = (ArrayValue) invoke(toCharArray, locals).getResult();
 		}
-		return new String(toJavaChars(array));
+		return UnsafeUtil.newString(toJavaChars(array));
 	}
 
 	/**
@@ -593,14 +561,15 @@ public final class VMHelper {
 			}
 			wrapper.initialize();
 		} else {
+			ArrayValue chars = toVMChars(str);
 			if (jdk8) {
-				memoryManager.writeValue(wrapper, off, toVMChars(str));
+				memoryManager.writeValue(wrapper, off, chars);
 				wrapper.initialize();
 			} else {
-				JavaMethod init = vm.getLinkResolver().resolveSpecialMethod(jc, "<init>", "([C)V");
+				JavaMethod init = vm.getPublicLinkResolver().resolveSpecialMethod(jc, "<init>", "([C)V");
 				Locals locals = vm.getThreadStorage().newLocals(init);
 				locals.set(0, wrapper);
-				locals.set(1, toVMChars(str));
+				locals.set(1, chars);
 				invoke(init, locals);
 			}
 		}
@@ -635,7 +604,7 @@ public final class VMHelper {
 			memoryManager.writeValue(wrapper, off, chars);
 			wrapper.initialize();
 		} else {
-			JavaMethod init = vm.getLinkResolver().resolveSpecialMethod(jc, "<init>", "([C)V");
+			JavaMethod init = vm.getPublicLinkResolver().resolveSpecialMethod(jc, "<init>", "([C)V");
 			Locals locals = vm.getThreadStorage().newLocals(init);
 			locals.set(0, wrapper);
 			locals.set(1, chars);
@@ -652,6 +621,7 @@ public final class VMHelper {
 	public void initializeStaticFields(InstanceJavaClass javaClass) {
 		MemoryManager memoryManager = vm.getMemoryManager();
 		InstanceValue oop = javaClass.getOop();
+		MemoryData data = oop.getData();
 		long baseOffset = memoryManager.getStaticOffset(javaClass);
 		Map<MemberKey, JavaField> fields = javaClass.getStaticFieldLayout().getFields();
 		for (Map.Entry<MemberKey, JavaField> entry : fields.entrySet()) {
@@ -667,26 +637,26 @@ public final class VMHelper {
 			long resultingOffset = baseOffset + offset;
 			switch (desc.charAt(0)) {
 				case 'J':
-					memoryManager.writeLong(oop, resultingOffset, (Long) cst);
+					data.writeLong(resultingOffset, (Long) cst);
 					break;
 				case 'D':
-					memoryManager.writeDouble(oop, resultingOffset, (Double) cst);
+					data.writeLong(resultingOffset, Double.doubleToRawLongBits((Double) cst));
 					break;
 				case 'I':
-					memoryManager.writeInt(oop, resultingOffset, (Integer) cst);
+					data.writeInt(resultingOffset, (Integer) cst);
 					break;
 				case 'F':
-					memoryManager.writeFloat(oop, resultingOffset, (Float) cst);
+					data.writeInt(resultingOffset, Float.floatToRawIntBits((Float) cst));
 					break;
 				case 'C':
-					memoryManager.writeChar(oop, resultingOffset, (char) ((Integer) cst).intValue());
+					data.writeChar(resultingOffset, (char) ((Integer) cst).intValue());
 					break;
 				case 'S':
-					memoryManager.writeShort(oop, resultingOffset, ((Integer) cst).shortValue());
+					data.writeShort(resultingOffset, ((Integer) cst).shortValue());
 					break;
 				case 'B':
 				case 'Z':
-					memoryManager.writeByte(oop, resultingOffset, ((Integer) cst).byteValue());
+					data.writeByte(resultingOffset, ((Integer) cst).byteValue());
 					break;
 				default:
 					memoryManager.writeValue(oop, resultingOffset, cst == null ? memoryManager.nullValue() : (ObjectValue) valueFromLdc(cst));
@@ -702,14 +672,17 @@ public final class VMHelper {
 	public void screenVmThread(VMThread vmThread) {
 		Thread javaThread = vmThread.getJavaThread();
 		InstanceValue oop = vmThread.getOop();
+		VirtualMachine vm = this.vm;
+		VMOperations ops = vm.getPublicOperations();
+		InstanceJavaClass jc = vm.getSymbols().java_lang_Thread();
 		// Copy thread name
-		oop.setValue("name", "Ljava/lang/String;", newUtf8(javaThread.getName()));
+		ops.putReference(oop, jc, "name", "Ljava/lang/String;", newUtf8(javaThread.getName()));
 		// Copy thread priority
-		oop.setInt("priority", javaThread.getPriority());
+		ops.putInt(oop, jc, "priority", javaThread.getPriority());
 		// Copy daemon status
-		oop.setBoolean("daemon", javaThread.isDaemon());
+		ops.putBoolean(oop, jc, "daemon", javaThread.isDaemon());
 		// Copy thread state (JVMTI_THREAD_STATE_RUNNABLE | JVMTI_THREAD_STATE_ALIVE)
-		oop.setInt("threadStatus", ThreadState.JVMTI_THREAD_STATE_RUNNABLE | ThreadState.JVMTI_THREAD_STATE_ALIVE);
+		ops.putInt(oop, jc, "threadStatus", ThreadState.JVMTI_THREAD_STATE_RUNNABLE | ThreadState.JVMTI_THREAD_STATE_ALIVE);
 	}
 
 	/**
@@ -724,7 +697,7 @@ public final class VMHelper {
 		VirtualMachine vm = this.vm;
 		javaClass.initialize();
 		InstanceValue instance = vm.getMemoryManager().newInstance(javaClass);
-		JavaMethod init = vm.getLinkResolver().resolveSpecialMethod(javaClass, "<init>", "()V");
+		JavaMethod init = vm.getPublicLinkResolver().resolveSpecialMethod(javaClass, "<init>", "()V");
 		Locals locals = vm.getThreadStorage().newLocals(init);
 		locals.set(0, instance);
 		invoke(init, locals);
@@ -978,7 +951,7 @@ public final class VMHelper {
 		setClassFields(oop, loader, protectionDomain);
 		if (!loader.isNull()) {
 			ObjectValue classes = ((InstanceValue) loader).getValue("classes", "Ljava/util/Vector;");
-			JavaMethod add = vm.getLinkResolver().resolveVirtualMethod(classes, "add", "(Ljava/lang/Object;)Z");
+			JavaMethod add = vm.getPublicLinkResolver().resolveVirtualMethod(classes, "add", "(Ljava/lang/Object;)Z");
 			Locals locals = vm.getThreadStorage().newLocals(add);
 			locals.set(0, classes);
 			locals.set(1, javaClass.getOop());
@@ -1035,9 +1008,10 @@ public final class VMHelper {
 		if (!suppressedExceptions.isNull()) {
 			InstanceJavaClass cl = (InstanceJavaClass) vm.findBootstrapClass("java/util/ArrayList");
 			if (cl == suppressedExceptions.getJavaClass()) {
+				VMOperations ops = vm.getPublicOperations();
 				InstanceValue value = (InstanceValue) suppressedExceptions;
-				int size = value.getInt("size");
-				ArrayValue array = (ArrayValue) value.getValue("elementData", "[Ljava/lang/Object;");
+				int size = ops.getInt(value, "size");
+				ArrayValue array = (ArrayValue) ops.getReference(value, "elementData", "[Ljava/lang/Object;");
 				for (int i = 0; i < size; i++) {
 					exception.addSuppressed(toJavaException((InstanceValue) array.getValue(i)));
 				}
@@ -1064,7 +1038,7 @@ public final class VMHelper {
 		jc.initialize();
 		MemoryManager memoryManager = vm.getMemoryManager();
 		InstanceValue element = memoryManager.newInstance(jc);
-		JavaMethod init = vm.getLinkResolver().resolveSpecialMethod(jc, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V");
+		JavaMethod init = vm.getPublicLinkResolver().resolveSpecialMethod(jc, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V");
 		Locals locals = vm.getThreadStorage().newLocals(init);
 		locals.set(0, element);
 		locals.set(1, newUtf8(className));
@@ -1456,16 +1430,16 @@ public final class VMHelper {
 	/**
 	 * Returns file descriptor handle.
 	 *
-	 * @param fos File stream to get handle from.
+	 * @param fs File stream to get handle from.
 	 * @return file descriptor handle.
 	 */
-	public long getFileStreamHandle(InstanceValue fos) {
+	public long getFileStreamHandle(InstanceValue fs) {
 		VirtualMachine vm = this.vm;
-		JavaMethod getFD = vm.getLinkResolver().resolveVirtualMethod(fos, "getFD", "()Ljava/io/FileDescriptor;");
+		JavaMethod getFD = vm.getPublicLinkResolver().resolveVirtualMethod(fs, "getFD", "()Ljava/io/FileDescriptor;");
 		Locals locals = vm.getThreadStorage().newLocals(getFD);
-		locals.set(0, fos);
-		Value fd = invoke(getFD, locals).getResult();
-		return this.<InstanceValue>checkNotNull(fd).getLong("handle");
+		locals.set(0, fs);
+		ObjectValue fd = (ObjectValue) invoke(getFD, locals).getResult();
+		return vm.getPublicOperations().getLong(fd, vm.getSymbols().java_io_FileDescriptor(), "handle");
 	}
 
 	/**
@@ -1477,7 +1451,7 @@ public final class VMHelper {
 	 */
 	public InstanceValue methodType(JavaClass rt, ArrayValue parameters) {
 		VirtualMachine vm = this.vm;
-		JavaMethod method = vm.getLinkResolver().resolveStaticMethod(vm.getSymbols().java_lang_invoke_MethodHandleNatives(), "findMethodHandleType", "(Ljava/lang/Class;[Ljava/lang/Class;)Ljava/lang/invoke/MethodType;");
+		JavaMethod method = vm.getPublicLinkResolver().resolveStaticMethod(vm.getSymbols().java_lang_invoke_MethodHandleNatives(), "findMethodHandleType", "(Ljava/lang/Class;[Ljava/lang/Class;)Ljava/lang/invoke/MethodType;");
 		Locals locals = vm.getThreadStorage().newLocals(method);
 		locals.set(0, rt.getOop());
 		locals.set(1, parameters);
@@ -1626,7 +1600,7 @@ public final class VMHelper {
 	public InstanceValue linkMethodHandleConstant(InstanceJavaClass caller, Handle handle) {
 		VirtualMachine vm = this.vm;
 		InstanceJavaClass natives = vm.getSymbols().java_lang_invoke_MethodHandleNatives();
-		JavaMethod link = vm.getLinkResolver().resolveStaticMethod(natives, "linkMethodHandleConstant", "(Ljava/lang/Class;ILjava/lang/Class;Ljava/lang/String;Ljava/lang/Object;)Ljava/lang/invoke/MethodHandle;");
+		JavaMethod link = vm.getPublicLinkResolver().resolveStaticMethod(natives, "linkMethodHandleConstant", "(Ljava/lang/Class;ILjava/lang/Class;Ljava/lang/String;Ljava/lang/Object;)Ljava/lang/invoke/MethodHandle;");
 		Locals locals = vm.getThreadStorage().newLocals(link);
 		locals.set(0, caller.getOop());
 		locals.setInt(1, handle.getTag());
@@ -1675,7 +1649,7 @@ public final class VMHelper {
 		VirtualMachine vm = this.vm;
 		int length = str.length();
 		ArrayValue wrapper = newArray(vm.getPrimitives().charPrimitive(), length);
-		if (length <= STRING_COPY_THRESHOLD || UnsafeUtil.stringValueFieldAccessible()) {
+		if (UnsafeUtil.stringValueFieldAccessible() || length <= STRING_COPY_THRESHOLD) {
 			MemoryData memory = wrapper.getMemory().getData();
 			char[] chars = UnsafeUtil.getChars(str);
 			memory.write(vm.getMemoryManager().arrayBaseOffset(wrapper), chars, 0, chars.length);
@@ -1702,7 +1676,7 @@ public final class VMHelper {
 		} catch (VMException ex) {
 			InstanceValue oop = ex.getOop();
 			VMSymbols symbols = vm.getSymbols();
-			if (oop.isNull() || !symbols.java_lang_Error().isAssignableFrom(oop.getJavaClass())) {
+			if (!symbols.java_lang_Error().isAssignableFrom(oop.getJavaClass())) {
 				InstanceValue cnfe = newException(symbols.java_lang_NoClassDefFoundError(), name, oop);
 				throw new VMException(cnfe);
 			}
@@ -1777,7 +1751,7 @@ public final class VMHelper {
 
 	private Value invokeUnbox(ObjectValue value, String name , String desc) {
 		VirtualMachine vm = this.vm;
-		JavaMethod method = vm.getLinkResolver().resolveVirtualMethod(value, name, desc);
+		JavaMethod method = vm.getPublicLinkResolver().resolveVirtualMethod(value, name, desc);
 		Locals locals = vm.getThreadStorage().newLocals(method);
 		locals.set(0, value);
 		return invoke(method, locals).getResult();
@@ -1785,7 +1759,7 @@ public final class VMHelper {
 
 	private ObjectValue invokeBox(InstanceJavaClass jc, Value value, String name , String desc) {
 		VirtualMachine vm = this.vm;
-		JavaMethod method = vm.getLinkResolver().resolveStaticMethod(jc, name, desc);
+		JavaMethod method = vm.getPublicLinkResolver().resolveStaticMethod(jc, name, desc);
 		Locals locals = vm.getThreadStorage().newLocals(method);
 		locals.set(0, value);
 		if (value.isWide()) {

@@ -114,7 +114,7 @@ public class LongMathTest {
 		mv.visitInsn(LRETURN);
 		mv.visitMaxs(4, 0);
 		InstanceJavaClass jc = TestUtil.createClass(vm, node);
-		ExecutionContext result = vm.getHelper().invoke(vm.getLinkResolver().resolveStaticMethod(jc, "test", "()J"), vm.getThreadStorage().newLocals(0));
+		ExecutionContext result = vm.getHelper().invoke(vm.getPublicLinkResolver().resolveStaticMethod(jc, "test", "()J"), vm.getThreadStorage().newLocals(0));
 		return result.getResult().asLong();
 	}
 
@@ -128,7 +128,7 @@ public class LongMathTest {
 		mv.visitInsn(LRETURN);
 		mv.visitMaxs(3, 0);
 		InstanceJavaClass jc = TestUtil.createClass(vm, node);
-		ExecutionContext result = vm.getHelper().invoke(vm.getLinkResolver().resolveStaticMethod(jc, "test", "()J"), vm.getThreadStorage().newLocals(0));
+		ExecutionContext result = vm.getHelper().invoke(vm.getPublicLinkResolver().resolveStaticMethod(jc, "test", "()J"), vm.getThreadStorage().newLocals(0));
 		return result.getResult().asLong();
 	}
 
@@ -141,7 +141,7 @@ public class LongMathTest {
 		mv.visitInsn(LRETURN);
 		mv.visitMaxs(2, 0);
 		InstanceJavaClass jc = TestUtil.createClass(vm, node);
-		ExecutionContext result = vm.getHelper().invoke(vm.getLinkResolver().resolveStaticMethod(jc, "test", "()J"), vm.getThreadStorage().newLocals(0));
+		ExecutionContext result = vm.getHelper().invoke(vm.getPublicLinkResolver().resolveStaticMethod(jc, "test", "()J"), vm.getThreadStorage().newLocals(0));
 		return result.getResult().asLong();
 	}
 

@@ -18,7 +18,7 @@ public final class DoubleArrayProcessor implements InstructionProcessor<Delegati
 	public Result execute(DelegatingInsnNode<IntInsnNode> insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
 		int length = stack.popInt();
-		stack.push(ctx.getOperations().allocateDoubleArray(length));
+		stack.pushReference(ctx.getOperations().allocateDoubleArray(length));
 		return Result.CONTINUE;
 	}
 }

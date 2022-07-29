@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.value;
 
+import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.memory.allocation.MemoryBlock;
 import dev.xdark.ssvm.mirror.JavaClass;
 
@@ -14,6 +15,11 @@ public final class NullValue implements ObjectValue {
 
 	public NullValue(MemoryBlock memory) {
 		this.memory = memory;
+	}
+
+	@Override
+	public long asLong() {
+		throw new PanicException("Segfault");
 	}
 
 	@Override

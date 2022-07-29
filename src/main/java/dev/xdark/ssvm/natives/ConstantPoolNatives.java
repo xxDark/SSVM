@@ -130,7 +130,7 @@ public class ConstantPoolNatives {
 
 	private JavaClass getCpOop(ExecutionContext ctx) {
 		VirtualMachine vm = ctx.getVM();
-		Value value = ctx.getLocals().load(1);
+		Value value = ctx.getLocals().loadReference(1);
 		if (!(value instanceof JavaValue)) {
 			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 		}

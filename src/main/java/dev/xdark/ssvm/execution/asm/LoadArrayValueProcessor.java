@@ -19,7 +19,7 @@ public final class LoadArrayValueProcessor implements InstructionProcessor<Abstr
 		Stack stack = ctx.getStack();
 		int index = stack.popInt();
 		ObjectValue array = stack.pop();
-		stack.push(ctx.getOperations().arrayLoadReference(array, index));
+		stack.pushReference(ctx.getOperations().arrayLoadReference(array, index));
 		return Result.CONTINUE;
 	}
 }

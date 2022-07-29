@@ -36,34 +36,34 @@ public class ThreadNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "interrupt", "()V", ctx -> {
-			VMThread th = vm.getThreadManager().getVmThread(ctx.getLocals().<InstanceValue>load(0));
+			VMThread th = vm.getThreadManager().getVmThread(ctx.getLocals().<InstanceValue>loadReference(0));
 			th.interrupt();
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "setPriority0", "(I)V", ctx -> {
 			Locals locals = ctx.getLocals();
-			VMThread th = vm.getThreadManager().getVmThread(locals.<InstanceValue>load(0));
+			VMThread th = vm.getThreadManager().getVmThread(locals.<InstanceValue>loadReference(0));
 			th.setPriority(locals.loadInt(1));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "start0", "()V", ctx -> {
-			VMThread th = vm.getThreadManager().getVmThread(ctx.getLocals().<InstanceValue>load(0));
+			VMThread th = vm.getThreadManager().getVmThread(ctx.getLocals().<InstanceValue>loadReference(0));
 			th.start();
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "isAlive", "()Z", ctx -> {
-			VMThread th = vm.getThreadManager().getVmThread(ctx.getLocals().<InstanceValue>load(0));
+			VMThread th = vm.getThreadManager().getVmThread(ctx.getLocals().<InstanceValue>loadReference(0));
 			ctx.setResult(th.isAlive() ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "isInterrupted", "(Z)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			VMThread th = vm.getThreadManager().getVmThread(locals.<InstanceValue>load(0));
-			ctx.setResult(th.isInterrupted(locals.load(1).asBoolean()) ? IntValue.ONE : IntValue.ZERO);
+			VMThread th = vm.getThreadManager().getVmThread(locals.<InstanceValue>loadReference(0));
+			ctx.setResult(th.isInterrupted(locals.loadInt(1) != 0) ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "holdsLock", "(Ljava/lang/Object;)Z", ctx -> {
-			ObjectValue arg = vm.getHelper().checkNotNull(ctx.getLocals().load(0));
+			ObjectValue arg = vm.getHelper().checkNotNull(ctx.getLocals().loadReference(0));
 			ctx.setResult(arg.isHeldByCurrentThread() ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});

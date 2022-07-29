@@ -20,7 +20,7 @@ public final class GetStaticCharProcessor implements InstructionProcessor<VMFiel
 		JavaField field = insn.getResolved();
 		InstanceJavaClass klass = field.getOwner();
 		MemoryManager memory = ctx.getMemoryManager();
-		char value = memory.readChar(klass.getOop(), memory.getStaticOffset(klass) + field.getOffset());
+		char value = klass.getOop().getData().readChar(memory.getStaticOffset(klass) + field.getOffset());
 		ctx.getStack().pushInt(value);
 		return Result.CONTINUE;
 	}

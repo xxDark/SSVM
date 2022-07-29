@@ -118,7 +118,7 @@ public final class SimpleExecutionContext implements ExecutionContext, Disposabl
 		if (--count.value == 0) {
 			lockMap.remove(value);
 		}
-		vm.getOperations().monitorExit(value);
+		vm.getPublicOperations().monitorExit(value);
 	}
 
 	@Override

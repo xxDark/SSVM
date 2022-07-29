@@ -25,7 +25,7 @@ public class CloneTest {
 		VMHelper helper = vm.getHelper();
 		byte[] bytes = "Hello, World".getBytes(StandardCharsets.UTF_8);
 		ArrayValue array = helper.toVMBytes(bytes);
-		JavaMethod clone = vm.getLinkResolver().resolveVirtualMethod(array, "clone", "()Ljava/lang/Object;");
+		JavaMethod clone = vm.getPublicLinkResolver().resolveVirtualMethod(array, "clone", "()Ljava/lang/Object;");
 		Locals locals = vm.getThreadStorage().newLocals(clone);
 		locals.set(0, array);
 		ArrayValue copy = (ArrayValue) helper.invoke(clone, locals).getResult();

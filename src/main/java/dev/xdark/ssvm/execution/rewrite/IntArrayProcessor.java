@@ -18,7 +18,7 @@ public final class IntArrayProcessor implements InstructionProcessor<DelegatingI
 	public Result execute(DelegatingInsnNode<IntInsnNode> insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
 		int length = stack.popInt();
-		stack.push(ctx.getOperations().allocateIntArray(length));
+		stack.pushReference(ctx.getOperations().allocateIntArray(length));
 		return Result.CONTINUE;
 	}
 }

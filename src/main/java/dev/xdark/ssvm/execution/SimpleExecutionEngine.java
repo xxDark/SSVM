@@ -2,7 +2,6 @@ package dev.xdark.ssvm.execution;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvocation;
-import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.thread.Backtrace;
@@ -47,7 +46,7 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 		ObjectValue lock = null;
 		if (options.useEnterLocking() && (access & Opcodes.ACC_SYNCHRONIZED) != 0) {
 			if (((access & Opcodes.ACC_STATIC)) == 0) {
-				lock = ctx.getLocals().load(0);
+				lock = ctx.getLocals().loadReference(0);
 			} else {
 				lock = jm.getOwner().getOop();
 			}
@@ -61,14 +60,11 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 					invocation.handle(ctx);
 				}
 			}
-			MethodInvoker invoker = vmi.getInvoker(jm);
-			if (invoker != null) {
-				Result result = invoker.intercept(ctx);
-				if (result == Result.ABORT) {
-					return;
-				}
+			Result result = vmi.getInvoker(jm).intercept(ctx);
+			if (result == Result.ABORT) {
+				return;
 			}
-			vm.getHelper().throwException(vm.getSymbols().java_lang_InternalError(), "No invoker for " + jm);
+			vm.getHelper().throwException(vm.getSymbols().java_lang_UnsatisfiedLinkError(), jm.toString());
 		} catch (VMException ex) {
 			throw ex;
 		} catch (Exception ex) {
@@ -87,10 +83,10 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 							}
 						}
 					} finally {
-						if (lock != null) {
-							ctx.monitorExit(lock);
-						}
 						try {
+							if (lock != null) {
+								ctx.monitorExit(lock);
+							}
 							ctx.verifyMonitors();
 						} finally {
 							DisposeUtil.dispose(ctx);

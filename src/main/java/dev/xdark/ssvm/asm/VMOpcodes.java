@@ -37,4 +37,13 @@ public class VMOpcodes {
 	public static final int VM_GETSTATIC_LONG = VM_GETSTATIC_FLOAT + 1;
 	public static final int VM_GETSTATIC_DOUBLE = VM_GETSTATIC_LONG + 1;
 	public static final int VM_GETSTATIC_REFERENCE = VM_GETSTATIC_DOUBLE + 1;
+	public static final int VM_PUTSTATIC_BOOLEAN = VM_GETSTATIC_REFERENCE + 1;
+	public static final int VM_PUTSTATIC_CHAR = VM_PUTSTATIC_BOOLEAN + 1;
+	public static final int VM_PUTSTATIC_BYTE = VM_PUTSTATIC_CHAR + 1;
+	public static final int VM_PUTSTATIC_SHORT = VM_PUTSTATIC_BYTE + 1;
+	public static final int VM_PUTSTATIC_INT = VM_PUTSTATIC_SHORT + 1;
+	public static final int VM_PUTSTATIC_FLOAT = VM_PUTSTATIC_INT + 1;
+	public static final int VM_PUTSTATIC_LONG = VM_PUTSTATIC_FLOAT + 1;
+	public static final int VM_PUTSTATIC_DOUBLE = VM_PUTSTATIC_LONG + 1;
+	public static final int VM_PUTSTATIC_REFERENCE = VM_PUTSTATIC_DOUBLE + 1;
 }

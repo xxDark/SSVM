@@ -45,12 +45,12 @@ import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.thread.VMThread;
 import dev.xdark.ssvm.tz.SimpleTimeManager;
 import dev.xdark.ssvm.tz.TimeManager;
+import dev.xdark.ssvm.util.DefaultVMOperations;
 import dev.xdark.ssvm.util.InvokeDynamicLinker;
 import dev.xdark.ssvm.util.Reflection;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.ClassReader;
@@ -85,8 +85,10 @@ public class VirtualMachine {
 	private final VMInitializer initializer;
 	private final ExecutionEngine executionEngine;
 	private final SafePoint safePoint;
-	private final VMOperations operations;
-	private final LinkResolver linkResolver;
+	private final VMOperations publicOperations;
+	private final VMOperations trustedOperations;
+	private final LinkResolver publicLinkResolver;
+	private final LinkResolver trustedLinkResolver;
 	private final InvokeDynamicLinker invokeDynamicLinker;
 	private final Reflection reflection;
 	private final MirrorFactory mirrorFactory;
@@ -118,10 +120,12 @@ public class VirtualMachine {
 		managementInterface = createManagementInterface();
 		timeManager = createTimeManager();
 		executionEngine = createExecutionEngine();
-		linkResolver = new LinkResolver(this);
+		publicLinkResolver = new LinkResolver(this, false);
+		trustedLinkResolver = new LinkResolver(this, true);
 		invokeDynamicLinker = new InvokeDynamicLinker(this);
 		reflection = new Reflection(this);
-		operations = new VMOperations(this);
+		publicOperations = createPublicOperations();
+		trustedOperations = createTrustedOperations();
 
 		properties = System.getProperties().entrySet().stream().collect(Collectors.toMap(x -> x.getKey().toString(), x -> x.getValue().toString()));
 		env = new HashMap<>(System.getenv());
@@ -193,6 +197,7 @@ public class VirtualMachine {
 				InstanceJavaClass sysClass = symbols.java_lang_System();
 				MemoryManager memoryManager = this.memoryManager;
 				ThreadManager threadManager = this.threadManager;
+				VMOperations ops = publicOperations;
 				GarbageCollector garbageCollector = memoryManager.getGarbageCollector();
 
 				// Inject unsafe constants
@@ -202,15 +207,15 @@ public class VirtualMachine {
 				if (unsafeConstants != null) {
 					MemoryAllocator memoryAllocator = this.memoryAllocator;
 					unsafeConstants.initialize();
-					unsafeConstants.setStaticFieldValue("ADDRESS_SIZE0", "I", IntValue.of(memoryAllocator.addressSize()));
-					unsafeConstants.setStaticFieldValue("PAGE_SIZE", "I", IntValue.of(memoryAllocator.pageSize()));
-					unsafeConstants.setStaticFieldValue("BIG_ENDIAN", "Z", memoryAllocator.getByteOrder() == ByteOrder.BIG_ENDIAN ? IntValue.ONE : IntValue.ZERO);
+					ops.putInt(unsafeConstants, "ADDRESS_SIZE", memoryAllocator.addressSize());
+					ops.putInt(unsafeConstants, "PAGE_SIZE", memoryAllocator.pageSize());
+					ops.putBoolean(unsafeConstants, "BIG_ENDIAN", memoryAllocator.getByteOrder() == ByteOrder.BIG_ENDIAN);
 				}
 				// Initialize system group
 				InstanceJavaClass groupClass = symbols.java_lang_ThreadGroup();
 				InstanceValue sysGroup = memoryManager.newInstance(groupClass);
 				garbageCollector.makeGlobalReference(sysGroup);
-				LinkResolver linkResolver = this.linkResolver;
+				LinkResolver linkResolver = this.publicLinkResolver;
 				ThreadStorage ts = getThreadStorage();
 				{
 					JavaMethod init = linkResolver.resolveSpecialMethod(groupClass, "<init>", "()V");
@@ -234,8 +239,8 @@ public class VirtualMachine {
 				// Initialize main thread
 				VMThread mainThread = threadManager.createMainThread();
 				InstanceValue oop = mainThread.getOop();
-				oop.setValue("group", "Ljava/lang/ThreadGroup;", mainGroup);
-				oop.setValue("name", "Ljava/lang/String;", helper.newUtf8("main"));
+				ops.putReference(oop, "group", "Ljava/lang/ThreadGroup;", mainGroup);
+				ops.putReference(oop, "name", "Ljava/lang/String;", helper.newUtf8("main"));
 				sysClass.initialize();
 				findBootstrapClass("java/lang/reflect/Method", true);
 				findBootstrapClass("java/lang/reflect/Field", true);
@@ -270,8 +275,8 @@ public class VirtualMachine {
 					{
 						JavaMethod initPhase2 = linkResolver.resolveStaticMethod(sysClass, "initPhase2", "(ZZ)I");
 						Locals locals = ts.newLocals(initPhase2);
-						locals.set(0, IntValue.ONE);
-						locals.set(1, IntValue.ONE);
+						locals.setInt(0, 1);
+						locals.setInt(1, 1);
 						result = helper.invoke(initPhase2, locals).getResult().asInt();
 					}
 					if (result != 0) {
@@ -384,8 +389,17 @@ public class VirtualMachine {
 	 *
 	 * @return VM operations.
 	 */
-	public VMOperations getOperations() {
-		return operations;
+	public VMOperations getPublicOperations() {
+		return publicOperations;
+	}
+
+	/**
+	 * Returns VM operations.
+	 *
+	 * @return VM operations.
+	 */
+	public VMOperations getTrustedOperations() {
+		return trustedOperations;
 	}
 
 	/**
@@ -393,8 +407,17 @@ public class VirtualMachine {
 	 *
 	 * @return link resolver.
 	 */
-	public LinkResolver getLinkResolver() {
-		return linkResolver;
+	public LinkResolver getPublicLinkResolver() {
+		return publicLinkResolver;
+	}
+
+	/**
+	 * Returns link resolver.
+	 *
+	 * @return link resolver.
+	 */
+	public LinkResolver getTrustedLinkResolver() {
+		return trustedLinkResolver;
 	}
 
 	/**
@@ -612,7 +635,7 @@ public class VirtualMachine {
 			ClassLoaderData data = classLoaders.getClassLoaderData(loader);
 			jc = data.getClass(name);
 			if (jc == null) {
-				JavaMethod method = linkResolver.resolveVirtualMethod(loader, "loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;");
+				JavaMethod method = publicLinkResolver.resolveVirtualMethod(loader, "loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;");
 				Locals locals = getThreadStorage().newLocals(method);
 				locals.set(0, loader);
 				locals.set(1, helper.newUtf8(name.replace('/', '.')));
@@ -763,6 +786,26 @@ public class VirtualMachine {
 	 */
 	protected MirrorFactory createMirrorFactory() {
 		return new SimpleMirrorFactory(this);
+	}
+
+	/**
+	 * Creates public operations.
+	 * One may override this method.
+	 *
+	 * @return vm operations.
+	 */
+	protected VMOperations createPublicOperations() {
+		return new DefaultVMOperations(this, false);
+	}
+
+	/**
+	 * Creates trusted operations.
+	 * One may override this method.
+	 *
+	 * @return vm operations.
+	 */
+	protected VMOperations createTrustedOperations() {
+		return new DefaultVMOperations(this, true);
 	}
 
 	private void init() {

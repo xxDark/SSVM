@@ -28,7 +28,7 @@ public class MemoryTest {
 		};
 		vm.initialize();
 		vm.getInterface().setInvoker(vm.getSymbols().java_lang_System(), "loadLibrary", "(Ljava/lang/String;)V", MethodInvoker.interpreted(ctx -> {
-			if ("zip".equals(vm.getHelper().readUtf8(ctx.getLocals().load(0)))) {
+			if ("zip".equals(vm.getHelper().readUtf8(ctx.getLocals().loadReference(0)))) {
 				invokeGC(vm.getMemoryManager());
 			}
 			return Result.CONTINUE;

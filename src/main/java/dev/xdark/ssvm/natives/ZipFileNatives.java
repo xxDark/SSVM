@@ -40,7 +40,7 @@ public class ZipFileNatives {
 			// Old-style zip file implementation.
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
-			ObjectValue path = locals.load(0);
+			ObjectValue path = locals.loadReference(0);
 			helper.checkNotNull(path);
 			String zipPath = helper.readUtf8(path);
 			int mode = locals.loadInt(1);
@@ -80,7 +80,7 @@ public class ZipFileNatives {
 				if (zip == null) {
 					throw new PanicException("Segfault");
 				}
-				String entryName = new String(helper.toJavaBytes(locals.load(2)), StandardCharsets.UTF_8);
+				String entryName = new String(helper.toJavaBytes(locals.loadReference(2)), StandardCharsets.UTF_8);
 				ZipEntry entry = zip.getEntry(entryName);
 				if (entry == null) {
 					entry = zip.getEntry(entryName + '/');
@@ -193,7 +193,7 @@ public class ZipFileNatives {
 				if (pos > Integer.MAX_VALUE) {
 					vm.getHelper().throwException(vm.getSymbols().java_util_zip_ZipException(), "Entry too large");
 				}
-				ArrayValue bytes = locals.<ArrayValue>load(6);
+				ArrayValue bytes = locals.loadReference(6);
 				int off = locals.loadInt(7);
 				int len = locals.loadInt(8);
 				byte[] read;

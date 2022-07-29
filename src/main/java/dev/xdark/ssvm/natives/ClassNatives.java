@@ -16,6 +16,7 @@ import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
@@ -47,7 +48,6 @@ import java.util.List;
 @UtilityClass
 public class ClassNatives {
 
-	private final String CONSTANT_POOL = NativeJava.CONSTANT_POOL;
 	private final String PROTECTION_DOMAIN = NativeJava.PROTECTION_DOMAIN;
 
 	/**
@@ -59,7 +59,7 @@ public class ClassNatives {
 		InstanceJavaClass jlc = symbols.java_lang_Class();
 		vmi.setInvoker(jlc, "registerNatives", "()V", MethodInvoker.noop());
 		vmi.setInvoker(jlc, "getPrimitiveClass", "(Ljava/lang/String;)Ljava/lang/Class;", ctx -> {
-			String name = vm.getHelper().readUtf8(ctx.getLocals().load(0));
+			String name = vm.getHelper().readUtf8(ctx.getLocals().loadReference(0));
 			VMPrimitives primitives = vm.getPrimitives();
 			Value result;
 			switch (name) {
@@ -104,9 +104,9 @@ public class ClassNatives {
 		vmi.setInvoker(jlc, "forName0", "(Ljava/lang/String;ZLjava/lang/ClassLoader;Ljava/lang/Class;)Ljava/lang/Class;", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
-			String name = helper.readUtf8(helper.checkNotNull(locals.load(0)));
-			boolean initialize = locals.load(1).asBoolean();
-			ObjectValue loader = locals.load(2);
+			String name = helper.readUtf8(helper.checkNotNull(locals.loadReference(0)));
+			boolean initialize = locals.loadInt(1) != 0;
+			ObjectValue loader = locals.loadReference(2);
 			JavaClass klass = helper.findClass(loader, name.replace('.', '/'), initialize);
 			if (Modifier.isHiddenMember(klass.getModifiers())) {
 				helper.throwException(symbols.java_lang_ClassNotFoundException(), name);
@@ -115,7 +115,7 @@ public class ClassNatives {
 			return Result.ABORT;
 		});
 		MethodInvoker classNameInit = ctx -> {
-			ctx.setResult(vm.getStringPool().intern(ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue().getName()));
+			ctx.setResult(vm.getStringPool().intern(ctx.getLocals().<JavaValue<JavaClass>>loadReference(0).getValue().getName()));
 			return Result.ABORT;
 		};
 		if (!vmi.setInvoker(jlc, "getName0", "()Ljava/lang/String;", classNameInit)) {
@@ -124,51 +124,51 @@ public class ClassNatives {
 			}
 		}
 		vmi.setInvoker(jlc, "isArray", "()Z", ctx -> {
-			ctx.setResult(ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue().isArray() ? IntValue.ONE : IntValue.ZERO);
+			ctx.setResult(ctx.getLocals().<JavaValue<JavaClass>>loadReference(0).getValue().isArray() ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "isAssignableFrom", "(Ljava/lang/Class;)Z", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
-			JavaClass _this = locals.<JavaValue<JavaClass>>load(0).getValue();
-			JavaClass arg = helper.<JavaValue<JavaClass>>checkNotNull(locals.load(1)).getValue();
+			JavaClass _this = locals.<JavaValue<JavaClass>>loadReference(0).getValue();
+			JavaClass arg = helper.<JavaValue<JavaClass>>checkNotNull(locals.loadReference(1)).getValue();
 			ctx.setResult(_this.isAssignableFrom(arg) ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "isInterface", "()Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			JavaClass _this = locals.<JavaValue<JavaClass>>load(0).getValue();
+			JavaClass _this = locals.<JavaValue<JavaClass>>loadReference(0).getValue();
 			ctx.setResult(_this.isInterface() ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "isPrimitive", "()Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			JavaClass _this = locals.<JavaValue<JavaClass>>load(0).getValue();
+			JavaClass _this = locals.<JavaValue<JavaClass>>loadReference(0).getValue();
 			ctx.setResult(_this.isPrimitive() ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "isHidden", "()Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			JavaClass _this = locals.<JavaValue<JavaClass>>load(0).getValue();
+			JavaClass _this = locals.<JavaValue<JavaClass>>loadReference(0).getValue();
 			ctx.setResult(Modifier.isHiddenMember(_this.getModifiers()) ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getSuperclass", "()Ljava/lang/Class;", ctx -> {
 			Locals locals = ctx.getLocals();
-			JavaClass _this = locals.<JavaValue<JavaClass>>load(0).getValue();
+			JavaClass _this = locals.<JavaValue<JavaClass>>loadReference(0).getValue();
 			InstanceJavaClass superClass = _this.getSuperClass();
 			ctx.setResult(superClass == null ? vm.getMemoryManager().nullValue() : superClass.getOop());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getModifiers", "()I", ctx -> {
 			Locals locals = ctx.getLocals();
-			JavaClass _this = locals.<JavaValue<JavaClass>>load(0).getValue();
+			JavaClass _this = locals.<JavaValue<JavaClass>>loadReference(0).getValue();
 			ctx.setResult(IntValue.of(Modifier.eraseClass(_this.getModifiers())));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getDeclaredConstructors0", "(Z)[Ljava/lang/reflect/Constructor;", ctx -> {
 			Locals locals = ctx.getLocals();
-			JavaClass klass = locals.<JavaValue<JavaClass>>load(0).getValue();
+			JavaClass klass = locals.<JavaValue<JavaClass>>loadReference(0).getValue();
 			VMHelper helper = vm.getHelper();
 			InstanceJavaClass constructorClass = symbols.java_lang_reflect_Constructor();
 			if (!(klass instanceof InstanceJavaClass)) {
@@ -178,12 +178,13 @@ public class ClassNatives {
 			}
 			klass.initialize();
 			StringPool pool = vm.getStringPool();
-			boolean publicOnly = locals.load(1).asBoolean();
+			boolean publicOnly = locals.loadInt(1) != 0;
 			List<JavaMethod> methods = ((InstanceJavaClass) klass).getDeclaredConstructors(publicOnly);
 			ObjectValue loader = klass.getClassLoader();
 			ArrayValue result = helper.newArray(constructorClass, methods.size());
 			InstanceValue callerOop = klass.getOop();
 			MemoryManager memoryManager = vm.getMemoryManager();
+			VMOperations ops = vm.getPublicOperations();
 			for (int j = 0; j < methods.size(); j++) {
 				JavaMethod mn = methods.get(j);
 				Type[] types = mn.getArgumentTypes();
@@ -191,14 +192,14 @@ public class ClassNatives {
 				ArrayValue exceptions = convertExceptions(helper, loader, mn.getNode().exceptions);
 				MethodRawData data = getMethodRawData(mn, false);
 				InstanceValue constructor = memoryManager.newInstance(constructorClass);
-				constructor.setValue("clazz", "Ljava/lang/Class;", callerOop);
-				constructor.setInt("slot", mn.getSlot());
-				constructor.setValue("parameterTypes", "[Ljava/lang/Class;", parameters);
-				constructor.setValue("exceptionTypes", "[Ljava/lang/Class;", exceptions);
-				constructor.setInt("modifiers", Modifier.eraseMethod(mn.getAccess()));
-				constructor.setValue("signature", "Ljava/lang/String;", pool.intern(mn.getSignature()));
-				constructor.setValue("annotations", "[B", data.annotations);
-				constructor.setValue("parameterAnnotations", "[B", data.parameterAnnotations);
+				ops.putReference(constructor, "clazz", "Ljava/lang/Class;", callerOop);
+				ops.putInt(constructor, "slot", mn.getSlot());
+				ops.putReference(constructor, "parameterTypes", "[Ljava/lang/Class;", parameters);
+				ops.putReference(constructor, "exceptionTypes", "[Ljava/lang/Class;", exceptions);
+				ops.putInt(constructor, "modifiers", Modifier.eraseMethod(mn.getAccess()));
+				ops.putReference(constructor, "signature", "Ljava/lang/String;", pool.intern(mn.getSignature()));
+				ops.putReference(constructor, "annotations", "[B", data.annotations);
+				ops.putReference(constructor, "parameterAnnotations", "[B", data.parameterAnnotations);
 				constructor.initialize();
 				result.setValue(j, constructor);
 			}
@@ -207,7 +208,7 @@ public class ClassNatives {
 		});
 		vmi.setInvoker(jlc, "getDeclaredMethods0", "(Z)[Ljava/lang/reflect/Method;", ctx -> {
 			Locals locals = ctx.getLocals();
-			JavaClass klass = locals.<JavaValue<JavaClass>>load(0).getValue();
+			JavaClass klass = locals.<JavaValue<JavaClass>>loadReference(0).getValue();
 			VMHelper helper = vm.getHelper();
 			InstanceJavaClass methodClass = symbols.java_lang_reflect_Method();
 			if (!(klass instanceof InstanceJavaClass)) {
@@ -217,12 +218,13 @@ public class ClassNatives {
 			}
 			klass.initialize();
 			StringPool pool = vm.getStringPool();
-			boolean publicOnly = locals.load(1).asBoolean();
+			boolean publicOnly = locals.loadInt(1) != 0;
 			List<JavaMethod> methods = ((InstanceJavaClass) klass).getDeclaredMethods(publicOnly);
 			ObjectValue loader = klass.getClassLoader();
 			ArrayValue result = helper.newArray(methodClass, methods.size());
 			InstanceValue callerOop = klass.getOop();
 			MemoryManager memoryManager = vm.getMemoryManager();
+			VMOperations ops = vm.getPublicOperations();
 			for (int j = 0; j < methods.size(); j++) {
 				JavaMethod mn = methods.get(j);
 				Type[] types = mn.getArgumentTypes();
@@ -231,17 +233,17 @@ public class ClassNatives {
 				ArrayValue exceptions = convertExceptions(helper, loader, mn.getNode().exceptions);
 				MethodRawData data = getMethodRawData(mn, true);
 				InstanceValue method = memoryManager.newInstance(methodClass);
-				method.setValue("clazz", "Ljava/lang/Class;", callerOop);
-				method.setInt("slot", mn.getSlot());
-				method.setValue("name", "Ljava/lang/String;", pool.intern(mn.getName()));
-				method.setValue("returnType", "Ljava/lang/Class;", rt.getOop());
-				method.setValue("parameterTypes", "[Ljava/lang/Class;", parameters);
-				method.setValue("exceptionTypes", "[Ljava/lang/Class;", exceptions);
-				method.setInt("modifiers", Modifier.eraseMethod(mn.getAccess()));
-				method.setValue("signature", "Ljava/lang/String;", pool.intern(mn.getSignature()));
-				method.setValue("annotations", "[B", data.annotations);
-				method.setValue("parameterAnnotations", "[B", data.parameterAnnotations);
-				method.setValue("annotationDefault", "[B", data.annotationDefault);
+				ops.putReference(method, "clazz", "Ljava/lang/Class;", callerOop);
+				ops.putInt(method, "slot", mn.getSlot());
+				ops.putReference(method, "name", "Ljava/lang/String;", pool.intern(mn.getName()));
+				ops.putReference(method, "returnType", "Ljava/lang/Class;", rt.getOop());
+				ops.putReference(method, "parameterTypes", "[Ljava/lang/Class;", parameters);
+				ops.putReference(method, "exceptionTypes", "[Ljava/lang/Class;", exceptions);
+				ops.putInt(method, "modifiers", Modifier.eraseMethod(mn.getAccess()));
+				ops.putReference(method, "signature", "Ljava/lang/String;", pool.intern(mn.getSignature()));
+				ops.putReference(method, "annotations", "[B", data.annotations);
+				ops.putReference(method, "parameterAnnotations", "[B", data.parameterAnnotations);
+				ops.putReference(method, "annotationDefault", "[B", data.annotationDefault);
 				method.initialize();
 				result.setValue(j, method);
 			}
@@ -250,7 +252,7 @@ public class ClassNatives {
 		});
 		vmi.setInvoker(jlc, "getDeclaredFields0", "(Z)[Ljava/lang/reflect/Field;", ctx -> {
 			Locals locals = ctx.getLocals();
-			JavaClass klass = locals.<JavaValue<JavaClass>>load(0).getValue();
+			JavaClass klass = locals.<JavaValue<JavaClass>>loadReference(0).getValue();
 			VMHelper helper = vm.getHelper();
 			InstanceJavaClass fieldClass = symbols.java_lang_reflect_Field();
 			fieldClass.initialize();
@@ -261,23 +263,24 @@ public class ClassNatives {
 			}
 			klass.initialize();
 			StringPool pool = vm.getStringPool();
-			boolean publicOnly = locals.load(1).asBoolean();
+			boolean publicOnly = locals.loadInt(1) != 0;
 			List<JavaField> fields = ((InstanceJavaClass) klass).getDeclaredFields(publicOnly);
 			ObjectValue loader = klass.getClassLoader();
 			ArrayValue result = helper.newArray(fieldClass, fields.size());
 			InstanceValue callerOop = klass.getOop();
 			MemoryManager memoryManager = vm.getMemoryManager();
+			VMOperations ops = vm.getPublicOperations();
 			for (int j = 0; j < fields.size(); j++) {
 				JavaField fn = fields.get(j);
 				JavaClass type = helper.findClass(loader, fn.getType().getInternalName(), false);
 				InstanceValue field = memoryManager.newInstance(fieldClass);
-				field.setValue("clazz", "Ljava/lang/Class;", callerOop);
-				field.setInt("slot", fn.getSlot());
-				field.setValue("name", "Ljava/lang/String;", pool.intern(fn.getName()));
-				field.setValue("type", "Ljava/lang/Class;", type.getOop());
-				field.setInt("modifiers", Modifier.eraseField(fn.getAccess()));
-				field.setValue("signature", "Ljava/lang/String;", pool.intern(fn.getSignature()));
-				field.setValue("annotations", "[B", readFieldAnnotations(fn));
+				ops.putReference(field, "clazz", "Ljava/lang/Class;", callerOop);
+				ops.putInt(field, "slot", fn.getSlot());
+				ops.putReference(field, "name", "Ljava/lang/String;", pool.intern(fn.getName()));
+				ops.putReference(field, "type", "Ljava/lang/Class;", type.getOop());
+				ops.putInt(field, "modifiers", Modifier.eraseField(fn.getAccess()));
+				ops.putReference(field, "signature", "Ljava/lang/String;", pool.intern(fn.getSignature()));
+				ops.putReference(field, "annotations", "[B", readFieldAnnotations(fn));
 				field.initialize();
 				result.setValue(j, field);
 			}
@@ -285,14 +288,14 @@ public class ClassNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getInterfaces0", "()[Ljava/lang/Class;", ctx -> {
-			JavaClass _this = ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue();
+			JavaClass _this = ctx.getLocals().<JavaValue<JavaClass>>loadReference(0).getValue();
 			InstanceJavaClass[] interfaces = _this.getInterfaces();
 			ArrayValue types = vm.getHelper().convertClasses(interfaces);
 			ctx.setResult(types);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getEnclosingMethod0", "()[Ljava/lang/Object;", ctx -> {
-			JavaClass klasas = ((JavaValue<JavaClass>) ctx.getLocals().load(0)).getValue();
+			JavaClass klasas = ((JavaValue<JavaClass>) ctx.getLocals().loadReference(0)).getValue();
 			if (!(klasas instanceof InstanceJavaClass)) {
 				ctx.setResult(vm.getMemoryManager().nullValue());
 			} else {
@@ -316,7 +319,7 @@ public class ClassNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getDeclaringClass0", "()Ljava/lang/Class;", ctx -> {
-			JavaClass klasas = ((JavaValue<JavaClass>) ctx.getLocals().load(0)).getValue();
+			JavaClass klasas = ((JavaValue<JavaClass>) ctx.getLocals().loadReference(0)).getValue();
 			if (!(klasas instanceof InstanceJavaClass)) {
 				ctx.setResult(vm.getMemoryManager().nullValue());
 			} else {
@@ -333,7 +336,7 @@ public class ClassNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getSimpleBinaryName0", "()Ljava/lang/String;", ctx -> {
-			JavaClass klasas = ((JavaValue<JavaClass>) ctx.getLocals().load(0)).getValue();
+			JavaClass klasas = ((JavaValue<JavaClass>) ctx.getLocals().loadReference(0)).getValue();
 			if (!(klasas instanceof InstanceJavaClass)) {
 				ctx.setResult(vm.getMemoryManager().nullValue());
 			} else {
@@ -349,28 +352,33 @@ public class ClassNatives {
 		});
 		vmi.setInvoker(jlc, "isInstance", "(Ljava/lang/Object;)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			Value value = locals.load(1);
+			ObjectValue value = locals.loadReference(1);
 			if (value.isNull()) {
 				ctx.setResult(IntValue.ZERO);
 			} else {
-				JavaClass klass = ((ObjectValue) value).getJavaClass();
-				JavaClass _this = locals.<JavaValue<JavaClass>>load(0).getValue();
+				JavaClass klass = value.getJavaClass();
+				JavaClass _this = locals.<JavaValue<JavaClass>>loadReference(0).getValue();
 				ctx.setResult(_this.isAssignableFrom(klass) ? IntValue.ONE : IntValue.ZERO);
 			}
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getComponentType", "()Ljava/lang/Class;", ctx -> {
-			JavaClass type = ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue().getComponentType();
+			JavaClass type = ctx.getLocals().<JavaValue<JavaClass>>loadReference(0).getValue().getComponentType();
 			ctx.setResult(type == null ? vm.getMemoryManager().nullValue() : type.getOop());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getProtectionDomain0", "()Ljava/security/ProtectionDomain;", ctx -> {
-			InstanceValue _this = ctx.getLocals().load(0);
-			ctx.setResult(_this.getValue(PROTECTION_DOMAIN, "Ljava/security/ProtectionDomain;"));
+			InstanceValue _this = ctx.getLocals().loadReference(0);
+			JavaClass cl = ((JavaValue<JavaClass>) _this).getValue();
+			if (cl.isPrimitive()) {
+				ctx.setResult(vm.getMemoryManager().nullValue());
+			} else {
+				ctx.setResult(_this.getValue(PROTECTION_DOMAIN, "Ljava/security/ProtectionDomain;"));
+			}
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getRawAnnotations", "()[B", ctx -> {
-			JavaClass _this = ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue();
+			JavaClass _this = ctx.getLocals().<JavaValue<JavaClass>>loadReference(0).getValue();
 			if (!(_this instanceof InstanceJavaClass)) {
 				ctx.setResult(vm.getMemoryManager().nullValue());
 				return Result.ABORT;
@@ -381,7 +389,7 @@ public class ClassNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getDeclaredClasses0", "()[Ljava/lang/Class;", ctx -> {
-			JavaClass _this = ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue();
+			JavaClass _this = ctx.getLocals().<JavaValue<JavaClass>>loadReference(0).getValue();
 			VMHelper helper = vm.getHelper();
 			if (!(_this instanceof InstanceJavaClass)) {
 				ctx.setResult(helper.emptyArray(jlc));
@@ -399,17 +407,12 @@ public class ClassNatives {
 
 		InstanceJavaClass cpClass = symbols.reflect_ConstantPool();
 		vmi.setInvoker(jlc, "getConstantPool", "()" + cpClass.getDescriptor(), ctx -> {
-			InstanceValue _this = ctx.getLocals().load(0);
-			ObjectValue cp = _this.getValue(CONSTANT_POOL, "Ljava/lang/Object;");
-			if (cp.isNull()) {
-				cpClass.initialize();
-				InstanceValue instance = vm.getMemoryManager().newInstance(cpClass);
-				instance.setValue("constantPoolOop", "Ljava/lang/Object;", _this);
-				instance.initialize();
-				_this.setValue(CONSTANT_POOL, "Ljava/lang/Object;", instance);
-				cp = instance;
-			}
-			ctx.setResult(cp);
+			InstanceValue _this = ctx.getLocals().loadReference(0);
+			cpClass.initialize();
+			InstanceValue instance = vm.getMemoryManager().newInstance(cpClass);
+			instance.setValue("constantPoolOop", "Ljava/lang/Object;", _this);
+			instance.initialize();
+			ctx.setResult(instance);
 			return Result.ABORT;
 		});
 	}

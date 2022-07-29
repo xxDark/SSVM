@@ -2,7 +2,6 @@ package dev.xdark.ssvm.mirror;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.value.JavaValue;
-import dev.xdark.ssvm.value.Value;
 import me.coley.cafedude.classfile.ClassFile;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
@@ -140,46 +139,6 @@ public interface InstanceJavaClass extends JavaClass {
 	 * if field was not found.
 	 */
 	long getStaticFieldOffset(String name, String desc);
-
-	/**
-	 * Returns static value of a field.
-	 *
-	 * @param field Field info.
-	 * @return static value of a field or {@code null},
-	 * if field was not found.
-	 */
-	Value getStaticValue(MemberKey field);
-
-	/**
-	 * Returns static value of a field.
-	 *
-	 * @param name Field name.
-	 * @param desc Field descriptor.
-	 * @return static value of a field or {@code null},
-	 * if field was not found.
-	 */
-	Value getStaticValue(String name, String desc);
-
-	/**
-	 * Sets static value for a field.
-	 *
-	 * @param field Field info.
-	 * @param value New value.
-	 * @return whether the value was changed or not.
-	 * This method will return {@code false} if there is no such field.
-	 */
-	boolean setStaticFieldValue(MemberKey field, Value value);
-
-	/**
-	 * Sets static value for a field.
-	 *
-	 * @param name  Field name.
-	 * @param desc  Field desc.
-	 * @param value New value.
-	 * @return whether the value was changed or not.
-	 * This method will return {@code false} if there is no such field.
-	 */
-	boolean setStaticFieldValue(String name, String desc, Value value);
 
 	/**
 	 * Searches for field offset.

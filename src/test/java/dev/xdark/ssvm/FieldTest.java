@@ -4,6 +4,7 @@ import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.InstanceValue;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -41,11 +42,12 @@ public class FieldTest {
 		node.visitField(ACC_STATIC, "float", "F", null, floatCst);
 
 		InstanceJavaClass c = TestUtil.createClass(vm, node);
-		assertEquals(stringCst, vm.getHelper().readUtf8(c.getStaticValue("string", "Ljava/lang/String;")));
-		assertEquals(longCst, c.getStaticValue("long", "J").asLong());
-		assertEquals(doubleCst, c.getStaticValue("double", "D").asDouble());
-		assertEquals(intCst, c.getStaticValue("int", "I").asInt());
-		assertEquals(floatCst, c.getStaticValue("float", "F").asFloat());
+		VMOperations ops = vm.getPublicOperations();
+		assertEquals(stringCst, vm.getHelper().readUtf8(ops.getReference(c, "string", "Ljava/lang/String;")));
+		assertEquals(longCst, ops.getLong(c, "long"));
+		assertEquals(doubleCst, ops.getDouble(c, "double"));
+		assertEquals(intCst, ops.getInt(c, "int"));
+		assertEquals(floatCst, ops.getFloat(c, "float"));
 	}
 
 	@Test
@@ -85,18 +87,20 @@ public class FieldTest {
 		mv.visitInsn(RETURN);
 		mv.visitMaxs(3, 1);
 
+		VirtualMachine vm = FieldTest.vm;
 		InstanceJavaClass c = TestUtil.createClass(vm, node);
 		InstanceValue instance = vm.getMemoryManager().newInstance(c);
 		VMHelper helper = vm.getHelper();
-		JavaMethod init = vm.getLinkResolver().resolveSpecialMethod(c, "<init>", "()V");
+		VMOperations ops = vm.getPublicOperations();
+		JavaMethod init = vm.getPublicLinkResolver().resolveSpecialMethod(c, "<init>", "()V");
 		Locals locals = vm.getThreadStorage().newLocals(init);
 		locals.set(0, instance);
 		helper.invoke(init, locals);
 		assertEquals(stringCst, vm.getHelper().readUtf8(instance.getValue("string", "Ljava/lang/String;")));
-		assertEquals(longCst, instance.getLong("long"));
-		assertEquals(doubleCst, instance.getDouble("double"));
-		assertEquals(intCst, instance.getInt("int"));
-		assertEquals(floatCst, instance.getFloat("float"));
+		assertEquals(longCst, ops.getLong(instance, c, "long"));
+		assertEquals(doubleCst, ops.getDouble(instance, c, "double"));
+		assertEquals(intCst, ops.getInt(instance, c, "int"));
+		assertEquals(floatCst, ops.getFloat(instance, c, "float"));
 	}
 
 	@Test
@@ -132,16 +136,18 @@ public class FieldTest {
 		mv.visitInsn(RETURN);
 		mv.visitMaxs(2, 1);
 
+		VirtualMachine vm = FieldTest.vm;
 		InstanceJavaClass c = TestUtil.createClass(vm, node);
+		VMOperations ops = vm.getPublicOperations();
 		InstanceValue instance = vm.getMemoryManager().newInstance(c);
 		VMHelper helper = vm.getHelper();
-		JavaMethod init = vm.getLinkResolver().resolveSpecialMethod(c, "<init>", "()V");
+		JavaMethod init = vm.getPublicLinkResolver().resolveSpecialMethod(c, "<init>", "()V");
 		Locals locals = vm.getThreadStorage().newLocals(init);
 		locals.set(0, instance);
 		helper.invoke(init, locals);
-		assertEquals(staticStringCst, helper.readUtf8(c.getStaticValue("string", "Ljava/lang/String;")));
-		assertEquals(staticDouble, c.getStaticValue("double", "D").asDouble());
-		assertEquals(virtualStringCst, helper.readUtf8(instance.getValue("string1", "Ljava/lang/String;")));
-		assertEquals(virtualFloat, instance.getFloat("float"));
+		assertEquals(staticStringCst, helper.readUtf8(ops.getReference(c, "string", "Ljava/lang/String;")));
+		assertEquals(staticDouble, ops.getDouble(c, "double"));
+		assertEquals(virtualStringCst, helper.readUtf8(ops.getReference(instance, "string1", "Ljava/lang/String;")));
+		assertEquals(virtualFloat, ops.getFloat(instance, "float"));
 	}
 }

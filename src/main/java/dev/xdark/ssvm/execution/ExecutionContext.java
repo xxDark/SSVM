@@ -12,6 +12,10 @@ import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.util.InvokeDynamicLinker;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.util.VMOperations;
+import dev.xdark.ssvm.value.DoubleValue;
+import dev.xdark.ssvm.value.FloatValue;
+import dev.xdark.ssvm.value.IntValue;
+import dev.xdark.ssvm.value.LongValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 
@@ -59,7 +63,7 @@ public interface ExecutionContext {
 	 * @return VM operations.
 	 */
 	default VMOperations getOperations() {
-		return getVM().getOperations();
+		return getVM().getPublicOperations();
 	}
 
 	/**
@@ -73,7 +77,7 @@ public interface ExecutionContext {
 	 * @return link resolver.
 	 */
 	default LinkResolver getLinkResolver() {
-		return getVM().getLinkResolver();
+		return getVM().getPublicLinkResolver();
 	}
 
 	/**
@@ -206,4 +210,40 @@ public interface ExecutionContext {
 	 * @return execution options.
 	 */
 	ExecutionOptions getOptions();
+
+	/**
+	 * Sets execution result.
+	 *
+	 * @param result Value to set.
+	 */
+	default void setResult(long result) {
+		setResult(LongValue.of(result));
+	}
+
+	/**
+	 * Sets execution result.
+	 *
+	 * @param result Value to set.
+	 */
+	default void setResult(double result) {
+		setResult(new DoubleValue(result));
+	}
+
+	/**
+	 * Sets execution result.
+	 *
+	 * @param result Value to set.
+	 */
+	default void setResult(int result) {
+		setResult(IntValue.of(result));
+	}
+
+	/**
+	 * Sets execution result.
+	 *
+	 * @param result Value to set.
+	 */
+	default void setResult(float result) {
+		setResult(new FloatValue(result));
+	}
 }

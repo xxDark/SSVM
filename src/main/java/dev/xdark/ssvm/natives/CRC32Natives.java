@@ -29,7 +29,7 @@ public class CRC32Natives {
 		vmi.setInvoker(jc, "updateBytes", "(I[BII)I", ctx -> {
 			Locals locals = ctx.getLocals();
 			int crc = locals.loadInt(0);
-			ArrayValue bytes = locals.load(1);
+			ArrayValue bytes = vm.getHelper().checkNotNull(locals.loadReference(1));
 			int off = locals.loadInt(2);
 			int len = locals.loadInt(3);
 			for (int x = off + len; off < x; off++) {

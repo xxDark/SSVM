@@ -28,7 +28,7 @@ public class ReflectionNatives {
 		vmi.setInvoker(reflection, "getCallerClass", "()Ljava/lang/Class;", getCallerClass(false));
 		vmi.setInvoker(reflection, "getCallerClass", "(I)Ljava/lang/Class;", getCallerClass(true));
 		vmi.setInvoker(reflection, "getClassAccessFlags", "(Ljava/lang/Class;)I", ctx -> {
-			JavaClass klass = ctx.getLocals().<JavaValue<JavaClass>>load(0).getValue();
+			JavaClass klass = ctx.getLocals().<JavaValue<JavaClass>>loadReference(0).getValue();
 			ctx.setResult(IntValue.of(Modifier.eraseClass(klass.getModifiers())));
 			return Result.ABORT;
 		});

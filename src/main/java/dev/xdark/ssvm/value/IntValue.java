@@ -31,38 +31,8 @@ public final class IntValue extends NumericValue {
 	}
 
 	@Override
-	public double asDouble() {
-		return value;
-	}
-
-	@Override
 	public int asInt() {
 		return value;
-	}
-
-	@Override
-	public float asFloat() {
-		return (float) value;
-	}
-
-	@Override
-	public char asChar() {
-		return (char) value;
-	}
-
-	@Override
-	public short asShort() {
-		return (short) value;
-	}
-
-	@Override
-	public byte asByte() {
-		return (byte) value;
-	}
-
-	@Override
-	public boolean asBoolean() {
-		return value != 0;
 	}
 
 	@Override

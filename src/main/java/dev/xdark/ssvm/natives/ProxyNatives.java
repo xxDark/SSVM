@@ -36,9 +36,9 @@ public class ProxyNatives {
 			// Simply invoke defineClass in a loader.
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
-			ObjectValue loader = locals.<ObjectValue>load(0);
-			Value name = locals.load(1);
-			ArrayValue bytes = helper.checkNotNull(locals.<ObjectValue>load(2));
+			ObjectValue loader = locals.loadReference(0);
+			Value name = locals.loadReference(1);
+			ArrayValue bytes = helper.checkNotNull(locals.loadReference(2));
 			Value off = locals.load(3);
 			Value len = locals.load(4);
 			InstanceJavaClass result;
@@ -50,7 +50,7 @@ public class ProxyNatives {
 				ObjectValue nullValue = vm.getMemoryManager().nullValue();
 				result = helper.newInstanceClass(nullValue, nullValue, parsed.getClassReader(), parsed.getNode());
 			} else {
-				JavaMethod method = vm.getLinkResolver().resolveVirtualMethod(loader, "defineClass", "(Ljava/lang/String;[BII)Ljava/lang/Class;");
+				JavaMethod method = vm.getPublicLinkResolver().resolveVirtualMethod(loader, "defineClass", "(Ljava/lang/String;[BII)Ljava/lang/Class;");
 				Locals table = vm.getThreadStorage().newLocals(method);
 				table.set(0, loader);
 				table.set(1, name);

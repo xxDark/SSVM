@@ -14,7 +14,6 @@ import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 
@@ -35,15 +34,15 @@ public class ObjectNatives {
 		InstanceJavaClass object = symbols.java_lang_Object();
 		vmi.setInvoker(object, "registerNatives", "()V", MethodInvoker.noop());
 		vmi.setInvoker(object, "<init>", "()V", ctx -> {
-			ctx.getLocals().<InstanceValue>load(0).initialize();
+			ctx.getLocals().<InstanceValue>loadReference(0).initialize();
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "getClass", "()Ljava/lang/Class;", ctx -> {
-			ctx.setResult(ctx.getLocals().<ObjectValue>load(0).getJavaClass().getOop());
+			ctx.setResult(ctx.getLocals().loadReference(0).getJavaClass().getOop());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "notify", "()V", ctx -> {
-			ObjectValue value = ctx.getLocals().<ObjectValue>load(0);
+			ObjectValue value = ctx.getLocals().loadReference(0);
 			if (!value.isHeldByCurrentThread()) {
 				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException());
 			}
@@ -51,7 +50,7 @@ public class ObjectNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "notifyAll", "()V", ctx -> {
-			ObjectValue value = ctx.getLocals().<ObjectValue>load(0);
+			ObjectValue value = ctx.getLocals().loadReference(0);
 			if (!value.isHeldByCurrentThread()) {
 				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException());
 			}
@@ -60,12 +59,12 @@ public class ObjectNatives {
 		});
 		vmi.setInvoker(object, "wait", "(J)V", ctx -> {
 			Locals locals = ctx.getLocals();
-			ObjectValue value = locals.<ObjectValue>load(0);
+			ObjectValue value = locals.loadReference(0);
 			if (!value.isHeldByCurrentThread()) {
 				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException());
 			}
 			try {
-				long time = locals.load(1).asLong();
+				long time = locals.loadLong(1);
 				if (time == 0L) {
 					time = Long.MAX_VALUE;
 				}
@@ -77,11 +76,11 @@ public class ObjectNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "hashCode", "()I", ctx -> {
-			ctx.setResult(IntValue.of(ctx.getLocals().load(0).hashCode()));
+			ctx.setResult(ctx.getLocals().loadReference(0).hashCode());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "clone", "()Ljava/lang/Object;", ctx -> {
-			ObjectValue _this = ctx.getLocals().<ObjectValue>load(0);
+			ObjectValue _this = ctx.getLocals().loadReference(0);
 			JavaClass type = _this.getJavaClass();
 			VMHelper helper = vm.getHelper();
 			MemoryManager memoryManager = vm.getMemoryManager();

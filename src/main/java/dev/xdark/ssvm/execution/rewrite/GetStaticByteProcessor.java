@@ -20,7 +20,7 @@ public final class GetStaticByteProcessor implements InstructionProcessor<VMFiel
 		JavaField field = insn.getResolved();
 		InstanceJavaClass klass = field.getOwner();
 		MemoryManager memory = ctx.getMemoryManager();
-		int value = memory.readByte(klass.getOop(), memory.getStaticOffset(klass) + field.getOffset());
+		int value = klass.getOop().getData().readByte(memory.getStaticOffset(klass) + field.getOffset());
 		ctx.getStack().pushInt(value);
 		return Result.CONTINUE;
 	}

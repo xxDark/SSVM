@@ -20,6 +20,7 @@ final class TestUtil {
 		ObjectValue nullValue = vm.getMemoryManager().nullValue();
 		InstanceJavaClass klass = vm.getHelper().newInstanceClass(nullValue, nullValue, result.getClassReader(), result.getNode());
 		vm.getBootClassLoaderData().forceLinkClass(klass);
+		klass.link();
 		klass.initialize();
 		return klass;
 	}

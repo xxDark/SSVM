@@ -27,7 +27,7 @@ public class JDKTest {
 		InstanceJavaClass c = (InstanceJavaClass) vm.findBootstrapClass("java/util/HashMap", true);
 		VMHelper helper = vm.getHelper();
 		InstanceValue instance = vm.getMemoryManager().newInstance(c);
-		JavaMethod init = vm.getLinkResolver().resolveSpecialMethod(c, "<init>", "()V");
+		JavaMethod init = vm.getPublicLinkResolver().resolveSpecialMethod(c, "<init>", "()V");
 		Locals locals = vm.getThreadStorage().newLocals(init);
 		locals.set(0, instance);
 		helper.invoke(init, locals);
@@ -39,7 +39,7 @@ public class JDKTest {
 		InstanceJavaClass c = (InstanceJavaClass) vm.findBootstrapClass("java/util/concurrent/ConcurrentHashMap", true);
 		VMHelper helper = vm.getHelper();
 		InstanceValue instance = vm.getMemoryManager().newInstance(c);
-		JavaMethod init = vm.getLinkResolver().resolveSpecialMethod(c, "<init>", "()V");
+		JavaMethod init = vm.getPublicLinkResolver().resolveSpecialMethod(c, "<init>", "()V");
 		Locals locals = vm.getThreadStorage().newLocals(init);
 		locals.set(0, instance);
 		helper.invoke(init, locals);
@@ -51,7 +51,7 @@ public class JDKTest {
 		InstanceJavaClass c = (InstanceJavaClass) vm.findBootstrapClass("java/util/TreeMap", true);
 		VMHelper helper = vm.getHelper();
 		InstanceValue instance = vm.getMemoryManager().newInstance(c);
-		JavaMethod init = vm.getLinkResolver().resolveSpecialMethod(c, "<init>", "()V");
+		JavaMethod init = vm.getPublicLinkResolver().resolveSpecialMethod(c, "<init>", "()V");
 		Locals locals = vm.getThreadStorage().newLocals(init);
 		locals.set(0, instance);
 		helper.invoke(init, locals);
@@ -62,7 +62,7 @@ public class JDKTest {
 		String keyBase = "key";
 		String valueBase = "value";
 		VMHelper helper = vm.getHelper();
-		LinkResolver linkResolver = vm.getLinkResolver();
+		LinkResolver linkResolver = vm.getPublicLinkResolver();
 		ThreadStorage ts = vm.getThreadStorage();
 		JavaMethod put = linkResolver.resolveVirtualMethod(map, "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
 		JavaMethod get = linkResolver.resolveVirtualMethod(map, "get", "(Ljava/lang/Object;)Ljava/lang/Object;");

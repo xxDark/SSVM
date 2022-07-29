@@ -1,7 +1,6 @@
 package dev.xdark.ssvm.api;
 
 import dev.xdark.ssvm.asm.Modifier;
-import dev.xdark.ssvm.asm.VirtualInsnNode;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.InterpretedInvoker;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
@@ -48,7 +47,7 @@ public final class VMInterface {
 	 * @return instruction processor.
 	 */
 	public <I extends AbstractInsnNode> InstructionProcessor<I> getProcessor(I insn) {
-		return processors[getOpcode(insn)];
+		return processors[insn.getOpcode()];
 	}
 
 	/**
@@ -80,6 +79,16 @@ public final class VMInterface {
 	 */
 	public MethodInvoker getInvoker(JavaMethod method) {
 		return invokerMap.getOrDefault(method, FALLBACK_INVOKER);
+	}
+
+	/**
+	 * Returns method invoker based off a method.
+	 *
+	 * @param method method to search invoker for.
+	 * @return method invoker.
+	 */
+	public MethodInvoker getInvokerIfPresent(JavaMethod method) {
+		return invokerMap.get(method);
 	}
 
 	/**
@@ -266,13 +275,6 @@ public final class VMInterface {
 	 */
 	public List<InstructionInterceptor> getInterceptors() {
 		return interceptorsView;
-	}
-
-	private static int getOpcode(AbstractInsnNode node) {
-		if (node instanceof VirtualInsnNode) {
-			return ((VirtualInsnNode) node).getVirtualOpcode();
-		}
-		return node.getOpcode();
 	}
 
 	private static final class InvocationIterator implements Iterator<MethodInvocation> {

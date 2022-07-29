@@ -4,6 +4,7 @@ import dev.xdark.ssvm.value.DoubleValue;
 import dev.xdark.ssvm.value.FloatValue;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.LongValue;
+import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 
 import java.util.List;
@@ -21,6 +22,13 @@ public interface Stack {
 	 * @param value Value to push.
 	 */
 	void push(Value value);
+
+	/**
+	 * @param value Value to push.
+	 */
+	default void pushReference(ObjectValue value) {
+		push(value);
+	}
 
 	/**
 	 * @param value Value to push.

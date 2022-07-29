@@ -15,37 +15,17 @@ public final class FloatValue extends NumericValue {
 
 	@Override
 	public long asLong() {
-		return (long) value;
-	}
-
-	@Override
-	public double asDouble() {
-		return value;
+		return Float.floatToRawIntBits(value);
 	}
 
 	@Override
 	public int asInt() {
-		return (int) value;
+		return Float.floatToRawIntBits(value);
 	}
 
 	@Override
 	public float asFloat() {
 		return value;
-	}
-
-	@Override
-	public char asChar() {
-		return (char) value;
-	}
-
-	@Override
-	public short asShort() {
-		return (short) value;
-	}
-
-	@Override
-	public byte asByte() {
-		return (byte) value;
 	}
 
 	@Override

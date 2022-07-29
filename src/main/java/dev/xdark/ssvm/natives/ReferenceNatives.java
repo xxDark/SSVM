@@ -25,13 +25,13 @@ public class ReferenceNatives {
 		VMInterface vmi = vm.getInterface();
 		InstanceJavaClass jc = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ref/Reference");
 		vmi.setInvoker(jc, "clear0", "()V", ctx -> {
-			ctx.getLocals().<InstanceValue>load(0).setValue("referent", "Ljava/lang/Object;", vm.getMemoryManager().nullValue());
+			ctx.getLocals().<InstanceValue>loadReference(0).setValue("referent", "Ljava/lang/Object;", vm.getMemoryManager().nullValue());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "refersTo0", "(Ljava/lang/Object;)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			ObjectValue check = locals.<InstanceValue>load(0).getValue("referent", "Ljava/lang/Object;");
-			ctx.setResult(check == locals.load(1) ? IntValue.ONE : IntValue.ZERO);
+			ObjectValue check = locals.<InstanceValue>loadReference(0).getValue("referent", "Ljava/lang/Object;");
+			ctx.setResult(check == locals.loadReference(1) ? IntValue.ONE : IntValue.ZERO);
 			return Result.ABORT;
 		});
 	}

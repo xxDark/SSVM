@@ -44,7 +44,7 @@ public class ObjectComparisonTest {
 		mv.visitInsn(IRETURN);
 		mv.visitMaxs(1, 0);
 		InstanceJavaClass jc = TestUtil.createClass(vm, node);
-		ExecutionContext result = vm.getHelper().invoke(vm.getLinkResolver().resolveStaticMethod(jc, "test", "()Z"), vm.getThreadStorage().newLocals(0));
+		ExecutionContext result = vm.getHelper().invoke(vm.getPublicLinkResolver().resolveStaticMethod(jc, "test", "()Z"), vm.getThreadStorage().newLocals(0));
 		return result.getResult().asBoolean();
 	}
 }

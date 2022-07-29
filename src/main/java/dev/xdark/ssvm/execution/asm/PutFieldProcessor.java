@@ -22,7 +22,7 @@ public final class PutFieldProcessor implements InstructionProcessor<FieldInsnNo
 		Value value = stack.popGeneric();
 		ObjectValue instance = stack.pop();
 		InstanceJavaClass klass = (InstanceJavaClass) ctx.getHelper().tryFindClass(ctx.getClassLoader(), insn.owner, true);
-		ctx.getOperations().putGenericField(instance, klass, insn.name, insn.desc, value);
+		ctx.getOperations().putGeneric(instance, klass, insn.name, insn.desc, value);
 		return Result.CONTINUE;
 	}
 }

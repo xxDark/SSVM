@@ -73,12 +73,12 @@ import static org.objectweb.asm.Opcodes.*;
  */
 public final class NativeJava {
 
+	// https://github.com/AdoptOpenJDK/openjdk-jdk8u/blob/master/hotspot/src/share/vm/classfile/javaClasses.cpp#L3180
 	public static final String CLASS_LOADER_OOP = "classLoaderOop";
 	public static final String VM_INDEX = "vmindex";
 	public static final String VM_TARGET = "vmtarget";
 	public static final String VM_HOLDER = "vmholder";
 	public static final String PROTECTION_DOMAIN = "protectionDomain";
-	public static final String CONSTANT_POOL = "constantPool";
 
 	/**
 	 * Sets up VM instance.
@@ -153,13 +153,6 @@ public final class NativeJava {
 			ACC_PRIVATE | ACC_VM_HIDDEN,
 			PROTECTION_DOMAIN,
 			"Ljava/security/ProtectionDomain;",
-			null,
-			null
-		));
-		fields.add(new FieldNode(
-			ACC_PRIVATE | ACC_VM_HIDDEN,
-			CONSTANT_POOL,
-			"Ljava/lang/Object;",
 			null,
 			null
 		));

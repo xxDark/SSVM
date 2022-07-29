@@ -136,7 +136,7 @@ public final class InvokeDynamicLinker {
 	public Value dynamicCall(Value[] args, String desc, InstanceValue handle) {
 		VirtualMachine vm = this.vm;
 		VMHelper helper = vm.getHelper();
-		LinkResolver linkResolver = vm.getLinkResolver();
+		LinkResolver linkResolver = vm.getPublicLinkResolver();
 		ThreadStorage ts = vm.getThreadStorage();
 		if (vm.getSymbols().java_lang_invoke_CallSite().isAssignableFrom(handle.getJavaClass())) {
 			// See linkCallSiteImpl
@@ -217,20 +217,21 @@ public final class InvokeDynamicLinker {
 	public void initMethodMember(int refKind, InstanceValue memberName, JavaMethod handle, int mnType) {
 		VirtualMachine vm = this.vm;
 		VMSymbols symbols = vm.getSymbols();
+		VMOperations ops = vm.getTrustedOperations();
 		// Inject vmholder & vmtarget into resolved name
-		memberName.setInt(NativeJava.VM_INDEX, handle.getSlot());
+		ops.putInt(memberName, NativeJava.VM_INDEX, handle.getSlot());
 		MemoryManager memoryManager = vm.getMemoryManager();
 		InstanceJavaClass rmn = symbols.java_lang_invoke_ResolvedMethodName();
 		rmn.initialize();
 		InstanceValue resolvedName = memoryManager.newInstance(rmn);
 		resolvedName.initialize();
-		resolvedName.setValue(NativeJava.VM_TARGET, "Ljava/lang/Object;", vm.getHelper().boxInt(IntValue.of(handle.getSlot())));
-		resolvedName.setValue(NativeJava.VM_HOLDER, "Ljava/lang/Object;", handle.getOwner().getOop());
-		memberName.setValue("method", symbols.java_lang_invoke_ResolvedMethodName().getDescriptor(), resolvedName);
+		ops.putReference(resolvedName, NativeJava.VM_TARGET, "Ljava/lang/Object;", vm.getHelper().boxInt(IntValue.of(handle.getSlot())));
+		ops.putReference(resolvedName, NativeJava.VM_HOLDER, "Ljava/lang/Object;", handle.getOwner().getOop());
+		ops.putReference(memberName, "method", symbols.java_lang_invoke_ResolvedMethodName().getDescriptor(), resolvedName);
 		// Inject flags
 		int flags = handle.getAccess() & Modifier.RECOGNIZED_METHOD_MODIFIERS;
 		flags |= mnType | (refKind << MN_REFERENCE_KIND_SHIFT);
-		memberName.setInt("flags", flags);
+		ops.putInt(memberName, "flags", flags);
 	}
 
 	/**
@@ -243,6 +244,7 @@ public final class InvokeDynamicLinker {
 	public void initFieldMember(int refKind, InstanceValue memberName, JavaField handle) {
 		VirtualMachine vm = this.vm;
 		VMSymbols symbols = vm.getSymbols();
+		VMOperations ops = vm.getTrustedOperations();
 		// Inject vmholder & vmtarget into resolved name
 		MemoryManager memoryManager = vm.getMemoryManager();
 		InstanceJavaClass owner = handle.getOwner();
@@ -252,18 +254,18 @@ public final class InvokeDynamicLinker {
 		} else {
 			offset += memoryManager.getStaticOffset(owner);
 		}
-		memberName.setInt(NativeJava.VM_INDEX, (int) offset);
+		ops.putInt(memberName, NativeJava.VM_INDEX, (int) offset);
 		InstanceJavaClass rmn = symbols.java_lang_invoke_ResolvedMethodName();
 		rmn.initialize();
 		InstanceValue resolvedName = memoryManager.newInstance(rmn);
 		resolvedName.initialize();
-		resolvedName.setValue(NativeJava.VM_TARGET, "Ljava/lang/Object;", vm.getHelper().boxInt(IntValue.of(handle.getSlot())));
-		resolvedName.setValue(NativeJava.VM_HOLDER, "Ljava/lang/Object;", owner.getOop());
-		memberName.setValue("method", symbols.java_lang_invoke_ResolvedMethodName().getDescriptor(), resolvedName);
+		ops.putReference(resolvedName, NativeJava.VM_TARGET, "Ljava/lang/Object;", vm.getHelper().boxInt(IntValue.of(handle.getSlot())));
+		ops.putReference(resolvedName, NativeJava.VM_HOLDER, "Ljava/lang/Object;", owner.getOop());
+		ops.putReference(memberName, "method", symbols.java_lang_invoke_ResolvedMethodName().getDescriptor(), resolvedName);
 		// Inject flags
 		int flags = handle.getAccess() & Modifier.RECOGNIZED_FIELD_MODIFIERS;
 		flags |= IS_FIELD | (refKind << MN_REFERENCE_KIND_SHIFT);
-		memberName.setInt("flags", flags);
+		ops.putInt(memberName, "flags", flags);
 	}
 
 	/**
@@ -274,9 +276,11 @@ public final class InvokeDynamicLinker {
 	 * Throws VM exception if handle is not initialized.
 	 */
 	public JavaMethod readVMTargetFromHandle(InstanceValue handle) {
+		VirtualMachine vm = this.vm;
 		VMHelper helper = vm.getHelper();
-		InstanceValue form = helper.checkNotNull(handle.getValue("form", "Ljava/lang/invoke/LambdaForm;"));
-		InstanceValue vmentry = helper.checkNotNull(form.getValue("vmentry", "Ljava/lang/invoke/MemberName;"));
+		VMOperations ops = vm.getTrustedOperations();
+		InstanceValue form = helper.checkNotNull(ops.getReference(handle, "form", "Ljava/lang/invoke/LambdaForm;"));
+		InstanceValue vmentry = helper.checkNotNull(ops.getReference(form, "vmentry", "Ljava/lang/invoke/MemberName;"));
 		return readVMTargetFromMemberName(vmentry);
 	}
 
@@ -288,9 +292,11 @@ public final class InvokeDynamicLinker {
 	 * Throws VM exception if handle is not initialized.
 	 */
 	public JavaMethod readVMTargetFromMemberName(InstanceValue vmentry) {
+		VirtualMachine vm = this.vm;
 		VMHelper helper = vm.getHelper();
-		InstanceValue resolved = helper.checkNotNull(vmentry.getValue("method", vm.getSymbols().java_lang_invoke_ResolvedMethodName().getDescriptor()));
-		InstanceJavaClass clazz = ((JavaValue<InstanceJavaClass>) vmentry.getValue("clazz", "Ljava/lang/Class;")).getValue();
-		return helper.getMethodBySlot(clazz, ((InstanceValue) resolved.getValue(NativeJava.VM_TARGET, "Ljava/lang/Object;")).getInt("value"));
+		VMOperations ops = vm.getTrustedOperations();
+		InstanceValue resolved = helper.checkNotNull(ops.getReference(vmentry, "method", vm.getSymbols().java_lang_invoke_ResolvedMethodName().getDescriptor()));
+		InstanceJavaClass clazz = ((JavaValue<InstanceJavaClass>) ops.getReference(vmentry, "clazz", "Ljava/lang/Class;")).getValue();
+		return helper.getMethodBySlot(clazz, ops.getInt(ops.getReference(resolved, NativeJava.VM_TARGET, "Ljava/lang/Object;"), "value"));
 	}
 }

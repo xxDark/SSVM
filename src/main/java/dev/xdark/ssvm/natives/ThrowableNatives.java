@@ -34,7 +34,7 @@ public class ThrowableNatives {
 		VMSymbols symbols = vm.getSymbols();
 		InstanceJavaClass throwable = symbols.java_lang_Throwable();
 		vmi.setInvoker(throwable, "fillInStackTrace", "(I)Ljava/lang/Throwable;", ctx -> {
-			InstanceValue exception = ctx.getLocals().<InstanceValue>load(0);
+			InstanceValue exception = ctx.getLocals().loadReference(0);
 			ThreadManager threadManager = vm.getThreadManager();
 			Backtrace vmBacktrace = threadManager.currentThread().getBacktrace();
 			SimpleBacktrace copy = new SimpleBacktrace();
@@ -46,22 +46,22 @@ public class ThrowableNatives {
 				copy.push(frame.freeze());
 			}
 			JavaValue<SimpleBacktrace> backtrace = vm.getMemoryManager().newJavaInstance(symbols.java_lang_Object(), copy);
-			exception.setValue("backtrace", "Ljava/lang/Object;", backtrace);
+			vm.getPublicOperations().putReference(exception, "backtrace", "Ljava/lang/Object;", backtrace);
 			long depth = exception.getFieldOffset("depth", "I");
 			if (depth != -1L) {
-				vm.getMemoryManager().writeInt(exception, depth, copy.count());
+				exception.getData().writeInt(depth, copy.count());
 			}
 			ctx.setResult(exception);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(throwable, "getStackTraceDepth", "()I", ctx -> {
-			Backtrace backtrace = ((JavaValue<Backtrace>) ((InstanceValue) ctx.getLocals().load(0)).getValue("backtrace", "Ljava/lang/Object;")).getValue();
+			Backtrace backtrace = ((JavaValue<Backtrace>) ((InstanceValue) ctx.getLocals().loadReference(0)).getValue("backtrace", "Ljava/lang/Object;")).getValue();
 			ctx.setResult(IntValue.of(backtrace.count()));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(throwable, "getStackTraceElement", "(I)Ljava/lang/StackTraceElement;", ctx -> {
 			Locals locals = ctx.getLocals();
-			Backtrace backtrace = ((JavaValue<Backtrace>) ((InstanceValue) locals.load(0)).getValue("backtrace", "Ljava/lang/Object;")).getValue();
+			Backtrace backtrace = ((JavaValue<Backtrace>) ((InstanceValue) locals.loadReference(0)).getValue("backtrace", "Ljava/lang/Object;")).getValue();
 			int idx = locals.loadInt(1);
 			VMHelper helper = vm.getHelper();
 			int len = backtrace.count();

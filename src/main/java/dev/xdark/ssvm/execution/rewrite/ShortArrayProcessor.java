@@ -18,7 +18,7 @@ public final class ShortArrayProcessor implements InstructionProcessor<Delegatin
 	public Result execute(DelegatingInsnNode<IntInsnNode> insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
 		int length = stack.popInt();
-		stack.push(ctx.getOperations().allocateShortArray(length));
+		stack.pushReference(ctx.getOperations().allocateShortArray(length));
 		return Result.CONTINUE;
 	}
 }

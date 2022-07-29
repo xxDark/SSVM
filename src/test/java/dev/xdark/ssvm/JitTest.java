@@ -10,11 +10,9 @@ import dev.xdark.ssvm.jit.JitInstaller;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.LongValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.TopValue;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.Type;
 
@@ -90,17 +88,18 @@ public class JitTest {
 			helper.invoke(m, locals);
 		} catch (VMException ex) {
 			InstanceValue oop = ex.getOop();
-			JavaMethod printStackTrace = vm.getLinkResolver().resolveVirtualMethod(oop, "printStackTrace", "()V");
+			JavaMethod printStackTrace = vm.getPublicLinkResolver().resolveVirtualMethod(oop, "printStackTrace", "()V");
 			Locals locals = vm.getThreadStorage().newLocals(printStackTrace);
 			locals.set(0, oop);
 			helper.invoke(printStackTrace, locals);
 			throw ex;
 		}
-		assertEquals(a, jc.getStaticValue("a", "J").asLong());
-		assertEquals(b, jc.getStaticValue("b", "I").asInt());
-		assertEquals(c, helper.readUtf8(jc.getStaticValue("c", "Ljava/lang/String;")));
-		assertEquals(d, jc.getStaticValue("d", "J").asLong());
-		assertEquals(e, jc.getStaticValue("e", "I").asInt());
+		VMOperations ops = vm.getPublicOperations();
+		assertEquals(a, ops.getLong(jc, "a"));
+		assertEquals(b, ops.getInt(jc, "b"));
+		assertEquals(c, helper.readUtf8(ops.getReference(jc, "c", "Ljava/lang/String;")));
+		assertEquals(d, ops.getLong(jc, "d"));
+		assertEquals(e, ops.getInt(jc, "e"));
 	}
 
 	private static void jitCall(long a, int b, String c, long d, int e) {

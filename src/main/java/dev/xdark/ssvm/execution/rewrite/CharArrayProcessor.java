@@ -18,7 +18,7 @@ public final class CharArrayProcessor implements InstructionProcessor<Delegating
 	public Result execute(DelegatingInsnNode<IntInsnNode> insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
 		int length = stack.popInt();
-		stack.push(ctx.getOperations().allocateCharArray(length));
+		stack.pushReference(ctx.getOperations().allocateCharArray(length));
 		return Result.CONTINUE;
 	}
 }

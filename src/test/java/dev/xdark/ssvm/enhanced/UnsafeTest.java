@@ -1,6 +1,6 @@
 package dev.xdark.ssvm.enhanced;
 
-import dev.xdark.ssvm.value.IntValue;
+import dev.xdark.ssvm.VirtualMachine;
 import org.junit.jupiter.api.Test;
 import sun.misc.Unsafe;
 
@@ -11,7 +11,8 @@ public class UnsafeTest {
 	@Test
 	public void doTest() {
 		TestUtil.test(InnerUnsafeTest.class, true, c -> {
-			c.setStaticFieldValue("addressSize", "I", IntValue.of(c.getVM().getMemoryAllocator().addressSize()));
+			VirtualMachine vm = c.getVM();
+			vm.getPublicOperations().putInt(c, "addressSize", vm.getMemoryAllocator().addressSize());
 		});
 	}
 

@@ -26,7 +26,7 @@ public final class MultiNewArrayProcessor implements InstructionProcessor<MultiA
 		while (dimensions-- != 0) {
 			lengths[dimensions] = stack.popInt();
 		}
-		stack.push(helper.newMultiArray((ArrayJavaClass) type, lengths));
+		stack.pushReference(helper.newMultiArray((ArrayJavaClass) type, lengths));
 		return Result.CONTINUE;
 	}
 }

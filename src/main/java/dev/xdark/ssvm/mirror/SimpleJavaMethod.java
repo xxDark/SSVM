@@ -3,6 +3,7 @@ package dev.xdark.ssvm.mirror;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.VMTryCatchBlock;
 import dev.xdark.ssvm.util.AsmUtil;
+import dev.xdark.ssvm.util.TypeSafeMap;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
  */
 public final class SimpleJavaMethod implements JavaMethod {
 
+	private final TypeSafeMap metadata = new TypeSafeMap();
 	private final InstanceJavaClass owner;
 	private final MethodNode node;
 	private final String desc;
@@ -174,6 +176,11 @@ public final class SimpleJavaMethod implements JavaMethod {
 			tryCatchBlocks = resolveTryCatchBlocks();
 		}
 		return tryCatchBlocks;
+	}
+
+	@Override
+	public TypeSafeMap getMetadata() {
+		return metadata;
 	}
 
 	@Override

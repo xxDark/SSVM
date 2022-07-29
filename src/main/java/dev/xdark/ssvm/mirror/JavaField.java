@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.mirror;
 
+import dev.xdark.ssvm.util.MetadataHolder;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.FieldNode;
 
@@ -8,7 +9,7 @@ import org.objectweb.asm.tree.FieldNode;
  *
  * @author xDark
  */
-public interface JavaField {
+public interface JavaField extends MetadataHolder {
 
 	/**
 	 * Returns field owner.

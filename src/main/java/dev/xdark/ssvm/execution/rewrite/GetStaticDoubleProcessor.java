@@ -20,7 +20,7 @@ public final class GetStaticDoubleProcessor implements InstructionProcessor<VMFi
 		JavaField field = insn.getResolved();
 		InstanceJavaClass klass = field.getOwner();
 		MemoryManager memory = ctx.getMemoryManager();
-		double value = memory.readDouble(klass.getOop(), memory.getStaticOffset(klass) + field.getOffset());
+		double value = Double.longBitsToDouble(klass.getOop().getData().readLong(memory.getStaticOffset(klass) + field.getOffset()));
 		ctx.getStack().pushDouble(value);
 		return Result.CONTINUE;
 	}

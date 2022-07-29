@@ -15,37 +15,12 @@ public final class DoubleValue extends NumericValue implements WideValue {
 
 	@Override
 	public long asLong() {
-		return (long) value;
+		return Double.doubleToRawLongBits(value);
 	}
 
 	@Override
 	public double asDouble() {
 		return value;
-	}
-
-	@Override
-	public int asInt() {
-		return (int) value;
-	}
-
-	@Override
-	public float asFloat() {
-		return (float) value;
-	}
-
-	@Override
-	public char asChar() {
-		return (char) value;
-	}
-
-	@Override
-	public short asShort() {
-		return (short) value;
-	}
-
-	@Override
-	public byte asByte() {
-		return (byte) value;
 	}
 
 	@Override

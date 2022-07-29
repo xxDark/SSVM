@@ -34,7 +34,7 @@ public class ProcessEnvironmentNatives {
 			int idx = 0;
 			int len = env.size();
 			ArrayValue array = helper.newArray(vm.getPrimitives().bytePrimitive().newArrayClass(), len * 2);
-			JavaMethod getBytes = vm.getLinkResolver().resolveSpecialMethod(vm.getSymbols().java_lang_String(), "getBytes", "()[B");
+			JavaMethod getBytes = vm.getPublicLinkResolver().resolveSpecialMethod(vm.getSymbols().java_lang_String(), "getBytes", "()[B");
 			ThreadStorage ts = vm.getThreadStorage();
 			for (Map.Entry<String, String> entry : env.entrySet()) {
 				ObjectValue key = helper.newUtf8(entry.getKey());

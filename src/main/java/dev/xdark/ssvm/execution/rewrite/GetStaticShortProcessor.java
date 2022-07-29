@@ -20,7 +20,7 @@ public final class GetStaticShortProcessor implements InstructionProcessor<VMFie
 		JavaField field = insn.getResolved();
 		InstanceJavaClass klass = field.getOwner();
 		MemoryManager memory = ctx.getMemoryManager();
-		short value = memory.readShort(klass.getOop(), memory.getStaticOffset(klass) + field.getOffset());
+		short value = klass.getOop().getData().readShort(memory.getStaticOffset(klass) + field.getOffset());
 		ctx.getStack().pushInt(value);
 		return Result.CONTINUE;
 	}

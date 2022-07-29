@@ -5,6 +5,7 @@ import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 
@@ -51,22 +52,23 @@ public class NativeJavaThread extends Thread {
 	public void run() {
 		InstanceValue oop = this.oop;
 		VirtualMachine vm = oop.getJavaClass().getVM();
+		VMOperations ops = vm.getPublicOperations();
 		VMHelper helper = vm.getHelper();
-		oop.setInt("threadStatus", ThreadState.JVMTI_THREAD_STATE_ALIVE | ThreadState.JVMTI_THREAD_STATE_RUNNABLE);
+		ops.putInt(oop, "threadStatus", ThreadState.JVMTI_THREAD_STATE_ALIVE | ThreadState.JVMTI_THREAD_STATE_RUNNABLE);
 		ThreadStorage ts = vmThread.getThreadStorage();
 		try {
-			JavaMethod method = vm.getLinkResolver().resolveVirtualMethod(oop, "run", "()V");
+			JavaMethod method = vm.getPublicLinkResolver().resolveVirtualMethod(oop, "run", "()V");
 			Locals locals = ts.newLocals(method);
 			locals.set(0, oop);
 			helper.invoke(method, locals);
 		} catch (VMException ex) {
-			ObjectValue uncaughtExceptionHandler = oop.getValue("uncaughtExceptionHandler", "Ljava/lang/Thread$UncaughtExceptionHandler;");
+			ObjectValue uncaughtExceptionHandler = ops.getReference(oop, "uncaughtExceptionHandler", "Ljava/lang/Thread$UncaughtExceptionHandler;");
 			if (uncaughtExceptionHandler.isNull()) {
-				uncaughtExceptionHandler = (ObjectValue) vm.getSymbols().java_lang_Thread().getStaticValue("defaultUncaughtExceptionHandler", "Ljava/lang/Thread$UncaughtExceptionHandler;");
+				uncaughtExceptionHandler = ops.getReference(vm.getSymbols().java_lang_Thread(), "defaultUncaughtExceptionHandler", "Ljava/lang/Thread$UncaughtExceptionHandler;");
 			}
 			if (!uncaughtExceptionHandler.isNull()) {
 				try {
-					JavaMethod method = vm.getLinkResolver().resolveVirtualMethod(oop, "uncaughtException", "(Ljava/lang/Thread;Ljava/lang/Throwable;)V");
+					JavaMethod method = vm.getPublicLinkResolver().resolveVirtualMethod(oop, "uncaughtException", "(Ljava/lang/Thread;Ljava/lang/Throwable;)V");
 					Locals locals = ts.newLocals(method);
 					locals.set(0, oop);
 					locals.set(1, ex.getOop());
@@ -89,7 +91,7 @@ public class NativeJavaThread extends Thread {
 				}
 			}
 		} finally {
-			oop.setInt("threadStatus", ThreadState.JVMTI_THREAD_STATE_TERMINATED);
+			ops.putInt(oop, "threadStatus", ThreadState.JVMTI_THREAD_STATE_TERMINATED);
 			oop.monitorEnter();
 			try {
 				oop.monitorNotifyAll();

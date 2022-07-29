@@ -7,7 +7,7 @@ import dev.xdark.ssvm.fs.ZipFile;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
-import dev.xdark.ssvm.value.InstanceValue;
+import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 
@@ -28,9 +28,11 @@ public class JarFileNatives {
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
 		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass zf = symbols.java_util_jar_JarFile();
-		vmi.setInvoker(zf, "getMetaInfEntryNames", "()[Ljava/lang/String;", ctx -> {
-			long handle = ctx.getLocals().<InstanceValue>load(0).getLong("jzfile");
+		InstanceJavaClass zf = symbols.java_util_zip_ZipFile();
+		InstanceJavaClass jf = symbols.java_util_jar_JarFile();
+		vmi.setInvoker(jf, "getMetaInfEntryNames", "()[Ljava/lang/String;", ctx -> {
+			VMOperations ops = vm.getPublicOperations();
+			long handle = ops.getLong(ctx.getLocals().loadReference(0), zf, "jzfile");
 			ZipFile zip = vm.getFileDescriptorManager().getZipFile(handle);
 			VMHelper helper = vm.getHelper();
 			if (zip == null) {

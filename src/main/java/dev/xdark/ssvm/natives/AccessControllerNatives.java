@@ -30,40 +30,40 @@ public class AccessControllerNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(accController, "doPrivileged", "(Ljava/security/PrivilegedAction;)Ljava/lang/Object;", ctx -> {
-			ObjectValue action = ctx.getLocals().load(0);
+			ObjectValue action = ctx.getLocals().loadReference(0);
 			VMHelper helper = vm.getHelper();
 			helper.checkNotNull(action);
-			JavaMethod method = vm.getLinkResolver().resolveVirtualMethod(action, "run", "()Ljava/lang/Object;");
+			JavaMethod method = vm.getPublicLinkResolver().resolveVirtualMethod(action, "run", "()Ljava/lang/Object;");
 			Locals locals = vm.getThreadStorage().newLocals(method);
 			locals.set(0, action);
 			ctx.setResult(helper.invoke(method, locals).getResult());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(accController, "doPrivileged", "(Ljava/security/PrivilegedExceptionAction;)Ljava/lang/Object;", ctx -> {
-			ObjectValue action = ctx.getLocals().load(0);
+			ObjectValue action = ctx.getLocals().loadReference(0);
 			VMHelper helper = vm.getHelper();
 			helper.checkNotNull(action);
-			JavaMethod method = vm.getLinkResolver().resolveVirtualMethod(action, "run", "()Ljava/lang/Object;");
+			JavaMethod method = vm.getPublicLinkResolver().resolveVirtualMethod(action, "run", "()Ljava/lang/Object;");
 			Locals locals = vm.getThreadStorage().newLocals(method);
 			locals.set(0, action);
 			ctx.setResult(helper.invoke(method, locals).getResult());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(accController, "doPrivileged", "(Ljava/security/PrivilegedExceptionAction;Ljava/security/AccessControlContext;)Ljava/lang/Object;", ctx -> {
-			ObjectValue action = ctx.getLocals().load(0);
+			ObjectValue action = ctx.getLocals().loadReference(0);
 			VMHelper helper = vm.getHelper();
 			helper.checkNotNull(action);
-			JavaMethod method = vm.getLinkResolver().resolveVirtualMethod(action, "run", "()Ljava/lang/Object;");
+			JavaMethod method = vm.getPublicLinkResolver().resolveVirtualMethod(action, "run", "()Ljava/lang/Object;");
 			Locals locals = vm.getThreadStorage().newLocals(method);
 			locals.set(0, action);
 			ctx.setResult(helper.invoke(method, locals).getResult());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(accController, "doPrivileged", "(Ljava/security/PrivilegedAction;Ljava/security/AccessControlContext;)Ljava/lang/Object;", ctx -> {
-			ObjectValue action = ctx.getLocals().load(0);
+			ObjectValue action = ctx.getLocals().loadReference(0);
 			VMHelper helper = vm.getHelper();
 			helper.checkNotNull(action);
-			JavaMethod method = vm.getLinkResolver().resolveVirtualMethod(action, "run", "()Ljava/lang/Object;");
+			JavaMethod method = vm.getPublicLinkResolver().resolveVirtualMethod(action, "run", "()Ljava/lang/Object;");
 			Locals locals = vm.getThreadStorage().newLocals(method);
 			locals.set(0, action);
 			ctx.setResult(helper.invoke(method, locals).getResult());

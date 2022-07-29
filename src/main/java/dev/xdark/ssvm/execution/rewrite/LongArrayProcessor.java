@@ -18,7 +18,7 @@ public final class LongArrayProcessor implements InstructionProcessor<Delegating
 	public Result execute(DelegatingInsnNode<IntInsnNode> insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
 		int length = stack.popInt();
-		stack.push(ctx.getOperations().allocateLongArray(length));
+		stack.pushReference(ctx.getOperations().allocateLongArray(length));
 		return Result.CONTINUE;
 	}
 }

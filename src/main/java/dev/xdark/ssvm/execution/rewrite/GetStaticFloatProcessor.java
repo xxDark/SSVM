@@ -20,7 +20,7 @@ public final class GetStaticFloatProcessor implements InstructionProcessor<VMFie
 		JavaField field = insn.getResolved();
 		InstanceJavaClass klass = field.getOwner();
 		MemoryManager memory = ctx.getMemoryManager();
-		float value = memory.readFloat(klass.getOop(), memory.getStaticOffset(klass) + field.getOffset());
+		float value = Float.floatToRawIntBits(klass.getOop().getData().readInt(memory.getStaticOffset(klass) + field.getOffset()));
 		ctx.getStack().pushFloat(value);
 		return Result.CONTINUE;
 	}

@@ -20,7 +20,7 @@ public final class GetStaticIntProcessor implements InstructionProcessor<VMField
 		JavaField field = insn.getResolved();
 		InstanceJavaClass klass = field.getOwner();
 		MemoryManager memory = ctx.getMemoryManager();
-		int value = memory.readInt(klass.getOop(), memory.getStaticOffset(klass) + field.getOffset());
+		int value = klass.getOop().getData().readInt(memory.getStaticOffset(klass) + field.getOffset());
 		ctx.getStack().pushInt(value);
 		return Result.CONTINUE;
 	}

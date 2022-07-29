@@ -40,7 +40,7 @@ public class JigsawNatives {
 		InstanceJavaClass moduleLayer = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ModuleLayer");
 		if (moduleLayer != null) {
 			vmi.setInvoker(moduleLayer, "defineModules", "(Ljava/lang/module/Configuration;Ljava/util/function/Function;)Ljava/lang/ModuleLayer;", ctx -> {
-				ctx.setResult(ctx.getLocals().load(0));
+				ctx.setResult(ctx.getLocals().loadReference(0));
 				return Result.ABORT;
 			});
 		}

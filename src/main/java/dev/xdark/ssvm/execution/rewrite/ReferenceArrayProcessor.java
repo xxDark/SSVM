@@ -17,7 +17,7 @@ public final class ReferenceArrayProcessor implements InstructionProcessor<VMTyp
 	public Result execute(VMTypeInsnNode insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
 		int length = stack.popInt();
-		stack.push(ctx.getOperations().allocateArray(insn.getJavaType(), length));
+		stack.pushReference(ctx.getOperations().allocateArray(insn.getJavaType(), length));
 		return Result.CONTINUE;
 	}
 }

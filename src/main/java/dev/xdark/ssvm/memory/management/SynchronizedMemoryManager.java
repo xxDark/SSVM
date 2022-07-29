@@ -99,46 +99,6 @@ public class SynchronizedMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public long readLong(ObjectValue object, long offset) {
-		return memoryManager.readLong(object, offset);
-	}
-
-	@Override
-	public double readDouble(ObjectValue object, long offset) {
-		return memoryManager.readDouble(object, offset);
-	}
-
-	@Override
-	public int readInt(ObjectValue object, long offset) {
-		return memoryManager.readInt(object, offset);
-	}
-
-	@Override
-	public float readFloat(ObjectValue object, long offset) {
-		return memoryManager.readFloat(object, offset);
-	}
-
-	@Override
-	public char readChar(ObjectValue object, long offset) {
-		return memoryManager.readChar(object, offset);
-	}
-
-	@Override
-	public short readShort(ObjectValue object, long offset) {
-		return memoryManager.readShort(object, offset);
-	}
-
-	@Override
-	public byte readByte(ObjectValue object, long offset) {
-		return memoryManager.readByte(object, offset);
-	}
-
-	@Override
-	public boolean readBoolean(ObjectValue object, long offset) {
-		return memoryManager.readBoolean(object, offset);
-	}
-
-	@Override
 	public ObjectValue readValue(ObjectValue object, long offset) {
 		synchronized (mutex) {
 			return memoryManager.readValue(object, offset);
@@ -148,46 +108,6 @@ public class SynchronizedMemoryManager implements MemoryManager {
 	@Override
 	public JavaClass readClass(ObjectValue object) {
 		return memoryManager.readClass(object);
-	}
-
-	@Override
-	public void writeLong(ObjectValue object, long offset, long value) {
-		memoryManager.writeLong(object, offset, value);
-	}
-
-	@Override
-	public void writeDouble(ObjectValue object, long offset, double value) {
-		memoryManager.writeDouble(object, offset, value);
-	}
-
-	@Override
-	public void writeInt(ObjectValue object, long offset, int value) {
-		memoryManager.writeInt(object, offset, value);
-	}
-
-	@Override
-	public void writeFloat(ObjectValue object, long offset, float value) {
-		memoryManager.writeFloat(object, offset, value);
-	}
-
-	@Override
-	public void writeChar(ObjectValue object, long offset, char value) {
-		memoryManager.writeChar(object, offset, value);
-	}
-
-	@Override
-	public void writeShort(ObjectValue object, long offset, short value) {
-		memoryManager.writeShort(object, offset, value);
-	}
-
-	@Override
-	public void writeByte(ObjectValue object, long offset, byte value) {
-		memoryManager.writeByte(object, offset, value);
-	}
-
-	@Override
-	public void writeBoolean(ObjectValue object, long offset, boolean value) {
-		memoryManager.writeBoolean(object, offset, value);
 	}
 
 	@Override

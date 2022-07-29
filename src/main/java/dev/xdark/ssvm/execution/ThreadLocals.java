@@ -30,14 +30,11 @@ public final class ThreadLocals implements Locals, AutoCloseable, Disposable {
 
 	@Override
 	public void set(int index, Value value) {
-		table.set(index, Objects.requireNonNull(value, "value"));
+		table.set(index, value);
 	}
 
 	@Override
 	public void setWide(int index, Value value) {
-		if (!Objects.requireNonNull(value, "value").isWide()) {
-			throw new IllegalStateException("Must use set instead");
-		}
 		ThreadRegion table = this.table;
 		table.set(index, value);
 		table.set(index + 1, TopValue.INSTANCE);

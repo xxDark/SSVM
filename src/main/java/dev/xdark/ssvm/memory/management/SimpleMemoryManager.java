@@ -152,46 +152,6 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public long readLong(ObjectValue object, long offset) {
-		return object.getMemory().getData().readLong(offset);
-	}
-
-	@Override
-	public double readDouble(ObjectValue object, long offset) {
-		return Double.longBitsToDouble(object.getMemory().getData().readLong(offset));
-	}
-
-	@Override
-	public int readInt(ObjectValue object, long offset) {
-		return object.getMemory().getData().readInt(offset);
-	}
-
-	@Override
-	public float readFloat(ObjectValue object, long offset) {
-		return Float.intBitsToFloat(object.getMemory().getData().readInt(offset));
-	}
-
-	@Override
-	public char readChar(ObjectValue object, long offset) {
-		return object.getMemory().getData().readChar(offset);
-	}
-
-	@Override
-	public short readShort(ObjectValue object, long offset) {
-		return object.getMemory().getData().readShort(offset);
-	}
-
-	@Override
-	public byte readByte(ObjectValue object, long offset) {
-		return object.getMemory().getData().readByte(offset);
-	}
-
-	@Override
-	public boolean readBoolean(ObjectValue object, long offset) {
-		return readByte(object, offset) != 0;
-	}
-
-	@Override
 	public ObjectValue readValue(ObjectValue object, long offset) {
 		long address = object.getMemory().getData().readLong(offset);
 		return objects.get(tlcAddress(address));
@@ -213,46 +173,6 @@ public class SimpleMemoryManager implements MemoryManager {
 	@Override
 	public int readArrayLength(ArrayValue array) {
 		return array.getMemory().getData().readInt(arrayLengthOffset);
-	}
-
-	@Override
-	public void writeLong(ObjectValue object, long offset, long value) {
-		object.getMemory().getData().writeLong(offset, value);
-	}
-
-	@Override
-	public void writeDouble(ObjectValue object, long offset, double value) {
-		object.getMemory().getData().writeLong(offset, Double.doubleToRawLongBits(value));
-	}
-
-	@Override
-	public void writeInt(ObjectValue object, long offset, int value) {
-		object.getMemory().getData().writeInt(offset, value);
-	}
-
-	@Override
-	public void writeFloat(ObjectValue object, long offset, float value) {
-		object.getMemory().getData().writeInt(offset, Float.floatToRawIntBits(value));
-	}
-
-	@Override
-	public void writeChar(ObjectValue object, long offset, char value) {
-		object.getMemory().getData().writeChar(offset, value);
-	}
-
-	@Override
-	public void writeShort(ObjectValue object, long offset, short value) {
-		object.getMemory().getData().writeShort(offset, value);
-	}
-
-	@Override
-	public void writeByte(ObjectValue object, long offset, byte value) {
-		object.getMemory().getData().writeByte(offset, value);
-	}
-
-	@Override
-	public void writeBoolean(ObjectValue object, long offset, boolean value) {
-		writeByte(object, offset, (byte) (value ? 1 : 0));
 	}
 
 	@Override

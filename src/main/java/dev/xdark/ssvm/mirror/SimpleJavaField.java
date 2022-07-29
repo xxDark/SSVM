@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.mirror;
 
+import dev.xdark.ssvm.util.TypeSafeMap;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.FieldNode;
 
@@ -10,6 +11,7 @@ import org.objectweb.asm.tree.FieldNode;
  */
 public final class SimpleJavaField implements JavaField {
 
+	private final TypeSafeMap metadata = new TypeSafeMap();
 	private final InstanceJavaClass owner;
 	private final FieldNode node;
 	private final int slot;
@@ -56,6 +58,11 @@ public final class SimpleJavaField implements JavaField {
 			return this.type = Type.getType(node.desc);
 		}
 		return type;
+	}
+
+	@Override
+	public TypeSafeMap getMetadata() {
+		return metadata;
 	}
 
 	@Override

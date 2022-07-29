@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.mirror;
 
 import dev.xdark.ssvm.execution.VMTryCatchBlock;
+import dev.xdark.ssvm.util.MetadataHolder;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -11,7 +12,7 @@ import java.util.List;
  *
  * @author xDark
  */
-public interface JavaMethod {
+public interface JavaMethod extends MetadataHolder {
 
 	/**
 	 * Returns method owner.

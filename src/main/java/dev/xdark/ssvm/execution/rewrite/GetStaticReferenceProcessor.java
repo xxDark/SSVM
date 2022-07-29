@@ -22,7 +22,7 @@ public final class GetStaticReferenceProcessor implements InstructionProcessor<V
 		InstanceJavaClass klass = field.getOwner();
 		MemoryManager memory = ctx.getMemoryManager();
 		ObjectValue value = memory.readValue(klass.getOop(), memory.getStaticOffset(klass) + field.getOffset());
-		ctx.getStack().push(value);
+		ctx.getStack().pushReference(value);
 		return Result.CONTINUE;
 	}
 }

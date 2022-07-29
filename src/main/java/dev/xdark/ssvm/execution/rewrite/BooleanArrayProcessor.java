@@ -18,7 +18,7 @@ public final class BooleanArrayProcessor implements InstructionProcessor<Delegat
 	public Result execute(DelegatingInsnNode<IntInsnNode> insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
 		int length = stack.popInt();
-		stack.push(ctx.getOperations().allocateBooleanArray(length));
+		stack.pushReference(ctx.getOperations().allocateBooleanArray(length));
 		return Result.CONTINUE;
 	}
 }

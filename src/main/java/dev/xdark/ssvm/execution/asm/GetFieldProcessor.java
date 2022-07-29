@@ -18,7 +18,7 @@ public final class GetFieldProcessor implements InstructionProcessor<FieldInsnNo
 	public Result execute(FieldInsnNode insn, ExecutionContext ctx) {
 		InstanceJavaClass klass = (InstanceJavaClass) ctx.getHelper().tryFindClass(ctx.getClassLoader(), insn.owner, true);
 		Stack stack = ctx.getStack();
-		stack.pushGeneric(ctx.getOperations().getGenericField(stack.pop(), klass, insn.name, insn.desc));
+		stack.pushGeneric(ctx.getOperations().getGeneric(stack.pop(), klass, insn.name, insn.desc));
 		return Result.CONTINUE;
 	}
 }

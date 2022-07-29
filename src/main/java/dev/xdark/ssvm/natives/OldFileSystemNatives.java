@@ -40,7 +40,7 @@ public class OldFileSystemNatives {
 		vmi.setInvoker(fs, "initIDs", "()V", MethodInvoker.noop());
 		vmi.setInvoker(fs, "canonicalize0", "(Ljava/lang/String;)Ljava/lang/String;", ctx -> {
 			VMHelper helper = vm.getHelper();
-			String path = helper.readUtf8(ctx.getLocals().load(1));
+			String path = helper.readUtf8(ctx.getLocals().loadReference(1));
 			try {
 				ctx.setResult(helper.newUtf8(vm.getFileDescriptorManager().canonicalize(path)));
 			} catch (IOException ex) {
@@ -50,7 +50,7 @@ public class OldFileSystemNatives {
 		});
 		vmi.setInvoker(fs, unix ? "getBooleanAttributes0" : "getBooleanAttributes", "(Ljava/io/File;)I", ctx -> {
 			VMHelper helper = vm.getHelper();
-			ObjectValue value = ctx.getLocals().load(1);
+			ObjectValue value = ctx.getLocals().loadReference(1);
 			helper.checkNotNull(value);
 			try {
 				String path = helper.readUtf8(((InstanceValue) value).getValue("path", "Ljava/lang/String;"));
@@ -73,7 +73,7 @@ public class OldFileSystemNatives {
 		});
 		vmi.setInvoker(fs, "list", "(Ljava/io/File;)[Ljava/lang/String;", ctx -> {
 			VMHelper helper = vm.getHelper();
-			Value value = ctx.getLocals().load(1);
+			ObjectValue value = ctx.getLocals().loadReference(1);
 			helper.checkNotNull(value);
 			String path = helper.readUtf8(((InstanceValue) value).getValue("path", "Ljava/lang/String;"));
 			String[] list = vm.getFileDescriptorManager().list(path);
@@ -89,12 +89,12 @@ public class OldFileSystemNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fs, "canonicalizeWithPrefix0", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;", ctx -> {
-			ctx.setResult(ctx.getLocals().load(2));
+			ctx.setResult(ctx.getLocals().loadReference(2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fs, "getLastModifiedTime", "(Ljava/io/File;)J", ctx -> {
 			VMHelper helper = vm.getHelper();
-			Value value = ctx.getLocals().load(1);
+			ObjectValue value = ctx.getLocals().loadReference(1);
 			helper.checkNotNull(value);
 			try {
 				String path = helper.readUtf8(((InstanceValue) value).getValue("path", "Ljava/lang/String;"));
@@ -111,7 +111,7 @@ public class OldFileSystemNatives {
 		});
 		vmi.setInvoker(fs, "getLength", "(Ljava/io/File;)J", ctx -> {
 			VMHelper helper = vm.getHelper();
-			Value value = ctx.getLocals().load(1);
+			ObjectValue value = ctx.getLocals().loadReference(1);
 			helper.checkNotNull(value);
 			try {
 				String path = helper.readUtf8(((InstanceValue) value).getValue("path", "Ljava/lang/String;"));

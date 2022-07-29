@@ -34,7 +34,32 @@ public abstract class SimpleObjectValue implements ObjectValue {
 
 	@Override
 	public long asLong() {
-		return memory.getAddress();
+		return memory.getData().readLong(0L);
+	}
+
+	@Override
+	public int asInt() {
+		return memory.getData().readInt(0L);
+	}
+
+	@Override
+	public char asChar() {
+		return memory.getData().readChar(0L);
+	}
+
+	@Override
+	public short asShort() {
+		return memory.getData().readShort(0L);
+	}
+
+	@Override
+	public byte asByte() {
+		return memory.getData().readByte(0L);
+	}
+
+	@Override
+	public boolean asBoolean() {
+		return asByte() != 0;
 	}
 
 	@Override

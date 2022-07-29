@@ -25,7 +25,7 @@ public interface ExecutionRequest {
 	Locals getLocals();
 
 	/**
-	 * @return execution optinos.
+	 * @return execution options.
 	 */
 	ExecutionOptions getOptions();
 }

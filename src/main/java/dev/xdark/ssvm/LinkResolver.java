@@ -1,5 +1,6 @@
 package dev.xdark.ssvm;
 
+import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaField;
@@ -12,10 +13,10 @@ import dev.xdark.ssvm.value.ObjectValue;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
-import java.util.HashSet;
-import java.util.Set;
 
-import static org.objectweb.asm.Opcodes.*;
+import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
+import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
+import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
 /**
  * Linking code.
@@ -25,13 +26,16 @@ import static org.objectweb.asm.Opcodes.*;
 public final class LinkResolver {
 	private final VMHelper helper;
 	private final VMSymbols symbols;
+	private final boolean trusted;
 
 	/**
-	 * @param vm VM instance.
+	 * @param vm      VM instance.
+	 * @param trusted Wthether the link resolver is truted.
 	 */
-	public LinkResolver(VirtualMachine vm) {
+	public LinkResolver(VirtualMachine vm, boolean trusted) {
 		helper = vm.getHelper();
 		symbols = vm.getSymbols();
+		this.trusted = trusted;
 	}
 
 	public JavaMethod resolveMethod(JavaClass klass, String name, String desc, boolean requireMethodRef) {
@@ -122,7 +126,7 @@ public final class LinkResolver {
 			klass = klass.getSuperClass();
 		}
 		JavaField field = slowResolveStaticField(name, desc, current);
-		if (field != null) {
+		if (field != null && (trusted || !Modifier.isHiddenMember(field.getAccess()))) {
 			return field;
 		}
 		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
@@ -139,7 +143,7 @@ public final class LinkResolver {
 				current = current.getSuperClass();
 			}
 		}
-		if (field != null) {
+		if (field != null && (trusted || !Modifier.isHiddenMember(field.getAccess()))) {
 			return field;
 		}
 		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);

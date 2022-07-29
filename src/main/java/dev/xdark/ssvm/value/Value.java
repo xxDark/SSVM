@@ -18,49 +18,49 @@ public interface Value {
 	 * @return this value as double.
 	 */
 	default double asDouble() {
-		throw new UnsupportedOperationException();
+		return Double.longBitsToDouble(asLong());
 	}
 
 	/**
 	 * @return this value as int.
 	 */
 	default int asInt() {
-		throw new UnsupportedOperationException();
+		return (int) asLong();
 	}
 
 	/**
 	 * @return this value as float.
 	 */
 	default float asFloat() {
-		throw new UnsupportedOperationException();
+		return Float.intBitsToFloat(asInt());
 	}
 
 	/**
 	 * @return this value as char.
 	 */
 	default char asChar() {
-		throw new UnsupportedOperationException();
+		return (char) asInt();
 	}
 
 	/**
 	 * @return this value as short.
 	 */
 	default short asShort() {
-		throw new UnsupportedOperationException();
+		return (short) asInt();
 	}
 
 	/**
 	 * @return this value as byte.
 	 */
 	default byte asByte() {
-		throw new UnsupportedOperationException();
+		return (byte) asInt();
 	}
 
 	/**
 	 * @return this value as boolean.
 	 */
 	default boolean asBoolean() {
-		throw new UnsupportedOperationException();
+		return asInt() != 0;
 	}
 
 	/**

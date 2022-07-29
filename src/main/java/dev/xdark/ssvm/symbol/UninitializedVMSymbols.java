@@ -17,8 +17,8 @@ public final class UninitializedVMSymbols implements VMSymbols {
 		this.vm = vm;
 	}
 
-	// java/lang/Object and java/lang/Class are special cases
-	// when we want them to be accessible even when VM symbols
+	// There are special cases
+	// when we want classes to be accessible even when VM symbols
 	// are not yet initialized
 	@Override
 	public InstanceJavaClass java_lang_Object() {
@@ -31,17 +31,17 @@ public final class UninitializedVMSymbols implements VMSymbols {
 	}
 
 	@Override
+	public InstanceJavaClass java_lang_Thread() {
+		return (InstanceJavaClass) vm.findBootstrapClass("java/lang/Thread");
+	}
+
+	@Override
 	public InstanceJavaClass java_lang_String() {
 		return uninitialized();
 	}
 
 	@Override
 	public InstanceJavaClass java_lang_ClassLoader() {
-		return uninitialized();
-	}
-
-	@Override
-	public InstanceJavaClass java_lang_Thread() {
 		return uninitialized();
 	}
 

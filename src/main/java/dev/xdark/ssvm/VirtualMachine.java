@@ -181,6 +181,7 @@ public class VirtualMachine {
 
 	/**
 	 * Full VM initialization.
+	 * After this method is called, caller thread will remain attached.
 	 *
 	 * @throws IllegalStateException If VM fails to transit to {@link InitializationState#BOOTING} state,
 	 *                               or fails to boot.
@@ -192,11 +193,12 @@ public class VirtualMachine {
 		if (state.compareAndSet(InitializationState.INITIALIZED, InitializationState.BOOTING)) {
 			try {
 				VMSymbols symbols = this.symbols;
+				ThreadManager threadManager = this.threadManager;
+				threadManager.attachCurrentThread();
 				symbols.java_lang_ClassLoader().initialize();
 				VMHelper helper = this.helper;
 				InstanceJavaClass sysClass = symbols.java_lang_System();
 				MemoryManager memoryManager = this.memoryManager;
-				ThreadManager threadManager = this.threadManager;
 				VMOperations ops = publicOperations;
 				GarbageCollector garbageCollector = memoryManager.getGarbageCollector();
 
@@ -809,6 +811,7 @@ public class VirtualMachine {
 	}
 
 	private void init() {
+		ThreadManager threadManager = this.threadManager;
 		try {
 			ClassLoaders classLoaders = this.classLoaders;
 			VMInitializer initializer = this.initializer;
@@ -834,6 +837,7 @@ public class VirtualMachine {
 			primitives = initializedVMPrimitives;
 			NativeJava.init(this);
 			initializer.nativeInit(this);
+			threadManager.attachCurrentThread();
 			InstanceJavaClass groupClass = symbols.java_lang_ThreadGroup();
 			groupClass.initialize();
 			IntrinsicsNatives.init(this);
@@ -841,6 +845,8 @@ public class VirtualMachine {
 		} catch (Exception ex) {
 			state.set(InitializationState.FAILED);
 			throw new IllegalStateException("VM initialization failed", ex);
+		} finally {
+			threadManager.detachCurrentThread();
 		}
 	}
 

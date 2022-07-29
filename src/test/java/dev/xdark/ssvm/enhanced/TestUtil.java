@@ -11,6 +11,8 @@ import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.memory.management.SynchronizedMemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.thread.NativeThreadManager;
+import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.InstanceValue;
@@ -35,6 +37,7 @@ public class TestUtil {
 			vm.bootstrap();
 		} else {
 			vm.initialize();
+			vm.getThreadManager().attachCurrentThread();
 		}
 		byte[] result;
 		try(InputStream in = TestUtil.class.getClassLoader().getResourceAsStream(klass.getName().replace('.', '/') + ".class")) {
@@ -109,6 +112,11 @@ public class TestUtil {
 			@Override
 			protected MemoryManager createMemoryManager() {
 				return new SynchronizedMemoryManager(super.createMemoryManager());
+			}
+
+			@Override
+			protected ThreadManager createThreadManager() {
+				return new NativeThreadManager(this, new ThreadGroup("ssvm"));
 			}
 		};
 	}

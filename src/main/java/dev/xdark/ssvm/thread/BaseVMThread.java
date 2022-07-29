@@ -14,13 +14,16 @@ public abstract class BaseVMThread implements VMThread {
 	@Getter
 	private final ThreadStorage threadStorage = createThreadStorage();
 
-	private final InstanceValue oop;
+	private InstanceValue oop;
 
 	/**
 	 * @param oop VM thread oop.
 	 */
 	protected BaseVMThread(InstanceValue oop) {
 		this.oop = oop;
+	}
+
+	protected BaseVMThread() {
 	}
 
 	@Override
@@ -49,5 +52,16 @@ public abstract class BaseVMThread implements VMThread {
 	 */
 	protected ThreadStorage createThreadStorage() {
 		return SimpleThreadStorage.create();
+	}
+
+	/**
+	 * @param oop
+	 *      Oop to set.
+	 */
+	public void setOop(InstanceValue oop) {
+		if (this.oop != null) {
+			throw new IllegalStateException("Cannot change thread instance");
+		}
+		this.oop = oop;
 	}
 }

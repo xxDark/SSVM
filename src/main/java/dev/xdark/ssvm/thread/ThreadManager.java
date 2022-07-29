@@ -10,6 +10,18 @@ import dev.xdark.ssvm.value.InstanceValue;
 public interface ThreadManager {
 
 	/**
+	 * Attaches current thread.
+	 * Does nothing if thread is already attached.
+	 */
+	void attachCurrentThread();
+
+	/**
+	 * Deatches current thread.
+	 * Does nothing if thread is not attached.
+	 */
+	void detachCurrentThread();
+
+	/**
 	 * Returns VM thread from Java thread.
 	 *
 	 * @param thread Thread to get VM thread from.
@@ -23,13 +35,6 @@ public interface ThreadManager {
 	 * @param thread VM thread oop.
 	 */
 	VMThread getVmThread(InstanceValue thread);
-
-	/**
-	 * Assigns VM thread.
-	 *
-	 * @param thread Thread to assign.
-	 */
-	void setVmThread(VMThread thread);
 
 	/**
 	 * @return array of threads.

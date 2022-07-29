@@ -11,7 +11,7 @@ import dev.xdark.ssvm.value.InstanceValue;
  *
  * @author xDark
  */
-public class DetachedVMThread extends BaseVMThread {
+public class SystemVMThread extends BaseVMThread {
 
 	private final VirtualMachine vm;
 	private final Thread thread;
@@ -21,7 +21,7 @@ public class DetachedVMThread extends BaseVMThread {
 	 * @param vm     VM instance.
 	 * @param thread Java thread.
 	 */
-	public DetachedVMThread(VirtualMachine vm, Thread thread) {
+	public SystemVMThread(VirtualMachine vm, Thread thread) {
 		super(null);
 		this.vm = vm;
 		this.thread = thread;

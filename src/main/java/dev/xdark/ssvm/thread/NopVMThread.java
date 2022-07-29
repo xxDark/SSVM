@@ -16,6 +16,10 @@ public final class NopVMThread extends BaseVMThread {
 		this.thread = thread;
 	}
 
+	public NopVMThread(Thread thread) {
+		this.thread = thread;
+	}
+
 	@Override
 	public Thread getJavaThread() {
 		return thread;

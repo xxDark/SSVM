@@ -27,42 +27,48 @@ public final class NopThreadManager implements ThreadManager {
 	}
 
 	@Override
+	public synchronized void attachCurrentThread() {
+		Thread thread = Thread.currentThread();
+		Map<Thread, VMThread> threadMap = this.threadMap;
+		NopVMThread current = (NopVMThread) threadMap.get(thread);
+		if (current != null) {
+			return;
+		}
+		VirtualMachine vm = this.vm;
+		current = new NopVMThread(thread);
+		threadMap.put(thread, current);
+		InstanceJavaClass klass = vm.getSymbols().java_lang_Thread();
+		klass.initialize();
+		InstanceValue instance = vm.getMemoryManager().newInstance(klass);
+		current.setOop(instance);
+		InstanceValue mainThreadGroup = vm.getMainThreadGroup();
+		if (mainThreadGroup != null) {
+			// Might be null if VM is still in boot state,
+			// will be set later.
+			instance.setValue("group", "Ljava/lang/ThreadGroup;", mainThreadGroup);
+		}
+		vm.getHelper().screenVmThread(current);
+		instance.initialize();
+	}
+
+	@Override
+	public synchronized void detachCurrentThread() {
+		threadMap.remove(Thread.currentThread());
+	}
+
+	@Override
 	public VMThread getVmThread(Thread thread) {
 		Map<Thread, VMThread> threadMap = this.threadMap;
 		VMThread current = threadMap.get(thread);
 		if (current != null) {
 			return current;
 		}
-		synchronized (this) {
-			current = threadMap.get(thread);
-			if (current == null) {
-				VirtualMachine vm = this.vm;
-				InstanceJavaClass klass = vm.getSymbols().java_lang_Thread();
-				klass.initialize();
-				InstanceValue instance = vm.getMemoryManager().newInstance(klass);
-				current = new NopVMThread(instance, thread);
-				InstanceValue mainThreadGroup = vm.getMainThreadGroup();
-				if (mainThreadGroup != null) {
-					// Might be null if VM is still in boot state,
-					// will be set later.
-					instance.setValue("group", "Ljava/lang/ThreadGroup;", mainThreadGroup);
-				}
-				threadMap.put(thread, current);
-				vm.getHelper().screenVmThread(current);
-				instance.initialize();
-			}
-		}
-		return current;
+		throw new IllegalStateException("Access from detached thread");
 	}
 
 	@Override
 	public VMThread getVmThread(InstanceValue thread) {
 		return new NopVMThread(thread, nopThread);
-	}
-
-	@Override
-	public synchronized void setVmThread(VMThread thread) {
-		threadMap.put(thread.getJavaThread(), thread);
 	}
 
 	@Override
@@ -77,15 +83,7 @@ public final class NopThreadManager implements ThreadManager {
 
 	@Override
 	public VMThread createMainThread() {
-		VirtualMachine vm = this.vm;
-		InstanceJavaClass klass = vm.getSymbols().java_lang_Thread();
-		klass.initialize();
-		InstanceValue instance = vm.getMemoryManager().newInstance(klass);
-		VMThread vmThread = new NopVMThread(instance, Thread.currentThread());
-		threadMap.put(Thread.currentThread(), vmThread);
-		vm.getHelper().screenVmThread(vmThread);
-		instance.initialize();
-		return vmThread;
+		return getVmThread(Thread.currentThread());
 	}
 
 	@Override

@@ -1,8 +1,6 @@
 package dev.xdark.ssvm.thread;
 
 import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.memory.management.MemoryManager;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.InstanceValue;
 
@@ -19,7 +17,7 @@ import java.util.stream.Stream;
 public class NativeThreadManager implements ThreadManager {
 
 	private final Map<Thread, VMThread> systemThreads = new WeakHashMap<>();
-	private final Map<InstanceValue, NativeVMThread> vmThreads = new WeakHashMap<>();
+	private final Map<InstanceValue, VMThread> vmThreads = new WeakHashMap<>();
 	private final VirtualMachine vm;
 	private final ThreadGroup threadGroup;
 
@@ -33,28 +31,45 @@ public class NativeThreadManager implements ThreadManager {
 	}
 
 	@Override
+	public synchronized void attachCurrentThread() {
+		Thread thread = Thread.currentThread();
+		if (thread instanceof NativeJavaThread) {
+			throw new IllegalStateException("Cannot attach Java thread");
+		}
+		Map<Thread, VMThread> systemThreads = this.systemThreads;
+		VMThread vmThread = systemThreads.get(thread);
+		if (vmThread == null) {
+			vmThread = new SystemVMThread(vm, thread);
+			systemThreads.put(thread, vmThread);
+		}
+	}
+
+	@Override
+	public synchronized void detachCurrentThread() {
+		Thread thread = Thread.currentThread();
+		if (thread instanceof NativeJavaThread) {
+			throw new IllegalStateException("Cannot detach Java thread");
+		}
+		systemThreads.remove(thread);
+	}
+
+	@Override
 	public VMThread getVmThread(Thread thread) {
 		if (!(thread instanceof NativeJavaThread)) {
 			Map<Thread, VMThread> systemThreads = this.systemThreads;
 			VMThread vmThread = systemThreads.get(thread);
-			if (vmThread == null) {
-				synchronized (this) {
-					vmThread = systemThreads.get(thread);
-					if (vmThread == null) {
-						vmThread = new DetachedVMThread(vm, thread);
-						systemThreads.put(thread, vmThread);
-					}
-				}
+			if (vmThread != null) {
+				return vmThread;
 			}
-			return vmThread;
+			throw new IllegalStateException("Access from detached thread");
 		}
 		return ((NativeJavaThread) thread).getVmThread();
 	}
 
 	@Override
 	public VMThread getVmThread(InstanceValue thread) {
-		Map<InstanceValue, NativeVMThread> threadMap = this.vmThreads;
-		NativeVMThread vmThread = threadMap.get(thread);
+		Map<InstanceValue, VMThread> threadMap = this.vmThreads;
+		VMThread vmThread = threadMap.get(thread);
 		if (vmThread == null) {
 			synchronized (this) {
 				vmThread = threadMap.get(thread);
@@ -65,11 +80,6 @@ public class NativeThreadManager implements ThreadManager {
 			}
 		}
 		return vmThread;
-	}
-
-	@Override
-	public void setVmThread(VMThread thread) {
-		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -92,32 +102,11 @@ public class NativeThreadManager implements ThreadManager {
 		// If we were previously detached, attach this thread
 		// using existing OOP if possible, there might be some
 		// code that already cached thread instance.
-		VMThread detached = systemThreads.remove(thread);
-		boolean callInitialize = true;
-		InstanceValue instance;
-		fromDetached:
-		{
-			if (detached != null) {
-				DetachedVMThread dtvm = (DetachedVMThread) detached;
-				if (dtvm.isOopSet()) {
-					instance = dtvm.getOop();
-					callInitialize = false;
-					break fromDetached;
-				}
-			}
-			InstanceJavaClass klass = vm.getSymbols().java_lang_Thread();
-			klass.initialize();
-			MemoryManager memoryManager = vm.getMemoryManager();
-			instance = memoryManager.newInstance(klass);
-		}
-		NativeVMThread vmThread = createMainThread(instance, thread);
-		vmThreads.put(instance, vmThread);
+		VMThread vmThread = systemThreads.get(thread);
+		InstanceValue instance = vmThread.getOop();
 		VMOperations ops = vm.getPublicOperations();
 		ops.putInt(instance, "threadStatus", ThreadState.JVMTI_THREAD_STATE_ALIVE | ThreadState.JVMTI_THREAD_STATE_RUNNABLE);
 		ops.putInt(instance, "priority", Thread.MAX_PRIORITY);
-		if (callInitialize) {
-			instance.initialize();
-		}
 		return vmThread;
 	}
 
@@ -154,16 +143,5 @@ public class NativeThreadManager implements ThreadManager {
 				vm.getSafePoint().pollAndSuspend();
 			}
 		});
-	}
-
-	/**
-	 * Creates new main thread.
-	 *
-	 * @param value  Thread oop.
-	 * @param thread Java thread.
-	 * @return main thread.
-	 */
-	protected NativeVMThread createMainThread(InstanceValue value, Thread thread) {
-		return new NativeVMThread(value, thread);
 	}
 }

@@ -165,7 +165,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		if (state == State.FAILED) {
 			lock.unlock();
 			VirtualMachine vm = this.vm;
-			vm.getHelper().throwException(vm.getSymbols().java_lang_ExceptionInInitializerError(), getInternalName());
+			vm.getHelper().throwException(vm.getSymbols().java_lang_NoClassDefFoundError(), getInternalName());
 		}
 		this.state = State.IN_PROGRESS;
 		VirtualMachine vm = this.vm;

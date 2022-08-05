@@ -22,12 +22,12 @@ public class NativeThreadManager implements ThreadManager {
 	private final ThreadGroup threadGroup;
 
 	/**
-	 * @param vm VM instance.
+	 * @param vm          VM instance.
 	 * @param threadGroup Thread group to use.
 	 */
 	public NativeThreadManager(VirtualMachine vm, ThreadGroup threadGroup) {
 		this.vm = vm;
-		this.threadGroup =threadGroup;
+		this.threadGroup = threadGroup;
 	}
 
 	@Override

@@ -953,12 +953,13 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		if (!symbols.java_lang_Error().isAssignableFrom(oop.getJavaClass())) {
 			InstanceJavaClass jc = symbols.java_lang_ExceptionInInitializerError();
 			jc.initialize();
+			InstanceValue cause = oop;
 			oop = vm.getMemoryManager().newInstance(jc);
 			// Can't use newException here
 			JavaMethod init = vm.getPublicLinkResolver().resolveSpecialMethod(jc, "<init>", "(Ljava/lang/Throwable;)V");
 			Locals locals = vm.getThreadStorage().newLocals(init);
 			locals.set(0, oop);
-			locals.set(1, oop);
+			locals.set(1, cause);
 			vm.getHelper().invoke(init, locals);
 			throw new VMException(oop);
 		}

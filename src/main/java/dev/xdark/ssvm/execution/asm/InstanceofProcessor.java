@@ -16,7 +16,7 @@ public final class InstanceofProcessor implements InstructionProcessor<TypeInsnN
 	public Result execute(TypeInsnNode insn, ExecutionContext ctx) {
 		JavaClass klass = ctx.getHelper().tryFindClass(ctx.getClassLoader(), insn.desc, false);
 		Stack stack = ctx.getStack();
-		boolean result = ctx.getOperations().instanceofCheck(stack.pop(), klass);
+		boolean result = ctx.getOperations().instanceofCheck(stack.popReference(), klass);
 		stack.pushInt(result ? 1 : 0);
 		return Result.CONTINUE;
 	}

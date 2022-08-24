@@ -43,9 +43,9 @@ public class SynchronizedMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public ObjectValue getValue(long address) {
+	public ObjectValue getReference(long address) {
 		synchronized (mutex) {
-			return memoryManager.getValue(address);
+			return memoryManager.getReference(address);
 		}
 	}
 

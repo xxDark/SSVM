@@ -11,6 +11,22 @@ import dev.xdark.ssvm.execution.rewrite.GetStaticIntProcessor;
 import dev.xdark.ssvm.execution.rewrite.GetStaticLongProcessor;
 import dev.xdark.ssvm.execution.rewrite.GetStaticReferenceProcessor;
 import dev.xdark.ssvm.execution.rewrite.GetStaticShortProcessor;
+import dev.xdark.ssvm.execution.rewrite.PutFieldByteProcessor;
+import dev.xdark.ssvm.execution.rewrite.PutFieldCharProcessor;
+import dev.xdark.ssvm.execution.rewrite.PutFieldDoubleProcessor;
+import dev.xdark.ssvm.execution.rewrite.PutFieldFloatProcessor;
+import dev.xdark.ssvm.execution.rewrite.PutFieldIntProcessor;
+import dev.xdark.ssvm.execution.rewrite.PutFieldLongProcessor;
+import dev.xdark.ssvm.execution.rewrite.PutFieldReferenceProcessor;
+import dev.xdark.ssvm.execution.rewrite.PutFieldShortProcessor;
+import dev.xdark.ssvm.execution.rewrite.PutStaticByteProcessor;
+import dev.xdark.ssvm.execution.rewrite.PutStaticCharProcessor;
+import dev.xdark.ssvm.execution.rewrite.PutStaticDoubleProcessor;
+import dev.xdark.ssvm.execution.rewrite.PutStaticFloatProcessor;
+import dev.xdark.ssvm.execution.rewrite.PutStaticIntProcessor;
+import dev.xdark.ssvm.execution.rewrite.PutStaticLongProcessor;
+import dev.xdark.ssvm.execution.rewrite.PutStaticReferenceProcessor;
+import dev.xdark.ssvm.execution.rewrite.PutStaticShortProcessor;
 import dev.xdark.ssvm.execution.rewrite.ReferenceArrayProcessor;
 import dev.xdark.ssvm.execution.rewrite.ByteArrayProcessor;
 import dev.xdark.ssvm.execution.rewrite.CharArrayProcessor;
@@ -24,14 +40,13 @@ import dev.xdark.ssvm.execution.rewrite.VMCastProcessor;
 import dev.xdark.ssvm.execution.rewrite.VMInterfaceCallProcessor;
 import dev.xdark.ssvm.execution.rewrite.VMNewProcessor;
 import dev.xdark.ssvm.execution.asm.*;
-import dev.xdark.ssvm.execution.rewrite.LdcProcessor;
 import dev.xdark.ssvm.execution.rewrite.VMSpecialCallProcessor;
 import dev.xdark.ssvm.execution.rewrite.VMStaticCallProcessor;
 import dev.xdark.ssvm.execution.rewrite.VMVirtualCallProcessor;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.natives.*;
 import dev.xdark.ssvm.symbol.VMSymbols;
-import dev.xdark.ssvm.value.Value;
+import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.tree.FieldNode;
 
 import java.util.List;
@@ -41,6 +56,11 @@ import static dev.xdark.ssvm.asm.VMOpcodes.VM_BOOLEAN_NEW_ARRAY;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_BYTE_NEW_ARRAY;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_CHAR_NEW_ARRAY;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_CHECKCAST;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_CONSTANT_DOUBLE;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_CONSTANT_FLOAT;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_CONSTANT_INT;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_CONSTANT_LONG;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_CONSTANT_REFERENCE;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_DOUBLE_NEW_ARRAY;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_DYNAMIC_CALL;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_FLOAT_NEW_ARRAY;
@@ -58,9 +78,26 @@ import static dev.xdark.ssvm.asm.VMOpcodes.VM_INVOKEINTERFACE;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_INVOKESPECIAL;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_INVOKESTATIC;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_INVOKEVIRTUAL;
-import static dev.xdark.ssvm.asm.VMOpcodes.VM_LDC;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_LONG_NEW_ARRAY;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_NEW;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_PUTFIELD_BOOLEAN;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_PUTFIELD_BYTE;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_PUTFIELD_CHAR;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_PUTFIELD_DOUBLE;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_PUTFIELD_FLOAT;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_PUTFIELD_INT;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_PUTFIELD_LONG;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_PUTFIELD_REFERENCE;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_PUTFIELD_SHORT;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_PUTSTATIC_BOOLEAN;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_PUTSTATIC_BYTE;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_PUTSTATIC_CHAR;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_PUTSTATIC_DOUBLE;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_PUTSTATIC_FLOAT;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_PUTSTATIC_INT;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_PUTSTATIC_LONG;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_PUTSTATIC_REFERENCE;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_PUTSTATIC_SHORT;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_REFERENCE_NEW_ARRAY;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_SHORT_NEW_ARRAY;
 import static org.objectweb.asm.Opcodes.*;
@@ -228,7 +265,7 @@ public final class NativeJava {
 		VMInterface vmi = vm.getInterface();
 		vmi.setProcessor(NOP, new NopProcessor());
 
-		vmi.setProcessor(ACONST_NULL, new ConstantProcessor(vm.getMemoryManager().nullValue()));
+		vmi.setProcessor(ACONST_NULL, new ConstantReferenceProcessor(vm.getMemoryManager().nullValue()));
 
 		// ICONST_M1..INCONST_5
 		for (int x = ICONST_M1; x <= ICONST_5; x++) {
@@ -415,11 +452,10 @@ public final class NativeJava {
 		vmi.setProcessor(MULTIANEWARRAY, new MultiNewArrayProcessor());
 
 		vmi.setProcessor(IFNONNULL, new ValueJumpProcessor(value -> !value.isNull()));
-		vmi.setProcessor(IFNULL, new ValueJumpProcessor(Value::isNull));
+		vmi.setProcessor(IFNULL, new ValueJumpProcessor(ObjectValue::isNull));
 
 		// VM opcodes
 		vmi.setProcessor(VM_DYNAMIC_CALL, new DynamicCallProcessor());
-		vmi.setProcessor(VM_LDC, new LdcProcessor());
 		vmi.setProcessor(VM_NEW, new VMNewProcessor());
 		vmi.setProcessor(VM_BOOLEAN_NEW_ARRAY, new BooleanArrayProcessor());
 		vmi.setProcessor(VM_CHAR_NEW_ARRAY, new CharArrayProcessor());
@@ -444,6 +480,30 @@ public final class NativeJava {
 		vmi.setProcessor(VM_GETSTATIC_LONG, new GetStaticLongProcessor());
 		vmi.setProcessor(VM_GETSTATIC_DOUBLE, new GetStaticDoubleProcessor());
 		vmi.setProcessor(VM_GETSTATIC_REFERENCE, new GetStaticReferenceProcessor());
+		vmi.setProcessor(VM_PUTSTATIC_BOOLEAN, new PutStaticByteProcessor());
+		vmi.setProcessor(VM_PUTSTATIC_CHAR, new PutStaticCharProcessor());
+		vmi.setProcessor(VM_PUTSTATIC_BYTE, new PutStaticByteProcessor());
+		vmi.setProcessor(VM_PUTSTATIC_SHORT, new PutStaticShortProcessor());
+		vmi.setProcessor(VM_PUTSTATIC_INT, new PutStaticIntProcessor());
+		vmi.setProcessor(VM_PUTSTATIC_FLOAT, new PutStaticFloatProcessor());
+		vmi.setProcessor(VM_PUTSTATIC_LONG, new PutStaticLongProcessor());
+		vmi.setProcessor(VM_PUTSTATIC_DOUBLE, new PutStaticDoubleProcessor());
+		vmi.setProcessor(VM_PUTSTATIC_REFERENCE, new PutStaticReferenceProcessor());
+		vmi.setProcessor(VM_CONSTANT_INT, new dev.xdark.ssvm.execution.rewrite.ConstantIntProcessor());
+		vmi.setProcessor(VM_CONSTANT_FLOAT, new dev.xdark.ssvm.execution.rewrite.ConstantFloatProcessor());
+		vmi.setProcessor(VM_CONSTANT_LONG, new dev.xdark.ssvm.execution.rewrite.ConstantLongProcessor());
+		vmi.setProcessor(VM_CONSTANT_DOUBLE, new dev.xdark.ssvm.execution.rewrite.ConstantDoubleProcessor());
+		vmi.setProcessor(VM_CONSTANT_REFERENCE, new dev.xdark.ssvm.execution.rewrite.ConstantReferenceProcessor());
+
+		vmi.setProcessor(VM_PUTFIELD_BOOLEAN, new PutFieldByteProcessor());
+		vmi.setProcessor(VM_PUTFIELD_CHAR, new PutFieldCharProcessor());
+		vmi.setProcessor(VM_PUTFIELD_BYTE, new PutFieldByteProcessor());
+		vmi.setProcessor(VM_PUTFIELD_SHORT, new PutFieldShortProcessor());
+		vmi.setProcessor(VM_PUTFIELD_INT, new PutFieldIntProcessor());
+		vmi.setProcessor(VM_PUTFIELD_FLOAT, new PutFieldFloatProcessor());
+		vmi.setProcessor(VM_PUTFIELD_LONG, new PutFieldLongProcessor());
+		vmi.setProcessor(VM_PUTFIELD_DOUBLE, new PutFieldDoubleProcessor());
+		vmi.setProcessor(VM_PUTFIELD_REFERENCE, new PutFieldReferenceProcessor());
 		//</editor-fold>
 	}
 }

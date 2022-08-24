@@ -149,15 +149,7 @@ public interface ArrayValue extends ObjectValue {
 	 * @param index Index to store value to.
 	 * @param value Value to set.
 	 */
-	void setValue(int index, ObjectValue value);
-
-	/**
-	 * Sets VM value of an array.
-	 *
-	 * @param index Index to store value to.
-	 * @param value Value to set.
-	 */
-	ObjectValue getAndSetValue(int index, ObjectValue value);
+	void setReference(int index, ObjectValue value);
 
 	/**
 	 * Returns array length.

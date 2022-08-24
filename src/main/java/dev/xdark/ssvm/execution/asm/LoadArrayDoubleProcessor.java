@@ -18,7 +18,7 @@ public final class LoadArrayDoubleProcessor implements InstructionProcessor<Abst
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
 		int index = stack.popInt();
-		ObjectValue array = stack.pop();
+		ObjectValue array = stack.popReference();
 		stack.pushDouble(ctx.getOperations().arrayLoadDouble(array, index));
 		return Result.CONTINUE;
 	}

@@ -18,16 +18,6 @@ public final class VoidValue implements Value {
 	}
 
 	@Override
-	public boolean isUninitialized() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public boolean isNull() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public boolean isVoid() {
 		return true;
 	}

@@ -629,11 +629,11 @@ public class IntrinsicsNatives {
 					if (!value.isNull()) {
 						JavaMethod method = linkResolver.resolveVirtualMethod(value, "hashCode", "()I");
 						Locals locals = vm.getThreadStorage().newLocals(method);
-						locals.set(0, value);
+						locals.setReference(0, value);
 						result += helper.invoke(method, locals).getResult().asInt();
 					}
 				}
-				ctx.setResult(IntValue.of(result));
+				ctx.setResult(result);
 			}
 			return Result.ABORT;
 		});
@@ -719,70 +719,70 @@ public class IntrinsicsNatives {
 		});
 		vmi.setInvoker(jc, "equals", "([J[J)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			Value $a = locals.loadReference(0);
-			Value $a2 = locals.loadReference(1);
+			ObjectValue $a = locals.loadReference(0);
+			ObjectValue $a2 = locals.loadReference(1);
 			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "equals", "([D[D)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			Value $a = locals.loadReference(0);
-			Value $a2 = locals.loadReference(1);
+			ObjectValue $a = locals.loadReference(0);
+			ObjectValue $a2 = locals.loadReference(1);
 			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "equals", "([I[I)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			Value $a = locals.loadReference(0);
-			Value $a2 = locals.loadReference(1);
+			ObjectValue $a = locals.loadReference(0);
+			ObjectValue $a2 = locals.loadReference(1);
 			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "equals", "([F[F)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			Value $a = locals.loadReference(0);
-			Value $a2 = locals.loadReference(1);
+			ObjectValue $a = locals.loadReference(0);
+			ObjectValue $a2 = locals.loadReference(1);
 			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "equals", "([C[C)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			Value $a = locals.loadReference(0);
-			Value $a2 = locals.loadReference(1);
+			ObjectValue $a = locals.loadReference(0);
+			ObjectValue $a2 = locals.loadReference(1);
 			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "equals", "([S[S)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			Value $a = locals.loadReference(0);
-			Value $a2 = locals.loadReference(1);
+			ObjectValue $a = locals.loadReference(0);
+			ObjectValue $a2 = locals.loadReference(1);
 			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "equals", "([B[B)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			Value $a = locals.loadReference(0);
-			Value $a2 = locals.loadReference(1);
+			ObjectValue $a = locals.loadReference(0);
+			ObjectValue $a2 = locals.loadReference(1);
 			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "equals", "([Z[Z)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			Value $a = locals.loadReference(0);
-			Value $a2 = locals.loadReference(1);
+			ObjectValue $a = locals.loadReference(0);
+			ObjectValue $a2 = locals.loadReference(1);
 			ctx.setResult(primitiveArraysEqual(vm.getMemoryManager(), $a, $a2));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "equals", "([Ljava/lang/Object;[Ljava/lang/Object;)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			Value $a = locals.loadReference(0);
-			Value $a2 = locals.loadReference(1);
+			ObjectValue $a = locals.loadReference(0);
+			ObjectValue $a2 = locals.loadReference(1);
 			ctx.setResult(instanceArraysEqual(vm, $a, $a2));
 			return Result.ABORT;
 		});
 	}
 
-	private IntValue primitiveArraysEqual(MemoryManager memoryManager, Value $a, Value $b) {
+	private IntValue primitiveArraysEqual(MemoryManager memoryManager, ObjectValue $a, ObjectValue $b) {
 		if ($a == $b) {
 			return IntValue.ONE;
 		} else if ($a.isNull() || $b.isNull()) {
@@ -824,7 +824,7 @@ public class IntrinsicsNatives {
 		return IntValue.ONE;
 	}
 
-	private IntValue instanceArraysEqual(VirtualMachine vm, Value $a, Value $b) {
+	private IntValue instanceArraysEqual(VirtualMachine vm, ObjectValue $a, ObjectValue $b) {
 		if ($a == $b) {
 			return IntValue.ONE;
 		} else if ($a.isNull() || $b.isNull()) {
@@ -846,8 +846,8 @@ public class IntrinsicsNatives {
 				if (!v1.isNull()) {
 					JavaMethod method = linkResolver.resolveVirtualMethod(v1, "equals", "(Ljava/lang/Object;)Z");
 					Locals locals = ts.newLocals(method);
-					locals.set(0, v1);
-					locals.set(1, v2);
+					locals.setReference(0, v1);
+					locals.setReference(1, v2);
 					boolean eq = helper.invoke(method, locals).getResult().asBoolean();
 					if (!eq) {
 						return IntValue.ZERO;

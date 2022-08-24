@@ -20,7 +20,6 @@ import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.JavaValue;
-import dev.xdark.ssvm.value.LongValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
@@ -166,15 +165,14 @@ public class UnsafeNatives {
 		vmi.setInvoker(unsafe, "fullFence", "()V", MethodInvoker.noop());
 		vmi.setInvoker(unsafe, uhelper.compareAndSetInt(), "(Ljava/lang/Object;JII)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			Value obj = locals.loadReference(1);
+			ObjectValue obj = locals.loadReference(1);
 			if (obj.isNull()) {
 				throw new PanicException("Segfault");
 			}
-			ObjectValue value = (ObjectValue) obj;
 			long offset = locals.loadLong(2);
 			int expected = locals.loadInt(4);
 			int x = locals.loadInt(5);
-			MemoryData data = value.getData();
+			MemoryData data = obj.getData();
 			boolean result = data.readInt(offset) == expected;
 			if (result) {
 				data.writeInt(offset, x);
@@ -187,7 +185,7 @@ public class UnsafeNatives {
 			long offset = locals.loadLong(2);
 			MemoryData data = getData(vm.getMemoryAllocator(), locals.loadReference(1), offset);
 			MemoryManager memoryManager = vm.getMemoryManager();
-			ctx.setResult(nonNull(memoryManager.getValue(data.readLongVolatile(0L))));
+			ctx.setResult(nonNull(memoryManager.getReference(data.readLongVolatile(0L))));
 			return Result.ABORT;
 		};
 		for (String str : new String[]{"getReferenceVolatile", "getObjectVolatile"}) {
@@ -264,7 +262,7 @@ public class UnsafeNatives {
 			MemoryManager memoryManager = vm.getMemoryManager();
 			long offset = locals.loadLong(2);
 			MemoryData data = getData(vm.getMemoryAllocator(), locals.loadReference(1), offset);
-			ctx.setResult(nonNull(memoryManager.getValue(data.readLong(0L))));
+			ctx.setResult(nonNull(memoryManager.getReference(data.readLong(0L))));
 			return Result.ABORT;
 		};
 		for (String str : new String[]{"getReference", "getObject"}) {
@@ -331,7 +329,7 @@ public class UnsafeNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, uhelper.staticFieldBase(), "(Ljava/lang/reflect/Field;)Ljava/lang/Object;", ctx -> {
-			InstanceValue field = vm.getHelper().<InstanceValue>checkNotNull(ctx.getLocals().<ObjectValue>load(1));
+			InstanceValue field = vm.getHelper().<InstanceValue>checkNotNull(ctx.getLocals().loadReference(1));
 			JavaClass klass = ((JavaValue<JavaClass>) field.getValue("clazz", "Ljava/lang/Class;")).getValue();
 			ctx.setResult(klass.getOop());
 			return Result.ABORT;
@@ -398,10 +396,10 @@ public class UnsafeNatives {
 			generated.link();
 
 			// handle cpPatches
-			Value cpPatches = locals.loadReference(3);
+			ObjectValue cpPatches = locals.loadReference(3);
 			if (!cpPatches.isNull()) {
 				ArrayValue arr = (ArrayValue) cpPatches;
-				Value[] values = helper.toJavaValues(arr);
+				ObjectValue[] values = helper.toJavaValues(arr);
 
 				ConstPool cp = generated.getRawClassFile().getPool();
 				// TODO implement this in cafedude
@@ -423,7 +421,7 @@ public class UnsafeNatives {
 					.filter(x -> x.cst instanceof String)
 					.collect(Collectors.groupingBy(x -> (String) x.cst, Collectors.mapping(Function.identity(), Collectors.toList())));
 				for (int i = 1; i < values.length; i++) {
-					Value v = values[i];
+					ObjectValue v = values[i];
 					if (!v.isNull()) {
 						String utf = ((CpUtf8) cp.get(((CpString) tmp.get(i)).getIndex())).getText();
 						List<LdcInsnNode> ldcs = strings.get(utf);

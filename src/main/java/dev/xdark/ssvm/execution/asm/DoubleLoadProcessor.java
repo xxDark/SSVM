@@ -14,7 +14,7 @@ public final class DoubleLoadProcessor implements InstructionProcessor<VarInsnNo
 
 	@Override
 	public Result execute(VarInsnNode insn, ExecutionContext ctx) {
-		ctx.getStack().pushWide(ctx.getLocals().load(insn.var));
+		ctx.getStack().pushDouble(ctx.getLocals().loadDouble(insn.var));
 		return Result.CONTINUE;
 	}
 }

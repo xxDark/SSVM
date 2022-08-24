@@ -19,7 +19,7 @@ public final class StoreArrayIntProcessor implements InstructionProcessor<Abstra
 		Stack stack = ctx.getStack();
 		int value = stack.popInt();
 		int index = stack.popInt();
-		ObjectValue array = stack.pop();
+		ObjectValue array = stack.popReference();
 		ctx.getOperations().arrayStoreInt(array, index, value);
 		return Result.CONTINUE;
 	}

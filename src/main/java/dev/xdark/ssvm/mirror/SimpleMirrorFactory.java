@@ -28,6 +28,11 @@ public class SimpleMirrorFactory implements MirrorFactory {
 	}
 
 	@Override
+	public PrimitiveClass newPrimitiveClass(String name, String descriptor, int sort) {
+		return new SimplePrimitiveClass(vm, name, descriptor, sort);
+	}
+
+	@Override
 	public JavaField newField(InstanceJavaClass owner, FieldNode node, int slot, long offset) {
 		return new SimpleJavaField(owner, node, slot, offset);
 	}

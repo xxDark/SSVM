@@ -17,7 +17,7 @@ public final class DoubleStoreProcessor implements InstructionProcessor<VarInsnN
 	public Result execute(VarInsnNode insn, ExecutionContext ctx) {
 		Locals locals = ctx.getLocals();
 		int var = insn.var;
-		locals.setWide(var, ctx.getStack().popWide());
+		locals.setDouble(var, ctx.getStack().popDouble());
 		return Result.CONTINUE;
 	}
 }

@@ -76,8 +76,8 @@ public class SystemPropsNatives {
 				ArrayValue array = helper.newArray(vm.getSymbols().java_lang_String(), properties.size() * 2);
 				int i = 0;
 				for (Map.Entry<String, String> entry : properties.entrySet()) {
-					array.setValue(i++, helper.newUtf8(entry.getKey()));
-					array.setValue(i++, helper.newUtf8(entry.getValue()));
+					array.setReference(i++, helper.newUtf8(entry.getKey()));
+					array.setReference(i++, helper.newUtf8(entry.getValue()));
 				}
 				ctx.setResult(array);
 				return Result.ABORT;

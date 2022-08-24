@@ -1,7 +1,9 @@
 package dev.xdark.ssvm.symbol;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.mirror.MirrorFactory;
 import dev.xdark.ssvm.mirror.PrimitiveClass;
+import org.objectweb.asm.Type;
 
 /**
  * Implementation of initialized VM primitives.
@@ -25,15 +27,16 @@ public final class InitializedVMPrimitives implements VMPrimitives {
 	 */
 	public InitializedVMPrimitives(VirtualMachine vm) {
 		vm.assertInitialized();
-		longPrimitive = new PrimitiveClass(vm, "long", "J");
-		doublePrimitive = new PrimitiveClass(vm, "double", "D");
-		intPrimitive = new PrimitiveClass(vm, "int", "I");
-		floatPrimitive = new PrimitiveClass(vm, "float", "F");
-		charPrimitive = new PrimitiveClass(vm, "char", "C");
-		shortPrimitive = new PrimitiveClass(vm, "short", "S");
-		bytePrimitive = new PrimitiveClass(vm, "byte", "B");
-		booleanPrimitive = new PrimitiveClass(vm, "boolean", "Z");
-		voidPrimitive = new PrimitiveClass(vm, "void", "V");
+		MirrorFactory factory = vm.getMirrorFactory();
+		longPrimitive = factory.newPrimitiveClass("long", "J", Type.LONG);
+		doublePrimitive = factory.newPrimitiveClass("double", "D", Type.DOUBLE);
+		intPrimitive = factory.newPrimitiveClass("int", "I", Type.INT);
+		floatPrimitive = factory.newPrimitiveClass("float", "F", Type.FLOAT);
+		charPrimitive = factory.newPrimitiveClass("char", "C", Type.CHAR);
+		shortPrimitive = factory.newPrimitiveClass("short", "S", Type.SHORT);
+		bytePrimitive = factory.newPrimitiveClass("byte", "B", Type.BYTE);
+		booleanPrimitive = factory.newPrimitiveClass("boolean", "Z", Type.BOOLEAN);
+		voidPrimitive = factory.newPrimitiveClass("void", "V", Type.VOID);
 	}
 
 	@Override

@@ -19,7 +19,7 @@ public final class StoreArrayFloatProcessor implements InstructionProcessor<Abst
 		Stack stack = ctx.getStack();
 		float value = stack.popFloat();
 		int index = stack.popInt();
-		ObjectValue array = stack.pop();
+		ObjectValue array = stack.popReference();
 		ctx.getOperations().arrayStoreFloat(array, index, value);
 		return Result.CONTINUE;
 	}

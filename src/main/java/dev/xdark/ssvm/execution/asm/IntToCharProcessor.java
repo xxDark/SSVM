@@ -18,13 +18,7 @@ public final class IntToCharProcessor implements InstructionProcessor<AbstractIn
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
-		Value v = stack.peek();
-		int i = v.asInt();
-		char c = (char) i;
-		if (i != c) {
-			stack.pop();
-			stack.pushInt(c);
-		}
+		stack.pushInt((char) stack.popInt());
 		return Result.CONTINUE;
 	}
 }

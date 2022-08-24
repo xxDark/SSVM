@@ -1,13 +1,7 @@
 package dev.xdark.ssvm.execution;
 
-import dev.xdark.ssvm.value.DoubleValue;
-import dev.xdark.ssvm.value.FloatValue;
-import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.LongValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
-
-import java.util.List;
 
 /**
  * Method execution stack.
@@ -17,54 +11,29 @@ import java.util.List;
 public interface Stack {
 
 	/**
-	 * Pushes value onto the stack.
-	 *
 	 * @param value Value to push.
 	 */
-	void push(Value value);
+	void pushReference(ObjectValue value);
 
 	/**
 	 * @param value Value to push.
 	 */
-	default void pushReference(ObjectValue value) {
-		push(value);
-	}
+	void pushLong(long value);
 
 	/**
 	 * @param value Value to push.
 	 */
-	default void pushLong(long value) {
-		pushWide(LongValue.of(value));
-	}
+	void pushDouble(double value);
 
 	/**
 	 * @param value Value to push.
 	 */
-	default void pushDouble(double value) {
-		pushWide(new DoubleValue(value));
-	}
+	void pushInt(int value);
 
 	/**
 	 * @param value Value to push.
 	 */
-	default void pushInt(int value) {
-		push(IntValue.of(value));
-	}
-
-	/**
-	 * @param value Value to push.
-	 */
-	default void pushFloat(float value) {
-		push(new FloatValue(value));
-	}
-
-	/**
-	 * Pushes wide value onto the stack.
-	 * Inserts TOP after.
-	 *
-	 * @param value Value to push.
-	 */
-	void pushWide(Value value);
+	void pushFloat(float value);
 
 	/**
 	 * Pushes generic value onto the stack.
@@ -75,204 +44,145 @@ public interface Stack {
 	void pushGeneric(Value value);
 
 	/**
-	 * Pushes value onto the stack.
-	 * Does not check whether the value
-	 * is wide or not.
-	 *
-	 * @param value Value to push.
+	 * Pops value off the stack.
 	 */
-	void pushRaw(Value value);
+	void pop();
 
 	/**
-	 * Pops value off the stack.
+	 * Pops reference off the stack.
 	 *
 	 * @param <V> Type of the value.
 	 * @return value popped off the stack.
 	 */
-	<V extends Value> V pop();
+	<V extends ObjectValue> V popReference();
 
 	/**
 	 * Pops long off the stack.
 	 *
 	 * @return long value.
 	 */
-	default long popLong() {
-		return popWide().asLong();
-	}
+	long popLong();
 
 	/**
 	 * Pops double off the stack.
 	 *
 	 * @return double value.
 	 */
-	default double popDouble() {
-		return popWide().asDouble();
-	}
+	double popDouble();
 
 	/**
 	 * Pops int off the stack.
 	 *
 	 * @return int value.
 	 */
-	default int popInt() {
-		return pop().asInt();
-	}
+	int popInt();
 
 	/**
 	 * Pops float off the stack.
 	 *
 	 * @return float value.
 	 */
-	default float popFloat() {
-		return pop().asFloat();
-	}
+	float popFloat();
 
 	/**
 	 * Pops char off the stack.
 	 *
 	 * @return char value.
 	 */
-	default char popChar() {
-		return pop().asChar();
-	}
+	char popChar();
 
 	/**
 	 * Pops short off the stack.
 	 *
 	 * @return short value.
 	 */
-	default short popShort() {
-		return pop().asShort();
-	}
+	short popShort();
 
 	/**
 	 * Pops byte off the stack.
 	 *
 	 * @return int value.
 	 */
-	default byte popByte() {
-		return pop().asByte();
-	}
+	byte popByte();
 
 	/**
-	 * Pops wide value off the stack.
-	 *
 	 * @param <V> Type of the value.
-	 * @return wide value popped off the stack.
-	 * @throws IllegalStateException If wide value does not occupy two slots.
+	 * @return refrerence value.
 	 */
-	<V extends Value> V popWide();
+	<V extends ObjectValue> V peekReference();
 
 	/**
-	 * Pops generic value off the stack.
-	 *
-	 * @param <V> Type of the value.
-	 * @return generic value popped off the stack.
+	 * @return long value.
 	 */
-	<V extends Value> V popGeneric();
+	long peekLong();
 
 	/**
-	 * Peeks value from the stack.
-	 *
-	 * @param <V> Type of the value.
-	 * @return value peeked from the stack.
+	 * @return double value.
 	 */
-	<V extends Value> V peek();
+	double peekDouble();
 
 	/**
-	 * Polls value from the stack.
-	 *
-	 * @param <V> Value tpye.
-	 * @return tail value of the stack or {@code null},
-	 * if stack is empty.
+	 * @return int value.
 	 */
-	<V extends Value> V poll();
+	int peekInt();
+
+	/**
+	 * @return float value.
+	 */
+	float peekFloat();
+
+	/**
+	 * @return char value.
+	 */
+	char peekChar();
+
+	/**
+	 * @return short value.
+	 */
+	short peekShort();
+
+	/**
+	 * @return byte value.
+	 */
+	byte peekByte();
 
 	/**
 	 * Duplicates value on the stack.
 	 */
-	default void dup() {
-		push(peek());
-	}
+	void dup();
 
 	/**
 	 * Duplicate the top operand stack value and insert two values down.
 	 */
-	default void dupx1() {
-		Value v1 = pop();
-		Value v2 = pop();
-		push(v1);
-		push(v2);
-		push(v1);
-	}
+	void dupx1();
 
 	/**
 	 * Duplicate the top operand stack value
 	 * and insert two or three values down.
 	 */
-	default void dupx2() {
-		Value v1 = pop();
-		Value v2 = pop();
-		Value v3 = pop();
-		pushRaw(v1);
-		pushRaw(v3);
-		pushRaw(v2);
-		pushRaw(v1);
-	}
+	void dupx2();
 
 	/**
 	 * Duplicate the top one or two operand stack values.
 	 */
-	default void dup2() {
-		Value v1 = pop();
-		Value v2 = pop();
-		pushRaw(v2);
-		pushRaw(v1);
-		pushRaw(v2);
-		pushRaw(v1);
-	}
+	void dup2();
 
 	/**
 	 * Duplicate the top one or two operand stack values
 	 * and insert two or three values down.
 	 */
-	default void dup2x1() {
-		Value v1 = pop();
-		Value v2 = pop();
-		Value v3 = pop();
-		pushRaw(v2);
-		pushRaw(v1);
-		pushRaw(v3);
-		pushRaw(v2);
-		pushRaw(v1);
-	}
+	void dup2x1();
 
 	/**
 	 * Duplicate the top one or two operand stack values
 	 * and insert two, three, or four values down.
 	 */
-	default void dup2x2() {
-		Value v1 = pop();
-		Value v2 = pop();
-		Value v3 = pop();
-		Value v4 = pop();
-		pushRaw(v2);
-		pushRaw(v1);
-		pushRaw(v4);
-		pushRaw(v3);
-		pushRaw(v2);
-		pushRaw(v1);
-	}
+	void dup2x2();
 
 	/**
 	 * Swap the top two operand stack values.
 	 */
-	default void swap() {
-		Value v1 = pop();
-		Value v2 = pop();
-		push(v1);
-		push(v2);
-	}
+	void swap();
 
 	/**
 	 * Returns whether the stack is empty.
@@ -300,12 +210,73 @@ public interface Stack {
 	 * @param index Value position.
 	 * @return value at the specific position.
 	 */
-	<V extends Value> V getAt(int index);
+	<V extends ObjectValue> V getReferenceAt(int index);
 
 	/**
-	 * @return stack content as a list view.
+	 * Gets value on the stack by an index.
+	 *
+	 * @param index Value position.
+	 * @return value at the specific position.
 	 */
-	List<Value> view();
+	long getLongAt(int index);
+
+	/**
+	 * Gets value on the stack by an index.
+	 *
+	 * @param index Value position.
+	 * @return value at the specific position.
+	 */
+	double getDoubleAt(int index);
+
+	/**
+	 * Gets value on the stack by an index.
+	 *
+	 * @param index Value position.
+	 * @return value at the specific position.
+	 */
+	int getIntAt(int index);
+
+	/**
+	 * Gets value on the stack by an index.
+	 *
+	 * @param index Value position.
+	 * @return value at the specific position.
+	 */
+	float getFloatAt(int index);
+
+	/**
+	 * Gets value on the stack by an index.
+	 *
+	 * @param index Value position.
+	 * @return value at the specific position.
+	 */
+	char getCharAt(int index);
+
+	/**
+	 * Gets value on the stack by an index.
+	 *
+	 * @param index Value position.
+	 * @return value at the specific position.
+	 */
+	short getShortAt(int index);
+
+	/**
+	 * Gets value on the stack by an index.
+	 *
+	 * @param index Value position.
+	 * @return value at the specific position.
+	 */
+	byte getByteAt(int index);
+
+	/**
+	 * Copies stack contents into the locals.
+	 * Decreases current position.
+	 *
+	 * @param locals Locals to copy into.
+	 * @param dst    Copy offset.
+	 * @param count  Locals count.
+	 */
+	void sinkInto(Locals locals, int dst, int count);
 
 	/**
 	 * Copies stack contents into the locals.

@@ -14,7 +14,7 @@ public final class ReturnDoubleProcessor implements InstructionProcessor<Abstrac
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
-		ctx.setResult(ctx.getStack().popWide());
+		ctx.setResult(ctx.getStack().popDouble());
 		return Result.ABORT;
 	}
 }

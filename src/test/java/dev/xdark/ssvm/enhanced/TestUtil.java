@@ -11,7 +11,7 @@ import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.memory.management.SynchronizedMemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
-import dev.xdark.ssvm.thread.NativeThreadManager;
+import dev.xdark.ssvm.thread.java.NativeThreadManager;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.util.VMHelper;
@@ -80,7 +80,7 @@ public class TestUtil {
 					try {
 						JavaMethod printStackTrace = vm.getPublicLinkResolver().resolveVirtualMethod(oop, "printStackTrace", "()V");
 						Locals locals = ts.newLocals(printStackTrace);
-						locals.set(0, oop);
+						locals.setReference(0, oop);
 						helper.invoke(printStackTrace, locals);
 					} catch (VMException ex1) {
 						System.err.println(ex1.getOop());

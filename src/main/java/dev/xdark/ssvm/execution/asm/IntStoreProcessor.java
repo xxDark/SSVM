@@ -14,7 +14,7 @@ public final class IntStoreProcessor implements InstructionProcessor<VarInsnNode
 
 	@Override
 	public Result execute(VarInsnNode insn, ExecutionContext ctx) {
-		ctx.getLocals().set(insn.var, ctx.getStack().pop());
+		ctx.getLocals().setInt(insn.var, ctx.getStack().popInt());
 		return Result.CONTINUE;
 	}
 }

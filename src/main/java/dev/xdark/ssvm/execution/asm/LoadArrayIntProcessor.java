@@ -18,7 +18,7 @@ public final class LoadArrayIntProcessor implements InstructionProcessor<Abstrac
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
 		int index = stack.popInt();
-		ObjectValue array = stack.pop();
+		ObjectValue array = stack.popReference();
 		stack.pushInt(ctx.getOperations().arrayLoadInt(array, index));
 		return Result.CONTINUE;
 	}

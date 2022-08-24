@@ -14,7 +14,7 @@ public final class ValueStoreProcessor implements InstructionProcessor<VarInsnNo
 
 	@Override
 	public Result execute(VarInsnNode insn, ExecutionContext ctx) {
-		ctx.getLocals().set(insn.var, ctx.getStack().pop());
+		ctx.getLocals().setReference(insn.var, ctx.getStack().popReference());
 		return Result.CONTINUE;
 	}
 }

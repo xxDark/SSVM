@@ -3,8 +3,6 @@ package dev.xdark.ssvm.execution.asm;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.value.LongValue;
-import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 /**
@@ -14,18 +12,18 @@ import org.objectweb.asm.tree.AbstractInsnNode;
  */
 public final class ConstantLongProcessor implements InstructionProcessor<AbstractInsnNode> {
 
-	private final Value cst;
+	private final long cst;
 
 	/**
 	 * @param cst Long constant.
 	 */
 	public ConstantLongProcessor(long cst) {
-		this.cst = LongValue.of(cst);
+		this.cst = cst;
 	}
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
-		ctx.getStack().pushWide(cst);
+		ctx.getStack().pushLong(cst);
 		return Result.CONTINUE;
 	}
 }

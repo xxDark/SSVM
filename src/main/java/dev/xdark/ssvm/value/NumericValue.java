@@ -17,16 +17,6 @@ public abstract class NumericValue implements Value {
 	}
 
 	@Override
-	public boolean isUninitialized() {
-		return false;
-	}
-
-	@Override
-	public boolean isNull() {
-		return false;
-	}
-
-	@Override
 	public boolean isVoid() {
 		return false;
 	}

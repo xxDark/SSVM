@@ -123,7 +123,6 @@ public class MethodHandleNatives {
 			if ("<init>".equals(name)) {
 				helper.throwException(symbols.java_lang_InternalError(), "Bad name " + name);
 			}
-			Value[] lvt = locals.getTable();
 			ExecutionContext last = vm.currentThread().getBacktrace().last().getExecutionContext();
 			JavaMethod callerMethod = last.getMethod();
 			String callName = callerMethod.getName();
@@ -135,15 +134,14 @@ public class MethodHandleNatives {
 				// Invoke asType
 				JavaMethod asType = vm.getPublicLinkResolver().resolveVirtualMethod(_this, "asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;");
 				Locals table = vm.getThreadStorage().newLocals(asType);
-				table.set(0, _this);
-				table.set(1, mt);
+				table.setReference(0, _this);
+				table.setReference(1, mt);
 				_this = (InstanceValue) helper.invoke(asType, table).getResult();
 				// Re-read method target
 				form = helper.checkNotNull(ops.getReference(_this, "form", "Ljava/lang/invoke/LambdaForm;"));
 				vmentry = helper.checkNotNull(ops.getReference(form, "vmentry", "Ljava/lang/invoke/MemberName;"));
 				vmtarget = invokeDynamicLinker.readVMTargetFromMemberName(vmentry);
 				name = vmtarget.getName();
-				lvt[0] = _this; // Replace 'this' with new handle
 			}
 
 			if ((vmtarget.getAccess() & ACC_STATIC) == 0) {
@@ -154,7 +152,8 @@ public class MethodHandleNatives {
 				}
 			}
 			Locals table = vm.getThreadStorage().newLocals(vmtarget);
-			table.copyFrom(lvt, 0, 0, lvt.length);
+			table.copyFrom(locals, 0, 0, locals.maxSlots());
+			table.setReference(0, _this);
 			Value result = helper.invoke(vmtarget, table).getResult();
 			ctx.setResult(result);
 			return Result.ABORT;
@@ -167,9 +166,7 @@ public class MethodHandleNatives {
 			Locals locals = ctx.getLocals();
 			VMOperations ops = vm.getTrustedOperations();
 			VMHelper helper = vm.getHelper();
-			Value[] table = locals.getTable();
-			int length = table.length;
-			InstanceValue memberName = locals.loadReference(length - 1);
+			InstanceValue memberName = locals.loadReference(locals.maxSlots() - 1);
 			InstanceValue resolved = (InstanceValue) ops.getReference(memberName, "method", symbols.java_lang_invoke_ResolvedMethodName().getDescriptor());
 			InstanceJavaClass clazz = ((JavaValue<InstanceJavaClass>) ops.getReference(memberName, "clazz", "Ljava/lang/Class;")).getValue();
 			JavaMethod vmtarget = helper.getMethodBySlot(clazz, ops.getInt(ops.getReference(resolved, VM_TARGET, "Ljava/lang/Object;"), "value"));
@@ -184,7 +181,7 @@ public class MethodHandleNatives {
 				}
 			}
 			Locals newLocals = vm.getThreadStorage().newLocals(vmtarget.getMaxLocals());
-			newLocals.copyFrom(table, 0, 0, table.length - 1);
+			newLocals.copyFrom(locals, 0, 0, locals.maxSlots() - 1);
 			Value result = helper.invoke(vmtarget, newLocals).getResult();
 
 			ctx.setResult(result);
@@ -295,7 +292,7 @@ public class MethodHandleNatives {
 		VMSymbols symbols = vm.getSymbols();
 		JavaMethod method = vm.getPublicLinkResolver().resolveVirtualMethod(methodType, "toMethodDescriptorString", "()Ljava/lang/String;");
 		Locals locals = vm.getThreadStorage().newLocals(method);
-		locals.set(0, methodType);
+		locals.setReference(0, methodType);
 		String desc = helper.readUtf8(helper.invoke(method, locals).getResult());
 		JavaMethod handle;
 		switch (refKind) {

@@ -22,9 +22,9 @@ public final class GetStaticProcessor implements InstructionProcessor<FieldInsnN
 
 	@Override
 	public Result execute(FieldInsnNode insn, ExecutionContext ctx) {
-		InstanceJavaClass klass = (InstanceJavaClass) ctx.getHelper().tryFindClass(ctx.getClassLoader(), insn.owner, true);
-		JavaField field = ctx.getLinkResolver().resolveStaticField(klass, insn.name, insn.desc);
 		if (AsmUtil.isValid(insn)) {
+			InstanceJavaClass klass = (InstanceJavaClass) ctx.getHelper().tryFindClass(ctx.getClassLoader(), insn.owner, true);
+			JavaField field = ctx.getLinkResolver().resolveStaticField(klass, insn.name, insn.desc);
 			int sort = field.getType().getSort();
 			int opcode;
 			if (sort >= ARRAY) {

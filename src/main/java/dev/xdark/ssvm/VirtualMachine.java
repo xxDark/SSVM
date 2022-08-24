@@ -39,7 +39,7 @@ import dev.xdark.ssvm.symbol.UninitializedVMPrimitives;
 import dev.xdark.ssvm.symbol.UninitializedVMSymbols;
 import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.symbol.VMSymbols;
-import dev.xdark.ssvm.thread.NopThreadManager;
+import dev.xdark.ssvm.thread.nop.NopThreadManager;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.thread.VMThread;
@@ -222,7 +222,7 @@ public class VirtualMachine {
 				{
 					JavaMethod init = linkResolver.resolveSpecialMethod(groupClass, "<init>", "()V");
 					Locals locals = ts.newLocals(init);
-					locals.set(0, sysGroup);
+					locals.setReference(0, sysGroup);
 					helper.invoke(init, locals);
 				}
 				systemThreadGroup = sysGroup;
@@ -232,9 +232,9 @@ public class VirtualMachine {
 				{
 					JavaMethod init = linkResolver.resolveSpecialMethod(groupClass, "<init>", "(Ljava/lang/ThreadGroup;Ljava/lang/String;)V");
 					Locals locals = ts.newLocals(init);
-					locals.set(0, mainGroup);
-					locals.set(1, sysGroup);
-					locals.set(2, helper.newUtf8("main"));
+					locals.setReference(0, mainGroup);
+					locals.setReference(1, sysGroup);
+					locals.setReference(2, helper.newUtf8("main"));
 					helper.invoke(init, locals);
 				}
 				mainThreadGroup = mainGroup;
@@ -260,8 +260,8 @@ public class VirtualMachine {
 					{
 						JavaMethod add = linkResolver.resolveVirtualMethod(mainGroup, "add", "(Ljava/lang/Thread;)V");
 						Locals locals = ts.newLocals(add);
-						locals.set(0, mainGroup);
-						locals.set(1, mainThread.getOop());
+						locals.setReference(0, mainGroup);
+						locals.setReference(1, mainThread.getOop());
 						helper.invoke(add, locals);
 					}
 					{
@@ -639,8 +639,8 @@ public class VirtualMachine {
 			if (jc == null) {
 				JavaMethod method = publicLinkResolver.resolveVirtualMethod(loader, "loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;");
 				Locals locals = getThreadStorage().newLocals(method);
-				locals.set(0, loader);
-				locals.set(1, helper.newUtf8(name.replace('/', '.')));
+				locals.setReference(0, loader);
+				locals.setReference(1, helper.newUtf8(name.replace('/', '.')));
 				locals.setInt(2, initialize ? 1 : 0);
 				jc = ((JavaValue<JavaClass>) helper.invoke(method, locals).getResult()).getValue();
 			} else if (initialize) {

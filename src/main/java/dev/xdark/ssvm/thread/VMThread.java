@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.thread;
 
+import dev.xdark.ssvm.thread.backtrace.Backtrace;
 import dev.xdark.ssvm.value.InstanceValue;
 
 /**

@@ -14,7 +14,7 @@ public final class MonitorExitProcessor implements InstructionProcessor<Abstract
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
-		ctx.monitorExit(ctx.getStack().pop());
+		ctx.monitorExit(ctx.getStack().popReference());
 		return Result.CONTINUE;
 	}
 }

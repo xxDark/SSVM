@@ -1,18 +1,72 @@
 package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.api.MethodInvoker;
+import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.execution.Stack;
+import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
+import dev.xdark.ssvm.memory.allocation.NavigableMemoryAllocator;
 import dev.xdark.ssvm.memory.gc.GarbageCollector;
 import dev.xdark.ssvm.memory.gc.MarkAndSweepGarbageCollector;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.memory.management.SimpleMemoryManager;
+import dev.xdark.ssvm.thread.AllocatedThreadStorage;
+import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.value.ObjectValue;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 
-public class MemoryTest {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+public class MemoryTest {
+	private static ThreadStorage storage;
+
+	@BeforeAll
+	public static void setup() {
+		MemoryAllocator alloc = new NavigableMemoryAllocator();
+		storage = new AllocatedThreadStorage(null, alloc, alloc.allocateHeap(2048L));
+	}
+
+	@Test
+	public void testLocalsAndStack() {
+		Stack stack = storage.newStack(1);
+		Locals locals = storage.newLocals(1);
+		stack.pushInt(50005);
+		stack.sinkInto(locals, 1);
+		assertEquals(50005, locals.loadInt(0));
+		assertTrue(stack.isEmpty());
+		stack.pushInt(10005);
+		stack.sinkInto(locals, 0, 1);
+		assertEquals(10005, locals.loadInt(0));
+		assertTrue(stack.isEmpty());
+	}
+
+	@Test
+	public void testStackWide() {
+		Stack stack = storage.newStack(2);
+		stack.pushLong(Long.MAX_VALUE);
+		assertEquals(Long.MAX_VALUE, stack.peekLong());
+		assertFalse(stack.isEmpty());
+		assertEquals(Long.MAX_VALUE, stack.popLong());
+		assertTrue(stack.isEmpty());
+	}
+
+	@Test
+	public void testLocalsCopy() {
+		Locals a = storage.newLocals(1);
+		Locals b = storage.newLocals(1);
+		a.setInt(0, 6000);
+		b.copyFrom(a, 0, 0, 1);
+		assertEquals(6000, b.loadInt(0));
+		assertEquals(1, b.maxSlots());
+	}
+
+	@Disabled
 	@Test
 	public void testGC() {
 		VirtualMachine vm = new VirtualMachine() {

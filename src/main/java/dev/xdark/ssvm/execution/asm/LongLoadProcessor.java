@@ -14,7 +14,7 @@ public final class LongLoadProcessor implements InstructionProcessor<VarInsnNode
 
 	@Override
 	public Result execute(VarInsnNode insn, ExecutionContext ctx) {
-		ctx.getStack().pushWide(ctx.getLocals().load(insn.var));
+		ctx.getStack().pushLong(ctx.getLocals().loadLong(insn.var));
 		return Result.CONTINUE;
 	}
 }

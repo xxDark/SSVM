@@ -3,29 +3,15 @@ package dev.xdark.ssvm.thread;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.mirror.JavaMethod;
-import dev.xdark.ssvm.value.Value;
 
 /**
  * Thread storage.
  *
  * @author xDark
  */
-public interface ThreadStorage extends Iterable<Value> {
+public interface ThreadStorage {
 
-	/**
-	 * Returns an array slice of data.
-	 *
-	 * @param size Array size.
-	 * @return array slice.
-	 */
-	ThreadRegion push(int size);
-
-	/**
-	 * Decreases current index.
-	 *
-	 * @param size Decrease count.
-	 */
-	void pop(int size);
+	ThreadMemoryData allocate(long size);
 
 	/**
 	 * Creates new stack.
@@ -62,4 +48,9 @@ public interface ThreadStorage extends Iterable<Value> {
 	default Locals newLocals(JavaMethod method) {
 		return newLocals(method.getMaxLocals());
 	}
+
+	/**
+	 * Deallocates thread memory.
+	 */
+	void free();
 }

@@ -22,6 +22,14 @@ public interface MirrorFactory {
 	InstanceJavaClass newInstanceClass(ObjectValue classLoader, ClassReader classReader, ClassNode node);
 
 	/**
+	 * @param name       Primitive name.
+	 * @param descriptor Primitive descriptor.
+	 * @param sort       Primitive sort.
+	 * @return new class.
+	 */
+	PrimitiveClass newPrimitiveClass(String name, String descriptor, int sort);
+
+	/**
 	 * @param owner  Field owner.
 	 * @param node   Field node.
 	 * @param slot   Field slot.

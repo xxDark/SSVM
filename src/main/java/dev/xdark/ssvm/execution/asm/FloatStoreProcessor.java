@@ -14,7 +14,7 @@ public final class FloatStoreProcessor implements InstructionProcessor<VarInsnNo
 
 	@Override
 	public Result execute(VarInsnNode insn, ExecutionContext ctx) {
-		ctx.getLocals().set(insn.var, ctx.getStack().pop());
+		ctx.getLocals().setFloat(insn.var, ctx.getStack().popFloat());
 		return Result.CONTINUE;
 	}
 }

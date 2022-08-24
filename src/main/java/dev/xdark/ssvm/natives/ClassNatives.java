@@ -201,7 +201,7 @@ public class ClassNatives {
 				ops.putReference(constructor, "annotations", "[B", data.annotations);
 				ops.putReference(constructor, "parameterAnnotations", "[B", data.parameterAnnotations);
 				constructor.initialize();
-				result.setValue(j, constructor);
+				result.setReference(j, constructor);
 			}
 			ctx.setResult(result);
 			return Result.ABORT;
@@ -245,7 +245,7 @@ public class ClassNatives {
 				ops.putReference(method, "parameterAnnotations", "[B", data.parameterAnnotations);
 				ops.putReference(method, "annotationDefault", "[B", data.annotationDefault);
 				method.initialize();
-				result.setValue(j, method);
+				result.setReference(j, method);
 			}
 			ctx.setResult(result);
 			return Result.ABORT;
@@ -282,7 +282,7 @@ public class ClassNatives {
 				ops.putReference(field, "signature", "Ljava/lang/String;", pool.intern(fn.getSignature()));
 				ops.putReference(field, "annotations", "[B", readFieldAnnotations(fn));
 				field.initialize();
-				result.setValue(j, field);
+				result.setReference(j, field);
 			}
 			ctx.setResult(result);
 			return Result.ABORT;
@@ -398,7 +398,7 @@ public class ClassNatives {
 				ObjectValue loader = _this.getClassLoader();
 				ArrayValue array = helper.newArray(jlc, declaredClasses.size());
 				for (int i = 0; i < declaredClasses.size(); i++) {
-					array.setValue(i, helper.findClass(loader, declaredClasses.get(i).name, false).getOop());
+					array.setReference(i, helper.findClass(loader, declaredClasses.get(i).name, false).getOop());
 				}
 				ctx.setResult(array);
 			}
@@ -510,7 +510,7 @@ public class ClassNatives {
 		}
 		ArrayValue array = helper.newArray(jlc, exceptions.size());
 		for (int i = 0; i < exceptions.size(); i++) {
-			array.setValue(i, helper.findClass(loader, exceptions.get(i), false).getOop());
+			array.setReference(i, helper.findClass(loader, exceptions.get(i), false).getOop());
 		}
 		return array;
 	}

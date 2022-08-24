@@ -5,8 +5,8 @@ import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.thread.Backtrace;
-import dev.xdark.ssvm.thread.StackFrame;
+import dev.xdark.ssvm.thread.backtrace.Backtrace;
+import dev.xdark.ssvm.thread.backtrace.StackFrame;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
@@ -39,7 +39,7 @@ public class StackTraceElementNatives {
 			for (int i = backtrace.count(); i != 0; ) {
 				StackFrame frame = backtrace.get(--i);
 				InstanceValue element = helper.newStackTraceElement(frame, true);
-				arr.setValue(x++, element);
+				arr.setReference(x++, element);
 			}
 			return Result.ABORT;
 		});

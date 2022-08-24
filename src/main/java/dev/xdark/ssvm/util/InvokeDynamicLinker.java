@@ -5,6 +5,7 @@ import dev.xdark.ssvm.NativeJava;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.Locals;
+import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.memory.management.StringPool;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
@@ -14,8 +15,8 @@ import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.JavaValue;
+import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
@@ -91,7 +92,7 @@ public final class InvokeDynamicLinker {
 		Object[] $bsmArgs = insn.bsmArgs;
 		ArrayValue bsmArgs = helper.newArray(symbols.java_lang_Object(), $bsmArgs.length);
 		for (int i = 0; i < $bsmArgs.length; i++) {
-			bsmArgs.setValue(i, helper.forInvokeDynamicCall($bsmArgs[i]));
+			bsmArgs.setReference(i, forInvokeDynamicCall($bsmArgs[i]));
 		}
 
 		StringPool stringPool = vm.getStringPool();
@@ -104,21 +105,21 @@ public final class InvokeDynamicLinker {
 			// shortly after it was added, shaking
 			method = natives.getStaticMethod("linkCallSite", "(Ljava/lang/Object;ILjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/invoke/MemberName;");
 			linkArgs = vm.getThreadStorage().newLocals(method);
-			linkArgs.set(0, caller.getOop());
-			linkArgs.set(1, IntValue.ZERO);
-			linkArgs.set(2, linker);
-			linkArgs.set(3, stringPool.intern(insn.name));
-			linkArgs.set(4, helper.methodType(caller.getClassLoader(), Type.getMethodType(insn.desc)));
-			linkArgs.set(5, bsmArgs);
-			linkArgs.set(6, appendix);
+			linkArgs.setReference(0, caller.getOop());
+			linkArgs.setInt(1, 0);
+			linkArgs.setReference(2, linker);
+			linkArgs.setReference(3, stringPool.intern(insn.name));
+			linkArgs.setReference(4, helper.methodType(caller.getClassLoader(), Type.getMethodType(insn.desc)));
+			linkArgs.setReference(5, bsmArgs);
+			linkArgs.setReference(6, appendix);
 		} else {
 			linkArgs = vm.getThreadStorage().newLocals(method);
-			linkArgs.set(0, caller.getOop());
-			linkArgs.set(1, linker);
-			linkArgs.set(2, stringPool.intern(insn.name));
-			linkArgs.set(3, helper.methodType(caller.getClassLoader(), Type.getMethodType(insn.desc)));
-			linkArgs.set(4, bsmArgs);
-			linkArgs.set(5, appendix);
+			linkArgs.setReference(0, caller.getOop());
+			linkArgs.setReference(1, linker);
+			linkArgs.setReference(2, stringPool.intern(insn.name));
+			linkArgs.setReference(3, helper.methodType(caller.getClassLoader(), Type.getMethodType(insn.desc)));
+			linkArgs.setReference(4, bsmArgs);
+			linkArgs.setReference(5, appendix);
 		}
 
 		helper.invoke(method, linkArgs);
@@ -128,12 +129,12 @@ public final class InvokeDynamicLinker {
 	/**
 	 * Invokes linked dynamic call.
 	 *
-	 * @param args   Call arguments.
+	 * @param stack   Stack to sink arguments from.
 	 * @param desc   Call descriptor.
 	 * @param handle Call site or method handle.
 	 * @return invocation result.
 	 */
-	public Value dynamicCall(Value[] args, String desc, InstanceValue handle) {
+	public Value dynamicCall(Stack stack, String desc, InstanceValue handle) {
 		VirtualMachine vm = this.vm;
 		VMHelper helper = vm.getHelper();
 		LinkResolver linkResolver = vm.getPublicLinkResolver();
@@ -142,16 +143,13 @@ public final class InvokeDynamicLinker {
 			// See linkCallSiteImpl
 			JavaMethod getTarget = linkResolver.resolveVirtualMethod(handle, "getTarget", "()Ljava/lang/invoke/MethodHandle;");
 			Locals locals = ts.newLocals(getTarget);
-			locals.set(0, handle);
+			locals.setReference(0, handle);
 			handle = helper.checkNotNull(helper.invoke(getTarget, locals).getResult());
 		}
 		JavaMethod invokeExact = linkResolver.resolveVirtualMethod(handle, "invokeExact", desc);
 		Locals locals = ts.newLocals(invokeExact);
-		locals.set(0, handle);
-		int index = args[0] == null ? 1 : 0;
-		for (int i = 1; index < args.length; index++) {
-			locals.set(i++, args[index]);
-		}
+		locals.setReference(0, handle);
+		stack.sinkInto(locals, 1, invokeExact.getMaxArgs() - 1);
 		return helper.invoke(invokeExact, locals).getResult();
 	}
 
@@ -225,7 +223,7 @@ public final class InvokeDynamicLinker {
 		rmn.initialize();
 		InstanceValue resolvedName = memoryManager.newInstance(rmn);
 		resolvedName.initialize();
-		ops.putReference(resolvedName, NativeJava.VM_TARGET, "Ljava/lang/Object;", vm.getHelper().boxInt(IntValue.of(handle.getSlot())));
+		ops.putReference(resolvedName, NativeJava.VM_TARGET, "Ljava/lang/Object;", vm.getHelper().boxInt(handle.getSlot()));
 		ops.putReference(resolvedName, NativeJava.VM_HOLDER, "Ljava/lang/Object;", handle.getOwner().getOop());
 		ops.putReference(memberName, "method", symbols.java_lang_invoke_ResolvedMethodName().getDescriptor(), resolvedName);
 		// Inject flags
@@ -259,7 +257,7 @@ public final class InvokeDynamicLinker {
 		rmn.initialize();
 		InstanceValue resolvedName = memoryManager.newInstance(rmn);
 		resolvedName.initialize();
-		ops.putReference(resolvedName, NativeJava.VM_TARGET, "Ljava/lang/Object;", vm.getHelper().boxInt(IntValue.of(handle.getSlot())));
+		ops.putReference(resolvedName, NativeJava.VM_TARGET, "Ljava/lang/Object;", vm.getHelper().boxInt(handle.getSlot()));
 		ops.putReference(resolvedName, NativeJava.VM_HOLDER, "Ljava/lang/Object;", owner.getOop());
 		ops.putReference(memberName, "method", symbols.java_lang_invoke_ResolvedMethodName().getDescriptor(), resolvedName);
 		// Inject flags
@@ -298,5 +296,28 @@ public final class InvokeDynamicLinker {
 		InstanceValue resolved = helper.checkNotNull(ops.getReference(vmentry, "method", vm.getSymbols().java_lang_invoke_ResolvedMethodName().getDescriptor()));
 		InstanceJavaClass clazz = ((JavaValue<InstanceJavaClass>) ops.getReference(vmentry, "clazz", "Ljava/lang/Class;")).getValue();
 		return helper.getMethodBySlot(clazz, ops.getInt(ops.getReference(resolved, NativeJava.VM_TARGET, "Ljava/lang/Object;"), "value"));
+	}
+
+	private ObjectValue forInvokeDynamicCall(Object cst) {
+		VMHelper helper = vm.getHelper();
+		if (cst instanceof Long) {
+			return helper.boxLong((Long) cst);
+		}
+		if (cst instanceof Double) {
+			return helper.boxDouble((Double) cst);
+		}
+		if (cst instanceof Integer || cst instanceof Short || cst instanceof Byte) {
+			return helper.boxInt(((Number) cst).intValue());
+		}
+		if (cst instanceof Character) {
+			return helper.boxInt((Character) cst);
+		}
+		if (cst instanceof Float) {
+			return helper.boxFloat((Float) cst);
+		}
+		if (cst instanceof Boolean) {
+			return helper.boxBoolean((Boolean) cst);
+		}
+		return (ObjectValue) helper.valueFromLdc(cst);
 	}
 }

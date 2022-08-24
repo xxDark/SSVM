@@ -19,7 +19,7 @@ public final class StoreArrayLongProcessor implements InstructionProcessor<Abstr
 		Stack stack = ctx.getStack();
 		long value = stack.popLong();
 		int index = stack.popInt();
-		ObjectValue array = stack.pop();
+		ObjectValue array = stack.popReference();
 		ctx.getOperations().arrayStoreLong(array, index, value);
 		return Result.CONTINUE;
 	}

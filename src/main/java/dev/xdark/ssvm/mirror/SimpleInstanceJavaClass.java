@@ -958,8 +958,8 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 			// Can't use newException here
 			JavaMethod init = vm.getPublicLinkResolver().resolveSpecialMethod(jc, "<init>", "(Ljava/lang/Throwable;)V");
 			Locals locals = vm.getThreadStorage().newLocals(init);
-			locals.set(0, oop);
-			locals.set(1, cause);
+			locals.setReference(0, oop);
+			locals.setReference(1, cause);
 			vm.getHelper().invoke(init, locals);
 			throw new VMException(oop);
 		}

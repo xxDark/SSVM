@@ -18,14 +18,8 @@ public final class DynamicCallProcessor implements InstructionProcessor<LinkedDy
 	@Override
 	public Result execute(LinkedDynamicCallNode insn, ExecutionContext ctx) {
 		InvokeDynamicInsnNode delegate = insn.getDelegate();
-		int descriptorSize = insn.getDescriptorArgsSize();
-		int x = descriptorSize + 1;
-		Value[] locals = new Value[x];
 		Stack stack = ctx.getStack();
-		while (descriptorSize-- != 0) {
-			locals[--x] = stack.pop();
-		}
-		Value invoked = ctx.getInvokeDynamicLinker().dynamicCall(locals, delegate.desc, insn.getMethodHandle());
+		Value invoked = ctx.getInvokeDynamicLinker().dynamicCall(stack, delegate.desc, insn.getMethodHandle());
 		if (!invoked.isVoid()) {
 			stack.pushGeneric(invoked);
 		}

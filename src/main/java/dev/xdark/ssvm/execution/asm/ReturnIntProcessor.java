@@ -14,7 +14,7 @@ public final class ReturnIntProcessor implements InstructionProcessor<AbstractIn
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
-		ctx.setResult(ctx.getStack().pop());
+		ctx.setResult(ctx.getStack().popInt());
 		return Result.ABORT;
 	}
 }

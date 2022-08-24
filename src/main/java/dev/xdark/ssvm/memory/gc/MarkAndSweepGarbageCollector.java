@@ -15,8 +15,8 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaField;
 import dev.xdark.ssvm.symbol.VMPrimitives;
-import dev.xdark.ssvm.thread.Backtrace;
-import dev.xdark.ssvm.thread.StackFrame;
+import dev.xdark.ssvm.thread.backtrace.Backtrace;
+import dev.xdark.ssvm.thread.backtrace.StackFrame;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.thread.VMThread;
@@ -76,6 +76,7 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 
 	@Override
 	public synchronized boolean invoke() {
+		// TODO rewrite
 		VirtualMachine vm = this.vm;
 		SafePoint safePoint = vm.getSafePoint();
 		ThreadManager threadManager = vm.getThreadManager();
@@ -104,9 +105,11 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 				setMark(thread.getOop());
 				Backtrace backtrace = thread.getBacktrace();
 				ThreadStorage threadStorage = thread.getThreadStorage();
+				/*
 				for (Value value : threadStorage) {
 					tryMark(value);
 				}
+				*/
 				for (StackFrame frame : backtrace) {
 					ExecutionContext ctx = frame.getExecutionContext();
 					if (ctx != null) {
@@ -201,7 +204,7 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 			ArrayValue arrayValue = (ArrayValue) value;
 			if (!arrayValue.getJavaClass().getComponentType().isPrimitive()) {
 				for (int i = 0, j = arrayValue.getLength(); i < j; i++) {
-					setMark(memoryManager.getValue(data.readLong(offset + objectSize * (long) i)));
+					setMark(memoryManager.getReference(data.readLong(offset + objectSize * (long) i)));
 				}
 			}
 		} else {
@@ -218,7 +221,7 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 		MemoryManager memoryManager = vm.getMemoryManager();
 		for (JavaField field : layout.getAll()) {
 			if (field.getType().getSort() >= Type.ARRAY) {
-				setMark(memoryManager.getValue(data.readLong(offset + field.getOffset())));
+				setMark(memoryManager.getReference(data.readLong(offset + field.getOffset())));
 			}
 		}
 	}

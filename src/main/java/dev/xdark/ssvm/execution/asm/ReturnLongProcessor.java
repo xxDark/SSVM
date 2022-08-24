@@ -14,7 +14,7 @@ public final class ReturnLongProcessor implements InstructionProcessor<AbstractI
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
-		ctx.setResult(ctx.getStack().popWide());
+		ctx.setResult(ctx.getStack().popLong());
 		return Result.ABORT;
 	}
 }

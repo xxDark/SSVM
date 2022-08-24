@@ -4,8 +4,8 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.mirror.JavaMethod;
-import dev.xdark.ssvm.thread.Backtrace;
-import dev.xdark.ssvm.thread.StackFrame;
+import dev.xdark.ssvm.thread.backtrace.Backtrace;
+import dev.xdark.ssvm.thread.backtrace.StackFrame;
 
 /**
  * Reflection utilities.

@@ -67,7 +67,9 @@ public class NativeLibraryNatives {
 			};
 			if (!vmi.setInvoker(librariesClass, "load", "(Ljdk/internal/loader/NativeLibraries$NativeLibraryImpl;Ljava/lang/String;Z)Z", doLoad)) {
 				if (!vmi.setInvoker(librariesClass, "load", "(Ljdk/internal/loader/NativeLibraries$NativeLibraryImpl;Ljava/lang/String;ZZ)Z", doLoad)) {
-					throw new IllegalArgumentException("Unable to locate NativeLibraries#load method");
+					if (!vmi.setInvoker(librariesClass, "load", "(Ljdk/internal/loader/NativeLibraries$NativeLibraryImpl;Ljava/lang/String;ZZZ)Z", doLoad)) {
+						throw new IllegalArgumentException("Unable to locate NativeLibraries#load method");
+					}
 				}
 			}
 			vmi.setInvoker(librariesClass, "unload", "(Ljava/lang/String;ZJ)V", ctx -> {

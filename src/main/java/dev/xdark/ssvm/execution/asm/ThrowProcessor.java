@@ -14,7 +14,7 @@ public final class ThrowProcessor implements InstructionProcessor<AbstractInsnNo
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
-		ctx.getOperations().throwException(ctx.getStack().pop());
+		ctx.getOperations().throwException(ctx.getStack().popReference());
 		return Result.CONTINUE;
 	}
 }

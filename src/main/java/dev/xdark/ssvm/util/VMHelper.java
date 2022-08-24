@@ -22,8 +22,8 @@ import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.mirror.MemberKey;
 import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.symbol.VMSymbols;
-import dev.xdark.ssvm.thread.Backtrace;
-import dev.xdark.ssvm.thread.StackFrame;
+import dev.xdark.ssvm.thread.backtrace.Backtrace;
+import dev.xdark.ssvm.thread.backtrace.StackFrame;
 import dev.xdark.ssvm.thread.ThreadState;
 import dev.xdark.ssvm.thread.VMThread;
 import dev.xdark.ssvm.value.ArrayValue;
@@ -34,7 +34,6 @@ import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.LongValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.TopValue;
 import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Handle;
@@ -245,9 +244,9 @@ public final class VMHelper {
 	 * @param array Array to convert.
 	 * @return native Java array.
 	 */
-	public Value[] toJavaValues(ArrayValue array) {
+	public ObjectValue[] toJavaValues(ArrayValue array) {
 		int length = array.getLength();
-		Value[] result = new Value[length];
+		ObjectValue[] result = new ObjectValue[length];
 		while (length-- != 0) {
 			result[length] = array.getValue(length);
 		}
@@ -475,7 +474,7 @@ public final class VMHelper {
 		VirtualMachine vm = this.vm;
 		ArrayValue wrapper = newArray(vm.getSymbols().java_lang_Object(), newLength);
 		for (int i = 0; startIndex < endIndex; startIndex++) {
-			wrapper.setValue(i++, array[startIndex]);
+			wrapper.setReference(i++, array[startIndex]);
 		}
 		return wrapper;
 	}
@@ -509,7 +508,7 @@ public final class VMHelper {
 		} else {
 			JavaMethod toCharArray = vm.getPublicLinkResolver().resolveVirtualMethod(jc, jc, "toCharArray", "()[C");
 			Locals locals = vm.getThreadStorage().newLocals(toCharArray);
-			locals.set(0, value);
+			locals.setReference(0, value);
 			array = (ArrayValue) invoke(toCharArray, locals).getResult();
 		}
 		return UnsafeUtil.newString(toJavaChars(array));
@@ -522,7 +521,7 @@ public final class VMHelper {
 	 * @return Java string.
 	 */
 	public String readUtf8(Value value) {
-		if (value.isNull()) {
+		if (((ObjectValue) value).isNull()) { // TODO fix me
 			return null;
 		}
 		return readUtf8((InstanceValue) value);
@@ -568,8 +567,8 @@ public final class VMHelper {
 			} else {
 				JavaMethod init = vm.getPublicLinkResolver().resolveSpecialMethod(jc, "<init>", "([C)V");
 				Locals locals = vm.getThreadStorage().newLocals(init);
-				locals.set(0, wrapper);
-				locals.set(1, chars);
+				locals.setReference(0, wrapper);
+				locals.setReference(1, chars);
 				invoke(init, locals);
 			}
 		}
@@ -606,8 +605,8 @@ public final class VMHelper {
 		} else {
 			JavaMethod init = vm.getPublicLinkResolver().resolveSpecialMethod(jc, "<init>", "([C)V");
 			Locals locals = vm.getThreadStorage().newLocals(init);
-			locals.set(0, wrapper);
-			locals.set(1, chars);
+			locals.setReference(0, wrapper);
+			locals.setReference(1, chars);
 			invoke(init, locals);
 		}
 		return wrapper;
@@ -699,7 +698,7 @@ public final class VMHelper {
 		InstanceValue instance = vm.getMemoryManager().newInstance(javaClass);
 		JavaMethod init = vm.getPublicLinkResolver().resolveSpecialMethod(javaClass, "<init>", "()V");
 		Locals locals = vm.getThreadStorage().newLocals(init);
-		locals.set(0, instance);
+		locals.setReference(0, instance);
 		invoke(init, locals);
 		if (message != null) {
 			instance.setValue("detailMessage", "Ljava/lang/String;", newUtf8(message));
@@ -813,7 +812,7 @@ public final class VMHelper {
 	 * @return value.
 	 */
 	public <V extends ObjectValue> V checkNotNull(Value value) {
-		if (value.isNull()) {
+		if (((ObjectValue) value).isNull()) { // TODO fix me
 			throwException(vm.getSymbols().java_lang_NullPointerException());
 		}
 		return (V) value;
@@ -825,7 +824,7 @@ public final class VMHelper {
 	 * @param value Value to check.
 	 * @return array value.
 	 */
-	public <V extends ArrayValue> V checkNotNullArray(Value value) {
+	public <V extends ArrayValue> V checkNotNullArray(ObjectValue value) {
 		if (value.isNull()) {
 			throwException(vm.getSymbols().java_lang_NullPointerException());
 		}
@@ -953,8 +952,8 @@ public final class VMHelper {
 			ObjectValue classes = ((InstanceValue) loader).getValue("classes", "Ljava/util/Vector;");
 			JavaMethod add = vm.getPublicLinkResolver().resolveVirtualMethod(classes, "add", "(Ljava/lang/Object;)Z");
 			Locals locals = vm.getThreadStorage().newLocals(add);
-			locals.set(0, classes);
-			locals.set(1, javaClass.getOop());
+			locals.setReference(0, classes);
+			locals.setReference(1, javaClass.getOop());
 			invoke(add, locals);
 		}
 		return javaClass;
@@ -981,10 +980,12 @@ public final class VMHelper {
 	 * @param oop VM exception to convert.
 	 * @return Java exception.
 	 */
+	@Deprecated
 	public Exception toJavaException(InstanceValue oop) {
-		String msg = readUtf8(oop.getValue("detailMessage", "Ljava/lang/String;"));
+		VMOperations ops = vm.getPublicOperations();
+		String msg = readUtf8(ops.getReference(oop, "detailMessage", "Ljava/lang/String;"));
 		Exception exception = new Exception(msg);
-		ObjectValue backtrace = oop.getValue("backtrace", "Ljava/lang/Object;");
+		ObjectValue backtrace = ops.getReference(oop, "backtrace", "Ljava/lang/Object;");
 		if (!backtrace.isNull()) {
 			Backtrace unmarshalled = ((JavaValue<Backtrace>) backtrace).getValue();
 			StackTraceElement[] stackTrace = StreamSupport.stream(unmarshalled.spliterator(), false)
@@ -1008,12 +1009,12 @@ public final class VMHelper {
 		if (!suppressedExceptions.isNull()) {
 			InstanceJavaClass cl = (InstanceJavaClass) vm.findBootstrapClass("java/util/ArrayList");
 			if (cl == suppressedExceptions.getJavaClass()) {
-				VMOperations ops = vm.getPublicOperations();
 				InstanceValue value = (InstanceValue) suppressedExceptions;
 				int size = ops.getInt(value, "size");
 				ArrayValue array = (ArrayValue) ops.getReference(value, "elementData", "[Ljava/lang/Object;");
 				for (int i = 0; i < size; i++) {
-					exception.addSuppressed(toJavaException((InstanceValue) array.getValue(i)));
+					InstanceValue ref = (InstanceValue) array.getValue(i);
+					exception.addSuppressed(ref == oop ? exception : toJavaException(ref));
 				}
 			}
 		}
@@ -1040,10 +1041,10 @@ public final class VMHelper {
 		InstanceValue element = memoryManager.newInstance(jc);
 		JavaMethod init = vm.getPublicLinkResolver().resolveSpecialMethod(jc, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V");
 		Locals locals = vm.getThreadStorage().newLocals(init);
-		locals.set(0, element);
-		locals.set(1, newUtf8(className));
-		locals.set(2, newUtf8(methodName));
-		locals.set(3, newUtf8(sourceFile));
+		locals.setReference(0, element);
+		locals.setReference(1, newUtf8(className));
+		locals.setReference(2, newUtf8(methodName));
+		locals.setReference(3, newUtf8(sourceFile));
 		locals.setInt(4, lineNumber);
 		invoke(init, locals);
 		long offset;
@@ -1059,11 +1060,12 @@ public final class VMHelper {
 		while (name.charAt(dimensions) == '[') {
 			dimensions++;
 		}
+		String requested = name;
 		if (dimensions != 0) {
 			name = name.substring(dimensions);
 		}
 		JavaClass klass;
-		if (name.length() == 1) {
+		if (name.charAt(0) != 'L' && dimensions != 0) {
 			VMPrimitives primitives = vm.getPrimitives();
 			switch (name.charAt(0)) {
 				case 'J':
@@ -1094,7 +1096,7 @@ public final class VMHelper {
 					klass = primitives.voidPrimitive();
 					break;
 				default:
-					klass = vm.findClass(loader, name, initialize);
+					klass = null;
 			}
 		} else {
 			if (dimensions != 0) {
@@ -1113,6 +1115,9 @@ public final class VMHelper {
 				klass = vm.findClass(loader, name, initialize);
 			}
 		}
+		if (klass == null) {
+			throwException(vm.getSymbols().java_lang_ClassNotFoundException(), requested);
+		}
 		while (dimensions-- != 0) {
 			klass = klass.newArrayClass();
 		}
@@ -1125,9 +1130,9 @@ public final class VMHelper {
 	 * @param value Wrapper to unwrap.
 	 * @return primitive value.
 	 */
-	public LongValue unboxLong(ObjectValue value) {
+	public long unboxLong(ObjectValue value) {
 		checkNotNull(value);
-		return (LongValue) invokeUnbox(value, "longValue", "()J");
+		return invokeUnbox(value, "longValue", "()J").asLong();
 	}
 
 	/**
@@ -1136,9 +1141,9 @@ public final class VMHelper {
 	 * @param value Wrapper to unwrap.
 	 * @return primitive value.
 	 */
-	public DoubleValue unboxDouble(ObjectValue value) {
+	public double unboxDouble(ObjectValue value) {
 		checkNotNull(value);
-		return (DoubleValue) invokeUnbox(value, "doubleValue", "()D");
+		return invokeUnbox(value, "doubleValue", "()D").asDouble();
 	}
 
 	/**
@@ -1147,9 +1152,9 @@ public final class VMHelper {
 	 * @param value Wrapper to unwrap.
 	 * @return primitive value.
 	 */
-	public IntValue unboxInt(ObjectValue value) {
+	public int unboxInt(ObjectValue value) {
 		checkNotNull(value);
-		return (IntValue) invokeUnbox(value, "intValue", "()I");
+		return invokeUnbox(value, "intValue", "()I").asInt();
 	}
 
 	/**
@@ -1158,9 +1163,9 @@ public final class VMHelper {
 	 * @param value Wrapper to unwrap.
 	 * @return primitive value.
 	 */
-	public FloatValue unboxFloat(ObjectValue value) {
+	public float unboxFloat(ObjectValue value) {
 		checkNotNull(value);
-		return (FloatValue) invokeUnbox(value, "floatValue", "()F");
+		return invokeUnbox(value, "floatValue", "()F").asFloat();
 	}
 
 	/**
@@ -1169,9 +1174,9 @@ public final class VMHelper {
 	 * @param value Wrapper to unwrap.
 	 * @return primitive value.
 	 */
-	public IntValue unboxChar(ObjectValue value) {
+	public char unboxChar(ObjectValue value) {
 		checkNotNull(value);
-		return (IntValue) invokeUnbox(value, "charValue", "()C");
+		return invokeUnbox(value, "charValue", "()C").asChar();
 	}
 
 	/**
@@ -1180,9 +1185,9 @@ public final class VMHelper {
 	 * @param value Wrapper to unwrap.
 	 * @return primitive value.
 	 */
-	public IntValue unboxShort(ObjectValue value) {
+	public short unboxShort(ObjectValue value) {
 		checkNotNull(value);
-		return (IntValue) invokeUnbox(value, "shortValue", "()S");
+		return invokeUnbox(value, "shortValue", "()S").asShort();
 	}
 
 	/**
@@ -1191,9 +1196,9 @@ public final class VMHelper {
 	 * @param value Wrapper to unwrap.
 	 * @return primitive value.
 	 */
-	public IntValue unboxByte(ObjectValue value) {
+	public byte unboxByte(ObjectValue value) {
 		checkNotNull(value);
-		return (IntValue) invokeUnbox(value, "byteValue", "()B");
+		return invokeUnbox(value, "byteValue", "()B").asByte();
 	}
 
 	/**
@@ -1202,45 +1207,9 @@ public final class VMHelper {
 	 * @param value Wrapper to unwrap.
 	 * @return primitive value.
 	 */
-	public IntValue unboxBoolean(ObjectValue value) {
+	public boolean unboxBoolean(ObjectValue value) {
 		checkNotNull(value);
-		return (IntValue) invokeUnbox(value, "booleanValue", "()Z");
-	}
-
-	/**
-	 * Attempts to unbox generic object value.
-	 *
-	 * @param value Wrapper to unwrap.
-	 * @param jc    Primitive class.
-	 * @return unwrapped value or itself.
-	 */
-	public Value unboxGeneric(ObjectValue value, JavaClass jc) {
-		VMPrimitives primitive = vm.getPrimitives();
-		if (jc == primitive.longPrimitive()) {
-			return unboxLong(value);
-		}
-		if (jc == primitive.doublePrimitive()) {
-			return unboxDouble(value);
-		}
-		if (jc == primitive.intPrimitive()) {
-			return unboxInt(value);
-		}
-		if (jc == primitive.floatPrimitive()) {
-			return unboxFloat(value);
-		}
-		if (jc == primitive.charPrimitive()) {
-			return unboxChar(value);
-		}
-		if (jc == primitive.shortPrimitive()) {
-			return unboxShort(value);
-		}
-		if (jc == primitive.bytePrimitive()) {
-			return unboxByte(value);
-		}
-		if (jc == primitive.booleanPrimitive()) {
-			return unboxBoolean(value);
-		}
-		return value;
+		return invokeUnbox(value, "booleanValue", "()Z").asBoolean();
 	}
 
 	/**
@@ -1249,8 +1218,15 @@ public final class VMHelper {
 	 * @param value Value to box.
 	 * @return boxed value.
 	 */
-	public ObjectValue boxLong(Value value) {
-		return invokeBox(vm.getSymbols().java_lang_Long(), value, "valueOf", "(J)Ljava/lang/Long;");
+	public ObjectValue boxLong(long value) {
+		JavaMethod method = vm.getPublicLinkResolver().resolveStaticMethod(
+			vm.getSymbols().java_lang_Long(),
+			"valueOf",
+			"(J)Ljava/lang/Long;"
+		);
+		Locals locals = vm.getThreadStorage().newLocals(method);
+		locals.setLong(0, value);
+		return (ObjectValue) invoke(method, locals).getResult();
 	}
 
 	/**
@@ -1259,8 +1235,15 @@ public final class VMHelper {
 	 * @param value Value to box.
 	 * @return boxed value.
 	 */
-	public ObjectValue boxDouble(Value value) {
-		return invokeBox(vm.getSymbols().java_lang_Double(), value, "valueOf", "(D)Ljava/lang/Double;");
+	public ObjectValue boxDouble(double value) {
+		JavaMethod method = vm.getPublicLinkResolver().resolveStaticMethod(
+			vm.getSymbols().java_lang_Double(),
+			"valueOf",
+			"(D)Ljava/lang/Double;"
+		);
+		Locals locals = vm.getThreadStorage().newLocals(method);
+		locals.setDouble(0, value);
+		return (ObjectValue) invoke(method, locals).getResult();
 	}
 
 	/**
@@ -1269,8 +1252,15 @@ public final class VMHelper {
 	 * @param value Value to box.
 	 * @return boxed value.
 	 */
-	public ObjectValue boxInt(Value value) {
-		return invokeBox(vm.getSymbols().java_lang_Integer(), value, "valueOf", "(I)Ljava/lang/Integer;");
+	public ObjectValue boxInt(int value) {
+		JavaMethod method = vm.getPublicLinkResolver().resolveStaticMethod(
+			vm.getSymbols().java_lang_Integer(),
+			"valueOf",
+			"(I)Ljava/lang/Integer;"
+		);
+		Locals locals = vm.getThreadStorage().newLocals(method);
+		locals.setInt(0, value);
+		return (ObjectValue) invoke(method, locals).getResult();
 	}
 
 	/**
@@ -1279,8 +1269,15 @@ public final class VMHelper {
 	 * @param value Value to box.
 	 * @return boxed value.
 	 */
-	public ObjectValue boxFloat(Value value) {
-		return invokeBox(vm.getSymbols().java_lang_Float(), value, "valueOf", "(F)Ljava/lang/Float;");
+	public ObjectValue boxFloat(float value) {
+		JavaMethod method = vm.getPublicLinkResolver().resolveStaticMethod(
+			vm.getSymbols().java_lang_Float(),
+			"valueOf",
+			"(F)Ljava/lang/Float;"
+		);
+		Locals locals = vm.getThreadStorage().newLocals(method);
+		locals.setFloat(0, value);
+		return (ObjectValue) invoke(method, locals).getResult();
 	}
 
 	/**
@@ -1289,8 +1286,15 @@ public final class VMHelper {
 	 * @param value Value to box.
 	 * @return boxed value.
 	 */
-	public ObjectValue boxChar(Value value) {
-		return invokeBox(vm.getSymbols().java_lang_Character(), value, "valueOf", "(C)Ljava/lang/Character;");
+	public ObjectValue boxChar(char value) {
+		JavaMethod method = vm.getPublicLinkResolver().resolveStaticMethod(
+			vm.getSymbols().java_lang_Character(),
+			"valueOf",
+			"(C)Ljava/lang/Character;"
+		);
+		Locals locals = vm.getThreadStorage().newLocals(method);
+		locals.setInt(0, value);
+		return (ObjectValue) invoke(method, locals).getResult();
 	}
 
 	/**
@@ -1299,8 +1303,15 @@ public final class VMHelper {
 	 * @param value Value to box.
 	 * @return boxed value.
 	 */
-	public ObjectValue boxShort(Value value) {
-		return invokeBox(vm.getSymbols().java_lang_Short(), value, "valueOf", "(S)Ljava/lang/Short;");
+	public ObjectValue boxShort(short value) {
+		JavaMethod method = vm.getPublicLinkResolver().resolveStaticMethod(
+			vm.getSymbols().java_lang_Short(),
+			"valueOf",
+			"(S)Ljava/lang/Short;"
+		);
+		Locals locals = vm.getThreadStorage().newLocals(method);
+		locals.setInt(0, value);
+		return (ObjectValue) invoke(method, locals).getResult();
 	}
 
 	/**
@@ -1309,8 +1320,15 @@ public final class VMHelper {
 	 * @param value Value to box.
 	 * @return boxed value.
 	 */
-	public ObjectValue boxByte(Value value) {
-		return invokeBox(vm.getSymbols().java_lang_Byte(), value, "valueOf", "(B)Ljava/lang/Byte;");
+	public ObjectValue boxByte(byte value) {
+		JavaMethod method = vm.getPublicLinkResolver().resolveStaticMethod(
+			vm.getSymbols().java_lang_Byte(),
+			"valueOf",
+			"(B)Ljava/lang/Byte;"
+		);
+		Locals locals = vm.getThreadStorage().newLocals(method);
+		locals.setInt(0, value);
+		return (ObjectValue) invoke(method, locals).getResult();
 	}
 
 	/**
@@ -1319,8 +1337,15 @@ public final class VMHelper {
 	 * @param value Value to box.
 	 * @return boxed value.
 	 */
-	public ObjectValue boxBoolean(Value value) {
-		return invokeBox(vm.getSymbols().java_lang_Boolean(), value, "valueOf", "(Z)Ljava/lang/Boolean;");
+	public ObjectValue boxBoolean(boolean value) {
+		JavaMethod method = vm.getPublicLinkResolver().resolveStaticMethod(
+			vm.getSymbols().java_lang_Boolean(),
+			"valueOf",
+			"(Z)Ljava/lang/Boolean;"
+		);
+		Locals locals = vm.getThreadStorage().newLocals(method);
+		locals.setInt(0, value ? 1 : 0);
+		return (ObjectValue) invoke(method, locals).getResult();
 	}
 
 	/**
@@ -1331,32 +1356,9 @@ public final class VMHelper {
 	 * @return boxed value or original,
 	 * if boxing is not needed.
 	 */
+	@Deprecated
 	public Value boxGeneric(Value value, Type type) {
-		if (type == Type.LONG_TYPE) {
-			return boxLong(value);
-		}
-		if (type == Type.DOUBLE_TYPE) {
-			return boxDouble(value);
-		}
-		if (type == Type.INT_TYPE) {
-			return boxInt(value);
-		}
-		if (type == Type.FLOAT_TYPE) {
-			return boxFloat(value);
-		}
-		if (type == Type.CHAR_TYPE) {
-			return boxChar(value);
-		}
-		if (type == Type.SHORT_TYPE) {
-			return boxShort(value);
-		}
-		if (type == Type.BYTE_TYPE) {
-			return boxByte(value);
-		}
-		if (type == Type.BOOLEAN_TYPE) {
-			return boxBoolean(value);
-		}
-		return value;
+		throw new PanicException("Deprecated");
 	}
 
 	/**
@@ -1369,7 +1371,7 @@ public final class VMHelper {
 		VirtualMachine vm = this.vm;
 		ArrayValue array = newArray(vm.getSymbols().java_lang_Class(), classes.length);
 		for (int i = 0; i < classes.length; i++) {
-			array.setValue(i, classes[i].getOop());
+			array.setReference(i, classes[i].getOop());
 		}
 		return array;
 	}
@@ -1437,7 +1439,7 @@ public final class VMHelper {
 		VirtualMachine vm = this.vm;
 		JavaMethod getFD = vm.getTrustedLinkResolver().resolveVirtualMethod(fs, "getFD", "()Ljava/io/FileDescriptor;");
 		Locals locals = vm.getThreadStorage().newLocals(getFD);
-		locals.set(0, fs);
+		locals.setReference(0, fs);
 		ObjectValue fd = (ObjectValue) invoke(getFD, locals).getResult();
 		return vm.getTrustedOperations().getLong(fd, vm.getSymbols().java_io_FileDescriptor(), "handle");
 	}
@@ -1453,8 +1455,8 @@ public final class VMHelper {
 		VirtualMachine vm = this.vm;
 		JavaMethod method = vm.getPublicLinkResolver().resolveStaticMethod(vm.getSymbols().java_lang_invoke_MethodHandleNatives(), "findMethodHandleType", "(Ljava/lang/Class;[Ljava/lang/Class;)Ljava/lang/invoke/MethodType;");
 		Locals locals = vm.getThreadStorage().newLocals(method);
-		locals.set(0, rt.getOop());
-		locals.set(1, parameters);
+		locals.setReference(0, rt.getOop());
+		locals.setReference(1, parameters);
 		return (InstanceValue) invoke(method, locals).getResult();
 	}
 
@@ -1468,7 +1470,7 @@ public final class VMHelper {
 	public InstanceValue methodType(JavaClass rt, JavaClass[] parameters) {
 		ArrayValue array = newArray(vm.getSymbols().java_lang_Class(), parameters.length);
 		for (int i = 0; i < parameters.length; i++) {
-			array.setValue(i, parameters[i].getOop());
+			array.setReference(i, parameters[i].getOop());
 		}
 		return methodType(rt, array);
 	}
@@ -1602,41 +1604,12 @@ public final class VMHelper {
 		InstanceJavaClass natives = vm.getSymbols().java_lang_invoke_MethodHandleNatives();
 		JavaMethod link = vm.getPublicLinkResolver().resolveStaticMethod(natives, "linkMethodHandleConstant", "(Ljava/lang/Class;ILjava/lang/Class;Ljava/lang/String;Ljava/lang/Object;)Ljava/lang/invoke/MethodHandle;");
 		Locals locals = vm.getThreadStorage().newLocals(link);
-		locals.set(0, caller.getOop());
+		locals.setReference(0, caller.getOop());
 		locals.setInt(1, handle.getTag());
-		locals.set(2, findClass(caller.getClassLoader(), handle.getOwner(), false).getOop());
-		locals.set(3, newUtf8(handle.getName()));
-		locals.set(4, methodType(caller.getClassLoader(), Type.getMethodType(handle.getDesc())));
+		locals.setReference(2, findClass(caller.getClassLoader(), handle.getOwner(), false).getOop());
+		locals.setReference(3, newUtf8(handle.getName()));
+		locals.setReference(4, methodType(caller.getClassLoader(), Type.getMethodType(handle.getDesc())));
 		return (InstanceValue) invoke(link, locals).getResult();
-	}
-
-	/**
-	 * Creates VM boxed vales from constant
-	 * for an invokedynamic call.
-	 *
-	 * @return VM boxed value.
-	 * @throws IllegalStateException If constant value cannot be created.
-	 */
-	public ObjectValue forInvokeDynamicCall(Object cst) {
-		if (cst instanceof Long) {
-			return boxLong(LongValue.of((Long) cst));
-		}
-		if (cst instanceof Double) {
-			return boxDouble(new DoubleValue((Double) cst));
-		}
-		if (cst instanceof Integer || cst instanceof Short || cst instanceof Byte) {
-			return boxInt(IntValue.of(((Number) cst).intValue()));
-		}
-		if (cst instanceof Character) {
-			return boxInt(IntValue.of((Character) cst));
-		}
-		if (cst instanceof Float) {
-			return boxFloat(new FloatValue((Float) cst));
-		}
-		if (cst instanceof Boolean) {
-			return boxBoolean((Boolean) cst ? IntValue.ONE : IntValue.ZERO);
-		}
-		return (ObjectValue) valueFromLdc(cst);
 	}
 
 	/**
@@ -1744,27 +1717,23 @@ public final class VMHelper {
 		int length = lengths[depth];
 		int next = depth + 1;
 		while (length-- != 0) {
-			array.setValue(length, newMultiArrayInner((ArrayJavaClass) newType, lengths, next));
+			array.setReference(length, newMultiArrayInner((ArrayJavaClass) newType, lengths, next));
 		}
 		return array;
 	}
 
-	private Value invokeUnbox(ObjectValue value, String name , String desc) {
+	private Value invokeUnbox(ObjectValue value, String name, String desc) {
 		VirtualMachine vm = this.vm;
 		JavaMethod method = vm.getPublicLinkResolver().resolveVirtualMethod(value, name, desc);
 		Locals locals = vm.getThreadStorage().newLocals(method);
-		locals.set(0, value);
+		locals.setReference(0, value);
 		return invoke(method, locals).getResult();
 	}
 
-	private ObjectValue invokeBox(InstanceJavaClass jc, Value value, String name , String desc) {
+	private ObjectValue invokeBox(InstanceJavaClass jc, Value value, String name, String desc) {
 		VirtualMachine vm = this.vm;
 		JavaMethod method = vm.getPublicLinkResolver().resolveStaticMethod(jc, name, desc);
 		Locals locals = vm.getThreadStorage().newLocals(method);
-		locals.set(0, value);
-		if (value.isWide()) {
-			locals.set(1, TopValue.INSTANCE);
-		}
 		return (ObjectValue) invoke(method, locals).getResult();
 	}
 

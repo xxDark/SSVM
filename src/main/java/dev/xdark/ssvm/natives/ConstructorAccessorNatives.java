@@ -11,6 +11,7 @@ import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
+import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
 import org.objectweb.asm.Type;
@@ -45,22 +46,20 @@ public class ConstructorAccessorNatives {
 			if (mn == null || !"<init>".equals(mn.getName())) {
 				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 			}
-			Value values = locals.loadReference(1);
-			Value[] converted;
+			ObjectValue values = locals.loadReference(1);
 			Type[] types = mn.getArgumentTypes();
+			ArrayValue passedArgs = null;
 			if (!values.isNull()) {
-				ArrayValue passedArgs = (ArrayValue) values;
+				passedArgs = (ArrayValue) values;
 				helper.checkEquals(passedArgs.getLength(), types.length);
-				converted = Util.convertReflectionArgs(vm, declaringClass.getClassLoader(), types, passedArgs);
 			} else {
 				helper.checkEquals(types.length, 0);
-				converted = new Value[0];
 			}
 			InstanceValue instance = vm.getMemoryManager().newInstance(declaringClass);
 			Locals args = vm.getThreadStorage().newLocals(mn);
-			args.set(0, instance);
-			for (int i = 0; i < converted.length; i++) {
-				args.set(i + 1, converted[i]);
+			args.setReference(0, instance);
+			if (passedArgs != null) {
+				Util.convertReflectionArgs(vm, types, passedArgs, args, 0);
 			}
 			helper.invoke(mn, args);
 			ctx.setResult(instance);

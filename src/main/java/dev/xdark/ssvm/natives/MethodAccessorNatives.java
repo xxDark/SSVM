@@ -10,7 +10,11 @@ import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.util.VMOperations;
-import dev.xdark.ssvm.value.*;
+import dev.xdark.ssvm.value.ArrayValue;
+import dev.xdark.ssvm.value.InstanceValue;
+import dev.xdark.ssvm.value.JavaValue;
+import dev.xdark.ssvm.value.ObjectValue;
+import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
 import org.objectweb.asm.Type;
 
@@ -52,32 +56,32 @@ public class MethodAccessorNatives {
 			if (!isStatic && instance.isNull()) {
 				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 			}
-			Value values = locals.loadReference(2);
-			Value[] args;
+			ObjectValue values = locals.loadReference(2);
 			Type[] types = mn.getArgumentTypes();
+			ArrayValue passedArgs = null;
 			if (!values.isNull()) {
-				ArrayValue passedArgs = (ArrayValue) values;
+				passedArgs = (ArrayValue) values;
 				helper.checkEquals(passedArgs.getLength(), types.length);
-				args = Util.convertReflectionArgs(vm, declaringClass.getClassLoader(), types, passedArgs);
 			} else {
 				helper.checkEquals(types.length, 0);
-				args = new Value[0];
 			}
-			Locals table;
+			Locals args;
 			String name = mn.getName();
 			String desc = mn.getDesc();
 			int offset;
 			if (isStatic) {
 				offset = 0;
-				table = vm.getThreadStorage().newLocals(mn);
+				args = vm.getThreadStorage().newLocals(mn);
 			} else {
 				mn = vm.getPublicLinkResolver().resolveVirtualMethod(instance, name, desc);
 				offset = 1;
-				table = vm.getThreadStorage().newLocals(mn);
-				table.set(0, instance);
+				args = vm.getThreadStorage().newLocals(mn);
+				args.setReference(0, instance);
 			}
-			table.copyFrom(args, offset, 0, args.length);
-			ExecutionContext executed = helper.invoke(mn, table);
+			if (passedArgs != null) {
+				Util.convertReflectionArgs(vm, types, passedArgs, args, offset);
+			}
+			ExecutionContext executed = helper.invoke(mn, args);
 			Value result = executed.getResult();
 			if (result.isVoid()) {
 				result = vm.getMemoryManager().nullValue(); // void

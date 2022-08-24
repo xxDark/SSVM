@@ -19,7 +19,7 @@ public final class StoreArrayShortProcessor implements InstructionProcessor<Abst
 		Stack stack = ctx.getStack();
 		short value = stack.popShort();
 		int index = stack.popInt();
-		ObjectValue array = stack.pop();
+		ObjectValue array = stack.popReference();
 		ctx.getOperations().arrayStoreShort(array, index, value);
 		return Result.CONTINUE;
 	}

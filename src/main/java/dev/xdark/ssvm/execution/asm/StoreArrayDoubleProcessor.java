@@ -19,7 +19,7 @@ public final class StoreArrayDoubleProcessor implements InstructionProcessor<Abs
 		Stack stack = ctx.getStack();
 		double value = stack.popDouble();
 		int index = stack.popInt();
-		ObjectValue array = stack.pop();
+		ObjectValue array = stack.popReference();
 		ctx.getOperations().arrayStoreDouble(array, index, value);
 		return Result.CONTINUE;
 	}

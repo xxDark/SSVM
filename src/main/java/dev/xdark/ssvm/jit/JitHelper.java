@@ -3,6 +3,7 @@ package dev.xdark.ssvm.jit;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
+import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.memory.management.MemoryManager;
@@ -389,10 +390,11 @@ public class JitHelper {
 		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
 		//ExecutionContext result = helper.invokeExact(klass, name, desc, locals);
 		//return result.getResult();
-		throw new UnsupportedOperationException("TODO FIXME");
+		throw new PanicException("Unimplemented");
 	}
 
 	public Value invokeStatic(Value[] locals, String owner, String name, String desc, ExecutionContext ctx) {
+		/*
 		VirtualMachine vm = ctx.getVM();
 		VMHelper helper = vm.getHelper();
 		JavaMethod mn = resolveStaticMethod(owner, name, desc, ctx);
@@ -400,9 +402,12 @@ public class JitHelper {
 		table.copyFrom(locals, 0, 0, locals.length);
 		ExecutionContext result = helper.invoke(mn, table);
 		return result.getResult();
+		*/
+		throw new PanicException("Unimplemented");
 	}
 
 	public Value invokeVirtual(Value[] locals, String name, String desc, ExecutionContext ctx) {
+		/*
 		VirtualMachine vm = ctx.getVM();
 		VMHelper helper = vm.getHelper();
 		JavaMethod method = vm.getPublicLinkResolver().resolveVirtualMethod(helper.checkNotNull(locals[0]), name, desc);
@@ -410,9 +415,12 @@ public class JitHelper {
 		table.copyFrom(locals, 0, 0, locals.length);
 		ExecutionContext result = helper.invoke(method, table);
 		return result.getResult();
+		*/
+		throw new PanicException("Unimplemented");
 	}
 
 	public Value invokeInterface(Value[] locals, String owner, String name, String desc, ExecutionContext ctx) {
+		/*
 		VirtualMachine vm = ctx.getVM();
 		VMHelper helper = vm.getHelper();
 		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
@@ -421,6 +429,8 @@ public class JitHelper {
 		table.copyFrom(locals, 0, 0, locals.length);
 		ExecutionContext result = helper.invoke(method, table);
 		return result.getResult();
+		*/
+		throw new PanicException("Unimplemented");
 	}
 
 	public ObjectValue allocateInstance(InstanceJavaClass klass, ExecutionContext ctx) {
@@ -584,6 +594,8 @@ public class JitHelper {
 	}
 
 	public Value invokeDynamic(Value[] args, Object constants, int index, ExecutionContext ctx) {
+		throw new PanicException("Unimplemented");
+		/*
 		Object[] arr = (Object[]) constants;
 		Object operand = arr[index];
 		InvokeDynamicLinker invokeDynamicLinker = ctx.getInvokeDynamicLinker();
@@ -597,6 +609,7 @@ public class JitHelper {
 			result = (DynamicLinkResult) operand;
 		}
 		return invokeDynamicLinker.dynamicCall(args, result.desc, result.handle);
+		*/
 	}
 
 	public Value loadNull(ExecutionContext ctx) {

@@ -1,12 +1,11 @@
 package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.execution.Locals;
+import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.TopValue;
-import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
 import me.coley.cafedude.classfile.attribute.AnnotationDefaultAttribute;
 import me.coley.cafedude.classfile.attribute.AnnotationsAttribute;
@@ -26,37 +25,43 @@ import java.io.IOException;
 @UtilityClass
 final class Util {
 
-	/**
-	 * Converts array of values back to their original
-	 * values.
-	 * Used for reflection calls.
-	 *
-	 * @param vm       VM instance.
-	 * @param loader   Class loader to use.
-	 * @param argTypes Original types.
-	 * @param array    Array to convert.
-	 * @return original values array.
-	 */
-	Value[] convertReflectionArgs(VirtualMachine vm, ObjectValue loader, Type[] argTypes, ArrayValue array) {
+	void convertReflectionArgs(VirtualMachine vm, Type[] argTypes, ArrayValue array, Locals locals, int offset) {
 		VMHelper helper = vm.getHelper();
-		int total = 0;
-		for (Type arg : argTypes) {
-			total += arg.getSize();
-		}
-		Value[] result = new Value[total];
-		int x = 0;
 		for (int i = 0; i < argTypes.length; i++) {
-			JavaClass originalClass = helper.findClass(loader, argTypes[i].getInternalName(), true);
+			Type type = argTypes[i];
+			int sort = type.getSort();
 			ObjectValue value = array.getValue(i);
-			if (value.isNull() || !originalClass.isPrimitive()) {
-				result[x++] = value;
-			} else {
-				if ((result[x++] = helper.unboxGeneric(value, originalClass)).isWide()) {
-					result[x++] = TopValue.INSTANCE;
+			if (sort < Type.ARRAY) {
+				switch (sort) {
+					case Type.BOOLEAN:
+						locals.setInt(offset++, helper.unboxBoolean(value) ? 1 : 0);
+						break;
+					case Type.CHAR:
+						locals.setInt(offset++, helper.unboxChar(value));
+						break;
+					case Type.BYTE:
+					case Type.SHORT:
+					case Type.INT:
+						locals.setInt(offset++, helper.unboxInt(value));
+						break;
+					case Type.FLOAT:
+						locals.setFloat(offset++, helper.unboxFloat(value));
+						break;
+					case Type.LONG:
+						locals.setLong(offset, helper.unboxLong(value));
+						offset += 2;
+						break;
+					case Type.DOUBLE:
+						locals.setDouble(offset, helper.unboxDouble(value));
+						offset += 2;
+						break;
+					default:
+						throw new PanicException("Bad sort: " + sort);
 				}
+			} else {
+				locals.setReference(offset++, value);
 			}
 		}
-		return result;
 	}
 
 	/**

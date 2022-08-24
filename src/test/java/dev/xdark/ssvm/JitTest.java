@@ -82,7 +82,7 @@ public class JitTest {
 			Locals locals =vm.getThreadStorage().newLocals(m);
 			locals.setLong(0, a);
 			locals.setInt(2, b);
-			locals.set(3, helper.newUtf8(c));
+			locals.setReference(3, helper.newUtf8(c));
 			locals.setLong(4, d);
 			locals.setInt(6, e);
 			helper.invoke(m, locals);
@@ -90,7 +90,7 @@ public class JitTest {
 			InstanceValue oop = ex.getOop();
 			JavaMethod printStackTrace = vm.getPublicLinkResolver().resolveVirtualMethod(oop, "printStackTrace", "()V");
 			Locals locals = vm.getThreadStorage().newLocals(printStackTrace);
-			locals.set(0, oop);
+			locals.setReference(0, oop);
 			helper.invoke(printStackTrace, locals);
 			throw ex;
 		}

@@ -11,7 +11,7 @@ import dev.xdark.ssvm.execution.Result;
 public class VMCastProcessor implements InstructionProcessor<VMTypeInsnNode> {
 	@Override
 	public Result execute(VMTypeInsnNode insn, ExecutionContext ctx) {
-		ctx.getOperations().checkCast(ctx.getStack().peek(), insn.getJavaType());
+		ctx.getOperations().checkCast(ctx.getStack().peekReference(), insn.getJavaType());
 		return Result.CONTINUE;
 	}
 }

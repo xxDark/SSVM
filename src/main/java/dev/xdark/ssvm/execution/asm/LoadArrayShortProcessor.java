@@ -18,7 +18,7 @@ public final class LoadArrayShortProcessor implements InstructionProcessor<Abstr
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
 		int index = stack.popInt();
-		ObjectValue array = stack.pop();
+		ObjectValue array = stack.popReference();
 		stack.pushInt(ctx.getOperations().arrayLoadShort(array, index));
 		return Result.CONTINUE;
 	}

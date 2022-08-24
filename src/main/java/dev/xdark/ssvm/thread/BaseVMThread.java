@@ -1,7 +1,8 @@
 package dev.xdark.ssvm.thread;
 
+import dev.xdark.ssvm.thread.backtrace.Backtrace;
+import dev.xdark.ssvm.thread.backtrace.SimpleBacktrace;
 import dev.xdark.ssvm.value.InstanceValue;
-import lombok.Getter;
 
 /**
  * Basic VMThread implementation.
@@ -10,20 +11,30 @@ import lombok.Getter;
  */
 public abstract class BaseVMThread implements VMThread {
 
-	private final Backtrace backtrace = createBacktrace();
-	@Getter
-	private final ThreadStorage threadStorage = createThreadStorage();
-
+	@Deprecated
+	private final Backtrace backtrace;
+	@Deprecated
+	private final ThreadStorage threadStorage;
 	private InstanceValue oop;
 
 	/**
-	 * @param oop VM thread oop.
+	 * @param backtrace     Thread backtrace.
+	 * @param threadStorage Thread storage.
+	 * @param oop           VM thread oop.
 	 */
-	protected BaseVMThread(InstanceValue oop) {
+	protected BaseVMThread(Backtrace backtrace, ThreadStorage threadStorage, InstanceValue oop) {
+		this.backtrace = backtrace;
+		this.threadStorage = threadStorage;
 		this.oop = oop;
 	}
 
-	protected BaseVMThread() {
+	/**
+	 * @param backtrace     Thread backtrace.
+	 * @param threadStorage Thread storage.
+	 */
+	protected BaseVMThread(Backtrace backtrace, ThreadStorage threadStorage) {
+		this.backtrace = backtrace;
+		this.threadStorage = threadStorage;
 	}
 
 	@Override
@@ -32,31 +43,17 @@ public abstract class BaseVMThread implements VMThread {
 	}
 
 	@Override
+	public ThreadStorage getThreadStorage() {
+		return threadStorage;
+	}
+
+	@Override
 	public InstanceValue getOop() {
 		return oop;
 	}
 
 	/**
-	 * Creates backtrace.
-	 *
-	 * @return backtrace.
-	 */
-	protected Backtrace createBacktrace() {
-		return new SimpleBacktrace();
-	}
-
-	/**
-	 * Creates thread storage.
-	 *
-	 * @return thread storage.
-	 */
-	protected ThreadStorage createThreadStorage() {
-		return SimpleThreadStorage.create();
-	}
-
-	/**
-	 * @param oop
-	 *      Oop to set.
+	 * @param oop Oop to set.
 	 */
 	public void setOop(InstanceValue oop) {
 		if (this.oop != null) {

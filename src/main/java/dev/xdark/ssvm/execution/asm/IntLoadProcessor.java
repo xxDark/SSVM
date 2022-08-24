@@ -14,7 +14,7 @@ public final class IntLoadProcessor implements InstructionProcessor<VarInsnNode>
 
 	@Override
 	public Result execute(VarInsnNode insn, ExecutionContext ctx) {
-		ctx.getStack().push(ctx.getLocals().load(insn.var));
+		ctx.getStack().pushInt(ctx.getLocals().loadInt(insn.var));
 		return Result.CONTINUE;
 	}
 }

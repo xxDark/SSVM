@@ -18,21 +18,12 @@ import java.util.Collection;
  *
  * @author xDark
  */
-public interface MemoryManager {
+public interface MemoryManager extends ReferenceMap {
 
 	/**
 	 * @return {@code null} value.
 	 */
 	ObjectValue nullValue();
-
-	/**
-	 * Returns object at the specific address.
-	 *
-	 * @param address Address of the object.
-	 * @return object or {@code null},
-	 * if not found.
-	 */
-	ObjectValue getValue(long address);
 
 	/**
 	 * Allocates new object.

@@ -20,7 +20,7 @@ public final class VMVirtualCallProcessor extends AbstractVMCallProcessor {
 		int args = insn.getArgCount();
 		VirtualMachine vm = ctx.getVM();
 		Stack stack = ctx.getStack();
-		ObjectValue instance = stack.getAt(stack.position() - args - 1);
+		ObjectValue instance = stack.getReferenceAt(stack.position() - args - 1);
 		vm.getHelper().checkNotNull(instance);
 		return vm.getPublicLinkResolver().resolveVirtualMethod(instance, callInfo.name, callInfo.desc);
 	}

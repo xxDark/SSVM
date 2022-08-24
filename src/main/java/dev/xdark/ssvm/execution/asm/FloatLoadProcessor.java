@@ -14,7 +14,7 @@ public final class FloatLoadProcessor implements InstructionProcessor<VarInsnNod
 
 	@Override
 	public Result execute(VarInsnNode insn, ExecutionContext ctx) {
-		ctx.getStack().push(ctx.getLocals().load(insn.var));
+		ctx.getStack().pushFloat(ctx.getLocals().loadFloat(insn.var));
 		return Result.CONTINUE;
 	}
 }

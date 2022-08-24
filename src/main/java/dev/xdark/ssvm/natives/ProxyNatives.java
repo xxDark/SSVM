@@ -7,12 +7,11 @@ import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
-import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -37,13 +36,13 @@ public class ProxyNatives {
 			Locals locals = ctx.getLocals();
 			VMHelper helper = vm.getHelper();
 			ObjectValue loader = locals.loadReference(0);
-			Value name = locals.loadReference(1);
+			ObjectValue name = locals.loadReference(1);
 			ArrayValue bytes = helper.checkNotNull(locals.loadReference(2));
-			Value off = locals.load(3);
-			Value len = locals.load(4);
+			int off = locals.loadInt(3);
+			int len = locals.loadInt(4);
 			InstanceJavaClass result;
 			if (loader.isNull()) {
-				ClassParseResult parsed = vm.getClassDefiner().parseClass(helper.readUtf8(name), helper.toJavaBytes(bytes), off.asInt(), len.asInt(), "JVM_DefineClass");
+				ClassParseResult parsed = vm.getClassDefiner().parseClass(helper.readUtf8(name), helper.toJavaBytes(bytes), off, len, "JVM_DefineClass");
 				if (parsed == null) {
 					helper.throwException(symbols.java_lang_InternalError(), "Invalid bytecode");
 				}
@@ -52,11 +51,11 @@ public class ProxyNatives {
 			} else {
 				JavaMethod method = vm.getPublicLinkResolver().resolveVirtualMethod(loader, "defineClass", "(Ljava/lang/String;[BII)Ljava/lang/Class;");
 				Locals table = vm.getThreadStorage().newLocals(method);
-				table.set(0, loader);
-				table.set(1, name);
-				table.set(2, bytes);
-				table.set(3, off);
-				table.set(4, len);
+				table.setReference(0, loader);
+				table.setReference(1, name);
+				table.setReference(2, bytes);
+				table.setInt(3, off);
+				table.setInt(4, len);
 				result = ((JavaValue<InstanceJavaClass>) helper.invoke(method, table).getResult()).getValue();
 			}
 			vm.getClassLoaders().getClassLoaderData(loader).forceLinkClass(result);

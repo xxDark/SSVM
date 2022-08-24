@@ -3,8 +3,6 @@ package dev.xdark.ssvm.execution.asm;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 /**
@@ -14,18 +12,18 @@ import org.objectweb.asm.tree.AbstractInsnNode;
  */
 public final class ConstantIntProcessor implements InstructionProcessor<AbstractInsnNode> {
 
-	private final Value cst;
+	private final int cst;
 
 	/**
 	 * @param cst Int constant.
 	 */
 	public ConstantIntProcessor(int cst) {
-		this.cst = IntValue.of(cst);
+		this.cst = cst;
 	}
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
-		ctx.getStack().push(cst);
+		ctx.getStack().pushInt(cst);
 		return Result.CONTINUE;
 	}
 }

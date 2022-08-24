@@ -327,6 +327,16 @@ public interface MemoryData {
 	void read(long srcOffset, boolean[] array, int arrayOffset, int length);
 
 	/**
+	 * Copies data to the other memory region.
+	 *
+	 * @param srcOffset   Data offset.
+	 * @param data       Memory to read to.
+	 * @param dataOffset Memory offset.
+	 * @param length      Data length.
+	 */
+	void read(long srcOffset, MemoryData data, long dataOffset, int length);
+
+	/**
 	 * @return size of this memory data.
 	 */
 	long length();

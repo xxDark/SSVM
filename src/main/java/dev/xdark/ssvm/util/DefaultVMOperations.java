@@ -164,7 +164,7 @@ public final class DefaultVMOperations implements VMOperations {
 				helper.throwException(symbols.java_lang_ArrayStoreException(), valueType.getName());
 			}
 		}
-		arrayValue.setValue(index, value);
+		arrayValue.setReference(index, value);
 	}
 
 	@Override

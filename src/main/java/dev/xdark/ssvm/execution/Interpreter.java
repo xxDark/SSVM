@@ -90,7 +90,7 @@ public class Interpreter {
 					}
 				}
 				if (handle) {
-					ctx.getStack().push(oop);
+					ctx.getStack().pushReference(oop);
 					ctx.setInsnPosition(AsmUtil.getIndex(block.getHandler()));
 					ctx.pollSafePointAndSuspend();
 					return;

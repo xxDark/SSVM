@@ -32,9 +32,9 @@ public class ConstantPoolNatives {
 			JavaClass wrapper = getCpOop(ctx);
 			if (wrapper instanceof InstanceJavaClass) {
 				ClassFile cf = ((InstanceJavaClass) wrapper).getRawClassFile();
-				ctx.setResult(IntValue.of(cf.getPool().size()));
+				ctx.setResult(cf.getPool().size());
 			} else {
-				ctx.setResult(IntValue.ZERO);
+				ctx.setResult(0);
 			}
 			return Result.ABORT;
 		});
@@ -46,9 +46,6 @@ public class ConstantPoolNatives {
 			String className = ((CpUtf8) cf.getCp(((CpClass) item).getIndex())).getText();
 			VMHelper helper = vm.getHelper();
 			JavaClass result = helper.findClass(ctx.getOwner().getClassLoader(), className, false);
-			if (result == null) {
-				helper.throwException(vm.getSymbols().java_lang_ClassNotFoundException(), className);
-			}
 			ctx.setResult(result.getOop());
 			return Result.ABORT;
 		});
@@ -73,7 +70,7 @@ public class ConstantPoolNatives {
 			ClassFile cf = wrapper.getRawClassFile();
 			int index = cpRangeCheck(ctx, cf);
 			ConstPoolEntry item = cf.getCp(index);
-			ctx.setResult(IntValue.of(((CpInt) item).getValue()));
+			ctx.setResult(((CpInt) item).getValue());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(cpClass, "getLongAt0", "(Ljava/lang/Object;I)J", ctx -> {
@@ -81,7 +78,7 @@ public class ConstantPoolNatives {
 			ClassFile cf = wrapper.getRawClassFile();
 			int index = cpRangeCheck(ctx, cf);
 			ConstPoolEntry item = cf.getCp(index);
-			ctx.setResult(LongValue.of(((CpLong) item).getValue()));
+			ctx.setResult(((CpLong) item).getValue());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(cpClass, "getFloatAt0", "(Ljava/lang/Object;I)F", ctx -> {
@@ -89,7 +86,7 @@ public class ConstantPoolNatives {
 			ClassFile cf = wrapper.getRawClassFile();
 			int index = cpRangeCheck(ctx, cf);
 			ConstPoolEntry item = cf.getCp(index);
-			ctx.setResult(new FloatValue(((CpFloat) item).getValue()));
+			ctx.setResult(((CpFloat) item).getValue());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(cpClass, "getDoubleAt0", "(Ljava/lang/Object;I)D", ctx -> {
@@ -97,7 +94,7 @@ public class ConstantPoolNatives {
 			ClassFile cf = wrapper.getRawClassFile();
 			int index = cpRangeCheck(ctx, cf);
 			ConstPoolEntry item = cf.getCp(index);
-			ctx.setResult(new DoubleValue(((CpDouble) item).getValue()));
+			ctx.setResult(((CpDouble) item).getValue());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(cpClass, "getUTF8At0", "(Ljava/lang/Object;I)Ljava/lang/String;", ctx -> {

@@ -19,7 +19,7 @@ public final class StoreArrayByteProcessor implements InstructionProcessor<Abstr
 		Stack stack = ctx.getStack();
 		byte value = stack.popByte();
 		int index = stack.popInt();
-		ObjectValue array = stack.pop();
+		ObjectValue array = stack.popReference();
 		ctx.getOperations().arrayStoreByte(array, index, value);
 		return Result.CONTINUE;
 	}

@@ -177,8 +177,9 @@ final class BufferMemoryData implements MemoryData {
 		ByteBuffer buffer = this.buffer;
 		checkIndex(dstOffset, length * 8);
 		if (fastAccess(buffer)) {
+			dstOffset += buffer.arrayOffset();
 			byte[] data = buffer.array();
-			UNSAFE.copyMemory(array, Unsafe.ARRAY_LONG_BASE_OFFSET + arrayOffset * 8L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset + buffer.arrayOffset(), length * 8L);
+			UNSAFE.copyMemory(array, Unsafe.ARRAY_LONG_BASE_OFFSET + arrayOffset * 8L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset, length * 8L);
 		} else {
 			buffer = buffer.slice().order(buffer.order());
 			while (length-- != 0) {
@@ -192,8 +193,9 @@ final class BufferMemoryData implements MemoryData {
 		ByteBuffer buffer = this.buffer;
 		checkIndex(dstOffset, length * 8);
 		if (fastAccess(buffer)) {
+			dstOffset += buffer.arrayOffset();
 			byte[] data = buffer.array();
-			UNSAFE.copyMemory(array, Unsafe.ARRAY_DOUBLE_BASE_OFFSET + arrayOffset * 8L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset + buffer.arrayOffset(), length * 8L);
+			UNSAFE.copyMemory(array, Unsafe.ARRAY_DOUBLE_BASE_OFFSET + arrayOffset * 8L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset, length * 8L);
 		} else {
 			buffer = buffer.slice().order(buffer.order());
 			while (length-- != 0) {
@@ -207,8 +209,9 @@ final class BufferMemoryData implements MemoryData {
 		ByteBuffer buffer = this.buffer;
 		checkIndex(dstOffset, length * 4);
 		if (fastAccess(buffer)) {
+			dstOffset += buffer.arrayOffset();
 			byte[] data = buffer.array();
-			UNSAFE.copyMemory(array, Unsafe.ARRAY_INT_BASE_OFFSET + arrayOffset * 4L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset + buffer.arrayOffset(), length * 4L);
+			UNSAFE.copyMemory(array, Unsafe.ARRAY_INT_BASE_OFFSET + arrayOffset * 4L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset, length * 4L);
 		} else {
 			buffer = buffer.slice().order(buffer.order());
 			while (length-- != 0) {
@@ -222,8 +225,9 @@ final class BufferMemoryData implements MemoryData {
 		ByteBuffer buffer = this.buffer;
 		checkIndex(dstOffset, length * 4);
 		if (fastAccess(buffer)) {
+			dstOffset += buffer.arrayOffset();
 			byte[] data = buffer.array();
-			UNSAFE.copyMemory(array, Unsafe.ARRAY_FLOAT_BASE_OFFSET + arrayOffset * 4L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset + buffer.arrayOffset(), length * 4L);
+			UNSAFE.copyMemory(array, Unsafe.ARRAY_FLOAT_BASE_OFFSET + arrayOffset * 4L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset, length * 4L);
 		} else {
 			buffer = buffer.slice().order(buffer.order());
 			while (length-- != 0) {
@@ -237,8 +241,9 @@ final class BufferMemoryData implements MemoryData {
 		ByteBuffer buffer = this.buffer;
 		checkIndex(dstOffset, length * 2);
 		if (fastAccess(buffer)) {
+			dstOffset += buffer.arrayOffset();
 			byte[] data = buffer.array();
-			UNSAFE.copyMemory(array, Unsafe.ARRAY_CHAR_BASE_OFFSET + arrayOffset * 2L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset + buffer.arrayOffset(), length * 2L);
+			UNSAFE.copyMemory(array, Unsafe.ARRAY_CHAR_BASE_OFFSET + arrayOffset * 2L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset, length * 2L);
 		} else {
 			buffer = buffer.slice().order(buffer.order());
 			while (length-- != 0) {
@@ -252,8 +257,9 @@ final class BufferMemoryData implements MemoryData {
 		ByteBuffer buffer = this.buffer;
 		checkIndex(dstOffset, length * 2);
 		if (fastAccess(buffer)) {
+			dstOffset += buffer.arrayOffset();
 			byte[] data = buffer.array();
-			UNSAFE.copyMemory(array, Unsafe.ARRAY_SHORT_BASE_OFFSET + arrayOffset * 2L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset + buffer.arrayOffset(), length * 2L);
+			UNSAFE.copyMemory(array, Unsafe.ARRAY_SHORT_BASE_OFFSET + arrayOffset * 2L, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset, length * 2L);
 		} else {
 			buffer = buffer.slice().order(buffer.order());
 			while (length-- != 0) {
@@ -267,8 +273,9 @@ final class BufferMemoryData implements MemoryData {
 		ByteBuffer buffer = this.buffer;
 		checkIndex(dstOffset, length);
 		if (fastAccess(buffer)) {
+			dstOffset += buffer.arrayOffset();
 			byte[] data = buffer.array();
-			UNSAFE.copyMemory(array, Unsafe.ARRAY_BOOLEAN_BASE_OFFSET + arrayOffset, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset + buffer.arrayOffset(), length);
+			UNSAFE.copyMemory(array, Unsafe.ARRAY_BOOLEAN_BASE_OFFSET + arrayOffset, data, Unsafe.ARRAY_BYTE_BASE_OFFSET + dstOffset, length);
 		} else {
 			buffer = buffer.slice().order(buffer.order());
 			while (length-- != 0) {
@@ -291,6 +298,7 @@ final class BufferMemoryData implements MemoryData {
 		ByteBuffer buffer = this.buffer;
 		checkIndex(srcOffset, length);
 		if (fastAccess(buffer)) {
+			srcOffset += buffer.arrayOffset();
 			byte[] data = buffer.array();
 			UNSAFE.copyMemory(data, Unsafe.ARRAY_BYTE_BASE_OFFSET + srcOffset, array, Unsafe.ARRAY_LONG_BASE_OFFSET + arrayOffset * 8L, length * 8L);
 		} else {
@@ -307,6 +315,7 @@ final class BufferMemoryData implements MemoryData {
 		ByteBuffer buffer = this.buffer;
 		checkIndex(srcOffset, length);
 		if (fastAccess(buffer)) {
+			srcOffset += buffer.arrayOffset();
 			byte[] data = buffer.array();
 			UNSAFE.copyMemory(data, Unsafe.ARRAY_BYTE_BASE_OFFSET + srcOffset, array, Unsafe.ARRAY_DOUBLE_BASE_OFFSET + arrayOffset * 8L, length * 8L);
 		} else {
@@ -323,6 +332,7 @@ final class BufferMemoryData implements MemoryData {
 		ByteBuffer buffer = this.buffer;
 		checkIndex(srcOffset, length);
 		if (fastAccess(buffer)) {
+			srcOffset += buffer.arrayOffset();
 			byte[] data = buffer.array();
 			UNSAFE.copyMemory(data, Unsafe.ARRAY_BYTE_BASE_OFFSET + srcOffset, array, Unsafe.ARRAY_INT_BASE_OFFSET + arrayOffset * 4L, length * 4L);
 		} else {
@@ -339,6 +349,7 @@ final class BufferMemoryData implements MemoryData {
 		ByteBuffer buffer = this.buffer;
 		checkIndex(srcOffset, length);
 		if (fastAccess(buffer)) {
+			srcOffset += buffer.arrayOffset();
 			byte[] data = buffer.array();
 			UNSAFE.copyMemory(data, Unsafe.ARRAY_BYTE_BASE_OFFSET + srcOffset, array, Unsafe.ARRAY_FLOAT_BASE_OFFSET + arrayOffset * 4L, length * 4L);
 		} else {
@@ -355,6 +366,7 @@ final class BufferMemoryData implements MemoryData {
 		ByteBuffer buffer = this.buffer;
 		checkIndex(srcOffset, length);
 		if (fastAccess(buffer)) {
+			srcOffset += buffer.arrayOffset();
 			byte[] data = buffer.array();
 			UNSAFE.copyMemory(data, Unsafe.ARRAY_BYTE_BASE_OFFSET + srcOffset, array, Unsafe.ARRAY_CHAR_BASE_OFFSET + arrayOffset * 2L, length * 2L);
 		} else {
@@ -371,6 +383,7 @@ final class BufferMemoryData implements MemoryData {
 		ByteBuffer buffer = this.buffer;
 		checkIndex(srcOffset, length);
 		if (fastAccess(buffer)) {
+			srcOffset += buffer.arrayOffset();
 			byte[] data = buffer.array();
 			UNSAFE.copyMemory(data, Unsafe.ARRAY_BYTE_BASE_OFFSET + srcOffset, array, Unsafe.ARRAY_SHORT_BASE_OFFSET + arrayOffset * 2L, length * 2L);
 		} else {
@@ -387,6 +400,7 @@ final class BufferMemoryData implements MemoryData {
 		ByteBuffer buffer = this.buffer;
 		checkIndex(srcOffset, length);
 		if (fastAccess(buffer)) {
+			srcOffset += buffer.arrayOffset();
 			byte[] data = buffer.array();
 			UNSAFE.copyMemory(data, Unsafe.ARRAY_BYTE_BASE_OFFSET + srcOffset, array, Unsafe.ARRAY_BOOLEAN_BASE_OFFSET + arrayOffset, length);
 		} else {
@@ -395,6 +409,32 @@ final class BufferMemoryData implements MemoryData {
 			while (length-- != 0) {
 				array[arrayOffset++] = buffer.get() != 0;
 			}
+		}
+	}
+
+	@Override
+	public void read(long srcOffset, MemoryData data, long dataOffset, int length) {
+		ByteBuffer buffer = this.buffer;
+		checkIndex(srcOffset, length);
+		if (data instanceof BufferMemoryData) {
+			ByteBuffer target = ((BufferMemoryData) data).buffer;
+			if (fastAccess(target)) {
+				srcOffset += buffer.arrayOffset();
+				dataOffset += target.arrayOffset();
+				byte[] ourData = buffer.array();
+				byte[] theirData = target.array();
+				UNSAFE.copyMemory(ourData, Unsafe.ARRAY_BYTE_BASE_OFFSET + srcOffset, theirData, Unsafe.ARRAY_BOOLEAN_BASE_OFFSET + dataOffset, length);
+				return;
+			}
+		}
+		buffer = buffer.slice();
+		buffer.position((int) srcOffset);
+		if (length <= MEMSET_THRESHOLD) {
+			byte[] tmp = new byte[length];
+			buffer.get(tmp);
+			data.write(dataOffset, tmp, 0, length);
+		} else {
+			data.write(dataOffset, (ByteBuffer) buffer.limit(length));
 		}
 	}
 

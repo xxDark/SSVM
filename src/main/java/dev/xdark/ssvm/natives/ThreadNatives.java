@@ -71,7 +71,7 @@ public class ThreadNatives {
 			VMThread[] threads = vm.getThreadManager().getVisibleThreads();
 			ArrayValue array = vm.getHelper().newArray(thread, threads.length);
 			for (int i = 0; i < threads.length; i++) {
-				array.setValue(i, threads[i].getOop());
+				array.setReference(i, threads[i].getOop());
 			}
 			ctx.setResult(array);
 			return Result.ABORT;

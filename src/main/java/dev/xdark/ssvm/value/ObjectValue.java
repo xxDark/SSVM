@@ -26,6 +26,20 @@ public interface ObjectValue extends Value, Synchronizable {
 	MemoryBlock getMemory();
 
 	/**
+	 * Returns whether this as uninitialized value or not.
+	 *
+	 * @return {@code true} if the value is uninitialized.
+	 */
+	boolean isUninitialized();
+
+	/**
+	 * Returns whether this value is null or not.
+	 *
+	 * @return {@code true} if the value is null.
+	 */
+	boolean isNull();
+
+	/**
 	 * Returns object memory data.
 	 *
 	 * @return memory data.

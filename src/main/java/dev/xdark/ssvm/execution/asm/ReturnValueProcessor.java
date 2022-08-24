@@ -14,7 +14,7 @@ public final class ReturnValueProcessor implements InstructionProcessor<Abstract
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
-		ctx.setResult(ctx.getStack().pop());
+		ctx.setResult(ctx.getStack().popReference());
 		return Result.ABORT;
 	}
 }

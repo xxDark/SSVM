@@ -18,7 +18,7 @@ public final class LoadArrayFloatProcessor implements InstructionProcessor<Abstr
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
 		int index = stack.popInt();
-		ObjectValue array = stack.pop();
+		ObjectValue array = stack.popReference();
 		stack.pushFloat(ctx.getOperations().arrayLoadFloat(array, index));
 		return Result.CONTINUE;
 	}

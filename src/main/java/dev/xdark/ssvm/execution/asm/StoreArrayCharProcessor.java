@@ -19,7 +19,7 @@ public final class StoreArrayCharProcessor implements InstructionProcessor<Abstr
 		Stack stack = ctx.getStack();
 		char value = stack.popChar();
 		int index = stack.popInt();
-		ObjectValue array = stack.pop();
+		ObjectValue array = stack.popReference();
 		ctx.getOperations().arrayStoreChar(array, index, value);
 		return Result.CONTINUE;
 	}

@@ -17,9 +17,9 @@ public final class StoreArrayValueProcessor implements InstructionProcessor<Abst
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
-		ObjectValue value = stack.pop();
+		ObjectValue value = stack.popReference();
 		int index = stack.popInt();
-		ObjectValue array = stack.pop();
+		ObjectValue array = stack.popReference();
 		ctx.getOperations().arrayStoreReference(array, index, value);
 		return Result.CONTINUE;
 	}

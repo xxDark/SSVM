@@ -35,7 +35,7 @@ public class AccessControllerNatives {
 			helper.checkNotNull(action);
 			JavaMethod method = vm.getPublicLinkResolver().resolveVirtualMethod(action, "run", "()Ljava/lang/Object;");
 			Locals locals = vm.getThreadStorage().newLocals(method);
-			locals.set(0, action);
+			locals.setReference(0, action);
 			ctx.setResult(helper.invoke(method, locals).getResult());
 			return Result.ABORT;
 		});
@@ -45,7 +45,7 @@ public class AccessControllerNatives {
 			helper.checkNotNull(action);
 			JavaMethod method = vm.getPublicLinkResolver().resolveVirtualMethod(action, "run", "()Ljava/lang/Object;");
 			Locals locals = vm.getThreadStorage().newLocals(method);
-			locals.set(0, action);
+			locals.setReference(0, action);
 			ctx.setResult(helper.invoke(method, locals).getResult());
 			return Result.ABORT;
 		});
@@ -55,7 +55,7 @@ public class AccessControllerNatives {
 			helper.checkNotNull(action);
 			JavaMethod method = vm.getPublicLinkResolver().resolveVirtualMethod(action, "run", "()Ljava/lang/Object;");
 			Locals locals = vm.getThreadStorage().newLocals(method);
-			locals.set(0, action);
+			locals.setReference(0, action);
 			ctx.setResult(helper.invoke(method, locals).getResult());
 			return Result.ABORT;
 		});
@@ -65,7 +65,7 @@ public class AccessControllerNatives {
 			helper.checkNotNull(action);
 			JavaMethod method = vm.getPublicLinkResolver().resolveVirtualMethod(action, "run", "()Ljava/lang/Object;");
 			Locals locals = vm.getThreadStorage().newLocals(method);
-			locals.set(0, action);
+			locals.setReference(0, action);
 			ctx.setResult(helper.invoke(method, locals).getResult());
 			return Result.ABORT;
 		});

@@ -108,7 +108,7 @@ public class NavigableMemoryAllocator extends AbstractMemoryAllocator {
 
 	@Override
 	protected boolean canAllocate(long bytes) {
-		return bytes < Integer.MAX_VALUE - 8;
+		return bytes < Integer.MAX_VALUE - 12;
 	}
 
 	@Override

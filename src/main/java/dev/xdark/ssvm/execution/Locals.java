@@ -1,9 +1,5 @@
 package dev.xdark.ssvm.execution;
 
-import dev.xdark.ssvm.value.DoubleValue;
-import dev.xdark.ssvm.value.FloatValue;
-import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.LongValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 
@@ -20,15 +16,7 @@ public interface Locals {
 	 * @param index Index of local variable.
 	 * @param value Value to set.
 	 */
-	void set(int index, Value value);
-
-	/**
-	 * Sets wide value at specific index.
-	 *
-	 * @param index Index of local variable.
-	 * @param value Value to set.
-	 */
-	void setWide(int index, Value value);
+	void setReference(int index, ObjectValue value);
 
 	/**
 	 * Sets long value.
@@ -36,9 +24,7 @@ public interface Locals {
 	 * @param index Variable index.
 	 * @param value Value to set.
 	 */
-	default void setLong(int index, long value) {
-		setWide(index, LongValue.of(value));
-	}
+	void setLong(int index, long value);
 
 	/**
 	 * Sets double value.
@@ -46,9 +32,7 @@ public interface Locals {
 	 * @param index Variable index.
 	 * @param value Value to set.
 	 */
-	default void setDouble(int index, double value) {
-		setWide(index, new DoubleValue(value));
-	}
+	void setDouble(int index, double value);
 
 	/**
 	 * Sets int value.
@@ -56,9 +40,7 @@ public interface Locals {
 	 * @param index Variable index.
 	 * @param value Value to set.
 	 */
-	default void setInt(int index, int value) {
-		set(index, IntValue.of(value));
-	}
+	void setInt(int index, int value);
 
 	/**
 	 * Sets float value.
@@ -66,18 +48,7 @@ public interface Locals {
 	 * @param index Variable index.
 	 * @param value Value to set.
 	 */
-	default void setFloat(int index, float value) {
-		setWide(index, new FloatValue(value));
-	}
-
-	/**
-	 * Loads value from local variable.
-	 *
-	 * @param index Index of local variable.
-	 * @param <V>   Type of the value to load.
-	 * @return value at {@code index}.
-	 */
-	<V extends Value> V load(int index);
+	void setFloat(int index, float value);
 
 	/**
 	 * Loads reference value from local variable.
@@ -85,9 +56,7 @@ public interface Locals {
 	 * @param index Index of local variable.
 	 * @return value at {@code index}.
 	 */
-	default <V extends ObjectValue> V loadReference(int index) {
-		return load(index);
-	}
+	<V extends ObjectValue> V loadReference(int index);
 
 	/**
 	 * Loads long value.
@@ -95,9 +64,7 @@ public interface Locals {
 	 * @param index Variable index.
 	 * @return long value.
 	 */
-	default long loadLong(int index) {
-		return load(index).asLong();
-	}
+	long loadLong(int index);
 
 	/**
 	 * Loads double value.
@@ -105,9 +72,7 @@ public interface Locals {
 	 * @param index Variable index.
 	 * @return double value.
 	 */
-	default double loadDouble(int index) {
-		return load(index).asDouble();
-	}
+	double loadDouble(int index);
 
 	/**
 	 * Loads int value.
@@ -115,9 +80,7 @@ public interface Locals {
 	 * @param index Variable index.
 	 * @return int value.
 	 */
-	default int loadInt(int index) {
-		return load(index).asInt();
-	}
+	int loadInt(int index);
 
 	/**
 	 * Loads float value.
@@ -125,9 +88,7 @@ public interface Locals {
 	 * @param index Variable index.
 	 * @return float value.
 	 */
-	default float loadFloat(int index) {
-		return load(index).asFloat();
-	}
+	float loadFloat(int index);
 
 	/**
 	 * Copies contents into this locals.
@@ -138,21 +99,6 @@ public interface Locals {
 	 * @param length     Content length.
 	 */
 	void copyFrom(Locals locals, int srcOffset, int destOffset, int length);
-
-	/**
-	 * Copies contents into this locals.
-	 *
-	 * @param locals     Content to copy.
-	 * @param srcOffset  Content srcOffset.
-	 * @param destOffset Offset to copy to.
-	 * @param length     Content length.
-	 */
-	void copyFrom(Value[] locals, int srcOffset, int destOffset, int length);
-
-	/**
-	 * @return underlying content of this LVT.
-	 */
-	Value[] getTable();
 
 	/**
 	 * @return the maximum amount of slots of this LVT.

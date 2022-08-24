@@ -69,7 +69,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public ObjectValue getValue(long address) {
+	public ObjectValue getReference(long address) {
 		return objects.get(tlcAddress(address));
 	}
 
@@ -154,7 +154,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	@Override
 	public ObjectValue readValue(ObjectValue object, long offset) {
 		long address = object.getMemory().getData().readLong(offset);
-		return objects.get(tlcAddress(address));
+		return getReference(address);
 	}
 
 	@Override

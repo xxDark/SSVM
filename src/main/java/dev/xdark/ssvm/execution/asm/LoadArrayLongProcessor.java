@@ -18,7 +18,7 @@ public final class LoadArrayLongProcessor implements InstructionProcessor<Abstra
 	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
 		Stack stack = ctx.getStack();
 		int index = stack.popInt();
-		ObjectValue array = stack.pop();
+		ObjectValue array = stack.popReference();
 		stack.pushLong(ctx.getOperations().arrayLoadLong(array, index));
 		return Result.CONTINUE;
 	}

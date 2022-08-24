@@ -121,15 +121,9 @@ public final class SimpleArrayValue extends SimpleObjectValue implements ArrayVa
 	}
 
 	@Override
-	public void setValue(int index, ObjectValue value) {
+	public void setReference(int index, ObjectValue value) {
 		MemoryManager memoryManager = getMemoryManager();
 		memoryManager.writeValue(this, dataOffset(validate(index) * (long) memoryManager.objectSize()), value);
-	}
-
-	@Override
-	public ObjectValue getAndSetValue(int index, ObjectValue value) {
-		MemoryManager memoryManager = getMemoryManager();
-		return memoryManager.getAndWriteValue(this, dataOffset(validate(index) * (long) memoryManager.objectSize()), value);
 	}
 
 	@Override

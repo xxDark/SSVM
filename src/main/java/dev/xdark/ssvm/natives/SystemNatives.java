@@ -84,9 +84,9 @@ public class SystemNatives {
 				String key = entry.getKey();
 				String property = entry.getValue();
 				Locals locals = ts.newLocals(mn);
-				locals.set(0, value);
-				locals.set(1, helper.newUtf8(key));
-				locals.set(2, helper.newUtf8(property));
+				locals.setReference(0, value);
+				locals.setReference(1, helper.newUtf8(key));
+				locals.setReference(2, helper.newUtf8(property));
 				helper.invoke(mn, locals);
 			}
 			ctx.setResult(value);

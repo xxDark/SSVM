@@ -22,7 +22,7 @@ public final class ConstantLongProcessor implements InstructionProcessor<Abstrac
 	}
 
 	@Override
-	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
+	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		ctx.getStack().pushLong(cst);
 		return Result.CONTINUE;
 	}

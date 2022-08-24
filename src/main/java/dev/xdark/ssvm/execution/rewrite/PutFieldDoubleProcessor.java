@@ -18,7 +18,7 @@ import org.objectweb.asm.tree.FieldInsnNode;
 public final class PutFieldDoubleProcessor implements InstructionProcessor<VMFieldInsnNode> {
 
 	@Override
-	public Result execute(VMFieldInsnNode insn, ExecutionContext ctx) {
+	public Result execute(VMFieldInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
 		double value = stack.popDouble();
 		InstanceValue instance = ctx.getHelper().checkNotNull(stack.popReference());

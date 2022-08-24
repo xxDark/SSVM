@@ -13,7 +13,7 @@ import dev.xdark.ssvm.execution.Result;
 public final class ConstantFloatProcessor implements InstructionProcessor<ConstantFloatInsnNode> {
 
 	@Override
-	public Result execute(ConstantFloatInsnNode insn, ExecutionContext ctx) {
+	public Result execute(ConstantFloatInsnNode insn, ExecutionContext<?> ctx) {
 		ctx.getStack().pushFloat(insn.getValue());
 		return Result.CONTINUE;
 	}

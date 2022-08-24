@@ -17,7 +17,7 @@ import org.objectweb.asm.tree.TypeInsnNode;
 public final class ObjectArrayProcessor implements InstructionProcessor<TypeInsnNode> {
 
 	@Override
-	public Result execute(TypeInsnNode insn, ExecutionContext ctx) {
+	public Result execute(TypeInsnNode insn, ExecutionContext<?> ctx) {
 		JavaClass type = ctx.getHelper().tryFindClass(ctx.getClassLoader(), insn.desc, false);
 		VMTypeInsnNode wrapper = new VMTypeInsnNode(insn, VMOpcodes.VM_REFERENCE_NEW_ARRAY, type);
 		InsnList list = ctx.getMethod().getNode().instructions;

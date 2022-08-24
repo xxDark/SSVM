@@ -13,11 +13,7 @@ import dev.xdark.ssvm.mirror.JavaField;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.UnsafeUtil;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.value.DoubleValue;
-import dev.xdark.ssvm.value.FloatValue;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.LongValue;
 import dev.xdark.ssvm.value.TopValue;
 import dev.xdark.ssvm.value.Value;
 import lombok.AccessLevel;
@@ -60,7 +56,114 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static org.objectweb.asm.Opcodes.*;
+import static org.objectweb.asm.Opcodes.AALOAD;
+import static org.objectweb.asm.Opcodes.AASTORE;
+import static org.objectweb.asm.Opcodes.ACC_FINAL;
+import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
+import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
+import static org.objectweb.asm.Opcodes.ACC_STATIC;
+import static org.objectweb.asm.Opcodes.ACONST_NULL;
+import static org.objectweb.asm.Opcodes.ALOAD;
+import static org.objectweb.asm.Opcodes.ANEWARRAY;
+import static org.objectweb.asm.Opcodes.ARETURN;
+import static org.objectweb.asm.Opcodes.ARRAYLENGTH;
+import static org.objectweb.asm.Opcodes.ASTORE;
+import static org.objectweb.asm.Opcodes.ATHROW;
+import static org.objectweb.asm.Opcodes.BALOAD;
+import static org.objectweb.asm.Opcodes.BASTORE;
+import static org.objectweb.asm.Opcodes.BIPUSH;
+import static org.objectweb.asm.Opcodes.CALOAD;
+import static org.objectweb.asm.Opcodes.CASTORE;
+import static org.objectweb.asm.Opcodes.CHECKCAST;
+import static org.objectweb.asm.Opcodes.DALOAD;
+import static org.objectweb.asm.Opcodes.DASTORE;
+import static org.objectweb.asm.Opcodes.DCONST_0;
+import static org.objectweb.asm.Opcodes.DLOAD;
+import static org.objectweb.asm.Opcodes.DRETURN;
+import static org.objectweb.asm.Opcodes.DSTORE;
+import static org.objectweb.asm.Opcodes.DUP;
+import static org.objectweb.asm.Opcodes.DUP2_X1;
+import static org.objectweb.asm.Opcodes.DUP2_X2;
+import static org.objectweb.asm.Opcodes.DUP_X2;
+import static org.objectweb.asm.Opcodes.FALOAD;
+import static org.objectweb.asm.Opcodes.FASTORE;
+import static org.objectweb.asm.Opcodes.FCONST_0;
+import static org.objectweb.asm.Opcodes.FLOAD;
+import static org.objectweb.asm.Opcodes.FRETURN;
+import static org.objectweb.asm.Opcodes.FSTORE;
+import static org.objectweb.asm.Opcodes.GETFIELD;
+import static org.objectweb.asm.Opcodes.GETSTATIC;
+import static org.objectweb.asm.Opcodes.GOTO;
+import static org.objectweb.asm.Opcodes.I2B;
+import static org.objectweb.asm.Opcodes.I2C;
+import static org.objectweb.asm.Opcodes.I2S;
+import static org.objectweb.asm.Opcodes.IALOAD;
+import static org.objectweb.asm.Opcodes.IASTORE;
+import static org.objectweb.asm.Opcodes.ICONST_0;
+import static org.objectweb.asm.Opcodes.IDIV;
+import static org.objectweb.asm.Opcodes.IFEQ;
+import static org.objectweb.asm.Opcodes.IFGE;
+import static org.objectweb.asm.Opcodes.IFGT;
+import static org.objectweb.asm.Opcodes.IFLE;
+import static org.objectweb.asm.Opcodes.IFLT;
+import static org.objectweb.asm.Opcodes.IFNE;
+import static org.objectweb.asm.Opcodes.IFNONNULL;
+import static org.objectweb.asm.Opcodes.IFNULL;
+import static org.objectweb.asm.Opcodes.IF_ACMPEQ;
+import static org.objectweb.asm.Opcodes.IF_ACMPNE;
+import static org.objectweb.asm.Opcodes.IF_ICMPEQ;
+import static org.objectweb.asm.Opcodes.IF_ICMPGE;
+import static org.objectweb.asm.Opcodes.IF_ICMPGT;
+import static org.objectweb.asm.Opcodes.IF_ICMPLE;
+import static org.objectweb.asm.Opcodes.IF_ICMPLT;
+import static org.objectweb.asm.Opcodes.IF_ICMPNE;
+import static org.objectweb.asm.Opcodes.IINC;
+import static org.objectweb.asm.Opcodes.ILOAD;
+import static org.objectweb.asm.Opcodes.INVOKEDYNAMIC;
+import static org.objectweb.asm.Opcodes.INVOKEINTERFACE;
+import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
+import static org.objectweb.asm.Opcodes.INVOKESTATIC;
+import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
+import static org.objectweb.asm.Opcodes.IREM;
+import static org.objectweb.asm.Opcodes.IRETURN;
+import static org.objectweb.asm.Opcodes.ISTORE;
+import static org.objectweb.asm.Opcodes.JSR;
+import static org.objectweb.asm.Opcodes.LALOAD;
+import static org.objectweb.asm.Opcodes.LASTORE;
+import static org.objectweb.asm.Opcodes.LCONST_0;
+import static org.objectweb.asm.Opcodes.LDC;
+import static org.objectweb.asm.Opcodes.LDIV;
+import static org.objectweb.asm.Opcodes.LLOAD;
+import static org.objectweb.asm.Opcodes.LOOKUPSWITCH;
+import static org.objectweb.asm.Opcodes.LREM;
+import static org.objectweb.asm.Opcodes.LRETURN;
+import static org.objectweb.asm.Opcodes.LSTORE;
+import static org.objectweb.asm.Opcodes.MONITORENTER;
+import static org.objectweb.asm.Opcodes.MONITOREXIT;
+import static org.objectweb.asm.Opcodes.MULTIANEWARRAY;
+import static org.objectweb.asm.Opcodes.NEW;
+import static org.objectweb.asm.Opcodes.NEWARRAY;
+import static org.objectweb.asm.Opcodes.NOP;
+import static org.objectweb.asm.Opcodes.POP;
+import static org.objectweb.asm.Opcodes.POP2;
+import static org.objectweb.asm.Opcodes.PUTFIELD;
+import static org.objectweb.asm.Opcodes.PUTSTATIC;
+import static org.objectweb.asm.Opcodes.RET;
+import static org.objectweb.asm.Opcodes.RETURN;
+import static org.objectweb.asm.Opcodes.SALOAD;
+import static org.objectweb.asm.Opcodes.SASTORE;
+import static org.objectweb.asm.Opcodes.SIPUSH;
+import static org.objectweb.asm.Opcodes.SWAP;
+import static org.objectweb.asm.Opcodes.TABLESWITCH;
+import static org.objectweb.asm.Opcodes.T_BOOLEAN;
+import static org.objectweb.asm.Opcodes.T_BYTE;
+import static org.objectweb.asm.Opcodes.T_CHAR;
+import static org.objectweb.asm.Opcodes.T_DOUBLE;
+import static org.objectweb.asm.Opcodes.T_FLOAT;
+import static org.objectweb.asm.Opcodes.T_INT;
+import static org.objectweb.asm.Opcodes.T_LONG;
+import static org.objectweb.asm.Opcodes.T_SHORT;
+import static org.objectweb.asm.Opcodes.V1_8;
 
 /**
  * "JIT" compiler.
@@ -92,10 +195,10 @@ public final class JitCompiler {
 
 	private static final ClassType LOCALS = ClassType.of(Locals.class);
 	private static final ClassType VALUE = ClassType.of(Value.class);
-	private static final ClassType INT = ClassType.of(IntValue.class);
-	private static final ClassType LONG = ClassType.of(LongValue.class);
-	private static final ClassType FLOAT = ClassType.of(FloatValue.class);
-	private static final ClassType DOUBLE = ClassType.of(DoubleValue.class);
+	//private static final ClassType INT = ClassType.of(IntValue.class);
+	//private static final ClassType LONG = ClassType.of(LongValue.class);
+	//private static final ClassType FLOAT = ClassType.of(FloatValue.class);
+	//private static final ClassType DOUBLE = ClassType.of(DoubleValue.class);
 	private static final ClassType VM_HELPER = ClassType.of(VMHelper.class);
 	@SuppressWarnings("deprecation")
 	private static final ClassType JIT_HELPER = ClassType.of(JitHelper.class);
@@ -117,10 +220,12 @@ public final class JitCompiler {
 
 	// value static methods
 	private static final Access GET_NULL = staticCall(JIT_HELPER, "loadNull", VALUE, CTX);
+	/*
 	private static final Access INT_OF = staticCall(INT, "of", INT, J_INT);
 	private static final Access LONG_OF = staticCall(LONG, "of", LONG, J_LONG);
 	private static final Access FLOAT_OF = specialCall(FLOAT, "<init>", J_VOID, J_FLOAT);
 	private static final Access DOUBLE_OF = specialCall(DOUBLE, "<init>", J_VOID, J_DOUBLE);
+	*/
 
 	// value methods
 	private static final Access AS_LONG = interfaceCall(VALUE, "asLong", J_LONG);
@@ -575,34 +680,10 @@ public final class JitCompiler {
 					insn.clone(copy).accept(jit);
 					break;
 				case IRETURN:
-					intOf();
-					loadCtx();
-					jvm_swap();
-					SET_RESULT.emit(jit);
-					jit.visitInsn(RETURN);
-					break;
 				case FRETURN:
-					floatOf();
-					loadCtx();
-					jvm_swap();
-					SET_RESULT.emit(jit);
-					jit.visitInsn(RETURN);
-					break;
 				case ARETURN:
-					loadCtx();
-					jvm_swap();
-					SET_RESULT.emit(jit);
-					jit.visitInsn(RETURN);
-					break;
 				case LRETURN:
-					longOf();
-					loadCtx();
-					jvm_swap();
-					SET_RESULT.emit(jit);
-					jit.visitInsn(RETURN);
-					break;
 				case DRETURN:
-					doubleOf();
 					loadCtx();
 					jvm_swap();
 					SET_RESULT.emit(jit);
@@ -712,32 +793,6 @@ public final class JitCompiler {
 	private void loadNull() {
 		loadCtx();
 		GET_NULL.emit(jit);
-	}
-
-	private void intOf() {
-		INT_OF.emit(jit);
-	}
-
-	private void longOf() {
-		LONG_OF.emit(jit);
-	}
-
-	private void floatOf() {
-		MethodVisitor jit = this.jit;
-		// value
-		newObj(FLOAT); // value wrapper
-		jit.visitInsn(DUP_X1);
-		jit.visitInsn(SWAP); // wrapper wrapper value
-		FLOAT_OF.emit(jit);
-	}
-
-	private void doubleOf() {
-		MethodVisitor jit = this.jit;
-		// value
-		newObj(DOUBLE); // value wrapper
-		jit.visitInsn(DUP); // value wrwapper wrapper
-		jvm_swap(2, 2); // wrwapper wrapper value
-		DOUBLE_OF.emit(jit);
 	}
 
 	private void ldcOf(Object value) {
@@ -940,7 +995,7 @@ public final class JitCompiler {
 	}
 
 	private void putStaticSlow(FieldInsnNode node) {
-		toVM(Type.getType(node.desc));
+		// toVM(Type.getType(node.desc));
 		pushField(node);
 		loadCtx();
 		PUT_STATIC_SLOW.emit(jit);
@@ -1595,7 +1650,6 @@ public final class JitCompiler {
 		MethodVisitor jit = this.jit;
 		jit.visitInsn(DUP); // value args args
 		jvm_swap(2, type.getSize()); // args args value
-		toVM(type); // args args value
 		jit.visitLdcInsn(idx); // args args value idx
 		jit.visitInsn(SWAP);
 		jit.visitInsn(AASTORE);
@@ -1606,7 +1660,6 @@ public final class JitCompiler {
 		MethodVisitor jit = this.jit;
 		jit.visitInsn(DUP); // value args args
 		jvm_swap(2, type.getSize()); // args args value
-		toVM(type); // args args value
 		emitInt(idx, jit); // args args value idx
 		jit.visitInsn(SWAP);
 		SET.emit(jit);
@@ -1635,20 +1688,16 @@ public final class JitCompiler {
 	private void toVM(Type type) {
 		switch (type.getSort()) {
 			case Type.LONG:
-				longOf();
 				break;
 			case Type.DOUBLE:
-				doubleOf();
 				break;
 			case Type.INT:
 			case Type.CHAR:
 			case Type.SHORT:
 			case Type.BYTE:
 			case Type.BOOLEAN:
-				intOf();
 				break;
 			case Type.FLOAT:
-				floatOf();
 				break;
 		}
 	}

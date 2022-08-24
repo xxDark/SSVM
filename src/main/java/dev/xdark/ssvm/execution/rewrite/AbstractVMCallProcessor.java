@@ -19,7 +19,7 @@ import dev.xdark.ssvm.value.Value;
 abstract class AbstractVMCallProcessor implements InstructionProcessor<VMCallInsnNode> {
 
 	@Override
-	public final Result execute(VMCallInsnNode insn, ExecutionContext ctx) {
+	public final Result execute(VMCallInsnNode insn, ExecutionContext<?> ctx) {
 		JavaMethod method = insn.getResolved();
 		if (method == null) {
 			// The one who override the method
@@ -33,12 +33,9 @@ abstract class AbstractVMCallProcessor implements InstructionProcessor<VMCallIns
 		int maxArgs = method.getMaxArgs();
 		Locals locals = storage.newLocals(method);
 		callerStack.sinkInto(locals, maxArgs);
-		Value result = vm.getHelper().invoke(method, locals).getResult();
-		if (!result.isVoid()) {
-			callerStack.pushGeneric(result);
-		}
+		vm.getHelper().invoke(method, locals, callerStack);
 		return Result.CONTINUE;
 	}
 
-	protected abstract JavaMethod resolveMethod(VMCallInsnNode insn, ExecutionContext ctx);
+	protected abstract JavaMethod resolveMethod(VMCallInsnNode insn, ExecutionContext<?> ctx);
 }

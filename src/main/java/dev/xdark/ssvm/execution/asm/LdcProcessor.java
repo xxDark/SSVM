@@ -25,7 +25,7 @@ import org.objectweb.asm.tree.LdcInsnNode;
 public final class LdcProcessor implements InstructionProcessor<LdcInsnNode> {
 
 	@Override
-	public Result execute(LdcInsnNode insn, ExecutionContext ctx) {
+	public Result execute(LdcInsnNode insn, ExecutionContext<?> ctx) {
 		if (AsmUtil.isValid(insn)) {
 			InsnList list = ctx.getMethod().getNode().instructions;
 			Object cst = insn.cst;
@@ -44,7 +44,7 @@ public final class LdcProcessor implements InstructionProcessor<LdcInsnNode> {
 			} else if (cst instanceof String) {
 				list.set(insn, new ConstantReferenceInsnNode(insn, ctx.getVM().getStringPool().intern((String) cst)));
 			} else {
-				Value value = ctx.getHelper().valueFromLdc(cst);
+				Value value = ctx.getHelper().referenceFromLdc(cst);
 				if (!(value instanceof ObjectValue)) {
 					throw new PanicException("Bad valueFromLdc value: " + value);
 				}

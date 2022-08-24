@@ -14,7 +14,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 public final class FloatToLongProcessor implements InstructionProcessor<AbstractInsnNode> {
 
 	@Override
-	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
+	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
 		stack.pushLong((long) stack.popFloat());
 		return Result.CONTINUE;

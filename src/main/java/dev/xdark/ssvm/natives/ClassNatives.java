@@ -19,10 +19,8 @@ import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
 import me.coley.cafedude.classfile.ClassFile;
 import me.coley.cafedude.classfile.AttributeConstants;
@@ -61,7 +59,7 @@ public class ClassNatives {
 		vmi.setInvoker(jlc, "getPrimitiveClass", "(Ljava/lang/String;)Ljava/lang/Class;", ctx -> {
 			String name = vm.getHelper().readUtf8(ctx.getLocals().loadReference(0));
 			VMPrimitives primitives = vm.getPrimitives();
-			Value result;
+			ObjectValue result;
 			switch (name) {
 				case "long":
 					result = primitives.longPrimitive().getOop();
@@ -98,7 +96,7 @@ public class ClassNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "desiredAssertionStatus0", "(Ljava/lang/Class;)Z", ctx -> {
-			ctx.setResult(IntValue.ZERO);
+			ctx.setResult(0);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "forName0", "(Ljava/lang/String;ZLjava/lang/ClassLoader;Ljava/lang/Class;)Ljava/lang/Class;", ctx -> {
@@ -124,7 +122,7 @@ public class ClassNatives {
 			}
 		}
 		vmi.setInvoker(jlc, "isArray", "()Z", ctx -> {
-			ctx.setResult(ctx.getLocals().<JavaValue<JavaClass>>loadReference(0).getValue().isArray() ? IntValue.ONE : IntValue.ZERO);
+			ctx.setResult(ctx.getLocals().<JavaValue<JavaClass>>loadReference(0).getValue().isArray() ? 1 : 0);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "isAssignableFrom", "(Ljava/lang/Class;)Z", ctx -> {
@@ -132,25 +130,25 @@ public class ClassNatives {
 			VMHelper helper = vm.getHelper();
 			JavaClass _this = locals.<JavaValue<JavaClass>>loadReference(0).getValue();
 			JavaClass arg = helper.<JavaValue<JavaClass>>checkNotNull(locals.loadReference(1)).getValue();
-			ctx.setResult(_this.isAssignableFrom(arg) ? IntValue.ONE : IntValue.ZERO);
+			ctx.setResult(_this.isAssignableFrom(arg) ? 1 : 0);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "isInterface", "()Z", ctx -> {
 			Locals locals = ctx.getLocals();
 			JavaClass _this = locals.<JavaValue<JavaClass>>loadReference(0).getValue();
-			ctx.setResult(_this.isInterface() ? IntValue.ONE : IntValue.ZERO);
+			ctx.setResult(_this.isInterface() ? 1 : 0);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "isPrimitive", "()Z", ctx -> {
 			Locals locals = ctx.getLocals();
 			JavaClass _this = locals.<JavaValue<JavaClass>>loadReference(0).getValue();
-			ctx.setResult(_this.isPrimitive() ? IntValue.ONE : IntValue.ZERO);
+			ctx.setResult(_this.isPrimitive() ? 1 : 0);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "isHidden", "()Z", ctx -> {
 			Locals locals = ctx.getLocals();
 			JavaClass _this = locals.<JavaValue<JavaClass>>loadReference(0).getValue();
-			ctx.setResult(Modifier.isHiddenMember(_this.getModifiers()) ? IntValue.ONE : IntValue.ZERO);
+			ctx.setResult(Modifier.isHiddenMember(_this.getModifiers()) ? 1 : 0);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getSuperclass", "()Ljava/lang/Class;", ctx -> {
@@ -163,7 +161,7 @@ public class ClassNatives {
 		vmi.setInvoker(jlc, "getModifiers", "()I", ctx -> {
 			Locals locals = ctx.getLocals();
 			JavaClass _this = locals.<JavaValue<JavaClass>>loadReference(0).getValue();
-			ctx.setResult(IntValue.of(Modifier.eraseClass(_this.getModifiers())));
+			ctx.setResult(Modifier.eraseClass(_this.getModifiers()));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getDeclaredConstructors0", "(Z)[Ljava/lang/reflect/Constructor;", ctx -> {
@@ -272,7 +270,7 @@ public class ClassNatives {
 			VMOperations ops = vm.getPublicOperations();
 			for (int j = 0; j < fields.size(); j++) {
 				JavaField fn = fields.get(j);
-				JavaClass type = helper.findClass(loader, fn.getType().getInternalName(), false);
+				JavaClass type = fn.getType();
 				InstanceValue field = memoryManager.newInstance(fieldClass);
 				ops.putReference(field, "clazz", "Ljava/lang/Class;", callerOop);
 				ops.putInt(field, "slot", fn.getSlot());
@@ -354,11 +352,11 @@ public class ClassNatives {
 			Locals locals = ctx.getLocals();
 			ObjectValue value = locals.loadReference(1);
 			if (value.isNull()) {
-				ctx.setResult(IntValue.ZERO);
+				ctx.setResult(0);
 			} else {
 				JavaClass klass = value.getJavaClass();
 				JavaClass _this = locals.<JavaValue<JavaClass>>loadReference(0).getValue();
-				ctx.setResult(_this.isAssignableFrom(klass) ? IntValue.ONE : IntValue.ZERO);
+				ctx.setResult(_this.isAssignableFrom(klass) ? 1 : 0);
 			}
 			return Result.ABORT;
 		});

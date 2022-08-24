@@ -5,8 +5,6 @@ import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.symbol.VMSymbols;
-import dev.xdark.ssvm.value.FloatValue;
-import dev.xdark.ssvm.value.IntValue;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -27,11 +25,11 @@ public class FloatNatives {
 		VMSymbols symbols = vm.getSymbols();
 		InstanceJavaClass jc = symbols.java_lang_Float();
 		vmi.setInvoker(jc, "floatToRawIntBits", "(F)I", ctx -> {
-			ctx.setResult(IntValue.of(Float.floatToRawIntBits(ctx.getLocals().loadFloat(0))));
+			ctx.setResult(Float.floatToRawIntBits(ctx.getLocals().loadFloat(0)));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "intBitsToFloat", "(I)F", ctx -> {
-			ctx.setResult(new FloatValue(Float.intBitsToFloat(ctx.getLocals().loadInt(0))));
+			ctx.setResult(Float.intBitsToFloat(ctx.getLocals().loadInt(0)));
 			return Result.ABORT;
 		});
 	}

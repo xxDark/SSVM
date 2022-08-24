@@ -5,8 +5,6 @@ import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.symbol.VMSymbols;
-import dev.xdark.ssvm.value.DoubleValue;
-import dev.xdark.ssvm.value.LongValue;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -25,11 +23,11 @@ public class DoubleNatives {
 		VMSymbols symbols = vm.getSymbols();
 		InstanceJavaClass jc = symbols.java_lang_Double();
 		vmi.setInvoker(jc, "doubleToRawLongBits", "(D)J", ctx -> {
-			ctx.setResult(LongValue.of(Double.doubleToRawLongBits(ctx.getLocals().loadDouble(0))));
+			ctx.setResult(Double.doubleToRawLongBits(ctx.getLocals().loadDouble(0)));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "longBitsToDouble", "(J)D", ctx -> {
-			ctx.setResult(new DoubleValue(Double.longBitsToDouble(ctx.getLocals().loadLong(0))));
+			ctx.setResult(Double.longBitsToDouble(ctx.getLocals().loadLong(0)));
 			return Result.ABORT;
 		});
 	}

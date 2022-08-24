@@ -6,11 +6,4 @@ package dev.xdark.ssvm.mirror;
  * @author xDark
  */
 public interface PrimitiveClass extends JavaClass {
-
-	/**
-	 * Fast mapping to ASM's type sorts.
-	 *
-	 * @return Type sort.
-	 */
-	int getSort();
 }

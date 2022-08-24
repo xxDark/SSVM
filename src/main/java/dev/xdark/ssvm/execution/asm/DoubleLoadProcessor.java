@@ -13,7 +13,7 @@ import org.objectweb.asm.tree.VarInsnNode;
 public final class DoubleLoadProcessor implements InstructionProcessor<VarInsnNode> {
 
 	@Override
-	public Result execute(VarInsnNode insn, ExecutionContext ctx) {
+	public Result execute(VarInsnNode insn, ExecutionContext<?> ctx) {
 		ctx.getStack().pushDouble(ctx.getLocals().loadDouble(insn.var));
 		return Result.CONTINUE;
 	}

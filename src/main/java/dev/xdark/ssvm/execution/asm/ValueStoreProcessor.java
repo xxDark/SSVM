@@ -13,7 +13,7 @@ import org.objectweb.asm.tree.VarInsnNode;
 public final class ValueStoreProcessor implements InstructionProcessor<VarInsnNode> {
 
 	@Override
-	public Result execute(VarInsnNode insn, ExecutionContext ctx) {
+	public Result execute(VarInsnNode insn, ExecutionContext<?> ctx) {
 		ctx.getLocals().setReference(insn.var, ctx.getStack().popReference());
 		return Result.CONTINUE;
 	}

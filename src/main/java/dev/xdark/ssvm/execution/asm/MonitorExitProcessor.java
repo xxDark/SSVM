@@ -13,7 +13,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 public final class MonitorExitProcessor implements InstructionProcessor<AbstractInsnNode> {
 
 	@Override
-	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
+	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		ctx.monitorExit(ctx.getStack().popReference());
 		return Result.CONTINUE;
 	}

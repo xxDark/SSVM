@@ -5,7 +5,6 @@ import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.symbol.VMSymbols;
-import dev.xdark.ssvm.value.IntValue;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -24,7 +23,7 @@ public class AtomicLongNatives {
 		VMSymbols symbols = vm.getSymbols();
 		InstanceJavaClass jc = symbols.java_util_concurrent_atomic_AtomicLong();
 		vmi.setInvoker(jc, "VMSupportsCS8", "()Z", ctx -> {
-			ctx.setResult(IntValue.ZERO);
+			ctx.setResult(0);
 			return Result.ABORT;
 		});
 	}

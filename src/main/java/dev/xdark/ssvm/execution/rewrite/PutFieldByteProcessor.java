@@ -18,7 +18,7 @@ import org.objectweb.asm.tree.FieldInsnNode;
 public final class PutFieldByteProcessor implements InstructionProcessor<VMFieldInsnNode> {
 
 	@Override
-	public Result execute(VMFieldInsnNode insn, ExecutionContext ctx) {
+	public Result execute(VMFieldInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
 		byte value = stack.popByte();
 		InstanceValue instance = ctx.getHelper().checkNotNull(stack.popReference());

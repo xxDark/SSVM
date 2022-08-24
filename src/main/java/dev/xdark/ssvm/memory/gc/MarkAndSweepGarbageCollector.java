@@ -76,7 +76,7 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 
 	@Override
 	public synchronized boolean invoke() {
-		// TODO rewrite
+		/*
 		VirtualMachine vm = this.vm;
 		SafePoint safePoint = vm.getSafePoint();
 		ThreadManager threadManager = vm.getThreadManager();
@@ -105,11 +105,9 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 				setMark(thread.getOop());
 				Backtrace backtrace = thread.getBacktrace();
 				ThreadStorage threadStorage = thread.getThreadStorage();
-				/*
 				for (Value value : threadStorage) {
 					tryMark(value);
 				}
-				*/
 				for (StackFrame frame : backtrace) {
 					ExecutionContext ctx = frame.getExecutionContext();
 					if (ctx != null) {
@@ -153,6 +151,8 @@ public class MarkAndSweepGarbageCollector implements GarbageCollector {
 			safePoint.complete();
 			threadManager.resumeAll();
 		}
+		*/
+		return false;
 	}
 
 	private void markClassLoaderData(ClassLoaderData data) {

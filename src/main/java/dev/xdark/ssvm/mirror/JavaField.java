@@ -80,5 +80,5 @@ public interface JavaField extends MetadataHolder {
 	 *
 	 * @return field type.
 	 */
-	Type getType();
+	JavaClass getType();
 }

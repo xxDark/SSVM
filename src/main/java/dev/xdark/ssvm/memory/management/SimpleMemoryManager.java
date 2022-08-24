@@ -152,7 +152,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public ObjectValue readValue(ObjectValue object, long offset) {
+	public ObjectValue readReference(ObjectValue object, long offset) {
 		long address = object.getMemory().getData().readLong(offset);
 		return getReference(address);
 	}

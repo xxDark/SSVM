@@ -14,7 +14,7 @@ import org.objectweb.asm.tree.JumpInsnNode;
 public final class GotoProcessor implements InstructionProcessor<JumpInsnNode> {
 
 	@Override
-	public Result execute(JumpInsnNode insn, ExecutionContext ctx) {
+	public Result execute(JumpInsnNode insn, ExecutionContext<?> ctx) {
 		ctx.setInsnPosition(AsmUtil.getIndex(insn.label));
 		return Result.CONTINUE;
 	}

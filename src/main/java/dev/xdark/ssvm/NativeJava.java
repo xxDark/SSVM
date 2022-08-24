@@ -3,6 +3,14 @@ package dev.xdark.ssvm;
 //<editor-fold desc="Imports">
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.rewrite.BooleanArrayProcessor;
+import dev.xdark.ssvm.execution.rewrite.GetFieldByteProcessor;
+import dev.xdark.ssvm.execution.rewrite.GetFieldCharProcessor;
+import dev.xdark.ssvm.execution.rewrite.GetFieldDoubleProcessor;
+import dev.xdark.ssvm.execution.rewrite.GetFieldFloatProcessor;
+import dev.xdark.ssvm.execution.rewrite.GetFieldIntProcessor;
+import dev.xdark.ssvm.execution.rewrite.GetFieldLongProcessor;
+import dev.xdark.ssvm.execution.rewrite.GetFieldReferenceProcessor;
+import dev.xdark.ssvm.execution.rewrite.GetFieldShortProcessor;
 import dev.xdark.ssvm.execution.rewrite.GetStaticByteProcessor;
 import dev.xdark.ssvm.execution.rewrite.GetStaticCharProcessor;
 import dev.xdark.ssvm.execution.rewrite.GetStaticDoubleProcessor;
@@ -64,6 +72,15 @@ import static dev.xdark.ssvm.asm.VMOpcodes.VM_CONSTANT_REFERENCE;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_DOUBLE_NEW_ARRAY;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_DYNAMIC_CALL;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_FLOAT_NEW_ARRAY;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_GETFIELD_BOOLEAN;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_GETFIELD_BYTE;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_GETFIELD_CHAR;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_GETFIELD_DOUBLE;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_GETFIELD_FLOAT;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_GETFIELD_INT;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_GETFIELD_LONG;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_GETFIELD_REFERENCE;
+import static dev.xdark.ssvm.asm.VMOpcodes.VM_GETFIELD_SHORT;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_GETSTATIC_BOOLEAN;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_GETSTATIC_BYTE;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_GETSTATIC_CHAR;
@@ -423,7 +440,7 @@ public final class NativeJava {
 		vmi.setProcessor(LRETURN, new ReturnLongProcessor());
 		vmi.setProcessor(FRETURN, new ReturnFloatProcessor());
 		vmi.setProcessor(DRETURN, new ReturnDoubleProcessor());
-		vmi.setProcessor(ARETURN, new ReturnValueProcessor());
+		vmi.setProcessor(ARETURN, new ReturnReferenceProcessor());
 		vmi.setProcessor(RETURN, new ReturnVoidProcessor());
 
 		vmi.setProcessor(GETSTATIC, new GetStaticProcessor());
@@ -504,6 +521,16 @@ public final class NativeJava {
 		vmi.setProcessor(VM_PUTFIELD_LONG, new PutFieldLongProcessor());
 		vmi.setProcessor(VM_PUTFIELD_DOUBLE, new PutFieldDoubleProcessor());
 		vmi.setProcessor(VM_PUTFIELD_REFERENCE, new PutFieldReferenceProcessor());
+
+		vmi.setProcessor(VM_GETFIELD_BOOLEAN, new GetFieldByteProcessor());
+		vmi.setProcessor(VM_GETFIELD_CHAR, new GetFieldCharProcessor());
+		vmi.setProcessor(VM_GETFIELD_BYTE, new GetFieldByteProcessor());
+		vmi.setProcessor(VM_GETFIELD_SHORT, new GetFieldShortProcessor());
+		vmi.setProcessor(VM_GETFIELD_INT, new GetFieldIntProcessor());
+		vmi.setProcessor(VM_GETFIELD_FLOAT, new GetFieldFloatProcessor());
+		vmi.setProcessor(VM_GETFIELD_LONG, new GetFieldLongProcessor());
+		vmi.setProcessor(VM_GETFIELD_DOUBLE, new GetFieldDoubleProcessor());
+		vmi.setProcessor(VM_GETFIELD_REFERENCE, new GetFieldReferenceProcessor());
 		//</editor-fold>
 	}
 }

@@ -10,7 +10,6 @@ import dev.xdark.ssvm.thread.backtrace.StackFrame;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.JavaValue;
 import lombok.experimental.UtilityClass;
 
@@ -44,7 +43,7 @@ public class StackTraceElementNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(stackTraceElement, "isHashedInJavaBase", "(Ljava/lang/Module;)Z", ctx -> {
-			ctx.setResult(IntValue.ZERO);
+			ctx.setResult(0);
 			return Result.ABORT;
 		});
 	}

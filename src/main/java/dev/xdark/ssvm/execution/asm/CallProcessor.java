@@ -1,7 +1,6 @@
 package dev.xdark.ssvm.execution.asm;
 
 import dev.xdark.ssvm.execution.InstructionProcessor;
-import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.tree.MethodInsnNode;
 
 /**

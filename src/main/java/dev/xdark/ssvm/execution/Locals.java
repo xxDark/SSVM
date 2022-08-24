@@ -1,7 +1,6 @@
 package dev.xdark.ssvm.execution;
 
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
 
 /**
  * Storage for local variables.

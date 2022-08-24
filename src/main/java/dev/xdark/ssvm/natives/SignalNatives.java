@@ -5,8 +5,6 @@ import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.LongValue;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -31,7 +29,7 @@ public class SignalNatives {
 		// TODO: implement this?
 		VMInterface vmi = vm.getInterface();
 		MethodInvoker findSignal = ctx -> {
-			ctx.setResult(IntValue.ZERO);
+			ctx.setResult(0);
 			return Result.ABORT;
 		};
 		if (!vmi.setInvoker(signal, "findSignal0", "(Ljava/lang/String;)I", findSignal)) {
@@ -40,7 +38,7 @@ public class SignalNatives {
 			}
 		}
 		vmi.setInvoker(signal, "handle0", "(IJ)J", ctx -> {
-			ctx.setResult(LongValue.ZERO);
+			ctx.setResult(0L);
 			return Result.ABORT;
 		});
 	}

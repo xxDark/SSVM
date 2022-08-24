@@ -36,7 +36,7 @@ public class AccessControllerNatives {
 			JavaMethod method = vm.getPublicLinkResolver().resolveVirtualMethod(action, "run", "()Ljava/lang/Object;");
 			Locals locals = vm.getThreadStorage().newLocals(method);
 			locals.setReference(0, action);
-			ctx.setResult(helper.invoke(method, locals).getResult());
+			helper.invoke(method, locals, ctx.getResult());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(accController, "doPrivileged", "(Ljava/security/PrivilegedExceptionAction;)Ljava/lang/Object;", ctx -> {
@@ -46,7 +46,7 @@ public class AccessControllerNatives {
 			JavaMethod method = vm.getPublicLinkResolver().resolveVirtualMethod(action, "run", "()Ljava/lang/Object;");
 			Locals locals = vm.getThreadStorage().newLocals(method);
 			locals.setReference(0, action);
-			ctx.setResult(helper.invoke(method, locals).getResult());
+			helper.invoke(method, locals, ctx.getResult());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(accController, "doPrivileged", "(Ljava/security/PrivilegedExceptionAction;Ljava/security/AccessControlContext;)Ljava/lang/Object;", ctx -> {
@@ -56,7 +56,7 @@ public class AccessControllerNatives {
 			JavaMethod method = vm.getPublicLinkResolver().resolveVirtualMethod(action, "run", "()Ljava/lang/Object;");
 			Locals locals = vm.getThreadStorage().newLocals(method);
 			locals.setReference(0, action);
-			ctx.setResult(helper.invoke(method, locals).getResult());
+			helper.invoke(method, locals, ctx.getResult());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(accController, "doPrivileged", "(Ljava/security/PrivilegedAction;Ljava/security/AccessControlContext;)Ljava/lang/Object;", ctx -> {
@@ -66,7 +66,7 @@ public class AccessControllerNatives {
 			JavaMethod method = vm.getPublicLinkResolver().resolveVirtualMethod(action, "run", "()Ljava/lang/Object;");
 			Locals locals = vm.getThreadStorage().newLocals(method);
 			locals.setReference(0, action);
-			ctx.setResult(helper.invoke(method, locals).getResult());
+			helper.invoke(method, locals, ctx.getResult());
 			return Result.ABORT;
 		});
 	}

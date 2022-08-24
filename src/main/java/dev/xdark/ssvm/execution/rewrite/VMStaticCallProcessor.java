@@ -13,7 +13,7 @@ import org.objectweb.asm.tree.MethodInsnNode;
  */
 public class VMStaticCallProcessor extends AbstractVMCallProcessor {
 	@Override
-	protected JavaMethod resolveMethod(VMCallInsnNode insn, ExecutionContext ctx) {
+	protected JavaMethod resolveMethod(VMCallInsnNode insn, ExecutionContext<?> ctx) {
 		MethodInsnNode callInfo = insn.getDelegate();
 		InstanceJavaClass klass = (InstanceJavaClass) ctx.getHelper().tryFindClass(ctx.getClassLoader(), callInfo.owner, true);
 		JavaMethod method = ctx.getLinkResolver().resolveStaticMethod(klass, callInfo.name, callInfo.desc);

@@ -2,13 +2,14 @@ package dev.xdark.ssvm.execution;
 
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
+import dev.xdark.ssvm.value.sink.ValueSink;
 
 /**
  * Method execution stack.
  *
  * @author xDark
  */
-public interface Stack {
+public interface Stack extends ValueSink {
 
 	/**
 	 * @param value Value to push.

@@ -12,8 +12,6 @@ import dev.xdark.ssvm.nt.NativeLibraryManager;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.LongValue;
 import lombok.experimental.UtilityClass;
 
 import java.util.function.Predicate;
@@ -62,7 +60,7 @@ public class NativeLibraryNatives {
 			findEntryClass = librariesClass;
 			findBuiltinLibClass = librariesClass;
 			MethodInvoker doLoad = ctx -> {
-				ctx.setResult(load.test(ctx) ? IntValue.ONE : IntValue.ZERO);
+				ctx.setResult(load.test(ctx) ? 1 : 0);
 				return Result.ABORT;
 			};
 			if (!vmi.setInvoker(librariesClass, "load", "(Ljdk/internal/loader/NativeLibraries$NativeLibraryImpl;Ljava/lang/String;Z)Z", doLoad)) {
@@ -88,7 +86,7 @@ public class NativeLibraryNatives {
 				return Result.ABORT;
 			})) {
 				MethodInvoker newInvoker = ctx -> {
-					ctx.setResult(load.test(ctx) ? IntValue.ONE : IntValue.ZERO);
+					ctx.setResult(load.test(ctx) ? 1 : 0);
 					return Result.ABORT;
 				};
 				if (!vmi.setInvoker(libraryClass, "load0", "(Ljava/lang/String;Z)Z", newInvoker)) {
@@ -105,7 +103,7 @@ public class NativeLibraryNatives {
 			InstanceValue _this = ctx.getLocals().loadReference(0);
 			long handle = vm.getPublicOperations().getLong(_this, _this.getJavaClass(), "handle");
 			NativeLibraryManager mgr = vm.getNativeLibraryManager();
-			ctx.setResult(LongValue.of(mgr.find(handle, helper.readUtf8(ctx.getLocals().loadReference(1)))));
+			ctx.setResult(mgr.find(handle, helper.readUtf8(ctx.getLocals().loadReference(1))));
 			return Result.ABORT;
 		};
 		if (!vmi.setInvoker(findEntryClass, "find", "(Ljava/lang/String;)J", find)) {

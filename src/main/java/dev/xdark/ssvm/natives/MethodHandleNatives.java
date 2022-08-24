@@ -16,6 +16,7 @@ import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.*;
+import dev.xdark.ssvm.value.sink.ReferenceValueSink;
 import lombok.experimental.UtilityClass;
 
 import static org.objectweb.asm.Opcodes.*;
@@ -60,7 +61,7 @@ public class MethodHandleNatives {
 			}
 		}
 		vmi.setInvoker(natives, "getConstant", "(I)I", ctx -> {
-			ctx.setResult(IntValue.ZERO);
+			ctx.setResult(0);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(natives, "init", "(Ljava/lang/invoke/MemberName;Ljava/lang/Object;)V", ctx -> {
@@ -96,7 +97,7 @@ public class MethodHandleNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(natives, "getMembers", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Class;I[Ljava/lang/invoke/MemberName;)I", ctx -> {
-			ctx.setResult(IntValue.ZERO);
+			ctx.setResult(0);
 			return Result.ABORT;
 		});
 
@@ -123,7 +124,7 @@ public class MethodHandleNatives {
 			if ("<init>".equals(name)) {
 				helper.throwException(symbols.java_lang_InternalError(), "Bad name " + name);
 			}
-			ExecutionContext last = vm.currentThread().getBacktrace().last().getExecutionContext();
+			ExecutionContext<?> last = vm.currentThread().getBacktrace().last().getExecutionContext();
 			JavaMethod callerMethod = last.getMethod();
 			String callName = callerMethod.getName();
 			if ("invoke".equals(callName)) {
@@ -136,7 +137,7 @@ public class MethodHandleNatives {
 				Locals table = vm.getThreadStorage().newLocals(asType);
 				table.setReference(0, _this);
 				table.setReference(1, mt);
-				_this = (InstanceValue) helper.invoke(asType, table).getResult();
+				_this = (InstanceValue) helper.invokeReference(asType, table);
 				// Re-read method target
 				form = helper.checkNotNull(ops.getReference(_this, "form", "Ljava/lang/invoke/LambdaForm;"));
 				vmentry = helper.checkNotNull(ops.getReference(form, "vmentry", "Ljava/lang/invoke/MemberName;"));
@@ -154,8 +155,7 @@ public class MethodHandleNatives {
 			Locals table = vm.getThreadStorage().newLocals(vmtarget);
 			table.copyFrom(locals, 0, 0, locals.maxSlots());
 			table.setReference(0, _this);
-			Value result = helper.invoke(vmtarget, table).getResult();
-			ctx.setResult(result);
+			helper.invoke(vmtarget, table, ctx.getResult());
 			return Result.ABORT;
 		};
 		vmi.setInvoker(mh, "invoke", "([Ljava/lang/Object;)Ljava/lang/Object;", invoke);
@@ -182,9 +182,7 @@ public class MethodHandleNatives {
 			}
 			Locals newLocals = vm.getThreadStorage().newLocals(vmtarget.getMaxLocals());
 			newLocals.copyFrom(locals, 0, 0, locals.maxSlots() - 1);
-			Value result = helper.invoke(vmtarget, newLocals).getResult();
-
-			ctx.setResult(result);
+			helper.invoke(vmtarget, newLocals, ctx.getResult());
 			return Result.ABORT;
 		};
 
@@ -199,7 +197,7 @@ public class MethodHandleNatives {
 		// TODO impl getMemberVMInfo
 		InstanceJavaClass memberName = symbols.java_lang_invoke_MemberName();
 		vmi.setInvoker(memberName, "vminfoIsConsistent", "()Z", ctx -> {
-			ctx.setResult(IntValue.ONE);
+			ctx.setResult(1);
 			return Result.ABORT;
 		});
 	}
@@ -276,7 +274,7 @@ public class MethodHandleNatives {
 		JavaField field = helper.getFieldBySlot(clazz, slot);
 		ops.putReference(memberName, "clazz", "Ljava/lang/Class;", clazz.getOop());
 		ops.putReference(memberName, "name", "Ljava/lang/String;", vm.getStringPool().intern(field.getName()));
-		InstanceValue mt = helper.findClass(clazz.getClassLoader(), field.getType().getInternalName(), false).getOop();
+		InstanceValue mt = field.getType().getOop();
 		ops.putReference(memberName, "type", "Ljava/lang/Object;", mt);
 		int refKind;
 		if ((field.getAccess() & ACC_STATIC) == 0) {
@@ -293,7 +291,7 @@ public class MethodHandleNatives {
 		JavaMethod method = vm.getPublicLinkResolver().resolveVirtualMethod(methodType, "toMethodDescriptorString", "()Ljava/lang/String;");
 		Locals locals = vm.getThreadStorage().newLocals(method);
 		locals.setReference(0, methodType);
-		String desc = helper.readUtf8(helper.invoke(method, locals).getResult());
+		String desc = helper.readUtf8(helper.invokeReference(method, locals));
 		JavaMethod handle;
 		switch (refKind) {
 			case REF_invokeStatic:

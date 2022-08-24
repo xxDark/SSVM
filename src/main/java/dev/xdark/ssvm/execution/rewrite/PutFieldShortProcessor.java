@@ -18,7 +18,7 @@ import org.objectweb.asm.tree.FieldInsnNode;
 public final class PutFieldShortProcessor implements InstructionProcessor<VMFieldInsnNode> {
 
 	@Override
-	public Result execute(VMFieldInsnNode insn, ExecutionContext ctx) {
+	public Result execute(VMFieldInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
 		short value = stack.popShort();
 		InstanceValue instance = ctx.getHelper().checkNotNull(stack.popReference());

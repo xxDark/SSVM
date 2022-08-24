@@ -22,7 +22,7 @@ public final class ConstantDoubleProcessor implements InstructionProcessor<Abstr
 	}
 
 	@Override
-	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
+	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		ctx.getStack().pushDouble(cst);
 		return Result.CONTINUE;
 	}

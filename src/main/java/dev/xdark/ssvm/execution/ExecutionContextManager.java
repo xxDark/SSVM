@@ -1,5 +1,7 @@
 package dev.xdark.ssvm.execution;
 
+import dev.xdark.ssvm.value.sink.ValueSink;
+
 /**
  * Responsible for managing of {@link ExecutionContext}.
  *
@@ -13,5 +15,5 @@ public interface ExecutionContextManager {
 	 * @param request execution request.
 	 * @return new execution context.
 	 */
-	ExecutionContext createContext(ExecutionRequest request);
+	<R extends ValueSink> ExecutionContext<R> createContext(ExecutionRequest<R> request);
 }

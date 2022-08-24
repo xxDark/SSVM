@@ -141,4 +141,9 @@ public interface JavaClass {
 	 * if class is not an array.
 	 */
 	JavaClass getComponentType();
+
+	/**
+	 * @return ASM sort type.
+	 */
+	int getSort();
 }

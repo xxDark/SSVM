@@ -5,8 +5,6 @@ import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 
@@ -25,13 +23,13 @@ public class ReferenceNatives {
 		VMInterface vmi = vm.getInterface();
 		InstanceJavaClass jc = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ref/Reference");
 		vmi.setInvoker(jc, "clear0", "()V", ctx -> {
-			ctx.getLocals().<InstanceValue>loadReference(0).setValue("referent", "Ljava/lang/Object;", vm.getMemoryManager().nullValue());
+			vm.getPublicOperations().putReference((ObjectValue) ctx.getLocals().loadReference(0), "referent", "Ljava/lang/Object;", vm.getMemoryManager().nullValue());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "refersTo0", "(Ljava/lang/Object;)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			ObjectValue check = locals.<InstanceValue>loadReference(0).getValue("referent", "Ljava/lang/Object;");
-			ctx.setResult(check == locals.loadReference(1) ? IntValue.ONE : IntValue.ZERO);
+			ObjectValue check = vm.getPublicOperations().getReference((ObjectValue) ctx.getLocals().loadReference(0), "referent", "Ljava/lang/Object;");
+			ctx.setResult(check == locals.loadReference(1) ? 1 : 0);
 			return Result.ABORT;
 		});
 	}

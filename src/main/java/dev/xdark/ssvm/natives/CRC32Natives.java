@@ -8,7 +8,6 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.util.CrcUtil;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
-import dev.xdark.ssvm.value.IntValue;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -35,7 +34,7 @@ public class CRC32Natives {
 			for (int x = off + len; off < x; off++) {
 				crc = CrcUtil.update(crc, bytes.getByte(off));
 			}
-			ctx.setResult(IntValue.of(crc));
+			ctx.setResult(crc);
 			return Result.ABORT;
 		});
 	}

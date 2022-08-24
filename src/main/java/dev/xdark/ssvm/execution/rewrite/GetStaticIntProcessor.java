@@ -16,7 +16,7 @@ import dev.xdark.ssvm.mirror.JavaField;
 public final class GetStaticIntProcessor implements InstructionProcessor<VMFieldInsnNode> {
 
 	@Override
-	public Result execute(VMFieldInsnNode insn, ExecutionContext ctx) {
+	public Result execute(VMFieldInsnNode insn, ExecutionContext<?> ctx) {
 		JavaField field = insn.getResolved();
 		InstanceJavaClass klass = field.getOwner();
 		MemoryManager memory = ctx.getMemoryManager();

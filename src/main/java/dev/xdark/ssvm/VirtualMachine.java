@@ -18,13 +18,13 @@ import dev.xdark.ssvm.fs.FileDescriptorManager;
 import dev.xdark.ssvm.fs.SimpleFileDescriptorManager;
 import dev.xdark.ssvm.jvm.ManagementInterface;
 import dev.xdark.ssvm.jvm.SimpleManagementInterface;
+import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
+import dev.xdark.ssvm.memory.allocation.NavigableMemoryAllocator;
 import dev.xdark.ssvm.memory.gc.GarbageCollector;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.memory.management.SimpleMemoryManager;
 import dev.xdark.ssvm.memory.management.SimpleStringPool;
 import dev.xdark.ssvm.memory.management.StringPool;
-import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
-import dev.xdark.ssvm.memory.allocation.NavigableMemoryAllocator;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
@@ -39,10 +39,10 @@ import dev.xdark.ssvm.symbol.UninitializedVMPrimitives;
 import dev.xdark.ssvm.symbol.UninitializedVMSymbols;
 import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.symbol.VMSymbols;
-import dev.xdark.ssvm.thread.nop.NopThreadManager;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.thread.VMThread;
+import dev.xdark.ssvm.thread.nop.NopThreadManager;
 import dev.xdark.ssvm.tz.SimpleTimeManager;
 import dev.xdark.ssvm.tz.TimeManager;
 import dev.xdark.ssvm.util.DefaultVMOperations;
@@ -279,7 +279,7 @@ public class VirtualMachine {
 						Locals locals = ts.newLocals(initPhase2);
 						locals.setInt(0, 1);
 						locals.setInt(1, 1);
-						result = helper.invoke(initPhase2, locals).getResult().asInt();
+						result = helper.invokeInt(initPhase2, locals);
 					}
 					if (result != 0) {
 						throw new IllegalStateException("VM bootstrapping failed, initPhase2 returned " + result);
@@ -642,7 +642,7 @@ public class VirtualMachine {
 				locals.setReference(0, loader);
 				locals.setReference(1, helper.newUtf8(name.replace('/', '.')));
 				locals.setInt(2, initialize ? 1 : 0);
-				jc = ((JavaValue<JavaClass>) helper.invoke(method, locals).getResult()).getValue();
+				jc = ((JavaValue<JavaClass>) helper.invokeReference(method, locals)).getValue();
 			} else if (initialize) {
 				jc.initialize();
 			}

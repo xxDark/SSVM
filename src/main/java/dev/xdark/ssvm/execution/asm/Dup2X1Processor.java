@@ -14,7 +14,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 public final class Dup2X1Processor implements InstructionProcessor<AbstractInsnNode> {
 
 	@Override
-	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
+	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		ctx.getStack().dup2x1();
 		return Result.CONTINUE;
 	}

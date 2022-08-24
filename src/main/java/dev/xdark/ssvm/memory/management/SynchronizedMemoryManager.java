@@ -99,9 +99,9 @@ public class SynchronizedMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public ObjectValue readValue(ObjectValue object, long offset) {
+	public ObjectValue readReference(ObjectValue object, long offset) {
 		synchronized (mutex) {
-			return memoryManager.readValue(object, offset);
+			return memoryManager.readReference(object, offset);
 		}
 	}
 

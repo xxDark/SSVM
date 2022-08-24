@@ -12,7 +12,6 @@ import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
 import org.objectweb.asm.Type;
 
@@ -59,7 +58,7 @@ public class ConstructorAccessorNatives {
 			Locals args = vm.getThreadStorage().newLocals(mn);
 			args.setReference(0, instance);
 			if (passedArgs != null) {
-				Util.convertReflectionArgs(vm, types, passedArgs, args, 0);
+				Util.copyReflectionArguments(vm, types, passedArgs, args, 0);
 			}
 			helper.invoke(mn, args);
 			ctx.setResult(instance);

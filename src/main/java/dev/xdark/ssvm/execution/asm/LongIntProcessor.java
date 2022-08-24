@@ -24,7 +24,7 @@ public final class LongIntProcessor implements InstructionProcessor<AbstractInsn
 	}
 
 	@Override
-	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
+	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
 		int v2 = stack.popInt();
 		long v1 = stack.popLong();

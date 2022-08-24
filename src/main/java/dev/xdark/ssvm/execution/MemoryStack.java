@@ -267,6 +267,31 @@ public final class MemoryStack implements Stack, Disposable {
 	}
 
 	@Override
+	public void acceptReference(ObjectValue value) {
+		pushReference(value);
+	}
+
+	@Override
+	public void acceptLong(long value) {
+		pushLong(value);
+	}
+
+	@Override
+	public void acceptDouble(double value) {
+		pushDouble(value);
+	}
+
+	@Override
+	public void acceptInt(int value) {
+		pushInt(value);
+	}
+
+	@Override
+	public void acceptFloat(float value) {
+		pushFloat(value);
+	}
+
+	@Override
 	public void dispose() {
 		threadMemoryData.reclaim();
 	}

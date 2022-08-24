@@ -1,5 +1,7 @@
 package dev.xdark.ssvm.execution;
 
+import dev.xdark.ssvm.value.sink.ValueSink;
+
 /**
  * Delegating execution engine.
  *
@@ -17,12 +19,12 @@ public class DelegatingExecutionEngine implements ExecutionEngine {
 	}
 
 	@Override
-	public void execute(ExecutionContext ctx) {
+	public void execute(ExecutionContext<?> ctx) {
 		delegate.execute(ctx);
 	}
 
 	@Override
-	public ExecutionContext createContext(ExecutionRequest request) {
+	public <R extends ValueSink> ExecutionContext<R> createContext(ExecutionRequest<R> request) {
 		return delegate.createContext(request);
 	}
 

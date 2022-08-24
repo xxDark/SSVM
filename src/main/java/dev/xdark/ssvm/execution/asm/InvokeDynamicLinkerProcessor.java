@@ -4,7 +4,6 @@ import dev.xdark.ssvm.asm.LinkedDynamicCallNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.execution.SafePoint;
 import dev.xdark.ssvm.value.InstanceValue;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
@@ -17,7 +16,7 @@ import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 public final class InvokeDynamicLinkerProcessor implements InstructionProcessor<InvokeDynamicInsnNode> {
 
 	@Override
-	public Result execute(InvokeDynamicInsnNode insn, ExecutionContext ctx) {
+	public Result execute(InvokeDynamicInsnNode insn, ExecutionContext<?> ctx) {
 		InstanceValue linked = ctx.getInvokeDynamicLinker().linkCall(insn, ctx.getOwner());
 		ctx.getGarbageCollector().makeGlobalReference(linked);
 		// Rewrite instruction

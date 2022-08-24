@@ -5,7 +5,6 @@ import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.value.LongValue;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -38,7 +37,7 @@ public class VMNatives {
 		InstanceJavaClass win32ErrorMode = (InstanceJavaClass) vm.findBootstrapClass("sun/io/Win32ErrorMode");
 		if (win32ErrorMode != null) {
 			vmi.setInvoker(win32ErrorMode, "setErrorMode", "(J)J", ctx -> {
-				ctx.setResult(LongValue.ZERO);
+				ctx.setResult(0L);
 				return Result.ABORT;
 			});
 		}

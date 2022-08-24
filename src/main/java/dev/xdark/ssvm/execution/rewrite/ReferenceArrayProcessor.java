@@ -14,7 +14,7 @@ import dev.xdark.ssvm.execution.Stack;
 public final class ReferenceArrayProcessor implements InstructionProcessor<VMTypeInsnNode> {
 
 	@Override
-	public Result execute(VMTypeInsnNode insn, ExecutionContext ctx) {
+	public Result execute(VMTypeInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
 		int length = stack.popInt();
 		stack.pushReference(ctx.getOperations().allocateArray(insn.getJavaType(), length));

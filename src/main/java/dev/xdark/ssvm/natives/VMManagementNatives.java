@@ -5,9 +5,8 @@ import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
-import dev.xdark.ssvm.value.LongValue;
+import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 
@@ -33,7 +32,7 @@ public class VMManagementNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "getStartupTime", "()J", ctx -> {
-			ctx.setResult(LongValue.of(vm.getManagementInterface().getStartupTime()));
+			ctx.setResult(vm.getManagementInterface().getStartupTime());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "getVmArguments0", "()[Ljava/lang/String;", ctx -> {

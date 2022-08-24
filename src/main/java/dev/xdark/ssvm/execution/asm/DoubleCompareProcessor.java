@@ -26,7 +26,7 @@ public final class DoubleCompareProcessor implements InstructionProcessor<Abstra
 	}
 
 	@Override
-	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
+	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
 		double v2 = stack.popDouble();
 		double v1 = stack.popDouble();

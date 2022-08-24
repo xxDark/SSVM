@@ -3,7 +3,6 @@ package dev.xdark.ssvm.util;
 import dev.xdark.ssvm.LinkResolver;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.VMException;
-import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
@@ -11,13 +10,8 @@ import dev.xdark.ssvm.mirror.JavaField;
 import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
-import dev.xdark.ssvm.value.DoubleValue;
-import dev.xdark.ssvm.value.FloatValue;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.LongValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
 
 /**
  * Some VM operations implementations.
@@ -230,17 +224,6 @@ public final class DefaultVMOperations implements VMOperations {
 
 	//<editor-fold desc="Virtual field put methods">
 	@Override
-	public void putGeneric(ObjectValue instance, InstanceJavaClass klass, String name, String desc, Value value) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
-		writeGenericValue(instance, desc, value, offset);
-	}
-
-	@Override
-	public void putGeneric(ObjectValue instance, String name, String desc, Value value) {
-		putGeneric(instance, helper.<InstanceValue>checkNotNull(instance).getJavaClass(), name, desc, value);
-	}
-
-	@Override
 	public void putReference(ObjectValue instance, InstanceJavaClass klass, String name, String desc, ObjectValue value) {
 		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
 		memoryManager.writeValue(instance, offset, value);
@@ -342,20 +325,9 @@ public final class DefaultVMOperations implements VMOperations {
 
 	//<editor-fold desc="Virtual field get methods">
 	@Override
-	public Value getGeneric(ObjectValue instance, InstanceJavaClass klass, String name, String desc) {
-		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
-		return readGenericValue((InstanceValue) instance, desc, offset);
-	}
-
-	@Override
-	public Value getGeneric(ObjectValue instance, String name, String desc) {
-		return getGeneric(instance, helper.<InstanceValue>checkNotNull(instance).getJavaClass(), name, desc);
-	}
-
-	@Override
 	public ObjectValue getReference(ObjectValue instance, InstanceJavaClass klass, String name, String desc) {
 		long offset = getFieldOffsetForInstance(instance, klass, name, desc);
-		return memoryManager.readValue(instance, offset);
+		return memoryManager.readReference(instance, offset);
 	}
 
 	@Override
@@ -450,13 +422,6 @@ public final class DefaultVMOperations implements VMOperations {
 	public boolean getBoolean(ObjectValue instance, String name) {
 		return getBoolean(instance, helper.<InstanceValue>checkNotNull(instance).getJavaClass(), name);
 	}
-
-	@Override
-	public Value getGeneric(InstanceJavaClass klass, String name, String desc) {
-		JavaField field = linkResolver.resolveStaticField(klass, name, desc);
-		klass = field.getOwner();
-		return readGenericValue(klass.getOop(), desc, field.getOffset() + memoryManager.getStaticOffset(klass));
-	}
 	//</editor-fold>
 
 	//<editor-fold desc="Static field get methods">
@@ -465,7 +430,7 @@ public final class DefaultVMOperations implements VMOperations {
 		JavaField field = linkResolver.resolveStaticField(klass, name, desc);
 		klass = field.getOwner();
 		MemoryManager memoryManager = this.memoryManager;
-		return memoryManager.readValue(klass.getOop(), field.getOffset() + memoryManager.getStaticOffset(klass));
+		return memoryManager.readReference(klass.getOop(), field.getOffset() + memoryManager.getStaticOffset(klass));
 	}
 
 	@Override
@@ -526,13 +491,6 @@ public final class DefaultVMOperations implements VMOperations {
 	//</editor-fold>
 
 	//<editor-fold desc="Static field put methods">
-
-	@Override
-	public void putGeneric(InstanceJavaClass klass, String name, String desc, Value value) {
-		JavaField field = linkResolver.resolveStaticField(klass, name, desc);
-		klass = field.getOwner();
-		writeGenericValue(klass.getOop(), desc, value, field.getOffset() + memoryManager.getStaticOffset(field.getOwner()));
-	}
 
 	@Override
 	public void putReference(InstanceJavaClass klass, String name, String desc, ObjectValue value) {
@@ -597,72 +555,6 @@ public final class DefaultVMOperations implements VMOperations {
 		JavaField field = linkResolver.resolveStaticField(klass, name, "Z");
 		klass = field.getOwner();
 		klass.getOop().getData().writeByte(field.getOffset() + memoryManager.getStaticOffset(klass), (byte) (value ? 1 : 0));
-	}
-	//</editor-fold>
-
-	//<editor-fold desc="Generic read/write helpers">
-
-	@Override
-	public Value readGenericValue(InstanceValue instance, String desc, long offset) {
-		MemoryData data = instance.getData();
-		MemoryManager manager = this.memoryManager;
-		Value value;
-		switch (desc.charAt(0)) {
-			case 'J':
-				value = LongValue.of(data.readLong(offset));
-				break;
-			case 'D':
-				value = new DoubleValue(Double.longBitsToDouble(data.readLong(offset)));
-				break;
-			case 'I':
-				value = IntValue.of(data.readInt(offset));
-				break;
-			case 'F':
-				value = new FloatValue(Float.intBitsToFloat(data.readInt(offset)));
-				break;
-			case 'C':
-				value = IntValue.of(data.readChar(offset));
-				break;
-			case 'S':
-				value = IntValue.of(data.readShort(offset));
-				break;
-			case 'B':
-			case 'Z':
-				value = IntValue.of(data.readByte(offset));
-				break;
-			default:
-				value = manager.readValue(instance, offset);
-		}
-		return value;
-	}
-
-	@Override
-	public void writeGenericValue(ObjectValue instance, String desc, Value value, long offset) {
-		MemoryManager memoryManager = this.memoryManager;
-		MemoryData data = instance.getData();
-		switch (desc.charAt(0)) {
-			case 'J':
-			case 'D':
-				data.writeLong(offset, value.asLong());
-				break;
-			case 'I':
-			case 'F':
-				data.writeInt(offset, value.asInt());
-				break;
-			case 'C':
-				data.writeChar(offset, value.asChar());
-				break;
-			case 'S':
-				data.writeShort(offset, value.asShort());
-				break;
-			case 'B':
-			case 'Z':
-				data.writeByte(offset, value.asByte());
-				break;
-			default:
-				ObjectValue newValue = (ObjectValue) value;
-				memoryManager.writeValue(instance, offset, newValue);
-		}
 	}
 	//</editor-fold>
 

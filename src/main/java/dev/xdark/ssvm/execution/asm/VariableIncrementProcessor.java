@@ -14,7 +14,7 @@ import org.objectweb.asm.tree.IincInsnNode;
 public final class VariableIncrementProcessor implements InstructionProcessor<IincInsnNode> {
 
 	@Override
-	public Result execute(IincInsnNode insn, ExecutionContext ctx) {
+	public Result execute(IincInsnNode insn, ExecutionContext<?> ctx) {
 		Locals locals = ctx.getLocals();
 		int idx = insn.var;
 		locals.setInt(idx, locals.loadInt(idx) + insn.incr);

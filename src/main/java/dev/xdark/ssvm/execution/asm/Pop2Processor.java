@@ -14,7 +14,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 public final class Pop2Processor implements InstructionProcessor<AbstractInsnNode> {
 
 	@Override
-	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
+	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
 		stack.pop();
 		stack.pop();

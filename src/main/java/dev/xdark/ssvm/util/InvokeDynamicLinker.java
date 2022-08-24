@@ -17,7 +17,7 @@ import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
+import dev.xdark.ssvm.value.sink.ValueSink;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -132,9 +132,9 @@ public final class InvokeDynamicLinker {
 	 * @param stack   Stack to sink arguments from.
 	 * @param desc   Call descriptor.
 	 * @param handle Call site or method handle.
-	 * @return invocation result.
+	 * @param sink Result sink.
 	 */
-	public Value dynamicCall(Stack stack, String desc, InstanceValue handle) {
+	public void dynamicCall(Stack stack, String desc, InstanceValue handle, ValueSink sink) {
 		VirtualMachine vm = this.vm;
 		VMHelper helper = vm.getHelper();
 		LinkResolver linkResolver = vm.getPublicLinkResolver();
@@ -144,13 +144,13 @@ public final class InvokeDynamicLinker {
 			JavaMethod getTarget = linkResolver.resolveVirtualMethod(handle, "getTarget", "()Ljava/lang/invoke/MethodHandle;");
 			Locals locals = ts.newLocals(getTarget);
 			locals.setReference(0, handle);
-			handle = helper.checkNotNull(helper.invoke(getTarget, locals).getResult());
+			handle = helper.checkNotNull(helper.invokeReference(getTarget, locals));
 		}
 		JavaMethod invokeExact = linkResolver.resolveVirtualMethod(handle, "invokeExact", desc);
 		Locals locals = ts.newLocals(invokeExact);
 		locals.setReference(0, handle);
 		stack.sinkInto(locals, 1, invokeExact.getMaxArgs() - 1);
-		return helper.invoke(invokeExact, locals).getResult();
+		helper.invoke(invokeExact, locals, sink);
 	}
 
 	/**
@@ -318,6 +318,6 @@ public final class InvokeDynamicLinker {
 		if (cst instanceof Boolean) {
 			return helper.boxBoolean((Boolean) cst);
 		}
-		return (ObjectValue) helper.valueFromLdc(cst);
+		return (ObjectValue) helper.referenceFromLdc(cst);
 	}
 }

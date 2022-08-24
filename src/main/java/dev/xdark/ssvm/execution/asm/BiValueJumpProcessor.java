@@ -6,7 +6,6 @@ import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.tree.JumpInsnNode;
 
 import java.util.function.BiPredicate;
@@ -28,7 +27,7 @@ public final class BiValueJumpProcessor implements InstructionProcessor<JumpInsn
 	}
 
 	@Override
-	public Result execute(JumpInsnNode insn, ExecutionContext ctx) {
+	public Result execute(JumpInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
 		ObjectValue v2 = stack.popReference();
 		ObjectValue v1 = stack.popReference();

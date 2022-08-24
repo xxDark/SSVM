@@ -15,6 +15,7 @@ import me.coley.cafedude.classfile.ClassFile;
 import me.coley.cafedude.io.ClassFileReader;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -735,6 +736,11 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 			return this.allocationStatus = checkAllocationStatus();
 		}
 		return allocationStatus;
+	}
+
+	@Override
+	public int getSort() {
+		return Type.OBJECT;
 	}
 
 	@Override

@@ -17,7 +17,7 @@ import org.objectweb.asm.tree.MultiANewArrayInsnNode;
 public final class MultiNewArrayProcessor implements InstructionProcessor<MultiANewArrayInsnNode> {
 
 	@Override
-	public Result execute(MultiANewArrayInsnNode insn, ExecutionContext ctx) {
+	public Result execute(MultiANewArrayInsnNode insn, ExecutionContext<?> ctx) {
 		int dimensions = insn.dims;
 		VMHelper helper = ctx.getHelper();
 		JavaClass type = helper.tryFindClass(ctx.getClassLoader(), insn.desc, false);

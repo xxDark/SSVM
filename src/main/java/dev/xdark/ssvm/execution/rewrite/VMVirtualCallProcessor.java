@@ -15,7 +15,7 @@ import org.objectweb.asm.tree.MethodInsnNode;
  */
 public final class VMVirtualCallProcessor extends AbstractVMCallProcessor {
 	@Override
-	protected JavaMethod resolveMethod(VMCallInsnNode insn, ExecutionContext ctx) {
+	protected JavaMethod resolveMethod(VMCallInsnNode insn, ExecutionContext<?> ctx) {
 		MethodInsnNode callInfo = insn.getDelegate();
 		int args = insn.getArgCount();
 		VirtualMachine vm = ctx.getVM();

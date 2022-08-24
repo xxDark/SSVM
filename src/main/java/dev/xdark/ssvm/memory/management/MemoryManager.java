@@ -102,7 +102,7 @@ public interface MemoryManager extends ReferenceMap {
 	 * @return read VM value.
 	 * @throws IllegalStateException if {@code offset} is negative.
 	 */
-	ObjectValue readValue(ObjectValue object, long offset);
+	ObjectValue readReference(ObjectValue object, long offset);
 
 	/**
 	 * Reads object class form an object.

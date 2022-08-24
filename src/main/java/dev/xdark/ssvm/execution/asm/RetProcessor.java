@@ -13,7 +13,7 @@ import org.objectweb.asm.tree.VarInsnNode;
 public final class RetProcessor implements InstructionProcessor<VarInsnNode> {
 
 	@Override
-	public Result execute(VarInsnNode insn, ExecutionContext ctx) {
+	public Result execute(VarInsnNode insn, ExecutionContext<?> ctx) {
 		ctx.setInsnPosition(ctx.getLocals().loadInt(insn.var));
 		return Result.CONTINUE;
 	}

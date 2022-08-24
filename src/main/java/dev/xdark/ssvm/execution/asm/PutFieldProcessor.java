@@ -24,7 +24,7 @@ import static org.objectweb.asm.Type.ARRAY;
 public final class PutFieldProcessor implements InstructionProcessor<FieldInsnNode> {
 
 	@Override
-	public Result execute(FieldInsnNode insn, ExecutionContext ctx) {
+	public Result execute(FieldInsnNode insn, ExecutionContext<?> ctx) {
 		if (AsmUtil.isValid(insn)) {
 			InstanceJavaClass klass = (InstanceJavaClass) ctx.getHelper().tryFindClass(ctx.getClassLoader(), insn.owner, true);
 			JavaField field;

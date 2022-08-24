@@ -43,12 +43,12 @@ public class ProcessEnvironmentNatives {
 				{
 					Locals locals = ts.newLocals(getBytes);
 					locals.setReference(0, key);
-					keyBytes = (ArrayValue) helper.invoke(getBytes, locals).getResult();
+					keyBytes = (ArrayValue) helper.invokeReference(getBytes, locals);
 				}
 				{
 					Locals locals = ts.newLocals(getBytes);
 					locals.setReference(0, value);
-					valueBytes = (ArrayValue) helper.invoke(getBytes, locals).getResult();
+					valueBytes = (ArrayValue) helper.invokeReference(getBytes, locals);
 				}
 				array.setReference(idx++, keyBytes);
 				array.setReference(idx++, valueBytes);

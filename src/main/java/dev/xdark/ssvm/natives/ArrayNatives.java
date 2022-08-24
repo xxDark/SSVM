@@ -6,13 +6,11 @@ import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
-import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ArrayValue;
-import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -31,9 +29,9 @@ public class ArrayNatives {
 		VMSymbols symbols = vm.getSymbols();
 		InstanceJavaClass array = symbols.java_lang_reflect_Array();
 		vmi.setInvoker(array, "getLength", "(Ljava/lang/Object;)I", ctx -> {
-			Value value = ctx.getLocals().loadReference(0);
+			ObjectValue value = ctx.getLocals().loadReference(0);
 			vm.getHelper().checkNotNull(value);
-			ctx.setResult(IntValue.of(((ArrayValue) value).getLength()));
+			ctx.setResult(((ArrayValue) value).getLength());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(array, "newArray", "(Ljava/lang/Class;I)Ljava/lang/Object;", ctx -> {

@@ -15,7 +15,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 public final class StoreArrayByteProcessor implements InstructionProcessor<AbstractInsnNode> {
 
 	@Override
-	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
+	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
 		byte value = stack.popByte();
 		int index = stack.popInt();

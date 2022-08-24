@@ -33,7 +33,7 @@ public class SimpleInstanceValue extends SimpleObjectValue implements InstanceVa
 
 	@Override
 	public ObjectValue getValue(String field, String desc) {
-		return getMemoryManager().readValue(this, getFieldOffset(field, desc));
+		return getMemoryManager().readReference(this, getFieldOffset(field, desc));
 	}
 
 	@Override

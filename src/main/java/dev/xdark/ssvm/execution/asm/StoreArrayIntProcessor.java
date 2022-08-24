@@ -15,7 +15,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 public final class StoreArrayIntProcessor implements InstructionProcessor<AbstractInsnNode> {
 
 	@Override
-	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
+	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
 		int value = stack.popInt();
 		int index = stack.popInt();

@@ -18,7 +18,7 @@ import org.objectweb.asm.tree.FieldInsnNode;
 public final class PutFieldFloatProcessor implements InstructionProcessor<VMFieldInsnNode> {
 
 	@Override
-	public Result execute(VMFieldInsnNode insn, ExecutionContext ctx) {
+	public Result execute(VMFieldInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
 		float value = stack.popFloat();
 		InstanceValue instance = ctx.getHelper().checkNotNull(stack.popReference());

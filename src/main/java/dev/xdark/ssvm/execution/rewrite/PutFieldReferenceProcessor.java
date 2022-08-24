@@ -19,7 +19,7 @@ import org.objectweb.asm.tree.FieldInsnNode;
 public final class PutFieldReferenceProcessor implements InstructionProcessor<VMFieldInsnNode> {
 
 	@Override
-	public Result execute(VMFieldInsnNode insn, ExecutionContext ctx) {
+	public Result execute(VMFieldInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
 		ObjectValue value = stack.popReference();
 		InstanceValue instance = ctx.getHelper().checkNotNull(stack.popReference());

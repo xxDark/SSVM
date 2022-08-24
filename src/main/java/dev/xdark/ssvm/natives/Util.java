@@ -25,7 +25,7 @@ import java.io.IOException;
 @UtilityClass
 final class Util {
 
-	void convertReflectionArgs(VirtualMachine vm, Type[] argTypes, ArrayValue array, Locals locals, int offset) {
+	void copyReflectionArguments(VirtualMachine vm, Type[] argTypes, ArrayValue array, Locals locals, int offset) {
 		VMHelper helper = vm.getHelper();
 		for (int i = 0; i < argTypes.length; i++) {
 			Type type = argTypes[i];

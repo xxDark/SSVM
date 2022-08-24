@@ -13,7 +13,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 public final class NopProcessor implements InstructionProcessor<AbstractInsnNode> {
 
 	@Override
-	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
+	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		return Result.CONTINUE;
 	}
 }

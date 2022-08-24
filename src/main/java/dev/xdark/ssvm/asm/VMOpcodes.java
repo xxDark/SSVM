@@ -59,4 +59,13 @@ public class VMOpcodes {
 	public static final int VM_PUTFIELD_LONG = VM_PUTFIELD_FLOAT + 1;
 	public static final int VM_PUTFIELD_DOUBLE = VM_PUTFIELD_LONG + 1;
 	public static final int VM_PUTFIELD_REFERENCE = VM_PUTFIELD_DOUBLE + 1;
+	public static final int VM_GETFIELD_BOOLEAN = VM_PUTFIELD_REFERENCE + 1;
+	public static final int VM_GETFIELD_CHAR = VM_GETFIELD_BOOLEAN + 1;
+	public static final int VM_GETFIELD_BYTE = VM_GETFIELD_CHAR + 1;
+	public static final int VM_GETFIELD_SHORT = VM_GETFIELD_BYTE + 1;
+	public static final int VM_GETFIELD_INT = VM_GETFIELD_SHORT + 1;
+	public static final int VM_GETFIELD_FLOAT = VM_GETFIELD_INT + 1;
+	public static final int VM_GETFIELD_LONG = VM_GETFIELD_FLOAT + 1;
+	public static final int VM_GETFIELD_DOUBLE = VM_GETFIELD_LONG + 1;
+	public static final int VM_GETFIELD_REFERENCE = VM_GETFIELD_DOUBLE + 1;
 }

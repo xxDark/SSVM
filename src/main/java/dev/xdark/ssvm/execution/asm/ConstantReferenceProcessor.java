@@ -23,7 +23,7 @@ public final class ConstantReferenceProcessor implements InstructionProcessor<Ab
 	}
 
 	@Override
-	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
+	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		ctx.getStack().pushReference(cst);
 		return Result.CONTINUE;
 	}

@@ -11,8 +11,6 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
-import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.LongValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 
@@ -50,7 +48,7 @@ public class ZipFileNatives {
 				if (handle == 0L) {
 					helper.throwException(symbols.java_io_IOException(), zipPath);
 				}
-				ctx.setResult(LongValue.of(handle));
+				ctx.setResult(handle);
 			} catch (IOException ex) {
 				helper.throwException(symbols.java_io_IOException(), ex.getMessage());
 			}
@@ -61,7 +59,7 @@ public class ZipFileNatives {
 				if (zip == null) {
 					vm.getHelper().throwException(symbols.java_lang_IllegalStateException(), "zip closed");
 				}
-				ctx.setResult(IntValue.of(zip.getTotal()));
+				ctx.setResult(zip.getTotal());
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "startsWithLOC", "(J)Z", ctx -> {
@@ -69,7 +67,7 @@ public class ZipFileNatives {
 				if (zip == null) {
 					throw new PanicException("Segfault");
 				}
-				ctx.setResult(zip.startsWithLOC() ? IntValue.ONE : IntValue.ZERO);
+				ctx.setResult(zip.startsWithLOC() ? 1 : 0);
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntry", "(J[BZ)J", ctx -> {
@@ -87,10 +85,10 @@ public class ZipFileNatives {
 				}
 
 				if (entry == null) {
-					ctx.setResult(LongValue.ZERO);
+					ctx.setResult(0L);
 				} else {
 					long h = zip.makeHandle(entry);
-					ctx.setResult(LongValue.of(h));
+					ctx.setResult(h);
 				}
 				return Result.ABORT;
 			});
@@ -126,7 +124,7 @@ public class ZipFileNatives {
 				if (value == null) {
 					throw new PanicException("Segfault");
 				}
-				ctx.setResult(LongValue.of(value.getTime()));
+				ctx.setResult(value.getTime());
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntryCrc", "(J)J", ctx -> {
@@ -135,7 +133,7 @@ public class ZipFileNatives {
 				if (value == null) {
 					throw new PanicException("Segfault");
 				}
-				ctx.setResult(LongValue.of(value.getCrc()));
+				ctx.setResult(value.getCrc());
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntrySize", "(J)J", ctx -> {
@@ -144,7 +142,7 @@ public class ZipFileNatives {
 				if (value == null) {
 					throw new PanicException("Segfault");
 				}
-				ctx.setResult(LongValue.of(value.getSize()));
+				ctx.setResult(value.getSize());
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntryCSize", "(J)J", ctx -> {
@@ -153,7 +151,7 @@ public class ZipFileNatives {
 				if (value == null) {
 					throw new PanicException("Segfault");
 				}
-				ctx.setResult(LongValue.of(value.getSize()));
+				ctx.setResult(value.getSize());
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntryMethod", "(J)I", ctx -> {
@@ -162,12 +160,12 @@ public class ZipFileNatives {
 				if (value == null) {
 					throw new PanicException("Segfault");
 				}
-				ctx.setResult(IntValue.of(ZipEntry.STORED));
+				ctx.setResult(ZipEntry.STORED);
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getEntryFlag", "(J)I", ctx -> {
 				// TODO
-				ctx.setResult(IntValue.ZERO);
+				ctx.setResult(0);
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "freeEntry", "(JJ)V", ctx -> {
@@ -205,19 +203,19 @@ public class ZipFileNatives {
 				}
 				int start = (int) pos;
 				if (start >= read.length) {
-					ctx.setResult(IntValue.M_ONE);
+					ctx.setResult(-1);
 				} else {
 					int avail = read.length - start;
 					if (len > avail) {
 						len = avail;
 					}
 					if (len <= 0) {
-						ctx.setResult(IntValue.ZERO);
+						ctx.setResult(0);
 					} else {
 						int bytesStart = vm.getMemoryManager().arrayBaseOffset(byte.class);
 						bytes.getMemory().getData()
 							.write(bytesStart + off, read, start, len);
-						ctx.setResult(IntValue.of(len));
+						ctx.setResult(len);
 					}
 				}
 				return Result.ABORT;
@@ -234,7 +232,7 @@ public class ZipFileNatives {
 				if (entry == null) {
 					throw new PanicException("Segfault");
 				}
-				ctx.setResult(LongValue.of(zip.makeHandle(entry)));
+				ctx.setResult(zip.makeHandle(entry));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "getManifestNum", "(J)I", ctx -> {
@@ -250,7 +248,7 @@ public class ZipFileNatives {
 				if (count > Integer.MAX_VALUE) {
 					count = Integer.MAX_VALUE;
 				}
-				ctx.setResult(IntValue.of((int) count));
+				ctx.setResult((int) count);
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "close", "(J)V", ctx -> {

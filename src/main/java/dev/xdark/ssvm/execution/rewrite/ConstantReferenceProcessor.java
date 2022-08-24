@@ -13,7 +13,7 @@ import dev.xdark.ssvm.execution.Result;
 public final class ConstantReferenceProcessor implements InstructionProcessor<ConstantReferenceInsnNode> {
 
 	@Override
-	public Result execute(ConstantReferenceInsnNode insn, ExecutionContext ctx) {
+	public Result execute(ConstantReferenceInsnNode insn, ExecutionContext<?> ctx) {
 		ctx.getStack().pushReference(insn.getValue());
 		return Result.CONTINUE;
 	}

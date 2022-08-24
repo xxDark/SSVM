@@ -13,7 +13,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
  */
 public class IntDivisionProcessor implements InstructionProcessor<AbstractInsnNode> {
 	@Override
-	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
+	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
 		int v2 = stack.popInt();
 		if (v2 == 0) {

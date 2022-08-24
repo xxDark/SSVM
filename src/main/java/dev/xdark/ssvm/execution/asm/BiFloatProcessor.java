@@ -24,7 +24,7 @@ public final class BiFloatProcessor implements InstructionProcessor<AbstractInsn
 	}
 
 	@Override
-	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
+	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
 		float v2 = stack.popFloat();
 		float v1 = stack.popFloat();

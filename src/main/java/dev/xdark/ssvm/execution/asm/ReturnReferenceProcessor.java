@@ -10,10 +10,10 @@ import org.objectweb.asm.tree.AbstractInsnNode;
  *
  * @author xDark
  */
-public final class ReturnValueProcessor implements InstructionProcessor<AbstractInsnNode> {
+public final class ReturnReferenceProcessor implements InstructionProcessor<AbstractInsnNode> {
 
 	@Override
-	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
+	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		ctx.setResult(ctx.getStack().popReference());
 		return Result.ABORT;
 	}

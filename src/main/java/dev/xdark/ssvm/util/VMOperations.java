@@ -5,7 +5,6 @@ import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
 
 /**
  * VM operations.
@@ -322,31 +321,6 @@ public interface VMOperations {
 	void throwException(ObjectValue value);
 
 	/**
-	 * Sets generic value into an instance.
-	 * Throws VM exception if field was not found,
-	 * or an instance is {@code null}.
-	 *
-	 * @param instance Instance to set value in.
-	 * @param klass    Field base class.
-	 * @param name     Field name.
-	 * @param desc     Field descriptor.
-	 * @param value    Value to set.
-	 */
-	void putGeneric(ObjectValue instance, InstanceJavaClass klass, String name, String desc, Value value);
-
-	/**
-	 * Sets generic value into an instance.
-	 * Throws VM exception if field was not found,
-	 * or an instance is {@code null}.
-	 *
-	 * @param instance Instance to set value in.
-	 * @param name     Field name.
-	 * @param desc     Field descriptor.
-	 * @param value    Value to set.
-	 */
-	void putGeneric(ObjectValue instance, String name, String desc, Value value);
-
-	/**
 	 * Sets reference value in an instance.
 	 * Throws VM exception if field was not found,
 	 * or an instance is {@code null}.
@@ -554,31 +528,6 @@ public interface VMOperations {
 	 * @param value    Value to set.
 	 */
 	void putBoolean(ObjectValue instance, String name, boolean value);
-
-	/**
-	 * Gets generic value from an instance.
-	 * Throws VM exception if field was not found,
-	 * or an instance is {@code null}.
-	 *
-	 * @param instance Instance to get value from.
-	 * @param klass    Field base class.
-	 * @param name     Field name.
-	 * @param desc     Field desc.
-	 * @return field value.
-	 */
-	Value getGeneric(ObjectValue instance, InstanceJavaClass klass, String name, String desc);
-
-	/**
-	 * Gets generic value from an instance.
-	 * Throws VM exception if field was not found,
-	 * or an instance is {@code null}.
-	 *
-	 * @param instance Instance to get value from.
-	 * @param name     Field name.
-	 * @param desc     Field desc.
-	 * @return field value.
-	 */
-	Value getGeneric(ObjectValue instance, String name, String desc);
 
 	/**
 	 * Gets reference value from an instance.
@@ -790,17 +739,6 @@ public interface VMOperations {
 	boolean getBoolean(ObjectValue instance, String name);
 
 	/**
-	 * Gets static generic value from a class.
-	 * Throws VM exception if field was not found.
-	 *
-	 * @param klass Class to get value from.
-	 * @param name  Field name.
-	 * @param desc  Field descriptor.
-	 * @return field value.
-	 */
-	Value getGeneric(InstanceJavaClass klass, String name, String desc);
-
-	/**
 	 * Gets static reference value from a class.
 	 * Throws VM exception if field was not found.
 	 *
@@ -892,17 +830,6 @@ public interface VMOperations {
 	boolean getBoolean(InstanceJavaClass klass, String name);
 
 	/**
-	 * Sets static generic value in a class.
-	 * Throws VM exception if field was not found.
-	 *
-	 * @param klass Class to set value for.
-	 * @param name  Field name.
-	 * @param desc  Field descriptor.
-	 * @param value Value to set.
-	 */
-	void putGeneric(InstanceJavaClass klass, String name, String desc, Value value);
-
-	/**
 	 * Sets static reference value in a class.
 	 * Throws VM exception if field was not found.
 	 *
@@ -992,25 +919,6 @@ public interface VMOperations {
 	 * @param value Value to set.
 	 */
 	void putBoolean(InstanceJavaClass klass, String name, boolean value);
-
-	/**
-	 * Reads generic value from the instance.
-	 *
-	 * @param instance Instance to read value from.
-	 * @param desc     Type descriptor.
-	 * @param offset   Offset to read value from.
-	 */
-	Value readGenericValue(InstanceValue instance, String desc, long offset);
-
-	/**
-	 * Writes generic value to the instance.
-	 *
-	 * @param instance Instance to write value to.
-	 * @param desc     Type descriptor.
-	 * @param value    Value to write.
-	 * @param offset   Offset to write value to.
-	 */
-	void writeGenericValue(ObjectValue instance, String desc, Value value, long offset);
 
 	/**
 	 * Attempts to unlock object monitor.

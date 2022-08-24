@@ -12,19 +12,16 @@ import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.util.InvokeDynamicLinker;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.util.VMOperations;
-import dev.xdark.ssvm.value.DoubleValue;
-import dev.xdark.ssvm.value.FloatValue;
-import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.LongValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
+import dev.xdark.ssvm.value.sink.ValueSink;
 
 /**
  * Execution context of a method.
  *
  * @author xDark
  */
-public interface ExecutionContext {
+public interface ExecutionContext
+	<R extends ValueSink> {
 
 	/**
 	 * @return VM instance.
@@ -171,14 +168,7 @@ public interface ExecutionContext {
 	/**
 	 * @return execution result.
 	 */
-	Value getResult();
-
-	/**
-	 * Sets execution result.
-	 *
-	 * @param result Value to set.
-	 */
-	void setResult(Value result);
+	R getResult();
 
 	/**
 	 * Attempts to acquire monitor on an object.
@@ -216,34 +206,33 @@ public interface ExecutionContext {
 	 *
 	 * @param result Value to set.
 	 */
-	default void setResult(long result) {
-		setResult(LongValue.of(result));
-	}
+	void setResult(ObjectValue result);
 
 	/**
 	 * Sets execution result.
 	 *
 	 * @param result Value to set.
 	 */
-	default void setResult(double result) {
-		setResult(new DoubleValue(result));
-	}
+	void setResult(long result);
 
 	/**
 	 * Sets execution result.
 	 *
 	 * @param result Value to set.
 	 */
-	default void setResult(int result) {
-		setResult(IntValue.of(result));
-	}
+	void setResult(double result);
 
 	/**
 	 * Sets execution result.
 	 *
 	 * @param result Value to set.
 	 */
-	default void setResult(float result) {
-		setResult(new FloatValue(result));
-	}
+	void setResult(int result);
+
+	/**
+	 * Sets execution result.
+	 *
+	 * @param result Value to set.
+	 */
+	void setResult(float result);
 }

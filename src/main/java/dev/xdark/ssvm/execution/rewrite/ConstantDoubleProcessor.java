@@ -13,7 +13,7 @@ import dev.xdark.ssvm.execution.Result;
 public final class ConstantDoubleProcessor implements InstructionProcessor<ConstantDoubleInsnNode> {
 
 	@Override
-	public Result execute(ConstantDoubleInsnNode insn, ExecutionContext ctx) {
+	public Result execute(ConstantDoubleInsnNode insn, ExecutionContext<?> ctx) {
 		ctx.getStack().pushDouble(insn.getValue());
 		return Result.CONTINUE;
 	}

@@ -11,7 +11,6 @@ import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 
@@ -53,18 +52,18 @@ public class ThreadNatives {
 		});
 		vmi.setInvoker(thread, "isAlive", "()Z", ctx -> {
 			VMThread th = vm.getThreadManager().getVmThread(ctx.getLocals().<InstanceValue>loadReference(0));
-			ctx.setResult(th.isAlive() ? IntValue.ONE : IntValue.ZERO);
+			ctx.setResult(th.isAlive() ? 1 : 0);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "isInterrupted", "(Z)Z", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMThread th = vm.getThreadManager().getVmThread(locals.<InstanceValue>loadReference(0));
-			ctx.setResult(th.isInterrupted(locals.loadInt(1) != 0) ? IntValue.ONE : IntValue.ZERO);
+			ctx.setResult(th.isInterrupted(locals.loadInt(1) != 0) ? 1 : 0);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "holdsLock", "(Ljava/lang/Object;)Z", ctx -> {
 			ObjectValue arg = vm.getHelper().checkNotNull(ctx.getLocals().loadReference(0));
-			ctx.setResult(arg.isHeldByCurrentThread() ? IntValue.ONE : IntValue.ZERO);
+			ctx.setResult(arg.isHeldByCurrentThread() ? 1 : 0);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "getThreads", "()[Ljava/lang/Thread;", ctx -> {

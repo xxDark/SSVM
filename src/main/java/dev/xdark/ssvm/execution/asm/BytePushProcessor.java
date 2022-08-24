@@ -13,7 +13,7 @@ import org.objectweb.asm.tree.IntInsnNode;
 public final class BytePushProcessor implements InstructionProcessor<IntInsnNode> {
 
 	@Override
-	public Result execute(IntInsnNode insn, ExecutionContext ctx) {
+	public Result execute(IntInsnNode insn, ExecutionContext<?> ctx) {
 		ctx.getStack().pushInt(insn.operand);
 		return Result.CONTINUE;
 	}

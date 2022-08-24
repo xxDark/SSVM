@@ -14,7 +14,7 @@ import org.objectweb.asm.tree.TableSwitchInsnNode;
 public final class TableSwitchProcessor implements InstructionProcessor<TableSwitchInsnNode> {
 
 	@Override
-	public Result execute(TableSwitchInsnNode insn, ExecutionContext ctx) {
+	public Result execute(TableSwitchInsnNode insn, ExecutionContext<?> ctx) {
 		int value = ctx.getStack().popInt();
 		if (value < insn.min || value > insn.max) {
 			ctx.setInsnPosition(AsmUtil.getIndex(insn.dflt));

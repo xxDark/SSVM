@@ -16,7 +16,7 @@ import org.objectweb.asm.tree.MethodInsnNode;
 public final class StaticCallProcessor extends CallProcessor {
 
 	@Override
-	public Result execute(MethodInsnNode insn, ExecutionContext ctx) {
+	public Result execute(MethodInsnNode insn, ExecutionContext<?> ctx) {
 		if (AsmUtil.isValid(insn)) {
 			InsnList list = ctx.getMethod().getNode().instructions;
 			list.set(insn, new VMCallInsnNode(insn, VMOpcodes.VM_INVOKESTATIC));

@@ -18,7 +18,7 @@ import org.objectweb.asm.tree.TypeInsnNode;
 public final class CastProcessor implements InstructionProcessor<TypeInsnNode> {
 
 	@Override
-	public Result execute(TypeInsnNode insn, ExecutionContext ctx) {
+	public Result execute(TypeInsnNode insn, ExecutionContext<?> ctx) {
 		String desc = AsmUtil.normalizeDescriptor(insn.desc);
 		JavaClass type = ctx.getHelper().tryFindClass(ctx.getClassLoader(), desc, true);
 		InsnList list = ctx.getMethod().getNode().instructions;

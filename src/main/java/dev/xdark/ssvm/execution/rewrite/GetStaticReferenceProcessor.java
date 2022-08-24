@@ -17,11 +17,11 @@ import dev.xdark.ssvm.value.ObjectValue;
 public final class GetStaticReferenceProcessor implements InstructionProcessor<VMFieldInsnNode> {
 
 	@Override
-	public Result execute(VMFieldInsnNode insn, ExecutionContext ctx) {
+	public Result execute(VMFieldInsnNode insn, ExecutionContext<?> ctx) {
 		JavaField field = insn.getResolved();
 		InstanceJavaClass klass = field.getOwner();
 		MemoryManager memory = ctx.getMemoryManager();
-		ObjectValue value = memory.readValue(klass.getOop(), memory.getStaticOffset(klass) + field.getOffset());
+		ObjectValue value = memory.readReference(klass.getOop(), memory.getStaticOffset(klass) + field.getOffset());
 		ctx.getStack().pushReference(value);
 		return Result.CONTINUE;
 	}

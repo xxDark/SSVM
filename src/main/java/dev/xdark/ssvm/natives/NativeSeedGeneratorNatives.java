@@ -7,8 +7,6 @@ import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
-import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 
 import java.security.SecureRandom;
@@ -37,7 +35,7 @@ public class NativeSeedGeneratorNatives {
 				rng.nextBytes(tmp);
 				array.setByte(len, tmp[0]);
 			}
-			ctx.setResult(IntValue.ONE);
+			ctx.setResult(1);
 			return Result.ABORT;
 		});
 	}

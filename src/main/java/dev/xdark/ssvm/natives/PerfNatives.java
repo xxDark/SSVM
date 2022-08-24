@@ -31,8 +31,7 @@ public class PerfNatives {
 			JavaMethod allocateDirect = vm.getPublicLinkResolver().resolveStaticMethod(symbols.java_nio_ByteBuffer(), "allocateDirect", "(I)Ljava/nio/ByteBuffer;");
 			Locals locals = vm.getThreadStorage().newLocals(allocateDirect);
 			locals.setInt(0, 8);
-			Value buf = vm.getHelper().invoke(allocateDirect, locals).getResult();
-			ctx.setResult(buf);
+			vm.getHelper().invoke(allocateDirect, locals, ctx.getResult());
 			return Result.ABORT;
 		});
 	}

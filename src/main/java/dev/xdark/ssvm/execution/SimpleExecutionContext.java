@@ -6,15 +6,13 @@ import dev.xdark.ssvm.util.Disposable;
 import dev.xdark.ssvm.util.DisposeUtil;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.TopValue;
-import dev.xdark.ssvm.value.Value;
-import dev.xdark.ssvm.value.VoidValue;
+import dev.xdark.ssvm.value.sink.ValueSink;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
 
 
-public final class SimpleExecutionContext implements ExecutionContext, Disposable {
+public final class SimpleExecutionContext<R extends ValueSink> implements ExecutionContext<R>, Disposable {
 
 	private final Map<ObjectValue, LockCount> lockMap = new IdentityHashMap<>();
 	private final VirtualMachine virtualMachine;
@@ -22,21 +20,23 @@ public final class SimpleExecutionContext implements ExecutionContext, Disposabl
 	private final JavaMethod method;
 	private final Stack stack;
 	private final Locals locals;
+	private final R sink;
 	private int insnPosition;
 	private int lineNumber = -1;
-	private Value result = VoidValue.INSTANCE; // void by default
 
 	/**
 	 * @param method Method being executed.
 	 * @param stack  Execution stack.
 	 * @param locals Local variable table.
+	 * @param sink   Value sink, where the result will be put.
 	 */
-	public SimpleExecutionContext(ExecutionOptions options, JavaMethod method, Stack stack, Locals locals) {
+	public SimpleExecutionContext(ExecutionOptions options, JavaMethod method, Stack stack, Locals locals, R sink) {
 		this.options = options;
 		this.virtualMachine = method.getOwner().getVM();
 		this.method = method;
 		this.stack = stack;
 		this.locals = locals;
+		this.sink = sink;
 	}
 
 	@Override
@@ -80,16 +80,8 @@ public final class SimpleExecutionContext implements ExecutionContext, Disposabl
 	}
 
 	@Override
-	public Value getResult() {
-		return result;
-	}
-
-	@Override
-	public void setResult(Value result) {
-		if (result == TopValue.INSTANCE) {
-			throw new IllegalStateException("Cannot set TOP as the resulting value");
-		}
-		this.result = result;
+	public R getResult() {
+		return sink;
 	}
 
 	@Override
@@ -153,6 +145,31 @@ public final class SimpleExecutionContext implements ExecutionContext, Disposabl
 	@Override
 	public ExecutionOptions getOptions() {
 		return options;
+	}
+
+	@Override
+	public void setResult(ObjectValue result) {
+		sink.acceptReference(result);
+	}
+
+	@Override
+	public void setResult(long result) {
+		sink.acceptLong(result);
+	}
+
+	@Override
+	public void setResult(double result) {
+		sink.acceptDouble(result);
+	}
+
+	@Override
+	public void setResult(int result) {
+		sink.acceptInt(result);
+	}
+
+	@Override
+	public void setResult(float result) {
+		sink.acceptFloat(result);
 	}
 
 	@Override

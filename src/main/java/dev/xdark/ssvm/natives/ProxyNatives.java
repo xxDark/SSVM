@@ -56,7 +56,7 @@ public class ProxyNatives {
 				table.setReference(2, bytes);
 				table.setInt(3, off);
 				table.setInt(4, len);
-				result = ((JavaValue<InstanceJavaClass>) helper.invoke(method, table).getResult()).getValue();
+				result = ((JavaValue<InstanceJavaClass>) helper.invokeReference(method, table)).getValue();
 			}
 			vm.getClassLoaders().getClassLoaderData(loader).forceLinkClass(result);
 			result.link();

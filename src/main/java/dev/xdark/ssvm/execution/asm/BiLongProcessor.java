@@ -24,7 +24,7 @@ public final class BiLongProcessor implements InstructionProcessor<AbstractInsnN
 	}
 
 	@Override
-	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
+	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
 		long v2 = stack.popLong();
 		long v1 = stack.popLong();

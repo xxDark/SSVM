@@ -17,7 +17,7 @@ import org.objectweb.asm.tree.IntInsnNode;
 public final class PrimitiveArrayProcessor implements InstructionProcessor<IntInsnNode> {
 
 	@Override
-	public Result execute(IntInsnNode insn, ExecutionContext ctx) {
+	public Result execute(IntInsnNode insn, ExecutionContext<?> ctx) {
 		int operand = insn.operand;
 		int virtualOpcode = VMOpcodes.VM_BOOLEAN_NEW_ARRAY + (operand - Opcodes.T_BOOLEAN);
 		DelegatingInsnNode<IntInsnNode> wrapper = new DelegatingInsnNode<>(insn, virtualOpcode);

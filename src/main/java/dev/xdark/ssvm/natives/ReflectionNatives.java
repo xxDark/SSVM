@@ -7,7 +7,6 @@ import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
-import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.JavaValue;
 import lombok.experimental.UtilityClass;
 
@@ -29,7 +28,7 @@ public class ReflectionNatives {
 		vmi.setInvoker(reflection, "getCallerClass", "(I)Ljava/lang/Class;", getCallerClass(true));
 		vmi.setInvoker(reflection, "getClassAccessFlags", "(Ljava/lang/Class;)I", ctx -> {
 			JavaClass klass = ctx.getLocals().<JavaValue<JavaClass>>loadReference(0).getValue();
-			ctx.setResult(IntValue.of(Modifier.eraseClass(klass.getModifiers())));
+			ctx.setResult(Modifier.eraseClass(klass.getModifiers()));
 			return Result.ABORT;
 		});
 	}

@@ -22,7 +22,7 @@ public final class ConstantIntProcessor implements InstructionProcessor<Abstract
 	}
 
 	@Override
-	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
+	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		ctx.getStack().pushInt(cst);
 		return Result.CONTINUE;
 	}

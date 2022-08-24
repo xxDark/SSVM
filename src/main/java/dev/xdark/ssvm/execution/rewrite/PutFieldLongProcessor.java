@@ -18,7 +18,7 @@ import org.objectweb.asm.tree.FieldInsnNode;
 public final class PutFieldLongProcessor implements InstructionProcessor<VMFieldInsnNode> {
 
 	@Override
-	public Result execute(VMFieldInsnNode insn, ExecutionContext ctx) {
+	public Result execute(VMFieldInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
 		long value = stack.popLong();
 		InstanceValue instance = ctx.getHelper().checkNotNull(stack.popReference());

@@ -13,7 +13,7 @@ import dev.xdark.ssvm.execution.Result;
 public final class ConstantIntProcessor implements InstructionProcessor<ConstantIntInsnNode> {
 
 	@Override
-	public Result execute(ConstantIntInsnNode insn, ExecutionContext ctx) {
+	public Result execute(ConstantIntInsnNode insn, ExecutionContext<?> ctx) {
 		ctx.getStack().pushInt(insn.getValue());
 		return Result.CONTINUE;
 	}

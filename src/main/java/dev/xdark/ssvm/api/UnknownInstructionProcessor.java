@@ -16,7 +16,7 @@ final class UnknownInstructionProcessor implements InstructionProcessor<Abstract
 	}
 
 	@Override
-	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
+	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		throw new PanicException("Unknown instruction: " + insn.getOpcode() + '/' + insn);
 	}
 }

@@ -13,7 +13,7 @@ import org.objectweb.asm.tree.VarInsnNode;
 public final class ValueLoadProcessor implements InstructionProcessor<VarInsnNode> {
 
 	@Override
-	public Result execute(VarInsnNode insn, ExecutionContext ctx) {
+	public Result execute(VarInsnNode insn, ExecutionContext<?> ctx) {
 		ctx.getStack().pushReference(ctx.getLocals().loadReference(insn.var));
 		return Result.CONTINUE;
 	}

@@ -2,8 +2,8 @@ package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.VMInterface;
-import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
+import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
@@ -14,7 +14,7 @@ import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
+import dev.xdark.ssvm.value.sink.AbstractValueSink;
 import lombok.experimental.UtilityClass;
 import org.objectweb.asm.Type;
 
@@ -79,17 +79,81 @@ public class MethodAccessorNatives {
 				args.setReference(0, instance);
 			}
 			if (passedArgs != null) {
-				Util.convertReflectionArgs(vm, types, passedArgs, args, offset);
+				Util.copyReflectionArguments(vm, types, passedArgs, args, offset);
 			}
-			ExecutionContext executed = helper.invoke(mn, args);
-			Value result = executed.getResult();
-			if (result.isVoid()) {
+			ReflectionSink sink = new ReflectionSink();
+			helper.invoke(mn, args, sink);
+			ObjectValue result;
+			if (!sink.isSet()) {
 				result = vm.getMemoryManager().nullValue(); // void
 			} else {
-				result = helper.boxGeneric(result, executed.getMethod().getReturnType());
+				result = boxSink(vm, sink, mn.getReturnType());
 			}
+
 			ctx.setResult(result);
 			return Result.ABORT;
 		});
+	}
+
+	private static ObjectValue boxSink(VirtualMachine vm, ReflectionSink sink, Type type) {
+		VMHelper helper = vm.getHelper();
+		switch (type.getSort()) {
+			case Type.LONG:
+				return helper.boxLong(sink.l_value);
+			case Type.DOUBLE:
+				return helper.boxDouble(Double.longBitsToDouble(sink.l_value));
+			case Type.INT:
+				return helper.boxInt(sink.i_value);
+			case Type.FLOAT:
+				return helper.boxFloat(Float.intBitsToFloat(sink.i_value));
+			case Type.CHAR:
+				return helper.boxChar((char) sink.i_value);
+			case Type.SHORT:
+				return helper.boxShort((short) sink.i_value);
+			case Type.BYTE:
+				return helper.boxByte((byte) sink.i_value);
+			case Type.BOOLEAN:
+				return helper.boxBoolean(sink.i_value != 0);
+			default:
+				ObjectValue ref = sink.r_value;
+				if (ref == null) {
+					throw new PanicException("Expected reference");
+				}
+				return ref;
+		}
+	}
+
+	private static final class ReflectionSink extends AbstractValueSink {
+		long l_value;
+		int i_value;
+		ObjectValue r_value;
+
+		@Override
+		public void acceptReference(ObjectValue value) {
+			check();
+			r_value = value;
+		}
+
+		@Override
+		public void acceptLong(long value) {
+			check();
+			l_value = value;
+		}
+
+		@Override
+		public void acceptDouble(double value) {
+			acceptLong(Double.doubleToRawLongBits(value));
+		}
+
+		@Override
+		public void acceptInt(int value) {
+			check();
+			i_value = value;
+		}
+
+		@Override
+		public void acceptFloat(float value) {
+			acceptInt(Float.floatToRawIntBits(value));
+		}
 	}
 }

@@ -13,7 +13,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 public final class ReturnDoubleProcessor implements InstructionProcessor<AbstractInsnNode> {
 
 	@Override
-	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
+	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		ctx.setResult(ctx.getStack().popDouble());
 		return Result.ABORT;
 	}

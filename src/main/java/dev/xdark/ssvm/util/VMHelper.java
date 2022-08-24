@@ -27,14 +27,16 @@ import dev.xdark.ssvm.thread.backtrace.StackFrame;
 import dev.xdark.ssvm.thread.ThreadState;
 import dev.xdark.ssvm.thread.VMThread;
 import dev.xdark.ssvm.value.ArrayValue;
-import dev.xdark.ssvm.value.DoubleValue;
-import dev.xdark.ssvm.value.FloatValue;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.JavaValue;
-import dev.xdark.ssvm.value.LongValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
+import dev.xdark.ssvm.value.sink.DoubleValueSink;
+import dev.xdark.ssvm.value.sink.FloatValueSink;
+import dev.xdark.ssvm.value.sink.IntValueSink;
+import dev.xdark.ssvm.value.sink.LongValueSink;
+import dev.xdark.ssvm.value.sink.ReferenceValueSink;
+import dev.xdark.ssvm.value.sink.ValueSink;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Type;
@@ -72,41 +74,90 @@ public final class VMHelper {
 	 *
 	 * @param method Method to invoke.
 	 * @param locals Local variable table.
+	 * @param sink   Result sink.
 	 * @return invocation result.
 	 */
-	public ExecutionContext invoke(JavaMethod method, Locals locals) {
+	public <R extends ValueSink> ExecutionContext<R> invoke(JavaMethod method, Locals locals, R sink) {
 		ExecutionEngine engine = vm.getExecutionEngine();
-		ExecutionContext ctx = engine.createContext(new SimpleExecutionRequest(method, vm.getThreadStorage().newStack(method), locals, engine.defaultOptions()));
+		ExecutionContext<R> ctx = engine.createContext(new SimpleExecutionRequest<>(method, vm.getThreadStorage().newStack(method), locals, engine.defaultOptions(), sink));
 		engine.execute(ctx);
 		return ctx;
 	}
 
 	/**
-	 * Creates VM vales from constant.
+	 * Makes direct call.
+	 *
+	 * @param method Method to invoke.
+	 * @param locals Local variable table.
+	 * @return invocation result.
+	 */
+	public ObjectValue invokeReference(JavaMethod method, Locals locals) {
+		return invoke(method, locals, new ReferenceValueSink()).getResult().getValue();
+	}
+
+	/**
+	 * Makes direct call.
+	 *
+	 * @param method Method to invoke.
+	 * @param locals Local variable table.
+	 * @return invocation result.
+	 */
+	public long invokeLong(JavaMethod method, Locals locals) {
+		return invoke(method, locals, new LongValueSink()).getResult().getValue();
+	}
+
+	/**
+	 * Makes direct call.
+	 *
+	 * @param method Method to invoke.
+	 * @param locals Local variable table.
+	 * @return invocation result.
+	 */
+	public double invokeDouble(JavaMethod method, Locals locals) {
+		return invoke(method, locals, new DoubleValueSink()).getResult().getValue();
+	}
+
+	/**
+	 * Makes direct call.
+	 *
+	 * @param method Method to invoke.
+	 * @param locals Local variable table.
+	 * @return invocation result.
+	 */
+	public int invokeInt(JavaMethod method, Locals locals) {
+		return invoke(method, locals, new IntValueSink()).getResult().getValue();
+	}
+
+	/**
+	 * Makes direct call.
+	 *
+	 * @param method Method to invoke.
+	 * @param locals Local variable table.
+	 * @return invocation result.
+	 */
+	public float invokeFloat(JavaMethod method, Locals locals) {
+		return invoke(method, locals, new FloatValueSink()).getResult().getValue();
+	}
+
+	/**
+	 * Makes direct call.
+	 *
+	 * @param method Method to invoke.
+	 * @param locals Local variable table.
+	 * @return invocation result.
+	 */
+	public ExecutionContext<?> invoke(JavaMethod method, Locals locals) {
+		return invoke(method, locals, BlackholeValueSink.INSTANCE);
+	}
+
+	/**
+	 * Creates VM vales from constant reference.
 	 *
 	 * @return VM value.
 	 * @throws IllegalStateException If constant value cannot be created.
 	 */
-	public Value valueFromLdc(Object cst) {
+	public Value referenceFromLdc(Object cst) {
 		VirtualMachine vm = this.vm;
-		if (cst instanceof Long) {
-			return LongValue.of((Long) cst);
-		}
-		if (cst instanceof Double) {
-			return new DoubleValue((Double) cst);
-		}
-		if (cst instanceof Integer || cst instanceof Short || cst instanceof Byte) {
-			return IntValue.of(((Number) cst).intValue());
-		}
-		if (cst instanceof Character) {
-			return IntValue.of((Character) cst);
-		}
-		if (cst instanceof Float) {
-			return new FloatValue((Float) cst);
-		}
-		if (cst instanceof Boolean) {
-			return (Boolean) cst ? IntValue.ONE : IntValue.ZERO;
-		}
 		if (cst instanceof String) {
 			return vm.getStringPool().intern((String) cst);
 		}
@@ -504,12 +555,12 @@ public final class VMHelper {
 		long off = value.getFieldOffset("value", "[C");
 		ArrayValue array;
 		if (off != -1L) {
-			array = (ArrayValue) vm.getMemoryManager().readValue(value, off);
+			array = (ArrayValue) vm.getMemoryManager().readReference(value, off);
 		} else {
 			JavaMethod toCharArray = vm.getPublicLinkResolver().resolveVirtualMethod(jc, jc, "toCharArray", "()[C");
 			Locals locals = vm.getThreadStorage().newLocals(toCharArray);
 			locals.setReference(0, value);
-			array = (ArrayValue) invoke(toCharArray, locals).getResult();
+			array = (ArrayValue) invokeReference(toCharArray, locals);
 		}
 		return UnsafeUtil.newString(toJavaChars(array));
 	}
@@ -658,7 +709,7 @@ public final class VMHelper {
 					data.writeByte(resultingOffset, ((Integer) cst).byteValue());
 					break;
 				default:
-					memoryManager.writeValue(oop, resultingOffset, cst == null ? memoryManager.nullValue() : (ObjectValue) valueFromLdc(cst));
+					memoryManager.writeValue(oop, resultingOffset, cst == null ? memoryManager.nullValue() : (ObjectValue) referenceFromLdc(cst));
 			}
 		}
 	}
@@ -1132,7 +1183,7 @@ public final class VMHelper {
 	 */
 	public long unboxLong(ObjectValue value) {
 		checkNotNull(value);
-		return invokeUnbox(value, "longValue", "()J").asLong();
+		return invokeUnbox(value, "longValue", "()J", new LongValueSink()).getValue();
 	}
 
 	/**
@@ -1143,7 +1194,7 @@ public final class VMHelper {
 	 */
 	public double unboxDouble(ObjectValue value) {
 		checkNotNull(value);
-		return invokeUnbox(value, "doubleValue", "()D").asDouble();
+		return invokeUnbox(value, "doubleValue", "()D", new DoubleValueSink()).getValue();
 	}
 
 	/**
@@ -1154,7 +1205,7 @@ public final class VMHelper {
 	 */
 	public int unboxInt(ObjectValue value) {
 		checkNotNull(value);
-		return invokeUnbox(value, "intValue", "()I").asInt();
+		return invokeUnbox(value, "intValue", "()I", new IntValueSink()).getValue();
 	}
 
 	/**
@@ -1165,7 +1216,7 @@ public final class VMHelper {
 	 */
 	public float unboxFloat(ObjectValue value) {
 		checkNotNull(value);
-		return invokeUnbox(value, "floatValue", "()F").asFloat();
+		return invokeUnbox(value, "floatValue", "()F", new FloatValueSink()).getValue();
 	}
 
 	/**
@@ -1176,7 +1227,7 @@ public final class VMHelper {
 	 */
 	public char unboxChar(ObjectValue value) {
 		checkNotNull(value);
-		return invokeUnbox(value, "charValue", "()C").asChar();
+		return (char) invokeUnbox(value, "charValue", "()C", new IntValueSink()).getValue();
 	}
 
 	/**
@@ -1187,7 +1238,7 @@ public final class VMHelper {
 	 */
 	public short unboxShort(ObjectValue value) {
 		checkNotNull(value);
-		return invokeUnbox(value, "shortValue", "()S").asShort();
+		return (short) invokeUnbox(value, "shortValue", "()S", new IntValueSink()).getValue();
 	}
 
 	/**
@@ -1198,7 +1249,7 @@ public final class VMHelper {
 	 */
 	public byte unboxByte(ObjectValue value) {
 		checkNotNull(value);
-		return invokeUnbox(value, "byteValue", "()B").asByte();
+		return (byte) invokeUnbox(value, "byteValue", "()B", new IntValueSink()).getValue();
 	}
 
 	/**
@@ -1209,7 +1260,7 @@ public final class VMHelper {
 	 */
 	public boolean unboxBoolean(ObjectValue value) {
 		checkNotNull(value);
-		return invokeUnbox(value, "booleanValue", "()Z").asBoolean();
+		return invokeUnbox(value, "booleanValue", "()Z", new IntValueSink()).getValue() != 0;
 	}
 
 	/**
@@ -1226,7 +1277,7 @@ public final class VMHelper {
 		);
 		Locals locals = vm.getThreadStorage().newLocals(method);
 		locals.setLong(0, value);
-		return (ObjectValue) invoke(method, locals).getResult();
+		return invokeReference(method, locals);
 	}
 
 	/**
@@ -1243,7 +1294,7 @@ public final class VMHelper {
 		);
 		Locals locals = vm.getThreadStorage().newLocals(method);
 		locals.setDouble(0, value);
-		return (ObjectValue) invoke(method, locals).getResult();
+		return invokeReference(method, locals);
 	}
 
 	/**
@@ -1260,7 +1311,7 @@ public final class VMHelper {
 		);
 		Locals locals = vm.getThreadStorage().newLocals(method);
 		locals.setInt(0, value);
-		return (ObjectValue) invoke(method, locals).getResult();
+		return invokeReference(method, locals);
 	}
 
 	/**
@@ -1277,7 +1328,7 @@ public final class VMHelper {
 		);
 		Locals locals = vm.getThreadStorage().newLocals(method);
 		locals.setFloat(0, value);
-		return (ObjectValue) invoke(method, locals).getResult();
+		return invokeReference(method, locals);
 	}
 
 	/**
@@ -1294,7 +1345,7 @@ public final class VMHelper {
 		);
 		Locals locals = vm.getThreadStorage().newLocals(method);
 		locals.setInt(0, value);
-		return (ObjectValue) invoke(method, locals).getResult();
+		return invokeReference(method, locals);
 	}
 
 	/**
@@ -1311,7 +1362,7 @@ public final class VMHelper {
 		);
 		Locals locals = vm.getThreadStorage().newLocals(method);
 		locals.setInt(0, value);
-		return (ObjectValue) invoke(method, locals).getResult();
+		return invokeReference(method, locals);
 	}
 
 	/**
@@ -1328,7 +1379,7 @@ public final class VMHelper {
 		);
 		Locals locals = vm.getThreadStorage().newLocals(method);
 		locals.setInt(0, value);
-		return (ObjectValue) invoke(method, locals).getResult();
+		return invokeReference(method, locals);
 	}
 
 	/**
@@ -1345,20 +1396,7 @@ public final class VMHelper {
 		);
 		Locals locals = vm.getThreadStorage().newLocals(method);
 		locals.setInt(0, value ? 1 : 0);
-		return (ObjectValue) invoke(method, locals).getResult();
-	}
-
-	/**
-	 * Boxes primitive type if needed.
-	 *
-	 * @param value Value to box.
-	 * @param type  Value type.
-	 * @return boxed value or original,
-	 * if boxing is not needed.
-	 */
-	@Deprecated
-	public Value boxGeneric(Value value, Type type) {
-		throw new PanicException("Deprecated");
+		return invokeReference(method, locals);
 	}
 
 	/**
@@ -1440,7 +1478,7 @@ public final class VMHelper {
 		JavaMethod getFD = vm.getTrustedLinkResolver().resolveVirtualMethod(fs, "getFD", "()Ljava/io/FileDescriptor;");
 		Locals locals = vm.getThreadStorage().newLocals(getFD);
 		locals.setReference(0, fs);
-		ObjectValue fd = (ObjectValue) invoke(getFD, locals).getResult();
+		ObjectValue fd = invokeReference(getFD, locals);
 		return vm.getTrustedOperations().getLong(fd, vm.getSymbols().java_io_FileDescriptor(), "handle");
 	}
 
@@ -1457,7 +1495,7 @@ public final class VMHelper {
 		Locals locals = vm.getThreadStorage().newLocals(method);
 		locals.setReference(0, rt.getOop());
 		locals.setReference(1, parameters);
-		return (InstanceValue) invoke(method, locals).getResult();
+		return (InstanceValue) invokeReference(method, locals);
 	}
 
 	/**
@@ -1609,7 +1647,7 @@ public final class VMHelper {
 		locals.setReference(2, findClass(caller.getClassLoader(), handle.getOwner(), false).getOop());
 		locals.setReference(3, newUtf8(handle.getName()));
 		locals.setReference(4, methodType(caller.getClassLoader(), Type.getMethodType(handle.getDesc())));
-		return (InstanceValue) invoke(link, locals).getResult();
+		return (InstanceValue) invokeReference(link, locals);
 	}
 
 	/**
@@ -1722,19 +1760,13 @@ public final class VMHelper {
 		return array;
 	}
 
-	private Value invokeUnbox(ObjectValue value, String name, String desc) {
+	private <R extends ValueSink> R invokeUnbox(ObjectValue value, String name, String desc, R sink) {
 		VirtualMachine vm = this.vm;
 		JavaMethod method = vm.getPublicLinkResolver().resolveVirtualMethod(value, name, desc);
 		Locals locals = vm.getThreadStorage().newLocals(method);
 		locals.setReference(0, value);
-		return invoke(method, locals).getResult();
-	}
-
-	private ObjectValue invokeBox(InstanceJavaClass jc, Value value, String name, String desc) {
-		VirtualMachine vm = this.vm;
-		JavaMethod method = vm.getPublicLinkResolver().resolveStaticMethod(jc, name, desc);
-		Locals locals = vm.getThreadStorage().newLocals(method);
-		return (ObjectValue) invoke(method, locals).getResult();
+		invoke(method, locals, sink);
+		return sink;
 	}
 
 	private static void makeHiddenMethod(InstanceJavaClass jc, String name, String desc) {
@@ -1768,5 +1800,30 @@ public final class VMHelper {
 		}
 		MethodNode node = jm.getNode();
 		node.access |= Modifier.ACC_CALLER_SENSITIVE;
+	}
+
+	// Similar to the BlackholeValueSink in sink package, but without checks.
+	private static final class BlackholeValueSink implements ValueSink {
+		static final ValueSink INSTANCE = new BlackholeValueSink();
+
+		@Override
+		public void acceptReference(ObjectValue value) {
+		}
+
+		@Override
+		public void acceptLong(long value) {
+		}
+
+		@Override
+		public void acceptDouble(double value) {
+		}
+
+		@Override
+		public void acceptInt(int value) {
+		}
+
+		@Override
+		public void acceptFloat(float value) {
+		}
 	}
 }

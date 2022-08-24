@@ -5,8 +5,6 @@ import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.value.IntValue;
-import dev.xdark.ssvm.value.LongValue;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -25,14 +23,14 @@ public class CDSNatives {
 		if (jc != null) {
 			VMInterface vmi = vm.getInterface();
 			MethodInvoker stub = ctx -> {
-				ctx.setResult(IntValue.ZERO);
+				ctx.setResult(0);
 				return Result.ABORT;
 			};
 			vmi.setInvoker(jc, "isDumpingClassList0", "()Z", stub);
 			vmi.setInvoker(jc, "isDumpingArchive0", "()Z", stub);
 			vmi.setInvoker(jc, "isSharingEnabled0", "()Z", stub);
 			vmi.setInvoker(jc, "getRandomSeedForDumping", "()J", ctx -> {
-				ctx.setResult(LongValue.ZERO);
+				ctx.setResult(0L);
 				return Result.ABORT;
 			});
 			vmi.setInvoker(jc, "initializeFromArchive", "(Ljava/lang/Class;)V", MethodInvoker.noop());

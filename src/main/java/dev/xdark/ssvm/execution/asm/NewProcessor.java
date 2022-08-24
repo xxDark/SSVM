@@ -17,7 +17,7 @@ import org.objectweb.asm.tree.TypeInsnNode;
 public final class NewProcessor implements InstructionProcessor<TypeInsnNode> {
 
 	@Override
-	public Result execute(TypeInsnNode insn, ExecutionContext ctx) {
+	public Result execute(TypeInsnNode insn, ExecutionContext<?> ctx) {
 		String desc = insn.desc;
 		InstanceJavaClass klass = (InstanceJavaClass) ctx.getHelper().tryFindClass(ctx.getClassLoader(), desc, true);
 		InsnList list = ctx.getMethod().getNode().instructions;

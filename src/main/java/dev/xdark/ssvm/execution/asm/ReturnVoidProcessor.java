@@ -14,8 +14,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 public final class ReturnVoidProcessor implements InstructionProcessor<AbstractInsnNode> {
 
 	@Override
-	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
-		ctx.setResult(VoidValue.INSTANCE);
+	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		return Result.ABORT;
 	}
 }

@@ -24,7 +24,7 @@ public final class BiIntProcessor implements InstructionProcessor<AbstractInsnNo
 	}
 
 	@Override
-	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
+	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
 		int v2 = stack.popInt();
 		int v1 = stack.popInt();

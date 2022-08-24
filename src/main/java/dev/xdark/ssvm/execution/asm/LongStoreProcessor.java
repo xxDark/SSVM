@@ -14,7 +14,7 @@ import org.objectweb.asm.tree.VarInsnNode;
 public final class LongStoreProcessor implements InstructionProcessor<VarInsnNode> {
 
 	@Override
-	public Result execute(VarInsnNode insn, ExecutionContext ctx) {
+	public Result execute(VarInsnNode insn, ExecutionContext<?> ctx) {
 		Locals locals = ctx.getLocals();
 		int var = insn.var;
 		locals.setLong(var, ctx.getStack().popLong());

@@ -7,14 +7,13 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.backtrace.Backtrace;
 import dev.xdark.ssvm.thread.backtrace.SimpleBacktrace;
 import dev.xdark.ssvm.thread.backtrace.StackFrame;
-import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.IntValue;
 import dev.xdark.ssvm.value.JavaValue;
 import lombok.experimental.UtilityClass;
 
@@ -56,7 +55,7 @@ public class ThrowableNatives {
 		});
 		vmi.setInvoker(throwable, "getStackTraceDepth", "()I", ctx -> {
 			Backtrace backtrace = ((JavaValue<Backtrace>) ((InstanceValue) ctx.getLocals().loadReference(0)).getValue("backtrace", "Ljava/lang/Object;")).getValue();
-			ctx.setResult(IntValue.of(backtrace.count()));
+			ctx.setResult(backtrace.count());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(throwable, "getStackTraceElement", "(I)Ljava/lang/StackTraceElement;", ctx -> {

@@ -15,7 +15,7 @@ import org.objectweb.asm.tree.MethodInsnNode;
 public final class VirtualCallProcessor extends CallProcessor {
 
 	@Override
-	public Result execute(MethodInsnNode insn, ExecutionContext ctx) {
+	public Result execute(MethodInsnNode insn, ExecutionContext<?> ctx) {
 		InsnList list = ctx.getMethod().getNode().instructions;
 		list.set(insn, new VMCallInsnNode(insn, VMOpcodes.VM_INVOKEVIRTUAL));
 		ctx.setInsnPosition(ctx.getInsnPosition() - 1);

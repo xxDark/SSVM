@@ -22,7 +22,7 @@ public final class ConstantFloatProcessor implements InstructionProcessor<Abstra
 	}
 
 	@Override
-	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
+	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		ctx.getStack().pushFloat(cst);
 		return Result.CONTINUE;
 	}

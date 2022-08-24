@@ -12,7 +12,6 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.AsmUtil;
-import dev.xdark.ssvm.util.InvokeDynamicLinker;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
@@ -22,7 +21,6 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.UtilityClass;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 
 /**
  * JIT helper.
@@ -149,14 +147,17 @@ public class JitHelper {
 
 	public Value getStaticA(Object owner, long offset, ExecutionContext ctx) {
 		MemoryManager memoryManager = ctx.getVM().getMemoryManager();
-		return memoryManager.readValue(getClassOop(owner), offset);
+		return memoryManager.readReference(getClassOop(owner), offset);
 	}
 
 	public void getStaticA(Value value, String owner, String name, String desc, ExecutionContext ctx) {
+		/*
 		VirtualMachine vm = ctx.getVM();
 		VMHelper helper = vm.getHelper();
 		InstanceJavaClass klass = (InstanceJavaClass) helper.tryFindClass(ctx.getOwner().getClassLoader(), owner, true);
 		vm.getPublicOperations().putGeneric(klass, name, desc, value);
+		*/
+		throw new PanicException("Unimplemented");
 	}
 
 	public void putStaticA(Value value, Object owner, long offset, ExecutionContext ctx) {
@@ -251,7 +252,7 @@ public class JitHelper {
 
 	public Value getFieldA(Value value, long offset, ExecutionContext ctx) {
 		ObjectValue o = nonNull(value, ctx);
-		return ctx.getVM().getMemoryManager().readValue(o, offset);
+		return ctx.getVM().getMemoryManager().readReference(o, offset);
 	}
 
 	public long getFieldJ(Value value, long offset, ExecutionContext ctx) {
@@ -565,11 +566,11 @@ public class JitHelper {
 	}
 
 	public Value classLdc(String desc, ExecutionContext ctx) {
-		return ctx.getHelper().valueFromLdc(Type.getObjectType(desc));
+		return ctx.getHelper().referenceFromLdc(Type.getObjectType(desc));
 	}
 
 	public Value methodLdc(String desc, ExecutionContext ctx) {
-		return ctx.getHelper().valueFromLdc(Type.getMethodType(desc));
+		return ctx.getHelper().referenceFromLdc(Type.getMethodType(desc));
 	}
 
 	public VMException exceptionCaught(VMException ex, Object $classes, ExecutionContext ctx) {
@@ -617,9 +618,12 @@ public class JitHelper {
 	}
 
 	public Value invokeDirect(Locals locals, Object method, ExecutionContext ctx) {
+		/*
 		JavaMethod jm = (JavaMethod) method;
 		jm.getOwner().initialize();
 		return ctx.getHelper().invoke(jm, locals).getResult();
+		*/
+		throw new PanicException("Unimplemented");
 	}
 
 	public Locals newLocals(int count, ExecutionContext ctx) {

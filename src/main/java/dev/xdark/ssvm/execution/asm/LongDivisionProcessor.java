@@ -13,7 +13,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
  */
 public class LongDivisionProcessor implements InstructionProcessor<AbstractInsnNode> {
 	@Override
-	public Result execute(AbstractInsnNode insn, ExecutionContext ctx) {
+	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
 		long v2 = stack.popLong();
 		if (v2 == 0L) {

@@ -83,7 +83,7 @@ public class ClassLoaderNatives {
 			ObjectValue name = locals.loadReference(1);
 			VMHelper helper = vm.getHelper();
 			helper.checkNotNull(name);
-			InstanceValue loader = locals.loadReference(0);
+			InstanceValue loader = (InstanceValue) locals.loadReference(0);
 			ClassLoaderData data = vm.getClassLoaders().getClassLoaderData(loader);
 			InstanceJavaClass loadedClass = data.getClass(helper.readUtf8(name).replace('.', '/'));
 			if (loadedClass != null && Modifier.isHiddenMember(loadedClass.getModifiers())) {

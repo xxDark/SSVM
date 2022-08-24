@@ -5,7 +5,6 @@ import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.tree.JumpInsnNode;
 
 import java.util.function.Predicate;
@@ -27,7 +26,7 @@ public final class ValueJumpProcessor implements InstructionProcessor<JumpInsnNo
 	}
 
 	@Override
-	public Result execute(JumpInsnNode insn, ExecutionContext ctx) {
+	public Result execute(JumpInsnNode insn, ExecutionContext<?> ctx) {
 		if (condition.test(ctx.getStack().popReference())) {
 			ctx.setInsnPosition(AsmUtil.getIndex(insn.label));
 		}

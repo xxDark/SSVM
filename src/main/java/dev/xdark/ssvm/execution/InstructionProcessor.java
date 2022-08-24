@@ -16,5 +16,5 @@ public interface InstructionProcessor<I extends AbstractInsnNode> {
 	 * @param ctx  Execution context.
 	 * @return the result of the execution.
 	 */
-	Result execute(I insn, ExecutionContext ctx);
+	Result execute(I insn, ExecutionContext<?> ctx);
 }

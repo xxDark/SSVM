@@ -13,7 +13,7 @@ import org.objectweb.asm.tree.TypeInsnNode;
 public final class InstanceofProcessor implements InstructionProcessor<TypeInsnNode> {
 
 	@Override
-	public Result execute(TypeInsnNode insn, ExecutionContext ctx) {
+	public Result execute(TypeInsnNode insn, ExecutionContext<?> ctx) {
 		JavaClass klass = ctx.getHelper().tryFindClass(ctx.getClassLoader(), insn.desc, false);
 		Stack stack = ctx.getStack();
 		boolean result = ctx.getOperations().instanceofCheck(stack.popReference(), klass);

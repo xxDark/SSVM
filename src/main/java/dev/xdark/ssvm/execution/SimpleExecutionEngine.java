@@ -4,11 +4,12 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvocation;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.backtrace.Backtrace;
 import dev.xdark.ssvm.thread.backtrace.StackFrame;
-import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.util.DisposeUtil;
 import dev.xdark.ssvm.value.ObjectValue;
+import dev.xdark.ssvm.value.sink.ValueSink;
 import org.objectweb.asm.Opcodes;
 
 /**
@@ -29,7 +30,7 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 	}
 
 	@Override
-	public void execute(ExecutionContext ctx) {
+	public void execute(ExecutionContext<?> ctx) {
 		JavaMethod jm = ctx.getMethod();
 		int access = jm.getAccess();
 		boolean isNative = (access & Opcodes.ACC_NATIVE) != 0;
@@ -100,8 +101,8 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 	}
 
 	@Override
-	public ExecutionContext createContext(ExecutionRequest request) {
-		return new SimpleExecutionContext(request.getOptions(), request.getMethod(), request.getStack(), request.getLocals());
+	public <R extends ValueSink> ExecutionContext<R> createContext(ExecutionRequest<R> request) {
+		return new SimpleExecutionContext<>(request.getOptions(), request.getMethod(), request.getStack(), request.getLocals(), request.getResultSink());
 	}
 
 	@Override

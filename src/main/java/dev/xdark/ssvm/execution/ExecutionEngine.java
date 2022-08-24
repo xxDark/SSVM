@@ -12,7 +12,7 @@ public interface ExecutionEngine extends ExecutionContextManager {
 	 *
 	 * @param ctx     Context to execute.
 	 */
-	void execute(ExecutionContext ctx);
+	void execute(ExecutionContext<?> ctx);
 
 	/**
 	 * @return Default execution options.

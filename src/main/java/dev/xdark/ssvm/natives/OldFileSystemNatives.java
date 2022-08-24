@@ -5,9 +5,9 @@ import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.value.*;
+import dev.xdark.ssvm.value.ArrayValue;
+import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 
 import java.io.IOException;
@@ -53,10 +53,10 @@ public class OldFileSystemNatives {
 			ObjectValue value = ctx.getLocals().loadReference(1);
 			helper.checkNotNull(value);
 			try {
-				String path = helper.readUtf8(((InstanceValue) value).getValue("path", "Ljava/lang/String;"));
+				String path = helper.readUtf8(vm.getPublicOperations().getReference(value, "path", "Ljava/lang/String;"));
 				BasicFileAttributes attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
 				if (attributes == null) {
-					ctx.setResult(IntValue.ZERO);
+					ctx.setResult(0);
 				} else {
 					int res = 1;
 					if (attributes.isDirectory()) {
@@ -64,7 +64,7 @@ public class OldFileSystemNatives {
 					} else {
 						res |= 2;
 					}
-					ctx.setResult(IntValue.of(res));
+					ctx.setResult(res);
 				}
 			} catch (IOException ex) {
 				helper.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
@@ -75,16 +75,16 @@ public class OldFileSystemNatives {
 			VMHelper helper = vm.getHelper();
 			ObjectValue value = ctx.getLocals().loadReference(1);
 			helper.checkNotNull(value);
-			String path = helper.readUtf8(((InstanceValue) value).getValue("path", "Ljava/lang/String;"));
+			String path = helper.readUtf8(vm.getPublicOperations().getReference(value, "path", "Ljava/lang/String;"));
 			String[] list = vm.getFileDescriptorManager().list(path);
 			if (list == null) {
 				ctx.setResult(vm.getMemoryManager().nullValue());
 			} else {
-				ObjectValue[] values = new ObjectValue[list.length];
+				ArrayValue values = vm.getHelper().newArray(vm.getSymbols().java_lang_String(), list.length);
 				for (int i = 0; i < list.length; i++) {
-					values[i] = helper.newUtf8(list[i]);
+					values.setReference(i, helper.newUtf8(list[i]));
 				}
-				ctx.setResult(helper.toVMValues(values));
+				ctx.setResult(value);
 			}
 			return Result.ABORT;
 		});
@@ -97,15 +97,15 @@ public class OldFileSystemNatives {
 			ObjectValue value = ctx.getLocals().loadReference(1);
 			helper.checkNotNull(value);
 			try {
-				String path = helper.readUtf8(((InstanceValue) value).getValue("path", "Ljava/lang/String;"));
+				String path = helper.readUtf8(vm.getPublicOperations().getReference(value, "path", "Ljava/lang/String;"));
 				BasicFileAttributes attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
 				if (attributes == null) {
-					ctx.setResult(LongValue.ZERO);
+					ctx.setResult(0L);
 				} else {
-					ctx.setResult(LongValue.of(attributes.lastModifiedTime().toMillis()));
+					ctx.setResult(attributes.lastModifiedTime().toMillis());
 				}
 			} catch (IOException ex) {
-				ctx.setResult(LongValue.ZERO);
+				ctx.setResult(0L);
 			}
 			return Result.ABORT;
 		});
@@ -114,15 +114,15 @@ public class OldFileSystemNatives {
 			ObjectValue value = ctx.getLocals().loadReference(1);
 			helper.checkNotNull(value);
 			try {
-				String path = helper.readUtf8(((InstanceValue) value).getValue("path", "Ljava/lang/String;"));
+				String path = helper.readUtf8(vm.getPublicOperations().getReference(value, "path", "Ljava/lang/String;"));
 				BasicFileAttributes attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
 				if (attributes == null) {
-					ctx.setResult(LongValue.ZERO);
+					ctx.setResult(0L);
 				} else {
-					ctx.setResult(LongValue.of(attributes.size()));
+					ctx.setResult(attributes.size());
 				}
 			} catch (IOException ex) {
-				ctx.setResult(LongValue.ZERO);
+				ctx.setResult(0L);
 			}
 			return Result.ABORT;
 		});

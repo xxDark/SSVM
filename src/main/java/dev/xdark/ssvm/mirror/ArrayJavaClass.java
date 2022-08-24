@@ -5,6 +5,7 @@ import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 public final class ArrayJavaClass implements JavaClass {
 
@@ -133,6 +134,11 @@ public final class ArrayJavaClass implements JavaClass {
 	@Override
 	public JavaClass getComponentType() {
 		return componentType;
+	}
+
+	@Override
+	public int getSort() {
+		return Type.ARRAY;
 	}
 
 	@Override

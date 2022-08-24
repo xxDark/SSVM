@@ -6,7 +6,6 @@ import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.IntValue;
 import lombok.experimental.UtilityClass;
 
 import java.nio.ByteOrder;
@@ -34,7 +33,7 @@ public class StringNatives {
 		InstanceJavaClass utf16 = (InstanceJavaClass) vm.findBootstrapClass("java/lang/StringUTF16");
 		if (utf16 != null) {
 			vmi.setInvoker(utf16, "isBigEndian", "()Z", ctx -> {
-				ctx.setResult(vm.getMemoryAllocator().getByteOrder() == ByteOrder.BIG_ENDIAN ? IntValue.ONE : IntValue.ZERO);
+				ctx.setResult(vm.getMemoryAllocator().getByteOrder() == ByteOrder.BIG_ENDIAN ? 1 : 0);
 				return Result.ABORT;
 			});
 		}

@@ -13,7 +13,7 @@ import org.objectweb.asm.tree.VarInsnNode;
 public final class FloatStoreProcessor implements InstructionProcessor<VarInsnNode> {
 
 	@Override
-	public Result execute(VarInsnNode insn, ExecutionContext ctx) {
+	public Result execute(VarInsnNode insn, ExecutionContext<?> ctx) {
 		ctx.getLocals().setFloat(insn.var, ctx.getStack().popFloat());
 		return Result.CONTINUE;
 	}

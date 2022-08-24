@@ -16,7 +16,7 @@ import java.util.Collections;
 public final class LookupSwitchProcessor implements InstructionProcessor<LookupSwitchInsnNode> {
 
 	@Override
-	public Result execute(LookupSwitchInsnNode insn, ExecutionContext ctx) {
+	public Result execute(LookupSwitchInsnNode insn, ExecutionContext<?> ctx) {
 		int index = Collections.binarySearch(insn.keys, ctx.getStack().popInt());
 		if (index >= 0) {
 			ctx.setInsnPosition(AsmUtil.getIndex(insn.labels.get(index)));

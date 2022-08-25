@@ -23,11 +23,6 @@ public final class NullValue implements ObjectValue {
 	}
 
 	@Override
-	public boolean isWide() {
-		return false;
-	}
-
-	@Override
 	public boolean isUninitialized() {
 		throw new UnsupportedOperationException("Null value");
 	}
@@ -35,11 +30,6 @@ public final class NullValue implements ObjectValue {
 	@Override
 	public boolean isNull() {
 		return true;
-	}
-
-	@Override
-	public boolean isVoid() {
-		return false;
 	}
 
 	@Override

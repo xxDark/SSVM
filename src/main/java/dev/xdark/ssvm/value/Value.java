@@ -62,18 +62,4 @@ public interface Value {
 	default boolean asBoolean() {
 		return asInt() != 0;
 	}
-
-	/**
-	 * Returns whether this value is wide or not.
-	 *
-	 * @return {@code true} if the value is wide.
-	 */
-	boolean isWide();
-
-	/**
-	 * Returns whether this value is void or not.
-	 *
-	 * @return {@code true} if the value is void.
-	 */
-	boolean isVoid();
 }

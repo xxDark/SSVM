@@ -63,16 +63,6 @@ public abstract class SimpleObjectValue implements ObjectValue {
 	}
 
 	@Override
-	public boolean isWide() {
-		return false;
-	}
-
-	@Override
-	public boolean isVoid() {
-		return false;
-	}
-
-	@Override
 	public JavaClass getJavaClass() {
 		return getMemoryManager().readClass(this);
 	}

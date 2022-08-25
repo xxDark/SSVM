@@ -14,11 +14,4 @@ public interface JavaValue<V> extends InstanceValue {
 	 * @return Java value.
 	 */
 	V getValue();
-
-	/**
-	 * Sets whether this value should be wide.
-	 *
-	 * @param wide Wide flag.
-	 */
-	void setWide(boolean wide);
 }

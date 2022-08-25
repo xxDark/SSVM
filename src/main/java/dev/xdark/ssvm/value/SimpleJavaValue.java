@@ -12,7 +12,6 @@ import dev.xdark.ssvm.memory.allocation.MemoryBlock;
 public final class SimpleJavaValue<V> extends SimpleInstanceValue implements JavaValue<V> {
 
 	private final V value;
-	private boolean wide;
 
 	/**
 	 * @param memoryManager Memory manager.
@@ -27,15 +26,5 @@ public final class SimpleJavaValue<V> extends SimpleInstanceValue implements Jav
 	@Override
 	public V getValue() {
 		return value;
-	}
-
-	@Override
-	public boolean isWide() {
-		return wide;
-	}
-
-	@Override
-	public void setWide(boolean wide) {
-		this.wide = wide;
 	}
 }

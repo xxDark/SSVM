@@ -84,7 +84,7 @@ public class OldFileSystemNatives {
 				for (int i = 0; i < list.length; i++) {
 					values.setReference(i, helper.newUtf8(list[i]));
 				}
-				ctx.setResult(value);
+				ctx.setResult(values);
 			}
 			return Result.ABORT;
 		});

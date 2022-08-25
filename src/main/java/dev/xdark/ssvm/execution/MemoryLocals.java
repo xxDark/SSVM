@@ -32,7 +32,7 @@ public final class MemoryLocals implements Locals, Disposable {
 
 	@Override
 	public void setInt(int index, int value) {
-		setLong(index, value);
+		region().writeInt(index * 8L, value);
 	}
 
 	@Override
@@ -57,7 +57,7 @@ public final class MemoryLocals implements Locals, Disposable {
 
 	@Override
 	public int loadInt(int index) {
-		return (int) loadLong(index);
+		return region().readInt(index * 8L);
 	}
 
 	@Override

@@ -3,6 +3,7 @@ package dev.xdark.ssvm.execution.asm;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.tree.VarInsnNode;
 
 /**
@@ -10,11 +11,12 @@ import org.objectweb.asm.tree.VarInsnNode;
  *
  * @author xDark
  */
-public final class ValueStoreProcessor implements InstructionProcessor<VarInsnNode> {
+public final class ReferenceStoreProcessor implements InstructionProcessor<VarInsnNode> {
 
 	@Override
 	public Result execute(VarInsnNode insn, ExecutionContext<?> ctx) {
-		ctx.getLocals().setReference(insn.var, ctx.getStack().popReference());
+		ObjectValue ref = ctx.getStack().popReference();
+		ctx.getLocals().setReference(insn.var, ref);
 		return Result.CONTINUE;
 	}
 }

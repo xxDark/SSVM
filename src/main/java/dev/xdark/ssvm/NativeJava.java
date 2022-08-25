@@ -331,7 +331,7 @@ public final class NativeJava {
 		vmi.setProcessor(LSTORE, new LongStoreProcessor());
 		vmi.setProcessor(FSTORE, new FloatStoreProcessor());
 		vmi.setProcessor(DSTORE, new DoubleStoreProcessor());
-		vmi.setProcessor(ASTORE, new ValueStoreProcessor());
+		vmi.setProcessor(ASTORE, new ReferenceStoreProcessor());
 
 		vmi.setProcessor(POP, new PopProcessor());
 		vmi.setProcessor(POP2, new Pop2Processor());

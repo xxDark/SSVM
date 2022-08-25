@@ -9,7 +9,6 @@ import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.thread.ThreadStorage;
-import dev.xdark.ssvm.value.Value;
 
 /**
  * Base class for VM calls.

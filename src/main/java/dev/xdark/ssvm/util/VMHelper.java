@@ -22,15 +22,16 @@ import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.mirror.MemberKey;
 import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.symbol.VMSymbols;
-import dev.xdark.ssvm.thread.backtrace.Backtrace;
-import dev.xdark.ssvm.thread.backtrace.StackFrame;
 import dev.xdark.ssvm.thread.ThreadState;
 import dev.xdark.ssvm.thread.VMThread;
+import dev.xdark.ssvm.thread.backtrace.Backtrace;
+import dev.xdark.ssvm.thread.backtrace.StackFrame;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
+import dev.xdark.ssvm.value.sink.BlackholeValueSink;
 import dev.xdark.ssvm.value.sink.DoubleValueSink;
 import dev.xdark.ssvm.value.sink.FloatValueSink;
 import dev.xdark.ssvm.value.sink.IntValueSink;
@@ -1800,30 +1801,5 @@ public final class VMHelper {
 		}
 		MethodNode node = jm.getNode();
 		node.access |= Modifier.ACC_CALLER_SENSITIVE;
-	}
-
-	// Similar to the BlackholeValueSink in sink package, but without checks.
-	private static final class BlackholeValueSink implements ValueSink {
-		static final ValueSink INSTANCE = new BlackholeValueSink();
-
-		@Override
-		public void acceptReference(ObjectValue value) {
-		}
-
-		@Override
-		public void acceptLong(long value) {
-		}
-
-		@Override
-		public void acceptDouble(double value) {
-		}
-
-		@Override
-		public void acceptInt(int value) {
-		}
-
-		@Override
-		public void acceptFloat(float value) {
-		}
 	}
 }

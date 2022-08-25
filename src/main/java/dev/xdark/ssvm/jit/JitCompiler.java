@@ -14,7 +14,6 @@ import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.util.UnsafeUtil;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.TopValue;
 import dev.xdark.ssvm.value.Value;
 import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
@@ -205,7 +204,7 @@ public final class JitCompiler {
 	private static final ClassType VALUES = ClassType.of(Value[].class);
 	private static final ClassType VM_EXCEPTION = ClassType.of(VMException.class);
 	private static final ClassType INSTANCE = ClassType.of(InstanceValue.class);
-	private static final ClassType TOP = ClassType.of(TopValue.class);
+	// private static final ClassType TOP = ClassType.of(TopValue.class);
 	private static final ClassType STACK = ClassType.of(Stack.class);
 
 	// ctx methods
@@ -370,7 +369,7 @@ public final class JitCompiler {
 	private static final Access REM_INT = staticCall(JIT_HELPER, "remInt", J_INT, J_INT, J_INT, CTX);
 	private static final Access REM_LONG = staticCall(JIT_HELPER, "remLong", J_LONG, J_LONG, J_LONG, CTX);
 
-	private static final Access GET_TOP = getStatic(TOP, "INSTANCE", TOP);
+	// private static final Access GET_TOP = getStatic(TOP, "INSTANCE", TOP);
 
 	private static final int CTX_SLOT = 1;
 	private static final int LOCALS_SLOT = 2;
@@ -1666,19 +1665,23 @@ public final class JitCompiler {
 	}
 
 	private void loadTopTo(int idx) {
+		/*
 		MethodVisitor jit = this.jit;
 		jit.visitInsn(DUP); // args args
 		emitInt(idx, jit); // args args idx
 		GET_TOP.emit(jit); // args args idx value
 		jit.visitInsn(AASTORE);
+		*/
 	}
 
 	private void loadTopToLocal(int idx) {
+		/*
 		MethodVisitor jit = this.jit;
 		jit.visitInsn(DUP); // args args
 		emitInt(idx, jit); // args args idx
 		GET_TOP.emit(jit); // args args idx value
 		SET.emit(jit);
+		*/
 	}
 
 	private void toJava(Type type) {

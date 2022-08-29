@@ -55,7 +55,7 @@ public class SimpleClassLoaders implements ClassLoaders {
 		if (classLoader.isNull()) {
 			return bootClassLoaderData;
 		}
-		return ((JavaValue<ClassLoaderData>) ((InstanceValue) classLoader).getValue(NativeJava.CLASS_LOADER_OOP, "Ljava/lang/Object;")).getValue();
+		return ((JavaValue<ClassLoaderData>) vm.getTrustedOperations().getReference(classLoader, NativeJava.CLASS_LOADER_OOP, "Ljava/lang/Object;")).getValue();
 	}
 
 	@Override
@@ -86,12 +86,12 @@ public class SimpleClassLoaders implements ClassLoaders {
 
 	@Override
 	public void setClassData(InstanceJavaClass javaClass, ObjectValue classData) {
-		javaClass.getOop().setValue("classData", "Ljava/lang/Object;", classData);
+		vm.getTrustedOperations().putReference(javaClass.getOop(), "classData", "Ljava/lang/Object;", classData);
 	}
 
 	@Override
 	public ObjectValue getClassData(InstanceJavaClass javaClass) {
-		return javaClass.getOop().getValue("classData", "Ljava/lang/Object;");
+		return vm.getTrustedOperations().getReference(javaClass.getOop(), "classData", "Ljava/lang/Object;");
 	}
 
 	/**

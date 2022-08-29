@@ -102,7 +102,7 @@ public final class DefaultVMOperations implements VMOperations {
 
 	@Override
 	public ObjectValue arrayLoadReference(ObjectValue array, int index) {
-		return verifyArrayAccess(array, index).getValue(index);
+		return verifyArrayAccess(array, index).getReference(index);
 	}
 
 	@Override
@@ -194,11 +194,6 @@ public final class DefaultVMOperations implements VMOperations {
 	@Override
 	public void arrayStoreByte(ObjectValue array, int index, byte value) {
 		verifyArrayAccess(array, index).setByte(index, value);
-	}
-
-	@Override
-	public void arrayStoreBoolean(ObjectValue array, int index, boolean value) {
-		verifyArrayAccess(array, index).setBoolean(index, value);
 	}
 	//</editor-fold>
 

@@ -3,6 +3,7 @@ package dev.xdark.ssvm.mirror;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -28,8 +29,8 @@ public class SimpleMirrorFactory implements MirrorFactory {
 	}
 
 	@Override
-	public PrimitiveClass newPrimitiveClass(String name, String descriptor, int sort) {
-		return new SimplePrimitiveClass(vm, name, descriptor, sort);
+	public PrimitiveClass newPrimitiveClass(String name, String descriptor, Type type) {
+		return new SimplePrimitiveClass(vm, name, descriptor, type);
 	}
 
 	@Override

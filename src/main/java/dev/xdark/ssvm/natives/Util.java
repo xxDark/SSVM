@@ -3,6 +3,7 @@ package dev.xdark.ssvm.natives;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.PanicException;
+import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -25,12 +26,12 @@ import java.io.IOException;
 @UtilityClass
 final class Util {
 
-	void copyReflectionArguments(VirtualMachine vm, Type[] argTypes, ArrayValue array, Locals locals, int offset) {
+	void copyReflectionArguments(VirtualMachine vm, JavaClass[] argTypes, ArrayValue array, Locals locals, int offset) {
 		VMHelper helper = vm.getHelper();
 		for (int i = 0; i < argTypes.length; i++) {
-			Type type = argTypes[i];
+			JavaClass type = argTypes[i];
 			int sort = type.getSort();
-			ObjectValue value = array.getValue(i);
+			ObjectValue value = array.getReference(i);
 			if (sort < Type.ARRAY) {
 				switch (sort) {
 					case Type.BOOLEAN:

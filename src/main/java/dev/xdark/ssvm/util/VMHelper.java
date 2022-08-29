@@ -300,7 +300,7 @@ public final class VMHelper {
 		int length = array.getLength();
 		ObjectValue[] result = new ObjectValue[length];
 		while (length-- != 0) {
-			result[length] = array.getValue(length);
+			result[length] = array.getReference(length);
 		}
 		return result;
 	}
@@ -608,7 +608,7 @@ public final class VMHelper {
 			if (jdk8) {
 				memoryManager.writeValue(wrapper, off, emptyArray(primitives.charPrimitive()));
 			} else {
-				wrapper.setValue("value", "[B", emptyArray(primitives.bytePrimitive()));
+				vm.getPublicOperations().putReference(wrapper, "value", "[B", emptyArray(primitives.bytePrimitive()));
 			}
 			wrapper.initialize();
 		} else {
@@ -752,11 +752,12 @@ public final class VMHelper {
 		Locals locals = vm.getThreadStorage().newLocals(init);
 		locals.setReference(0, instance);
 		invoke(init, locals);
+		VMOperations ops = vm.getPublicOperations();
 		if (message != null) {
-			instance.setValue("detailMessage", "Ljava/lang/String;", newUtf8(message));
+			ops.putReference(instance, "detailMessage", "Ljava/lang/String;", newUtf8(message));
 		}
 		if (cause != null) {
-			instance.setValue("cause", "Ljava/lang/Throwable;", cause);
+			ops.putReference(instance, "cause", "Ljava/lang/Throwable;", cause);
 		}
 		return instance;
 	}
@@ -917,8 +918,9 @@ public final class VMHelper {
 	 */
 	public void setClassFields(InstanceValue oop, ObjectValue classLoader, ObjectValue protectionDomain) {
 		if (!classLoader.isNull()) {
-			oop.setValue("classLoader", "Ljava/lang/ClassLoader;", classLoader);
-			oop.setValue(NativeJava.PROTECTION_DOMAIN, "Ljava/security/ProtectionDomain;", protectionDomain);
+			VMOperations ops = vm.getTrustedOperations();
+			ops.putReference(oop, "classLoader", "Ljava/lang/ClassLoader;", classLoader);
+			ops.putReference(oop, NativeJava.PROTECTION_DOMAIN, "Ljava/security/ProtectionDomain;", protectionDomain);
 		}
 	}
 
@@ -1053,11 +1055,11 @@ public final class VMHelper {
 			Collections.reverse(Arrays.asList(stackTrace));
 			exception.setStackTrace(stackTrace);
 		}
-		ObjectValue cause = oop.getValue("cause", "Ljava/lang/Throwable;");
+		ObjectValue cause = ops.getReference(oop, "cause", "Ljava/lang/Throwable;");
 		if (!cause.isNull() && cause != oop) {
 			exception.initCause(toJavaException((InstanceValue) cause));
 		}
-		ObjectValue suppressedExceptions = oop.getValue("suppressedExceptions", "Ljava/util/List;");
+		ObjectValue suppressedExceptions = ops.getReference(oop, "suppressedExceptions", "Ljava/util/List;");
 		if (!suppressedExceptions.isNull()) {
 			InstanceJavaClass cl = (InstanceJavaClass) vm.findBootstrapClass("java/util/ArrayList");
 			if (cl == suppressedExceptions.getJavaClass()) {
@@ -1065,7 +1067,7 @@ public final class VMHelper {
 				int size = ops.getInt(value, "size");
 				ArrayValue array = (ArrayValue) ops.getReference(value, "elementData", "[Ljava/lang/Object;");
 				for (int i = 0; i < size; i++) {
-					InstanceValue ref = (InstanceValue) array.getValue(i);
+					InstanceValue ref = (InstanceValue) array.getReference(i);
 					exception.addSuppressed(ref == oop ? exception : toJavaException(ref));
 				}
 			}
@@ -1174,6 +1176,40 @@ public final class VMHelper {
 			klass = klass.newArrayClass();
 		}
 		return klass;
+	}
+
+	public JavaClass findClass(ObjectValue loader, Type type, boolean initialize) {
+		JavaClass jc;
+		VMPrimitives primitives = vm.getPrimitives();
+		switch (type.getSort()) {
+			case Type.LONG:
+				jc = primitives.longPrimitive();
+				break;
+			case Type.DOUBLE:
+				jc = primitives.doublePrimitive();
+				break;
+			case Type.INT:
+				jc = primitives.intPrimitive();
+				break;
+			case Type.FLOAT:
+				jc = primitives.floatPrimitive();
+				break;
+			case Type.CHAR:
+				jc = primitives.charPrimitive();
+				break;
+			case Type.SHORT:
+				jc = primitives.shortPrimitive();
+				break;
+			case Type.BYTE:
+				jc = primitives.bytePrimitive();
+				break;
+			case Type.BOOLEAN:
+				jc = primitives.booleanPrimitive();
+				break;
+			default:
+				jc = findClass(loader, type.getInternalName(), initialize);
+		}
+		return jc;
 	}
 
 	/**
@@ -1440,8 +1476,7 @@ public final class VMHelper {
 	public JavaClass[] convertTypes(ObjectValue loader, Type[] types, boolean initialize) {
 		JavaClass[] classes = new JavaClass[types.length];
 		for (int i = 0; i < types.length; i++) {
-			String name = types[i].getInternalName();
-			classes[i] = findClass(loader, name, initialize);
+			classes[i] = findClass(loader, types[i], initialize);
 		}
 		return classes;
 	}
@@ -1565,8 +1600,8 @@ public final class VMHelper {
 					continue;
 				}
 				if ("fillInStackTrace".equals(name)) {
-					Type[] args = jm.getArgumentTypes();
-					if (args.length == 0 || (args[0].equals(Type.INT_TYPE))) {
+					JavaClass[] args = jm.getArgumentTypes();
+					if (args.length == 0 || (args[0] == vm.getPrimitives().intPrimitive())) {
 						makeHiddenMethod(jm);
 					}
 				}

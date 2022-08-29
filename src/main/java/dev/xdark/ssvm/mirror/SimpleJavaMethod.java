@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.mirror;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.VMTryCatchBlock;
 import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.util.TypeSafeMap;
@@ -28,8 +29,8 @@ public final class SimpleJavaMethod implements JavaMethod {
 	private final String desc;
 	private final int slot;
 	private Type type;
-	private Type[] argumentTypes;
-	private Type returnType;
+	private JavaClass[] argumentTypes;
+	private JavaClass returnType;
 	private Boolean polymorphic;
 	private int maxArgs = -1;
 	private int maxLocals = -1;
@@ -81,19 +82,21 @@ public final class SimpleJavaMethod implements JavaMethod {
 	}
 
 	@Override
-	public Type[] getArgumentTypes() {
-		Type[] argumentTypes = this.argumentTypes;
+	public JavaClass[] getArgumentTypes() {
+		JavaClass[] argumentTypes = this.argumentTypes;
 		if (argumentTypes == null) {
-			argumentTypes = this.argumentTypes = getType().getArgumentTypes();
+			resolveArgumentTypes();
+			return this.argumentTypes;
 		}
-		return argumentTypes.clone();
+		return argumentTypes;
 	}
 
 	@Override
-	public Type getReturnType() {
-		Type returnType = this.returnType;
+	public JavaClass getReturnType() {
+		JavaClass returnType = this.returnType;
 		if (returnType == null) {
-			return this.returnType = getType().getReturnType();
+			resolveReturnType();
+			return this.returnType;
 		}
 		return returnType;
 	}
@@ -117,8 +120,8 @@ public final class SimpleJavaMethod implements JavaMethod {
 			if ((node.access & Opcodes.ACC_STATIC) == 0) {
 				x++;
 			}
-			for (Type t : getArgumentTypes()) {
-				x += t.getSize();
+			for (JavaClass arg : getArgumentTypes()) {
+				x += arg.getType().getSize();
 			}
 			return this.maxArgs = x;
 		}
@@ -127,11 +130,18 @@ public final class SimpleJavaMethod implements JavaMethod {
 
 	@Override
 	public int getMaxStack() {
+		MethodNode node = this.node;
+		if (Modifier.isCompiledMethod(node.access)) {
+			return 0; // No stack for compiled methods
+		}
 		return node.maxStack;
 	}
 
 	@Override
 	public int getMaxLocals() {
+		if (Modifier.isCompiledMethod(node.access)) {
+			return getMaxArgs(); // No locals for compiled methods, except arguments
+		}
 		int maxLocals = this.maxLocals;
 		if (maxLocals == -1) {
 			return this.maxLocals = AsmUtil.getMaxLocals(this);
@@ -223,5 +233,20 @@ public final class SimpleJavaMethod implements JavaMethod {
 		}
 		this.tryCatchBlocks = tryCatchBlocks;
 		return tryCatchBlocks;
+	}
+
+	private void resolveReturnType() {
+		InstanceJavaClass owner = this.owner;
+		VirtualMachine vm = owner.getVM();
+		ObjectValue cl = owner.getClassLoader();
+		returnType = vm.getHelper().findClass(cl, getType().getReturnType(), false);
+	}
+
+	private void resolveArgumentTypes() {
+		InstanceJavaClass owner = this.owner;
+		VirtualMachine vm = owner.getVM();
+		ObjectValue cl = owner.getClassLoader();
+		Type[] types = getType().getArgumentTypes();
+		argumentTypes = vm.getHelper().convertTypes(cl, types, false);
 	}
 }

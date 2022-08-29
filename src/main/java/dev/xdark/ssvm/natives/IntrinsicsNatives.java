@@ -621,7 +621,7 @@ public class IntrinsicsNatives {
 				VMHelper helper = ctx.getHelper();
 				int result = 1;
 				for (int i = 0, j = array.getLength(); i < j; i++) {
-					ObjectValue value = array.getValue(i);
+					ObjectValue value = array.getReference(i);
 					result *= 31;
 					if (!value.isNull()) {
 						JavaMethod method = linkResolver.resolveVirtualMethod(value, "hashCode", "()I");
@@ -838,8 +838,8 @@ public class IntrinsicsNatives {
 		ThreadStorage ts = vm.getThreadStorage();
 		IntValueSink sink = new IntValueSink();
 		while (length-- != 0) {
-			ObjectValue v1 = a.getValue(length);
-			ObjectValue v2 = b.getValue(length);
+			ObjectValue v1 = a.getReference(length);
+			ObjectValue v2 = b.getReference(length);
 			if (v1 != v2) {
 				if (!v1.isNull()) {
 					JavaMethod method = linkResolver.resolveVirtualMethod(v1, "equals", "(Ljava/lang/Object;)Z");

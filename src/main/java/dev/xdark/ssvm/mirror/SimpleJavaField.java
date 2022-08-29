@@ -1,8 +1,8 @@
 package dev.xdark.ssvm.mirror;
 
 import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.util.TypeSafeMap;
+import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.FieldNode;
 
@@ -80,38 +80,9 @@ public final class SimpleJavaField implements JavaField {
 	}
 
 	private void resolveFieldType() {
-		JavaClass type;
+		InstanceJavaClass owner = this.owner;
 		VirtualMachine vm = owner.getVM();
-		VMPrimitives primitives = vm.getPrimitives();
-		Type asmType = Type.getType(node.desc);
-		switch (asmType.getSort()) {
-			case Type.LONG:
-				type = primitives.longPrimitive();
-				break;
-			case Type.DOUBLE:
-				type = primitives.doublePrimitive();
-				break;
-			case Type.INT:
-				type = primitives.intPrimitive();
-				break;
-			case Type.FLOAT:
-				type = primitives.floatPrimitive();
-				break;
-			case Type.CHAR:
-				type = primitives.charPrimitive();
-				break;
-			case Type.SHORT:
-				type = primitives.shortPrimitive();
-				break;
-			case Type.BYTE:
-				type = primitives.bytePrimitive();
-				break;
-			case Type.BOOLEAN:
-				type = primitives.booleanPrimitive();
-				break;
-			default:
-				type = vm.getHelper().findClass(owner.getClassLoader(), asmType.getInternalName(), false);
-		}
-		this.type = type;
+		ObjectValue cl = owner.getClassLoader();
+		type = vm.getHelper().findClass(cl, Type.getType(node.desc), false);
 	}
 }

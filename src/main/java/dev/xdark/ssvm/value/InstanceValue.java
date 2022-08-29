@@ -23,16 +23,6 @@ public interface InstanceValue extends ObjectValue {
 	ObjectValue getValue(String field, String desc);
 
 	/**
-	 * Sets VM value of a field.
-	 *
-	 * @param field field name.
-	 * @param desc  Field descriptor.
-	 * @param value Value to set.
-	 */
-	@Deprecated
-	void setValue(String field, String desc, ObjectValue value);
-
-	/**
 	 * Marks this object as initialized.
 	 */
 	void initialize();

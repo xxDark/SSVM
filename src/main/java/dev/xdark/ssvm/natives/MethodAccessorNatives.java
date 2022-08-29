@@ -57,7 +57,7 @@ public class MethodAccessorNatives {
 				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 			}
 			ObjectValue values = locals.loadReference(2);
-			Type[] types = mn.getArgumentTypes();
+			JavaClass[] types = mn.getArgumentTypes();
 			ArrayValue passedArgs = null;
 			if (!values.isNull()) {
 				passedArgs = (ArrayValue) values;
@@ -95,7 +95,7 @@ public class MethodAccessorNatives {
 		});
 	}
 
-	private static ObjectValue boxSink(VirtualMachine vm, ReflectionSink sink, Type type) {
+	private static ObjectValue boxSink(VirtualMachine vm, ReflectionSink sink, JavaClass type) {
 		VMHelper helper = vm.getHelper();
 		switch (type.getSort()) {
 			case Type.LONG:

@@ -123,7 +123,7 @@ public final class InvokeDynamicLinker {
 		}
 
 		helper.invoke(method, linkArgs);
-		return (InstanceValue) appendix.getValue(0);
+		return (InstanceValue) appendix.getReference(0);
 	}
 
 	/**

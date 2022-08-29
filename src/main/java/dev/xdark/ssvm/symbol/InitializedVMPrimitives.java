@@ -28,15 +28,15 @@ public final class InitializedVMPrimitives implements VMPrimitives {
 	public InitializedVMPrimitives(VirtualMachine vm) {
 		vm.assertInitialized();
 		MirrorFactory factory = vm.getMirrorFactory();
-		longPrimitive = factory.newPrimitiveClass("long", "J", Type.LONG);
-		doublePrimitive = factory.newPrimitiveClass("double", "D", Type.DOUBLE);
-		intPrimitive = factory.newPrimitiveClass("int", "I", Type.INT);
-		floatPrimitive = factory.newPrimitiveClass("float", "F", Type.FLOAT);
-		charPrimitive = factory.newPrimitiveClass("char", "C", Type.CHAR);
-		shortPrimitive = factory.newPrimitiveClass("short", "S", Type.SHORT);
-		bytePrimitive = factory.newPrimitiveClass("byte", "B", Type.BYTE);
-		booleanPrimitive = factory.newPrimitiveClass("boolean", "Z", Type.BOOLEAN);
-		voidPrimitive = factory.newPrimitiveClass("void", "V", Type.VOID);
+		longPrimitive = factory.newPrimitiveClass("long", "J", Type.LONG_TYPE);
+		doublePrimitive = factory.newPrimitiveClass("double", "D", Type.DOUBLE_TYPE);
+		intPrimitive = factory.newPrimitiveClass("int", "I", Type.INT_TYPE);
+		floatPrimitive = factory.newPrimitiveClass("float", "F", Type.FLOAT_TYPE);
+		charPrimitive = factory.newPrimitiveClass("char", "C", Type.CHAR_TYPE);
+		shortPrimitive = factory.newPrimitiveClass("short", "S", Type.SHORT_TYPE);
+		bytePrimitive = factory.newPrimitiveClass("byte", "B", Type.BYTE_TYPE);
+		booleanPrimitive = factory.newPrimitiveClass("boolean", "Z", Type.BOOLEAN_TYPE);
+		voidPrimitive = factory.newPrimitiveClass("void", "V", Type.VOID_TYPE);
 	}
 
 	@Override

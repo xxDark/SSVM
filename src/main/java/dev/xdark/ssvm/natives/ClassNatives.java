@@ -185,8 +185,8 @@ public class ClassNatives {
 			VMOperations ops = vm.getPublicOperations();
 			for (int j = 0; j < methods.size(); j++) {
 				JavaMethod mn = methods.get(j);
-				Type[] types = mn.getArgumentTypes();
-				ArrayValue parameters = helper.convertClasses(helper.convertTypes(loader, types, false));
+				JavaClass[] types = mn.getArgumentTypes();
+				ArrayValue parameters = helper.convertClasses(types);
 				ArrayValue exceptions = convertExceptions(helper, loader, mn.getNode().exceptions);
 				MethodRawData data = getMethodRawData(mn, false);
 				InstanceValue constructor = memoryManager.newInstance(constructorClass);
@@ -225,9 +225,9 @@ public class ClassNatives {
 			VMOperations ops = vm.getPublicOperations();
 			for (int j = 0; j < methods.size(); j++) {
 				JavaMethod mn = methods.get(j);
-				Type[] types = mn.getArgumentTypes();
-				JavaClass rt = helper.findClass(loader, mn.getReturnType().getInternalName(), false);
-				ArrayValue parameters = helper.convertClasses(helper.convertTypes(loader, types, false));
+				JavaClass[] types = mn.getArgumentTypes();
+				JavaClass rt =mn.getReturnType();
+				ArrayValue parameters = helper.convertClasses(types);
 				ArrayValue exceptions = convertExceptions(helper, loader, mn.getNode().exceptions);
 				MethodRawData data = getMethodRawData(mn, true);
 				InstanceValue method = memoryManager.newInstance(methodClass);
@@ -408,7 +408,7 @@ public class ClassNatives {
 			InstanceValue _this = ctx.getLocals().loadReference(0);
 			cpClass.initialize();
 			InstanceValue instance = vm.getMemoryManager().newInstance(cpClass);
-			instance.setValue("constantPoolOop", "Ljava/lang/Object;", _this);
+			vm.getTrustedOperations().putReference(instance, "constantPoolOop", "Ljava/lang/Object;", _this);
 			instance.initialize();
 			ctx.setResult(instance);
 			return Result.ABORT;

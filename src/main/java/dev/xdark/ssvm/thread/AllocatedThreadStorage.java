@@ -1,8 +1,11 @@
 package dev.xdark.ssvm.thread;
 
+import dev.xdark.ssvm.execution.EmptyLocals;
+import dev.xdark.ssvm.execution.EmptyStack;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.MemoryLocals;
 import dev.xdark.ssvm.execution.MemoryStack;
+import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
 import dev.xdark.ssvm.memory.allocation.MemoryBlock;
@@ -45,16 +48,24 @@ public final class AllocatedThreadStorage implements ThreadStorage {
 
 	@Override
 	public Stack newStack(int size) {
+		if (size == 0) {
+			return EmptyStack.INSTANCE;
+		}
 		return new MemoryStack(manager, allocate((long) size * VALUE_SCALE));
 	}
 
 	@Override
 	public Locals newLocals(int size) {
+		if (size == 0) {
+			return EmptyLocals.INSTANCE;
+		}
 		return new MemoryLocals(manager, allocate((long) size * VALUE_SCALE));
 	}
 
 	@Override
 	public void free() {
-		allocator.freeDirect(block.getAddress());
+		if (!allocator.freeHeap(block.getAddress())) {
+			throw new PanicException("Failed to free thread block");
+		}
 	}
 }

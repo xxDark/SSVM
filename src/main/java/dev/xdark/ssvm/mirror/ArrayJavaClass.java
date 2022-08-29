@@ -17,6 +17,7 @@ public final class ArrayJavaClass implements JavaClass {
 	private final InstanceValue oop;
 	private final InstanceJavaClass objectClass;
 	private ArrayJavaClass arrayClass;
+	private Type type;
 
 	/**
 	 * @param vm            VM instance.
@@ -134,6 +135,16 @@ public final class ArrayJavaClass implements JavaClass {
 	@Override
 	public JavaClass getComponentType() {
 		return componentType;
+	}
+
+	@Override
+	public Type getType() {
+		Type type = this.type;
+		if (type == null) {
+			type = Type.getType(getDescriptor());
+			this.type = type;
+		}
+		return type;
 	}
 
 	@Override

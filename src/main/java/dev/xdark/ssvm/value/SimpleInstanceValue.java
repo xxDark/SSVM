@@ -37,11 +37,6 @@ public class SimpleInstanceValue extends SimpleObjectValue implements InstanceVa
 	}
 
 	@Override
-	public void setValue(String field, String desc, ObjectValue value) {
-		getMemoryManager().writeValue(this, getFieldOffset(field, desc), value);
-	}
-
-	@Override
 	public void initialize() {
 		initialized = true;
 	}

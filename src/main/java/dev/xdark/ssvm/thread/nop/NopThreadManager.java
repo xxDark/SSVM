@@ -53,7 +53,7 @@ public final class NopThreadManager implements ThreadManager {
 		if (mainThreadGroup != null) {
 			// Might be null if VM is still in boot state,
 			// will be set later.
-			instance.setValue("group", "Ljava/lang/ThreadGroup;", mainThreadGroup);
+			vm.getPublicOperations().putReference(instance, "group", "Ljava/lang/ThreadGroup;", mainThreadGroup);
 		}
 		vm.getHelper().screenVmThread(current);
 		instance.initialize();

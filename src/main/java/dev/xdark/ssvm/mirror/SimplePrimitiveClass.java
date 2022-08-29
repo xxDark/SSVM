@@ -4,6 +4,7 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 /**
  * Java class implementation for long, int, double, float, etc.
@@ -17,22 +18,22 @@ public final class SimplePrimitiveClass implements PrimitiveClass {
 	private final String descriptor;
 	private final InstanceValue oop;
 	private final InstanceJavaClass objectClass;
-	private final int sort;
+	private final Type type;
 	private ArrayJavaClass arrayClass;
 
 	/**
 	 * @param vm         VM instance.
 	 * @param name       Name of the class.
 	 * @param descriptor Descriptor of the class.
-	 * @param sort       Type sort.
+	 * @param type       Type.
 	 */
-	public SimplePrimitiveClass(VirtualMachine vm, String name, String descriptor, int sort) {
+	public SimplePrimitiveClass(VirtualMachine vm, String name, String descriptor, Type type) {
 		this.vm = vm;
 		this.name = name;
 		this.descriptor = descriptor;
+		this.type = type;
 		oop = vm.getMemoryManager().newClassOop(this);
 		objectClass = vm.getSymbols().java_lang_Object();
-		this.sort = sort;
 	}
 
 	@Override
@@ -131,7 +132,12 @@ public final class SimplePrimitiveClass implements PrimitiveClass {
 	}
 
 	@Override
+	public Type getType() {
+		return type;
+	}
+
+	@Override
 	public int getSort() {
-		return sort;
+		return type.getSort();
 	}
 }

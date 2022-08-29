@@ -2,6 +2,7 @@ package dev.xdark.ssvm.mirror;
 
 import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -24,10 +25,10 @@ public interface MirrorFactory {
 	/**
 	 * @param name       Primitive name.
 	 * @param descriptor Primitive descriptor.
-	 * @param sort       Primitive sort.
+	 * @param sort       Primitive type.
 	 * @return new class.
 	 */
-	PrimitiveClass newPrimitiveClass(String name, String descriptor, int sort);
+	PrimitiveClass newPrimitiveClass(String name, String descriptor, Type sort);
 
 	/**
 	 * @param owner  Field owner.

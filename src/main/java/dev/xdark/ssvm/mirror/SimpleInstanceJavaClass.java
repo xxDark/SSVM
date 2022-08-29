@@ -81,6 +81,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	private List<JavaField> declaredFields;
 	private List<JavaField> publicFields;
 	private Boolean allocationStatus;
+	private Type type;
 
 	/**
 	 * This constructor must be invoked ONLY
@@ -736,6 +737,16 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 			return this.allocationStatus = checkAllocationStatus();
 		}
 		return allocationStatus;
+	}
+
+	@Override
+	public Type getType() {
+		Type type = this.type;
+		if (type == null) {
+			type = Type.getType(getDescriptor());
+			this.type = type;
+		}
+		return type;
 	}
 
 	@Override

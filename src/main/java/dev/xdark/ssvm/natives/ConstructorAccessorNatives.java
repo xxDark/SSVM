@@ -46,7 +46,7 @@ public class ConstructorAccessorNatives {
 				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 			}
 			ObjectValue values = locals.loadReference(1);
-			Type[] types = mn.getArgumentTypes();
+			JavaClass[] types = mn.getArgumentTypes();
 			ArrayValue passedArgs = null;
 			if (!values.isNull()) {
 				passedArgs = (ArrayValue) values;

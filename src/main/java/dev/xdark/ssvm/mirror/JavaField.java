@@ -1,7 +1,5 @@
 package dev.xdark.ssvm.mirror;
 
-import dev.xdark.ssvm.util.MetadataHolder;
-import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.FieldNode;
 
 /**
@@ -9,14 +7,27 @@ import org.objectweb.asm.tree.FieldNode;
  *
  * @author xDark
  */
-public interface JavaField extends MetadataHolder {
+public interface JavaField extends JavaMember {
 
-	/**
-	 * Returns field owner.
-	 *
-	 * @return field owner.
-	 */
-	InstanceJavaClass getOwner();
+	@Override
+	default String getName() {
+		return getNode().name;
+	}
+
+	@Override
+	default String getDesc() {
+		return getNode().desc;
+	}
+
+	@Override
+	default int getAccess() {
+		return getNode().access;
+	}
+
+	@Override
+	default String getSignature() {
+		return getNode().signature;
+	}
 
 	/**
 	 * Returns ASM field info.
@@ -38,42 +49,6 @@ public interface JavaField extends MetadataHolder {
 	 * @return field offset.
 	 */
 	long getOffset();
-
-	/**
-	 * Returns field name.
-	 *
-	 * @return field name.
-	 */
-	default String getName() {
-		return getNode().name;
-	}
-
-	/**
-	 * Returns field descriptor.
-	 *
-	 * @return field descriptor.
-	 */
-	default String getDesc() {
-		return getNode().desc;
-	}
-
-	/**
-	 * Returns field access.
-	 *
-	 * @return field access.
-	 */
-	default int getAccess() {
-		return getNode().access;
-	}
-
-	/**
-	 * Returns field signature.
-	 *
-	 * @return field signature.
-	 */
-	default String getSignature() {
-		return getNode().signature;
-	}
 
 	/**
 	 * Returns field type.

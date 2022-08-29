@@ -2,6 +2,7 @@ package dev.xdark.ssvm.mirror;
 
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
+import org.objectweb.asm.Type;
 
 /**
  * VM representation of Java class.
@@ -141,6 +142,11 @@ public interface JavaClass {
 	 * if class is not an array.
 	 */
 	JavaClass getComponentType();
+
+	/**
+	 * @return ASM type.
+	 */
+	Type getType();
 
 	/**
 	 * @return ASM sort type.

@@ -12,14 +12,27 @@ import java.util.List;
  *
  * @author xDark
  */
-public interface JavaMethod extends MetadataHolder {
+public interface JavaMethod extends JavaMember {
 
-	/**
-	 * Returns method owner.
-	 *
-	 * @return method owner.
-	 */
-	InstanceJavaClass getOwner();
+	@Override
+	default String getName() {
+		return getNode().name;
+	}
+
+	@Override
+	default String getDesc() {
+		return getNode().desc;
+	}
+
+	@Override
+	default int getAccess() {
+		return getNode().access;
+	}
+
+	@Override
+	default String getSignature() {
+		return getNode().signature;
+	}
 
 	/**
 	 * Returns ASM method info.
@@ -36,42 +49,6 @@ public interface JavaMethod extends MetadataHolder {
 	int getSlot();
 
 	/**
-	 * Returns method name.
-	 *
-	 * @return method name.
-	 */
-	default String getName() {
-		return getNode().name;
-	}
-
-	/**
-	 * Returns method descriptor.
-	 *
-	 * @return method descriptor.
-	 */
-	default String getDesc() {
-		return getNode().desc;
-	}
-
-	/**
-	 * Returns method access.
-	 *
-	 * @return method access.
-	 */
-	default int getAccess() {
-		return getNode().access;
-	}
-
-	/**
-	 * Returns method signature.
-	 *
-	 * @return method signature.
-	 */
-	default String getSignature() {
-		return getNode().signature;
-	}
-
-	/**
 	 * Returns method type.
 	 *
 	 * @return method type.
@@ -83,14 +60,14 @@ public interface JavaMethod extends MetadataHolder {
 	 *
 	 * @return array of types of arguments.
 	 */
-	Type[] getArgumentTypes();
+	JavaClass[] getArgumentTypes();
 
 	/**
 	 * Returns method return type.
 	 *
 	 * @return method return type.
 	 */
-	Type getReturnType();
+	JavaClass getReturnType();
 
 	/**
 	 * @return {@code  true} if this method is polymorphic,

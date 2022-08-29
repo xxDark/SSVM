@@ -293,17 +293,6 @@ public interface VMOperations {
 	void arrayStoreByte(ObjectValue array, int index, byte value);
 
 	/**
-	 * Sets value in the array.
-	 * Throws VM exception if array is null
-	 * or index is out of bounds.
-	 *
-	 * @param array Array to set value in.
-	 * @param index Value index.
-	 * @param value Value to set.
-	 */
-	void arrayStoreBoolean(ObjectValue array, int index, boolean value);
-
-	/**
 	 * Casts an object, throws
 	 * VM exception if cast failed.
 	 *

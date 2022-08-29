@@ -27,7 +27,7 @@ public class Interpreter {
 	 *
 	 * @param ctx Context to process.
 	 */
-	public void execute(ExecutionContext ctx) {
+	public void execute(ExecutionContext<?> ctx) {
 		JavaMethod jm = ctx.getMethod();
 		VMInterface vmi = ctx.getVM().getInterface();
 		MethodNode mn = jm.getNode();
@@ -63,7 +63,7 @@ public class Interpreter {
 		}
 	}
 
-	private static void handleExceptionCaught(ExecutionContext ctx, VMException ex) {
+	private static void handleExceptionCaught(ExecutionContext<?> ctx, VMException ex) {
 		ctx.unwind();
 		InstanceValue oop = ex.getOop();
 		InstanceJavaClass exceptionType = oop.getJavaClass();

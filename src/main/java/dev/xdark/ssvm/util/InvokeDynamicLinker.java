@@ -227,7 +227,7 @@ public final class InvokeDynamicLinker {
 		ops.putReference(resolvedName, NativeJava.VM_HOLDER, "Ljava/lang/Object;", handle.getOwner().getOop());
 		ops.putReference(memberName, "method", symbols.java_lang_invoke_ResolvedMethodName().getDescriptor(), resolvedName);
 		// Inject flags
-		int flags = handle.getAccess() & Modifier.RECOGNIZED_METHOD_MODIFIERS;
+		int flags = handle.getModifiers() & Modifier.RECOGNIZED_METHOD_MODIFIERS;
 		flags |= mnType | (refKind << MN_REFERENCE_KIND_SHIFT);
 		ops.putInt(memberName, "flags", flags);
 	}
@@ -247,7 +247,7 @@ public final class InvokeDynamicLinker {
 		MemoryManager memoryManager = vm.getMemoryManager();
 		InstanceJavaClass owner = handle.getOwner();
 		long offset = handle.getOffset();
-		if ((handle.getAccess() & ACC_STATIC) == 0) {
+		if ((handle.getModifiers() & ACC_STATIC) == 0) {
 			offset += memoryManager.valueBaseOffset(owner);
 		} else {
 			offset += memoryManager.getStaticOffset(owner);
@@ -261,7 +261,7 @@ public final class InvokeDynamicLinker {
 		ops.putReference(resolvedName, NativeJava.VM_HOLDER, "Ljava/lang/Object;", owner.getOop());
 		ops.putReference(memberName, "method", symbols.java_lang_invoke_ResolvedMethodName().getDescriptor(), resolvedName);
 		// Inject flags
-		int flags = handle.getAccess() & Modifier.RECOGNIZED_FIELD_MODIFIERS;
+		int flags = handle.getModifiers() & Modifier.RECOGNIZED_FIELD_MODIFIERS;
 		flags |= IS_FIELD | (refKind << MN_REFERENCE_KIND_SHIFT);
 		ops.putInt(memberName, "flags", flags);
 	}

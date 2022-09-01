@@ -1,16 +1,26 @@
-package dev.xdark.ssvm.execution;
+package dev.xdark.ssvm.thread.heap;
 
+import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.ReferenceMap;
 import dev.xdark.ssvm.thread.ThreadMemoryData;
 import dev.xdark.ssvm.util.Disposable;
 import dev.xdark.ssvm.value.ObjectValue;
 
-public final class MemoryLocals implements Locals, Disposable {
+/**
+ * Locals implementation that uses heap memory.
+ *
+ * @author xDark
+ */
+final class HeapLocals implements Locals, Disposable {
 	private final ReferenceMap referenceMap;
-	final ThreadMemoryData threadMemoryData;
+	ThreadMemoryData threadMemoryData;
 
-	public MemoryLocals(ReferenceMap referenceMap, ThreadMemoryData threadMemoryData) {
+	/**
+	 * @param referenceMap     Reference map.
+	 * @param threadMemoryData Memory data.
+	 */
+	HeapLocals(ReferenceMap referenceMap, ThreadMemoryData threadMemoryData) {
 		this.referenceMap = referenceMap;
 		this.threadMemoryData = threadMemoryData;
 	}
@@ -67,7 +77,7 @@ public final class MemoryLocals implements Locals, Disposable {
 
 	@Override
 	public void copyFrom(Locals locals, int srcOffset, int destOffset, int length) {
-		MemoryData from = ((MemoryLocals) locals).region();
+		MemoryData from = ((HeapLocals) locals).region();
 		from.read(srcOffset * 8L, region(), destOffset * 8L, length * 8);
 	}
 
@@ -83,5 +93,9 @@ public final class MemoryLocals implements Locals, Disposable {
 
 	MemoryData region() {
 		return threadMemoryData.data();
+	}
+
+	void reset(ThreadMemoryData data) {
+		threadMemoryData = data;
 	}
 }

@@ -16,7 +16,7 @@ public final class ArrayLengthProcessor implements InstructionProcessor<Abstract
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
-		stack.pushInt(ctx.getHelper().checkNotNullArray(stack.popReference()).getLength());
+		stack.pushInt(ctx.getOperations().getArrayLength(stack.popReference()));
 		return Result.CONTINUE;
 	}
 }

@@ -106,6 +106,14 @@ public interface VMOperations {
 	ArrayValue allocateBooleanArray(int length);
 
 	/**
+	 * Throws VM exception if array is null.
+	 *
+	 * @param value Array to get length for.
+	 * @return length of the array.
+	 */
+	int getArrayLength(ObjectValue value);
+
+	/**
 	 * Loads value from the array.
 	 * Throws VM exception if array is null
 	 * or index is out of bounds.

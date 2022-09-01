@@ -446,7 +446,8 @@ final class BufferMemoryData implements MemoryData {
 	@Override
 	public MemoryData slice(long offset, long bytes) {
 		int $offset = validate(offset);
-		return MemoryData.buffer(copyOrder(((ByteBuffer) buffer.slice().position($offset).limit($offset + validate(bytes))).slice()));
+		return new SliceMemoryData(this, $offset, validate(bytes));
+		// return MemoryData.buffer(copyOrder(((ByteBuffer) buffer.slice().position($offset).limit($offset + validate(bytes))).slice()));
 	}
 
 	@Override

@@ -48,7 +48,7 @@ public class AsmUtil {
 	 * @return maximum amount of local variable slots.
 	 */
 	public int getMaxLocals(JavaMethod mn) {
-		int access = mn.getAccess();
+		int access = mn.getModifiers();
 		if ((access & Opcodes.ACC_NATIVE) != 0 || (access & Opcodes.ACC_ABSTRACT) != 0) {
 			return mn.getMaxArgs();
 		}

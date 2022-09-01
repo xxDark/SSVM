@@ -20,7 +20,7 @@ public interface JavaField extends JavaMember {
 	}
 
 	@Override
-	default int getAccess() {
+	default int getModifiers() {
 		return getNode().access;
 	}
 

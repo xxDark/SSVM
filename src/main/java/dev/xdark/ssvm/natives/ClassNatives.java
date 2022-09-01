@@ -31,7 +31,6 @@ import me.coley.cafedude.classfile.attribute.AnnotationDefaultAttribute;
 import me.coley.cafedude.classfile.attribute.AnnotationsAttribute;
 import me.coley.cafedude.classfile.attribute.Attribute;
 import me.coley.cafedude.classfile.attribute.ParameterAnnotationsAttribute;
-import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InnerClassNode;
 
@@ -194,7 +193,7 @@ public class ClassNatives {
 				ops.putInt(constructor, "slot", mn.getSlot());
 				ops.putReference(constructor, "parameterTypes", "[Ljava/lang/Class;", parameters);
 				ops.putReference(constructor, "exceptionTypes", "[Ljava/lang/Class;", exceptions);
-				ops.putInt(constructor, "modifiers", Modifier.eraseMethod(mn.getAccess()));
+				ops.putInt(constructor, "modifiers", Modifier.eraseMethod(mn.getModifiers()));
 				ops.putReference(constructor, "signature", "Ljava/lang/String;", pool.intern(mn.getSignature()));
 				ops.putReference(constructor, "annotations", "[B", data.annotations);
 				ops.putReference(constructor, "parameterAnnotations", "[B", data.parameterAnnotations);
@@ -237,7 +236,7 @@ public class ClassNatives {
 				ops.putReference(method, "returnType", "Ljava/lang/Class;", rt.getOop());
 				ops.putReference(method, "parameterTypes", "[Ljava/lang/Class;", parameters);
 				ops.putReference(method, "exceptionTypes", "[Ljava/lang/Class;", exceptions);
-				ops.putInt(method, "modifiers", Modifier.eraseMethod(mn.getAccess()));
+				ops.putInt(method, "modifiers", Modifier.eraseMethod(mn.getModifiers()));
 				ops.putReference(method, "signature", "Ljava/lang/String;", pool.intern(mn.getSignature()));
 				ops.putReference(method, "annotations", "[B", data.annotations);
 				ops.putReference(method, "parameterAnnotations", "[B", data.parameterAnnotations);
@@ -276,7 +275,7 @@ public class ClassNatives {
 				ops.putInt(field, "slot", fn.getSlot());
 				ops.putReference(field, "name", "Ljava/lang/String;", pool.intern(fn.getName()));
 				ops.putReference(field, "type", "Ljava/lang/Class;", type.getOop());
-				ops.putInt(field, "modifiers", Modifier.eraseField(fn.getAccess()));
+				ops.putInt(field, "modifiers", Modifier.eraseField(fn.getModifiers()));
 				ops.putReference(field, "signature", "Ljava/lang/String;", pool.intern(fn.getSignature()));
 				ops.putReference(field, "annotations", "[B", readFieldAnnotations(fn));
 				field.initialize();

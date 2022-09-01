@@ -7,10 +7,11 @@ import dev.xdark.ssvm.execution.ExecutionContext;
  *
  * @author xDark
  */
-abstract class AbstractInvoker {
+@Deprecated
+public abstract class AbstractInvoker {
 
 	/**
 	 * @param ctx Processing content.
 	 */
-	abstract void execute(ExecutionContext<?> ctx);
+	public abstract void execute(ExecutionContext<?> ctx);
 }

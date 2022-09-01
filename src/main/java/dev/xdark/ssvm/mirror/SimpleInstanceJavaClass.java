@@ -40,8 +40,8 @@ import java.util.stream.Stream;
 public class SimpleInstanceJavaClass implements InstanceJavaClass {
 
 	private static final String POLYMORPHIC_DESC = "([Ljava/lang/Object;)Ljava/lang/Object;";
-	private static final Predicate<JavaField> NON_HIDDEN_FIELD = nonHidden(JavaField::getAccess);
-	private static final Predicate<JavaMethod> NON_HIDDEN_METHOD = nonHidden(JavaMethod::getAccess);
+	private static final Predicate<JavaField> NON_HIDDEN_FIELD = nonHidden(JavaField::getModifiers);
+	private static final Predicate<JavaMethod> NON_HIDDEN_METHOD = nonHidden(JavaMethod::getModifiers);
 
 	private final VirtualMachine vm;
 	private final ObjectValue classLoader;
@@ -835,7 +835,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 				.getAll()
 				.stream()
 				.filter(x -> constructors == "<init>".equals(x.getName()))
-				.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0))
+				.filter(x -> !publicOnly || (x.getModifiers() & Opcodes.ACC_PUBLIC) != 0))
 			.filter(NON_HIDDEN_METHOD)
 			.collect(Collectors.toList());
 	}
@@ -845,7 +845,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 			.getAll()
 			.stream()
 			.filter(x -> !"<clinit>".equals(x.getName()))
-			.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0);
+			.filter(x -> !publicOnly || (x.getModifiers() & Opcodes.ACC_PUBLIC) != 0);
 	}
 
 	private List<JavaField> getDeclaredFields0(boolean publicOnly) {
@@ -856,7 +856,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 				.getAll()
 				.stream())
 			.filter(x -> this == x.getOwner())
-			.filter(x -> !publicOnly || (x.getAccess() & Opcodes.ACC_PUBLIC) != 0)
+			.filter(x -> !publicOnly || (x.getModifiers() & Opcodes.ACC_PUBLIC) != 0)
 			.filter(NON_HIDDEN_FIELD)
 			.collect(Collectors.toList());
 	}

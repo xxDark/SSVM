@@ -21,7 +21,7 @@ public class ContextlessStackFrame implements StackFrame {
 	private final int lineNumber;
 
 	@Override
-	public ExecutionContext getExecutionContext() {
+	public ExecutionContext<?> getExecutionContext() {
 		return null;
 	}
 

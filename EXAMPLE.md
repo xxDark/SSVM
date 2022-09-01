@@ -10,7 +10,7 @@ import dev.xdark.ssvm.fs.FileDescriptorManager;
 import dev.xdark.ssvm.fs.HostFileDescriptorManager;
 import dev.xdark.ssvm.jit.JitClass;
 import dev.xdark.ssvm.jit.JitCompiler;
-import dev.xdark.ssvm.jit.JitInstaller;
+import dev.xdark.ssvm.jit.CodeInstaller;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.value.Value;
 import lombok.val;

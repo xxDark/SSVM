@@ -11,8 +11,6 @@ import dev.xdark.ssvm.mirror.JavaMethod;
  */
 public interface ThreadStorage {
 
-	ThreadMemoryData allocate(long size);
-
 	/**
 	 * Creates new stack.
 	 *

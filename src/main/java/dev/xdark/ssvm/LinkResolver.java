@@ -47,10 +47,10 @@ public final class LinkResolver {
 
 	public JavaMethod resolveVirtualMethod(JavaClass klass, JavaClass current, String name, String desc) {
 		JavaMethod method = resolveMethod(klass, name, desc, true);
-		if (klass.isInterface() && (method.getAccess() & ACC_PRIVATE) != 0) {
+		if (klass.isInterface() && (method.getModifiers() & ACC_PRIVATE) != 0) {
 			helper.throwException(symbols.java_lang_IncompatibleClassChangeError(), "private interface method requires invokespecial, not invokevirtual: method " + formatMethod(klass, name, desc) + ", caller-class: " + (current == null ? "<NULL>" : current.getInternalName()));
 		}
-		if ((method.getAccess() & ACC_STATIC) != 0) {
+		if ((method.getModifiers() & ACC_STATIC) != 0) {
 			helper.throwException(symbols.java_lang_IncompatibleClassChangeError(), "Expected non-static method " + formatMethod(klass, name, desc));
 		}
 		return method;
@@ -81,7 +81,7 @@ public final class LinkResolver {
 			helper.throwException(symbols.java_lang_IncompatibleClassChangeError(), "Found class " + klass.getName() + ", but interface was expected");
 		}
 		JavaMethod method = doResolveMethod(klass, name, desc);
-		if (nonStatic && (method.getAccess() & ACC_STATIC) != 0) {
+		if (nonStatic && (method.getModifiers() & ACC_STATIC) != 0) {
 			helper.throwException(symbols.java_lang_IncompatibleClassChangeError(), "Expected instance not static method " + formatMethod(klass, name, desc));
 		}
 		return method;
@@ -94,7 +94,7 @@ public final class LinkResolver {
 		} else {
 			method = resolveMethod(klass, name, desc, false);
 		}
-		if ((method.getAccess() & ACC_STATIC) == 0) {
+		if ((method.getModifiers() & ACC_STATIC) == 0) {
 			helper.throwException(symbols.java_lang_IncompatibleClassChangeError(), "Expected static method " + formatMethod(klass, name, desc));
 		}
 		return method;
@@ -110,7 +110,7 @@ public final class LinkResolver {
 		if (method.isConstructor() && klass != method.getOwner()) {
 			helper.throwException(symbols.java_lang_NoSuchMethodError(), klass.getName() + ": method " + name + desc + " not found");
 		}
-		if ((method.getAccess() & ACC_STATIC) != 0) {
+		if ((method.getModifiers() & ACC_STATIC) != 0) {
 			helper.throwException(symbols.java_lang_IncompatibleClassChangeError(), "Expected non-static method " + formatMethod(klass, name, desc));
 		}
 		return method;
@@ -126,7 +126,7 @@ public final class LinkResolver {
 			klass = klass.getSuperClass();
 		}
 		JavaField field = slowResolveStaticField(name, desc, current);
-		if (field != null && (trusted || !Modifier.isHiddenMember(field.getAccess()))) {
+		if (field != null && (trusted || !Modifier.isHiddenMember(field.getModifiers()))) {
 			return field;
 		}
 		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
@@ -143,7 +143,7 @@ public final class LinkResolver {
 				current = current.getSuperClass();
 			}
 		}
-		if (field != null && (trusted || !Modifier.isHiddenMember(field.getAccess()))) {
+		if (field != null && (trusted || !Modifier.isHiddenMember(field.getModifiers()))) {
 			return field;
 		}
 		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
@@ -170,7 +170,7 @@ public final class LinkResolver {
 		if (inMethodResolve &&
 			method != null &&
 			klass.isInterface() &&
-			(((acc = method.getAccess()) & ACC_STATIC) != 0 || (acc & ACC_PUBLIC) == 0) &&
+			(((acc = method.getModifiers()) & ACC_STATIC) != 0 || (acc & ACC_PUBLIC) == 0) &&
 			method.getOwner() == symbols.java_lang_Object()) {
 			method = null;
 		}

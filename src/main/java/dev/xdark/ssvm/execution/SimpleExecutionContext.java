@@ -2,6 +2,7 @@ package dev.xdark.ssvm.execution;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.thread.backtrace.StackFrame;
 import dev.xdark.ssvm.util.Disposable;
 import dev.xdark.ssvm.util.DisposeUtil;
 import dev.xdark.ssvm.util.VMHelper;
@@ -15,14 +16,16 @@ import java.util.Map;
 public final class SimpleExecutionContext<R extends ValueSink> implements ExecutionContext<R>, Disposable {
 
 	private final Map<ObjectValue, LockCount> lockMap = new IdentityHashMap<>();
-	private final VirtualMachine virtualMachine;
-	private final ExecutionOptions options;
-	private final JavaMethod method;
-	private final Stack stack;
-	private final Locals locals;
-	private final R sink;
+	private final EngineReference<ExecutionContext<?>> engineReference;
+	private VirtualMachine virtualMachine;
+	private ExecutionOptions options;
+	private JavaMethod method;
+	private Stack stack;
+	private Locals locals;
+	private R sink;
 	private int insnPosition;
 	private int lineNumber = -1;
+	final StackFrame frame = new SimpleStackFrame(this);
 
 	/**
 	 * @param method Method being executed.
@@ -31,12 +34,12 @@ public final class SimpleExecutionContext<R extends ValueSink> implements Execut
 	 * @param sink   Value sink, where the result will be put.
 	 */
 	public SimpleExecutionContext(ExecutionOptions options, JavaMethod method, Stack stack, Locals locals, R sink) {
-		this.options = options;
-		this.virtualMachine = method.getOwner().getVM();
-		this.method = method;
-		this.stack = stack;
-		this.locals = locals;
-		this.sink = sink;
+		engineReference = null;
+		init(options, method, stack, locals, sink);
+	}
+
+	SimpleExecutionContext(EngineReference<ExecutionContext<?>> engineReference) {
+		this.engineReference = engineReference;
 	}
 
 	@Override
@@ -176,6 +179,18 @@ public final class SimpleExecutionContext<R extends ValueSink> implements Execut
 	public void dispose() {
 		DisposeUtil.dispose(stack);
 		DisposeUtil.dispose(locals);
+		engineReference.recycle(this);
+	}
+
+	void init(ExecutionOptions options, JavaMethod method, Stack stack, Locals locals, R sink) {
+		this.options = options;
+		this.virtualMachine = method.getOwner().getVM();
+		this.method = method;
+		this.stack = stack;
+		this.locals = locals;
+		this.sink = sink;
+		insnPosition = 0;
+		lineNumber = -1;
 	}
 
 	private static final class LockCount {

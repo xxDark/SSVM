@@ -3,7 +3,7 @@ package dev.xdark.ssvm.thread.java;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
 import dev.xdark.ssvm.memory.management.MemoryManager;
-import dev.xdark.ssvm.thread.AllocatedThreadStorage;
+import dev.xdark.ssvm.thread.heap.HeapThreadStorage;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.ThreadState;
 import dev.xdark.ssvm.thread.ThreadStorage;
@@ -29,6 +29,7 @@ public class NativeThreadManager implements ThreadManager {
 	private final Map<InstanceValue, VMThread> vmThreads = new HashMap<>();
 	private final VirtualMachine vm;
 	private final ThreadGroup threadGroup;
+	private final ThreadHandle handle;
 
 	/**
 	 * @param vm          VM instance.
@@ -37,6 +38,14 @@ public class NativeThreadManager implements ThreadManager {
 	public NativeThreadManager(VirtualMachine vm, ThreadGroup threadGroup) {
 		this.vm = vm;
 		this.threadGroup = threadGroup;
+		handle = thread -> {
+			synchronized (this) {
+				VMThread vmThread = thread.getVmThread();
+				vmThreads.remove(vmThread.getOop());
+				vmThread.getThreadStorage().free();
+				vm.getSafePoint().pollAndSuspend();
+			}
+		};
 	}
 
 	@Override
@@ -148,7 +157,7 @@ public class NativeThreadManager implements ThreadManager {
 		VirtualMachine vm = this.vm;
 		MemoryManager manager = vm.getMemoryManager();
 		MemoryAllocator allocator = vm.getMemoryAllocator();
-		return new AllocatedThreadStorage(manager, allocator, allocator.allocateHeap(1024L * 1024L));
+		return new HeapThreadStorage(manager, allocator, allocator.allocateHeap(1024L * 1024L));
 	}
 
 	/**
@@ -158,11 +167,6 @@ public class NativeThreadManager implements ThreadManager {
 	 * @return created thread.
 	 */
 	protected NativeVMThread createThread(InstanceValue value) {
-		return new NativeVMThread(newBacktrace(), newThreadStorage(), value, threadGroup, () -> {
-			synchronized (this) {
-				vmThreads.remove(value);
-				vm.getSafePoint().pollAndSuspend();
-			}
-		});
+		return new NativeVMThread(newBacktrace(), newThreadStorage(), value, threadGroup, handle);
 	}
 }

@@ -8,9 +8,11 @@ import dev.xdark.ssvm.classloading.ClassLoaders;
 import dev.xdark.ssvm.classloading.ClassParseResult;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.ExecutionEngine;
+import dev.xdark.ssvm.execution.ExecutionOptions;
+import dev.xdark.ssvm.execution.ExecutionRequest;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.PanicException;
-import dev.xdark.ssvm.execution.SimpleExecutionRequest;
+import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.MemoryManager;
@@ -31,6 +33,7 @@ import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
+import dev.xdark.ssvm.value.sink.AbstractValueSink;
 import dev.xdark.ssvm.value.sink.BlackholeValueSink;
 import dev.xdark.ssvm.value.sink.DoubleValueSink;
 import dev.xdark.ssvm.value.sink.FloatValueSink;
@@ -50,6 +53,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.StreamSupport;
 
 /**
@@ -62,12 +67,16 @@ public final class VMHelper {
 
 	private static final int STRING_COPY_THRESHOLD = 256;
 	private final VirtualMachine vm;
+	private final Queue<SimpleExecutionRequest<?>> requests;
+	private final Queue<InvocationSink> sinks;
 
 	/**
 	 * @param vm VM instance.
 	 */
 	public VMHelper(VirtualMachine vm) {
 		this.vm = vm;
+		requests = new BoundedQueue<>(new ConcurrentLinkedQueue<>(), 16);
+		sinks = new BoundedQueue<>(new ConcurrentLinkedQueue<>(), 128);
 	}
 
 	/**
@@ -80,7 +89,14 @@ public final class VMHelper {
 	 */
 	public <R extends ValueSink> ExecutionContext<R> invoke(JavaMethod method, Locals locals, R sink) {
 		ExecutionEngine engine = vm.getExecutionEngine();
-		ExecutionContext<R> ctx = engine.createContext(new SimpleExecutionRequest<>(method, vm.getThreadStorage().newStack(method), locals, engine.defaultOptions(), sink));
+		Queue<SimpleExecutionRequest<?>> requests = this.requests;
+		SimpleExecutionRequest<R> request = (SimpleExecutionRequest<R>) requests.poll();
+		if (request == null) {
+			request = new SimpleExecutionRequest<>();
+		}
+		request.init(method, vm.getThreadStorage().newStack(method), locals, engine.defaultOptions(), sink);
+		ExecutionContext<R> ctx = engine.createContext(request);
+		requests.offer(request);
 		engine.execute(ctx);
 		return ctx;
 	}
@@ -93,7 +109,11 @@ public final class VMHelper {
 	 * @return invocation result.
 	 */
 	public ObjectValue invokeReference(JavaMethod method, Locals locals) {
-		return invoke(method, locals, new ReferenceValueSink()).getResult().getValue();
+		InvocationSink sink = makeSink();
+		invoke(method, locals, sink);
+		ObjectValue result = sink.r_value;
+		sinks.offer(sink);
+		return result;
 	}
 
 	/**
@@ -104,7 +124,11 @@ public final class VMHelper {
 	 * @return invocation result.
 	 */
 	public long invokeLong(JavaMethod method, Locals locals) {
-		return invoke(method, locals, new LongValueSink()).getResult().getValue();
+		InvocationSink sink = makeSink();
+		invoke(method, locals, sink);
+		long ref = sink.l_value;
+		sinks.offer(sink);
+		return ref;
 	}
 
 	/**
@@ -115,7 +139,7 @@ public final class VMHelper {
 	 * @return invocation result.
 	 */
 	public double invokeDouble(JavaMethod method, Locals locals) {
-		return invoke(method, locals, new DoubleValueSink()).getResult().getValue();
+		return Double.longBitsToDouble(invokeLong(method, locals));
 	}
 
 	/**
@@ -126,7 +150,11 @@ public final class VMHelper {
 	 * @return invocation result.
 	 */
 	public int invokeInt(JavaMethod method, Locals locals) {
-		return invoke(method, locals, new IntValueSink()).getResult().getValue();
+		InvocationSink sink = makeSink();
+		invoke(method, locals, sink);
+		int ref = sink.i_value;
+		sinks.offer(sink);
+		return ref;
 	}
 
 	/**
@@ -137,7 +165,7 @@ public final class VMHelper {
 	 * @return invocation result.
 	 */
 	public float invokeFloat(JavaMethod method, Locals locals) {
-		return invoke(method, locals, new FloatValueSink()).getResult().getValue();
+		return Float.intBitsToFloat(invokeInt(method, locals));
 	}
 
 	/**
@@ -1805,6 +1833,17 @@ public final class VMHelper {
 		return sink;
 	}
 
+	private InvocationSink makeSink() {
+		Queue<InvocationSink> sinks = this.sinks;
+		InvocationSink sink = sinks.poll();
+		if (sink == null) {
+			sink = new InvocationSink();
+		} else {
+			sink.reset();
+		}
+		return sink;
+	}
+
 	private static void makeHiddenMethod(InstanceJavaClass jc, String name, String desc) {
 		JavaMethod mn = jc.getVirtualMethod(name, desc);
 		if (mn == null) {
@@ -1836,5 +1875,83 @@ public final class VMHelper {
 		}
 		MethodNode node = jm.getNode();
 		node.access |= Modifier.ACC_CALLER_SENSITIVE;
+	}
+
+	private static final class SimpleExecutionRequest<R extends ValueSink> implements ExecutionRequest<R> {
+		private JavaMethod method;
+		private Stack stack;
+		private Locals locals;
+		private ExecutionOptions options;
+		private R resultSink;
+
+		SimpleExecutionRequest() {
+		}
+
+		private void init(JavaMethod method, Stack stack, Locals locals, ExecutionOptions options, R resultSink) {
+			this.method = method;
+			this.stack = stack;
+			this.locals = locals;
+			this.options = options;
+			this.resultSink = resultSink;
+		}
+
+		@Override
+		public JavaMethod getMethod() {
+			return method;
+		}
+
+		@Override
+		public Stack getStack() {
+			return stack;
+		}
+
+		@Override
+		public Locals getLocals() {
+			return locals;
+		}
+
+		@Override
+		public ExecutionOptions getOptions() {
+			return options;
+		}
+
+		@Override
+		public R getResultSink() {
+			return resultSink;
+		}
+	}
+
+	private static final class InvocationSink extends AbstractValueSink {
+		long l_value;
+		int i_value;
+		ObjectValue r_value;
+
+		@Override
+		public void acceptReference(ObjectValue value) {
+			check();
+			r_value = value;
+		}
+
+		@Override
+		public void acceptLong(long value) {
+			check();
+			l_value = value;
+		}
+
+		@Override
+		public void acceptDouble(double value) {
+			acceptLong(Double.doubleToRawLongBits(value));
+		}
+
+		@Override
+		public void acceptInt(int value) {
+			check();
+			i_value = value;
+		}
+
+		@Override
+		public void acceptFloat(float value) {
+			acceptInt(Float.floatToRawIntBits(value));
+		}
 	}
 }

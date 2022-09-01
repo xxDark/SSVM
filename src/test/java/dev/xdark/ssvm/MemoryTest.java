@@ -10,7 +10,7 @@ import dev.xdark.ssvm.memory.gc.GarbageCollector;
 import dev.xdark.ssvm.memory.gc.MarkAndSweepGarbageCollector;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.memory.management.SimpleMemoryManager;
-import dev.xdark.ssvm.thread.AllocatedThreadStorage;
+import dev.xdark.ssvm.thread.heap.HeapThreadStorage;
 import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.junit.jupiter.api.BeforeAll;
@@ -29,7 +29,7 @@ public class MemoryTest {
 	@BeforeAll
 	public static void setup() {
 		MemoryAllocator alloc = new NavigableMemoryAllocator();
-		storage = new AllocatedThreadStorage(null, alloc, alloc.allocateHeap(2048L));
+		storage = new HeapThreadStorage(null, alloc, alloc.allocateHeap(2048L));
 	}
 
 	@Test
@@ -61,6 +61,7 @@ public class MemoryTest {
 		Locals a = storage.newLocals(1);
 		Locals b = storage.newLocals(1);
 		a.setInt(0, 6000);
+		assertEquals(6000, a.loadInt(0));
 		b.copyFrom(a, 0, 0, 1);
 		assertEquals(6000, b.loadInt(0));
 		assertEquals(1, b.maxSlots());

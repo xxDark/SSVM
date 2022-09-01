@@ -41,7 +41,7 @@ public final class Reflection {
 					break;
 				}
 				JavaMethod method = frameCtx.getMethod();
-				if (Modifier.isCallerSensitive(method.getAccess())) {
+				if (Modifier.isCallerSensitive(method.getModifiers())) {
 					offset++;
 				} else {
 					break;

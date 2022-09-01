@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 public class ContextStackFrame implements StackFrame {
 
 	@Getter
-	private final ExecutionContext executionContext;
+	private final ExecutionContext<?> executionContext;
 
 	@Override
 	public InstanceJavaClass getDeclaringClass() {
@@ -38,7 +38,7 @@ public class ContextStackFrame implements StackFrame {
 
 	@Override
 	public StackFrame freeze() {
-		ExecutionContext executionContext = this.executionContext;
-		return new ContextFrozenStackFrame(executionContext, executionContext.getLineNumber());
+		ExecutionContext<?> ctx = this.executionContext;
+		return new ContextFrozenStackFrame(ctx, ctx.getLineNumber());
 	}
 }

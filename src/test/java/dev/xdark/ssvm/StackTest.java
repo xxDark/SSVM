@@ -1,6 +1,6 @@
 package dev.xdark.ssvm;
 
-import dev.xdark.ssvm.execution.MemoryStack;
+import dev.xdark.ssvm.thread.heap.HeapStack;
 import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.thread.ThreadMemoryData;
@@ -186,7 +186,7 @@ public final class StackTest {
 
 	private static List<Stack> stacks() {
 		MemoryData memory = MemoryData.buffer(ByteBuffer.allocate(MAX_STACK_SIZE * 8));
-		return Collections.singletonList(new MemoryStack(null, new ThreadMemoryData() {
+		return Collections.singletonList(new HeapStack(null, new ThreadMemoryData() {
 			@Override
 			public MemoryData data() {
 				return memory;

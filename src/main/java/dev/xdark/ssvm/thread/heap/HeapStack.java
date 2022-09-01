@@ -1,5 +1,7 @@
-package dev.xdark.ssvm.execution;
+package dev.xdark.ssvm.thread.heap;
 
+import dev.xdark.ssvm.execution.Locals;
+import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.ReferenceMap;
 import dev.xdark.ssvm.thread.ThreadMemoryData;
@@ -7,12 +9,23 @@ import dev.xdark.ssvm.util.Disposable;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 
-public final class MemoryStack implements Stack, Disposable {
+/**
+ * Stack implementation that uses heap memory.
+ *
+ * @author xDark
+ */
+public final class HeapStack implements Stack, Disposable {
 	private final ReferenceMap referenceMap;
-	private final ThreadMemoryData threadMemoryData;
+	private ThreadMemoryData threadMemoryData;
 	private long pointer;
 
-	public MemoryStack(ReferenceMap referenceMap, ThreadMemoryData threadMemoryData) {
+	/**
+	 * Visible only for testing.
+	 *
+	 * @param referenceMap     Reference map.
+	 * @param threadMemoryData Memory data.
+	 */
+	public HeapStack(ReferenceMap referenceMap, ThreadMemoryData threadMemoryData) {
 		this.referenceMap = referenceMap;
 		this.threadMemoryData = threadMemoryData;
 	}
@@ -252,7 +265,7 @@ public final class MemoryStack implements Stack, Disposable {
 			return;
 		}
 		long pointer = this.pointer - count * 8L;
-		region().read(pointer, ((MemoryLocals) locals).region(), 0L, count * 8);
+		region().read(pointer, ((HeapLocals) locals).region(), 0L, count * 8);
 		this.pointer = pointer;
 	}
 
@@ -262,7 +275,7 @@ public final class MemoryStack implements Stack, Disposable {
 			return;
 		}
 		long pointer = this.pointer - count * 8L;
-		region().read(pointer, ((MemoryLocals) locals).region(), dst * 8L, count * 8);
+		region().read(pointer, ((HeapLocals) locals).region(), dst * 8L, count * 8);
 		this.pointer = pointer;
 	}
 
@@ -338,5 +351,10 @@ public final class MemoryStack implements Stack, Disposable {
 
 	private MemoryData region() {
 		return threadMemoryData.data();
+	}
+
+	void reset(ThreadMemoryData data) {
+		threadMemoryData = data;
+		pointer = 0L;
 	}
 }

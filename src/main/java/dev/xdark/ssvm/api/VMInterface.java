@@ -110,7 +110,7 @@ public final class VMInterface {
 	 * @param invoker Method invoker.
 	 * @return {@code true} if method was registered,
 	 * {@code false} otherwise.
-	 * @see Modifier#ACC_JIT
+	 * @see Modifier#ACC_COMPILED
 	 */
 	public boolean setInvoker(InstanceJavaClass jc, String name, String desc, MethodInvoker invoker) {
 		JavaMethod method = jc.getMethod(name, desc);

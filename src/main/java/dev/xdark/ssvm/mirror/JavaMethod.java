@@ -25,7 +25,7 @@ public interface JavaMethod extends JavaMember {
 	}
 
 	@Override
-	default int getAccess() {
+	default int getModifiers() {
 		return getNode().access;
 	}
 

@@ -54,7 +54,7 @@ public interface StackFrame {
 	 * @return execution context or {@code null},
 	 * if no context is present.
 	 */
-	ExecutionContext getExecutionContext();
+	ExecutionContext<?> getExecutionContext();
 
 	/**
 	 * @return immutable frame.
@@ -68,7 +68,7 @@ public interface StackFrame {
 	 * @return stack frame that mirrors it's information from
 	 * execution context.
 	 */
-	static StackFrame ofContext(ExecutionContext ctx) {
+	static StackFrame ofContext(ExecutionContext<?> ctx) {
 		return new ContextStackFrame(ctx);
 	}
 

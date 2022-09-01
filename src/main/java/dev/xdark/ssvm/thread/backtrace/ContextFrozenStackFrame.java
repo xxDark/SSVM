@@ -15,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ContextFrozenStackFrame implements StackFrame {
 
-	private final ExecutionContext executionContext;
+	private final ExecutionContext<?> executionContext;
 	private final int lineNumber;
 
 	@Override

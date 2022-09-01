@@ -52,7 +52,7 @@ public class MethodAccessorNatives {
 				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 			}
 			ObjectValue instance = locals.loadReference(1);
-			boolean isStatic = (mn.getAccess() & ACC_STATIC) != 0;
+			boolean isStatic = (mn.getModifiers() & ACC_STATIC) != 0;
 			if (!isStatic && instance.isNull()) {
 				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 			}

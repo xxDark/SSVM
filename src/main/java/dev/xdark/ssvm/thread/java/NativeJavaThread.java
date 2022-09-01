@@ -4,7 +4,6 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.mirror.JavaMethod;
-import dev.xdark.ssvm.thread.ThreadHandle;
 import dev.xdark.ssvm.thread.ThreadState;
 import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.thread.VMThread;
@@ -105,7 +104,7 @@ public class NativeJavaThread extends Thread {
 				} finally {
 					ThreadHandle handle = this.handle;
 					if (handle != null) {
-						handle.release();
+						handle.release(this);
 					}
 				}
 			}

@@ -15,7 +15,7 @@ public final class InterpretedInvoker implements MethodInvoker {
 	@Override
 	public Result intercept(ExecutionContext ctx) {
 		JavaMethod method = ctx.getMethod();
-		int access = method.getAccess();
+		int access = method.getModifiers();
 		if ((access & Opcodes.ACC_NATIVE) != 0) {
 			throwLinkageError(ctx);
 		}

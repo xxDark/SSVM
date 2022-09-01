@@ -1,7 +1,6 @@
 package dev.xdark.ssvm.thread.java;
 
 import dev.xdark.ssvm.thread.BaseVMThread;
-import dev.xdark.ssvm.thread.ThreadHandle;
 import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.thread.backtrace.Backtrace;
 import dev.xdark.ssvm.value.InstanceValue;

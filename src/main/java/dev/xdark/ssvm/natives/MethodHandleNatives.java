@@ -16,7 +16,6 @@ import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.*;
-import dev.xdark.ssvm.value.sink.ReferenceValueSink;
 import lombok.experimental.UtilityClass;
 
 import static org.objectweb.asm.Opcodes.*;
@@ -145,7 +144,7 @@ public class MethodHandleNatives {
 				name = vmtarget.getName();
 			}
 
-			if ((vmtarget.getAccess() & ACC_STATIC) == 0) {
+			if ((vmtarget.getModifiers() & ACC_STATIC) == 0) {
 				int flags = ops.getInt(vmentry, "flags");
 				int refKind = (flags >> MN_REFERENCE_KIND_SHIFT) & MN_REFERENCE_KIND_MASK;
 				if (refKind != REF_invokeSpecial && refKind != REF_newInvokeSpecial) {
@@ -171,7 +170,7 @@ public class MethodHandleNatives {
 			InstanceJavaClass clazz = ((JavaValue<InstanceJavaClass>) ops.getReference(memberName, "clazz", "Ljava/lang/Class;")).getValue();
 			JavaMethod vmtarget = helper.getMethodBySlot(clazz, ops.getInt(ops.getReference(resolved, VM_TARGET, "Ljava/lang/Object;"), "value"));
 
-			if ((vmtarget.getAccess() & ACC_STATIC) == 0) {
+			if ((vmtarget.getModifiers() & ACC_STATIC) == 0) {
 				int flags = ops.getInt(memberName, "flags");
 				int refKind = (flags >> MN_REFERENCE_KIND_SHIFT) & MN_REFERENCE_KIND_MASK;
 				if (refKind != REF_invokeSpecial) {
@@ -242,7 +241,7 @@ public class MethodHandleNatives {
 		InstanceValue mt = helper.methodType(clazz.getClassLoader(), method.getType());
 		ops.putReference(memberName, "type", "Ljava/lang/Object;", mt);
 		int refKind;
-		if ((method.getAccess() & ACC_STATIC) == 0) {
+		if ((method.getModifiers() & ACC_STATIC) == 0) {
 			refKind = REF_invokeVirtual;
 		} else {
 			refKind = REF_invokeStatic;
@@ -277,7 +276,7 @@ public class MethodHandleNatives {
 		InstanceValue mt = field.getType().getOop();
 		ops.putReference(memberName, "type", "Ljava/lang/Object;", mt);
 		int refKind;
-		if ((field.getAccess() & ACC_STATIC) == 0) {
+		if ((field.getModifiers() & ACC_STATIC) == 0) {
 			refKind = REF_getField;
 		} else {
 			refKind = REF_getStatic;

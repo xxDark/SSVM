@@ -45,7 +45,7 @@ public class ClassLoaderNatives {
 				throw new IllegalStateException("Unable to locate ClassLoader init constructor");
 			}
 		}
-		Function<ExecutionContext, InstanceJavaClass> defineClassWithSource = makeClassDefiner(true);
+		Function<ExecutionContext<?>, InstanceJavaClass> defineClassWithSource = makeClassDefiner(true);
 		MethodInvoker defineClass1 = ctx -> {
 			ctx.setResult(defineClassWithSource.apply(ctx).getOop());
 			return Result.ABORT;
@@ -55,12 +55,12 @@ public class ClassLoaderNatives {
 				throw new IllegalStateException("Could not locate ClassLoader#defineClass1");
 			}
 		}
-		Function<ExecutionContext, InstanceJavaClass> defineClass0Old = makeClassDefiner(false);
+		Function<ExecutionContext<?>, InstanceJavaClass> defineClass0Old = makeClassDefiner(false);
 		if (!vmi.setInvoker(classLoader, "defineClass0", "(Ljava/lang/String;[BIILjava/security/ProtectionDomain;)Ljava/lang/Class;", ctx -> {
 			ctx.setResult(defineClass0Old.apply(ctx).getOop());
 			return Result.ABORT;
 		})) {
-			BiFunction<ExecutionContext, Boolean, InstanceJavaClass> defineClass0New = makeClassDefiner(1, false);
+			BiFunction<ExecutionContext<?>, Boolean, InstanceJavaClass> defineClass0New = makeClassDefiner(1, false);
 			vmi.setInvoker(classLoader, "defineClass0", "(Ljava/lang/ClassLoader;Ljava/lang/Class;Ljava/lang/String;[BIILjava/security/ProtectionDomain;ZILjava/lang/Object;)Ljava/lang/Class;", ctx -> {
 				Locals locals = ctx.getLocals();
 				int flags = locals.loadInt(8);
@@ -94,7 +94,7 @@ public class ClassLoaderNatives {
 		});
 		vmi.setInvoker(classLoader, "findBootstrapClass", "(Ljava/lang/String;)Ljava/lang/Class;", ctx -> {
 			Locals locals = ctx.getLocals();
-			int idx = (ctx.getMethod().getAccess() & Opcodes.ACC_STATIC) != 0 ? 0 : 1;
+			int idx = (ctx.getMethod().getModifiers() & Opcodes.ACC_STATIC) != 0 ? 0 : 1;
 			ObjectValue name = locals.loadReference(idx);
 			VMHelper helper = vm.getHelper();
 			helper.checkNotNull(name);
@@ -114,7 +114,7 @@ public class ClassLoaderNatives {
 		});
 	}
 
-	private static BiFunction<ExecutionContext, Boolean, InstanceJavaClass> makeClassDefiner(int argOffset, boolean withSource) {
+	private static BiFunction<ExecutionContext<?>, Boolean, InstanceJavaClass> makeClassDefiner(int argOffset, boolean withSource) {
 		return (ctx, link) -> {
 			VMHelper helper = ctx.getHelper();
 			Locals locals = ctx.getLocals();
@@ -130,8 +130,8 @@ public class ClassLoaderNatives {
 		};
 	}
 
-	private static Function<ExecutionContext, InstanceJavaClass> makeClassDefiner(boolean withSource) {
-		BiFunction<ExecutionContext, Boolean, InstanceJavaClass> definer = makeClassDefiner(0, withSource);
+	private static Function<ExecutionContext<?>, InstanceJavaClass> makeClassDefiner(boolean withSource) {
+		BiFunction<ExecutionContext<?>, Boolean, InstanceJavaClass> definer = makeClassDefiner(0, withSource);
 		return ctx -> definer.apply(ctx, Boolean.TRUE);
 	}
 }

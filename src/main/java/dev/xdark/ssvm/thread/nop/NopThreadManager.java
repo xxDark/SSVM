@@ -4,7 +4,7 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.thread.AllocatedThreadStorage;
+import dev.xdark.ssvm.thread.heap.HeapThreadStorage;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.thread.VMThread;
@@ -116,6 +116,6 @@ public final class NopThreadManager implements ThreadManager {
 		VirtualMachine vm = this.vm;
 		MemoryManager manager = vm.getMemoryManager();
 		MemoryAllocator allocator = vm.getMemoryAllocator();
-		return new AllocatedThreadStorage(manager, allocator, allocator.allocateHeap(1024L * 1024L));
+		return new HeapThreadStorage(manager, allocator, allocator.allocateHeap(1024L * 1024L));
 	}
 }

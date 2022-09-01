@@ -42,7 +42,7 @@ public class Modifier {
 		Opcodes.ACC_SYNTHETIC;
 	public static final int ACC_VM_HIDDEN = 1 << 16;
 	public static final int ACC_HIDDEN_FRAME = 1 << 17;
-	public static final int ACC_JIT = 1 << 18;
+	public static final int ACC_COMPILED = 1 << 18;
 	public static final int ACC_CALLER_SENSITIVE = 1 << 19;
 
 	/**
@@ -100,15 +100,15 @@ public class Modifier {
 
 	/**
 	 * Returns true if the integer argument
-	 * includes {@link Modifier#ACC_JIT} modifier.
+	 * includes {@link Modifier#ACC_COMPILED} modifier.
 	 *
 	 * @param modifiers A set of modifiers.
 	 * @return true if the integer argument
-	 * includes {@link Modifier#ACC_JIT} modifier,
+	 * includes {@link Modifier#ACC_COMPILED} modifier,
 	 * {@code false} otherwise.
 	 */
 	public boolean isCompiledMethod(int modifiers) {
-		return (modifiers & ACC_JIT) != 0;
+		return (modifiers & ACC_COMPILED) != 0;
 	}
 
 	/**

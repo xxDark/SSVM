@@ -96,6 +96,11 @@ public final class DefaultVMOperations implements VMOperations {
 	public ArrayValue allocateBooleanArray(int length) {
 		return allocateArray(primitives.booleanPrimitive(), length);
 	}
+
+	@Override
+	public int getArrayLength(ObjectValue value) {
+		return helper.checkNotNullArray(value).getLength();
+	}
 	//</editor-fold>
 
 	//<editor-fold desc="Array load methods">

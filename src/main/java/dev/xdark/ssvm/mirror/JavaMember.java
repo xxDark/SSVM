@@ -35,7 +35,7 @@ public interface JavaMember extends MetadataHolder {
 	 *
 	 * @return member access.
 	 */
-	int getAccess();
+	int getModifiers();
 
 	/**
 	 * Returns member signature.

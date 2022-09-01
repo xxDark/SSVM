@@ -39,8 +39,8 @@ public class ThrowableNatives {
 			Backtrace vmBacktrace = threadManager.currentThread().getBacktrace();
 			SimpleBacktrace copy = new SimpleBacktrace();
 			for (StackFrame frame : vmBacktrace) {
-				ExecutionContext frameCtx = frame.getExecutionContext();
-				if (frameCtx != null && Modifier.isHiddenFrame(frameCtx.getMethod().getAccess())) {
+				ExecutionContext<?> frameCtx = frame.getExecutionContext();
+				if (frameCtx != null && Modifier.isHiddenFrame(frameCtx.getMethod().getModifiers())) {
 					continue;
 				}
 				copy.push(frame.freeze());

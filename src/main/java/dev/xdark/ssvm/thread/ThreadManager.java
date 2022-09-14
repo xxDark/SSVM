@@ -2,81 +2,131 @@ package dev.xdark.ssvm.thread;
 
 import dev.xdark.ssvm.value.InstanceValue;
 
+import java.util.List;
+
 /**
- * VM thread manager.
+ * Thread manager.
  *
  * @author xDark
+ * @see OSThread
  */
 public interface ThreadManager {
 
 	/**
+	 * Starts the thread, assigns new OS thread to
+	 * the {@code oop} instance.
+	 *
+	 * @param oop Thread to start.
+	 */
+	void startThread(InstanceValue oop);
+
+	/**
+	 * Suspends the thread.
+	 *
+	 * @param oop Thread to suspend.
+	 */
+	void suspendThread(InstanceValue oop);
+
+	/**
+	 * Resumes the thread.
+	 *
+	 * @param oop Thread to resume.
+	 */
+	void resumeThread(InstanceValue oop);
+
+	/**
+	 * Sets thread priority.
+	 *
+	 * @param oop      Thread oop.
+	 * @param priority New priority.
+	 */
+	void setPriority(InstanceValue oop, int priority);
+
+	/**
+	 * Interrupts the thread.
+	 *
+	 * @param oop Thread to interrupt.
+	 */
+	void interrupt(InstanceValue oop);
+
+	/**
+	 * Sets thread name.
+	 *
+	 * @param oop  Thread oop.
+	 * @param name New name.
+	 */
+	void setName(InstanceValue oop, String name);
+
+	/**
+	 * Stops the thread.
+	 *
+	 * @param oop       Thread to stop.
+	 * @param exception Exception to propagate.
+	 */
+	void stop(InstanceValue oop, InstanceValue exception);
+
+	/**
+	 * @return Current Java thread or {@code null},
+	 * if current thread is not VM thread or not attached.
+	 */
+	JavaThread currentJavaThread();
+
+	/**
+	 * @return Current OS thread or {@code null},
+	 * if current thread is not VM thread or not attached.
+	 * This method may be a bit faster than calling {@code currentJavaThread}
+	 * and then {@link JavaThread#getOsThread()}.
+	 */
+	OSThread currentOsThread();
+
+	/**
 	 * Attaches current thread.
-	 * Does nothing if thread is already attached.
 	 */
 	void attachCurrentThread();
 
 	/**
-	 * Deatches current thread.
-	 * Does nothing if thread is not attached.
+	 * Detaches current thread.
 	 */
 	void detachCurrentThread();
 
 	/**
-	 * Returns VM thread from Java thread.
+	 * Checks whether the thread is interrupted.
 	 *
-	 * @param thread Thread to get VM thread from.
-	 * @return VM thread.
+	 * @param oop   Thread to check.
+	 * @param clear Whether interruption flag should be reset.
+	 * @return {@code true} if thread is interrupted.
 	 */
-	VMThread getVmThread(Thread thread);
+	boolean isInterrupted(InstanceValue oop, boolean clear);
 
 	/**
-	 * Returns VMThread by an instance.
+	 * @return A snapshot of currently running Java threads.
+	 */
+	List<JavaThread> snapshot();
+
+	/**
+	 * Causes current thread to sleep.
 	 *
-	 * @param thread VM thread oop.
+	 * @param millis Period to sleep for.
 	 */
-	VMThread getVmThread(InstanceValue thread);
+	void sleep(long millis);
 
 	/**
-	 * @return array of threads.
+	 * @see Thread#yield()
 	 */
-	VMThread[] getThreads();
-
-	/**
-	 * @return array of visible threads.
-	 */
-	VMThread[] getVisibleThreads();
-
-	/**
-	 * Returns current VM thread.
-	 *
-	 * @return current VM thread.
-	 */
-	default VMThread currentThread() {
-		return getVmThread(Thread.currentThread());
-	}
+	void yield();
 
 	/**
 	 * Creates main thread.
+	 * After that call control will be passed into the VM and thread will be
+	 * added for scheduling.
 	 *
-	 * @return main thread.
+	 * @return Main thread.
 	 */
-	VMThread createMainThread();
+	JavaThread createMainThread();
 
 	/**
-	 * Suspends all VM threads.
+	 * @param oop Thread to get Java thread for.
+	 * @return Java thread or {@code null}, if thread is not alive.
 	 */
-	void suspendAll();
-
-	/**
-	 * Resumes all VM threads.
-	 */
-	void resumeAll();
-
-	/**
-	 * Causes the currently executing thread to sleep.
-	 *
-	 * @param millis The length of time to sleep in milliseconds.
-	 * @throws InterruptedException If any thread has interrupted the current thread.
-	 */
-	void sleep(long millis) throws InterruptedException;
+	JavaThread getThread(InstanceValue oop);
 }

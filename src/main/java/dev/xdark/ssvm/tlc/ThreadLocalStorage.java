@@ -16,19 +16,19 @@ public final class ThreadLocalStorage {
 	private final ClassFileReader classFileReader = new ClassFileReader();
 
 	/**
-	 * @param handle IO handle.
-	 * @return wrapper for an IO handle.
+	 * @param handle Handle.
+	 * @return wrapper for a handle.
 	 */
-	public Handle ioHandle(long handle) {
+	public Handle handle(long handle) {
 		Handle wrapper = this.handle;
 		wrapper.set(handle);
 		return wrapper;
 	}
 
 	/**
-	 * @return wrapper for an IO handle.
+	 * @return wrapper for a handle.
 	 */
-	public Handle ioHandle() {
+	public Handle handle() {
 		return handle;
 	}
 

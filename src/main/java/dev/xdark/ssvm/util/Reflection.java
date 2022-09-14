@@ -30,7 +30,7 @@ public final class Reflection {
 	 * @return caller frame.
 	 */
 	public StackFrame getCallerFrame(int offset) {
-		Backtrace backtrace = vm.currentThread().getBacktrace();
+		Backtrace backtrace = vm.currentOSThread().getBacktrace();
 		int count = backtrace.count();
 		StackFrame frame = backtrace.get(count - offset++);
 		JavaMethod caller = frame.getExecutionContext().getMethod();

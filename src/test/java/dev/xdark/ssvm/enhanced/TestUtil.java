@@ -11,8 +11,6 @@ import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.memory.management.SynchronizedMemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
-import dev.xdark.ssvm.thread.java.NativeThreadManager;
-import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.InstanceValue;
@@ -32,65 +30,60 @@ import java.util.function.Consumer;
 public class TestUtil {
 
 	public void test(Class<?> klass, boolean bootstrap, Consumer<InstanceJavaClass> init) {
-		ThreadGroup group = new ThreadGroup("ssvm-" + System.nanoTime());
+		VirtualMachine vm = newVirtualMachine();
+		if (bootstrap) {
+			vm.bootstrap();
+		} else {
+			vm.initialize();
+			vm.getThreadManager().attachCurrentThread();
+		}
+		byte[] result;
+		try (InputStream in = TestUtil.class.getClassLoader().getResourceAsStream(klass.getName().replace('.', '/') + ".class")) {
+			byte[] bytes = new byte[1024];
+			ByteArrayOutputStream out = new ByteArrayOutputStream(1024);
+			int r;
+			while ((r = in.read(bytes)) != -1) {
+				out.write(bytes, 0, r);
+			}
+			result = out.toByteArray();
+		} catch (IOException ex) {
+			throw new RuntimeException(ex);
+		}
+		VMHelper helper = vm.getHelper();
+		ObjectValue nullValue = vm.getMemoryManager().nullValue();
+		InstanceJavaClass res;
 		try {
-			VirtualMachine vm = newVirtualMachine(group);
-			if (bootstrap) {
-				vm.bootstrap();
-			} else {
-				vm.initialize();
-				vm.getThreadManager().attachCurrentThread();
+			res = helper.defineClass(nullValue, null, result, 0, result.length, nullValue, "JVM_DefineClass");
+		} catch (VMException ex) {
+			throw new IllegalStateException(helper.toJavaException(ex.getOop()));
+		}
+		res.initialize();
+		if (init != null) {
+			init.accept(res);
+		}
+		ThreadStorage ts = vm.getThreadStorage();
+		for (JavaMethod m : res.getStaticMethodLayout().getAll()) {
+			MethodNode node = m.getNode();
+			List<AnnotationNode> annotations = node.visibleAnnotations;
+			if (annotations == null || annotations.stream().noneMatch(x -> "Ldev/xdark/ssvm/enhanced/VMTest;".equals(x.desc))) {
+				continue;
 			}
-			byte[] result;
-			try (InputStream in = TestUtil.class.getClassLoader().getResourceAsStream(klass.getName().replace('.', '/') + ".class")) {
-				byte[] bytes = new byte[1024];
-				ByteArrayOutputStream out = new ByteArrayOutputStream(1024);
-				int r;
-				while ((r = in.read(bytes)) != -1) {
-					out.write(bytes, 0, r);
-				}
-				result = out.toByteArray();
-			} catch (IOException ex) {
-				throw new RuntimeException(ex);
-			}
-			VMHelper helper = vm.getHelper();
-			ObjectValue nullValue = vm.getMemoryManager().nullValue();
-			InstanceJavaClass res;
 			try {
-				res = helper.defineClass(nullValue, null, result, 0, result.length, nullValue, "JVM_DefineClass");
+				helper.invoke(m, ts.newLocals(m));
 			} catch (VMException ex) {
-				throw new IllegalStateException(helper.toJavaException(ex.getOop()));
-			}
-			res.initialize();
-			if (init != null) {
-				init.accept(res);
-			}
-			ThreadStorage ts = vm.getThreadStorage();
-			for (JavaMethod m : res.getStaticMethodLayout().getAll()) {
-				MethodNode node = m.getNode();
-				List<AnnotationNode> annotations = node.visibleAnnotations;
-				if (annotations == null || annotations.stream().noneMatch(x -> "Ldev/xdark/ssvm/enhanced/VMTest;".equals(x.desc))) {
-					continue;
-				}
+				InstanceValue oop = ex.getOop();
+				System.err.println(oop);
 				try {
-					helper.invoke(m, ts.newLocals(m));
-				} catch (VMException ex) {
-					InstanceValue oop = ex.getOop();
-					System.err.println(oop);
-					try {
-						JavaMethod printStackTrace = vm.getPublicLinkResolver().resolveVirtualMethod(oop, "printStackTrace", "()V");
-						Locals locals = ts.newLocals(printStackTrace);
-						locals.setReference(0, oop);
-						helper.invoke(printStackTrace, locals);
-					} catch (VMException ex1) {
-						System.err.println(ex1.getOop());
-						helper.toJavaException(ex1.getOop()).printStackTrace();
-					}
-					throw new TestAbortedException();
+					JavaMethod printStackTrace = vm.getPublicLinkResolver().resolveVirtualMethod(oop, "printStackTrace", "()V");
+					Locals locals = ts.newLocals(printStackTrace);
+					locals.setReference(0, oop);
+					helper.invoke(printStackTrace, locals);
+				} catch (VMException ex1) {
+					System.err.println(ex1.getOop());
+					helper.toJavaException(ex1.getOop()).printStackTrace();
 				}
+				throw new TestAbortedException();
 			}
-		} finally {
-			group.stop();
 		}
 	}
 
@@ -102,7 +95,7 @@ public class TestUtil {
 		test(klass, false, null);
 	}
 
-	private VirtualMachine newVirtualMachine(ThreadGroup threadGroup) {
+	private VirtualMachine newVirtualMachine() {
 		return new VirtualMachine() {
 			@Override
 			protected FileDescriptorManager createFileDescriptorManager() {
@@ -117,11 +110,6 @@ public class TestUtil {
 			@Override
 			protected MemoryManager createMemoryManager() {
 				return new SynchronizedMemoryManager(super.createMemoryManager());
-			}
-
-			@Override
-			protected ThreadManager createThreadManager() {
-				return new NativeThreadManager(this, threadGroup);
 			}
 		};
 	}

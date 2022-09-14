@@ -20,7 +20,6 @@ import dev.xdark.ssvm.jvm.ManagementInterface;
 import dev.xdark.ssvm.jvm.SimpleManagementInterface;
 import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
 import dev.xdark.ssvm.memory.allocation.NavigableMemoryAllocator;
-import dev.xdark.ssvm.memory.gc.GarbageCollector;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.memory.management.SimpleMemoryManager;
 import dev.xdark.ssvm.memory.management.SimpleStringPool;
@@ -39,10 +38,11 @@ import dev.xdark.ssvm.symbol.UninitializedVMPrimitives;
 import dev.xdark.ssvm.symbol.UninitializedVMSymbols;
 import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.thread.OSThread;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.ThreadStorage;
-import dev.xdark.ssvm.thread.VMThread;
-import dev.xdark.ssvm.thread.nop.NopThreadManager;
+import dev.xdark.ssvm.thread.JavaThread;
+import dev.xdark.ssvm.thread.virtual.VirtualThreadManager;
 import dev.xdark.ssvm.tz.SimpleTimeManager;
 import dev.xdark.ssvm.tz.TimeManager;
 import dev.xdark.ssvm.util.DefaultVMOperations;
@@ -155,15 +155,6 @@ public class VirtualMachine {
 	}
 
 	/**
-	 * Attempts to initialize the VM.
-	 */
-	private void tryInitialize() {
-		if (state.compareAndSet(InitializationState.UNINITIALIZED, InitializationState.INITIALIZING)) {
-			init();
-		}
-	}
-
-	/**
 	 * Initializes the VM.
 	 *
 	 * @throws IllegalStateException If VM fails to transit to {@link InitializationState#INITIALIZING} state,
@@ -190,114 +181,9 @@ public class VirtualMachine {
 		//<editor-fold desc="VM bootstrap">
 		tryInitialize();
 		assertInitialized();
+		//<editor-fold desc="VM initialization">
 		if (state.compareAndSet(InitializationState.INITIALIZED, InitializationState.BOOTING)) {
-			try {
-				VMSymbols symbols = this.symbols;
-				ThreadManager threadManager = this.threadManager;
-				threadManager.attachCurrentThread();
-				symbols.java_lang_ClassLoader().initialize();
-				VMHelper helper = this.helper;
-				InstanceJavaClass sysClass = symbols.java_lang_System();
-				MemoryManager memoryManager = this.memoryManager;
-				VMOperations ops = publicOperations;
-				GarbageCollector garbageCollector = memoryManager.getGarbageCollector();
-
-				// Inject unsafe constants
-				// This must be done first, otherwise
-				// jdk/internal/misc/Unsafe will cache wrong values
-				InstanceJavaClass unsafeConstants = (InstanceJavaClass) findBootstrapClass("jdk/internal/misc/UnsafeConstants", true);
-				if (unsafeConstants != null) {
-					MemoryAllocator memoryAllocator = this.memoryAllocator;
-					unsafeConstants.initialize();
-					ops.putInt(unsafeConstants, "ADDRESS_SIZE", memoryAllocator.addressSize());
-					ops.putInt(unsafeConstants, "PAGE_SIZE", memoryAllocator.pageSize());
-					ops.putBoolean(unsafeConstants, "BIG_ENDIAN", memoryAllocator.getByteOrder() == ByteOrder.BIG_ENDIAN);
-				}
-				// Initialize system group
-				InstanceJavaClass groupClass = symbols.java_lang_ThreadGroup();
-				InstanceValue sysGroup = memoryManager.newInstance(groupClass);
-				garbageCollector.makeGlobalReference(sysGroup);
-				LinkResolver linkResolver = this.publicLinkResolver;
-				ThreadStorage ts = getThreadStorage();
-				{
-					JavaMethod init = linkResolver.resolveSpecialMethod(groupClass, "<init>", "()V");
-					Locals locals = ts.newLocals(init);
-					locals.setReference(0, sysGroup);
-					helper.invoke(init, locals);
-				}
-				systemThreadGroup = sysGroup;
-				// Initialize main group
-				InstanceValue mainGroup = memoryManager.newInstance(groupClass);
-				garbageCollector.makeGlobalReference(mainGroup);
-				{
-					JavaMethod init = linkResolver.resolveSpecialMethod(groupClass, "<init>", "(Ljava/lang/ThreadGroup;Ljava/lang/String;)V");
-					Locals locals = ts.newLocals(init);
-					locals.setReference(0, mainGroup);
-					locals.setReference(1, sysGroup);
-					locals.setReference(2, helper.newUtf8("main"));
-					helper.invoke(init, locals);
-				}
-				mainThreadGroup = mainGroup;
-				// Initialize main thread
-				VMThread mainThread = threadManager.createMainThread();
-				InstanceValue oop = mainThread.getOop();
-				ops.putReference(oop, "group", "Ljava/lang/ThreadGroup;", mainGroup);
-				ops.putReference(oop, "name", "Ljava/lang/String;", helper.newUtf8("main"));
-				sysClass.initialize();
-				findBootstrapClass("java/lang/reflect/Method", true);
-				findBootstrapClass("java/lang/reflect/Field", true);
-				findBootstrapClass("java/lang/reflect/Constructor", true);
-
-				JavaMethod initializeSystemClass = sysClass.getStaticMethod("initializeSystemClass", "()V");
-				if (initializeSystemClass != null) {
-					// pre JDK 9 boot
-					helper.invoke(initializeSystemClass, ts.newLocals(initializeSystemClass));
-				} else {
-					findBootstrapClass("java/lang/StringUTF16", true);
-
-					// Oracle had moved this to native code, do it here
-					// On JDK 8 this is invoked in initializeSystemClass
-					{
-						JavaMethod add = linkResolver.resolveVirtualMethod(mainGroup, "add", "(Ljava/lang/Thread;)V");
-						Locals locals = ts.newLocals(add);
-						locals.setReference(0, mainGroup);
-						locals.setReference(1, mainThread.getOop());
-						helper.invoke(add, locals);
-					}
-					{
-						JavaMethod initPhase1 = linkResolver.resolveStaticMethod(sysClass, "initPhase1", "()V");
-						helper.invoke(initPhase1, ts.newLocals(initPhase1));
-					}
-					findBootstrapClass("java/lang/invoke/MethodHandle", true);
-					findBootstrapClass("java/lang/invoke/ResolvedMethodName", true);
-					findBootstrapClass("java/lang/invoke/MemberName", true);
-					findBootstrapClass("java/lang/invoke/MethodHandleNatives", true);
-
-					int result;
-					{
-						JavaMethod initPhase2 = linkResolver.resolveStaticMethod(sysClass, "initPhase2", "(ZZ)I");
-						Locals locals = ts.newLocals(initPhase2);
-						locals.setInt(0, 1);
-						locals.setInt(1, 1);
-						result = helper.invokeInt(initPhase2, locals);
-					}
-					if (result != 0) {
-						throw new IllegalStateException("VM bootstrapping failed, initPhase2 returned " + result);
-					}
-					{
-						JavaMethod initPhase3 = linkResolver.resolveStaticMethod(sysClass, "initPhase3", "()V");
-						helper.invoke(initPhase3, ts.newLocals(initPhase3));
-					}
-				}
-				{
-					JavaMethod getSystemClassLoader = linkResolver.resolveStaticMethod(symbols.java_lang_ClassLoader(), "getSystemClassLoader", "()Ljava/lang/ClassLoader;");
-					helper.invoke(getSystemClassLoader, ts.newLocals(getSystemClassLoader));
-				}
-				state.set(InitializationState.BOOTED);
-			} catch (Exception ex) {
-				state.set(InitializationState.FAILED);
-				throw new IllegalStateException("VM bootstrap failed", ex);
-			}
+			boot();
 		} else {
 			throw new IllegalStateException("Failed to enter in BOOTING state");
 		}
@@ -572,16 +458,25 @@ public class VirtualMachine {
 	 * @return thread storage.
 	 */
 	public ThreadStorage getThreadStorage() {
-		return currentThread().getThreadStorage();
+		return currentJavaThread().getOsThread().getStorage();
 	}
 
 	/**
-	 * Returns current VM thread.
+	 * Returns current Java thread.
 	 *
-	 * @return current VM thread.
+	 * @return current Java thread.
 	 */
-	public VMThread currentThread() {
-		return threadManager.currentThread();
+	public JavaThread currentJavaThread() {
+		return threadManager.currentJavaThread();
+	}
+
+	/**
+	 * Returns current OS thread.
+	 *
+	 * @return current OS thread.
+	 */
+	public OSThread currentOSThread() {
+		return threadManager.currentOsThread();
 	}
 
 	/**
@@ -697,7 +592,7 @@ public class VirtualMachine {
 	 * @return thread manager.
 	 */
 	protected ThreadManager createThreadManager() {
-		return new NopThreadManager(this);
+		return new VirtualThreadManager(this);
 	}
 
 	/**
@@ -840,6 +735,27 @@ public class VirtualMachine {
 			threadManager.attachCurrentThread();
 			InstanceJavaClass groupClass = symbols.java_lang_ThreadGroup();
 			groupClass.initialize();
+			ThreadStorage ts = currentOSThread().getStorage();
+			// Initialize system group
+			InstanceValue sysGroup = memoryManager.newInstance(groupClass);
+			{
+				JavaMethod init = publicLinkResolver.resolveSpecialMethod(groupClass, "<init>", "()V");
+				Locals locals = ts.newLocals(init);
+				locals.setReference(0, sysGroup);
+				helper.invoke(init, locals);
+			}
+			systemThreadGroup = sysGroup;
+			// Initialize main group
+			InstanceValue mainGroup = memoryManager.newInstance(groupClass);
+			{
+				JavaMethod init = publicLinkResolver.resolveSpecialMethod(groupClass, "<init>", "(Ljava/lang/ThreadGroup;Ljava/lang/String;)V");
+				Locals locals = ts.newLocals(init);
+				locals.setReference(0, mainGroup);
+				locals.setReference(1, sysGroup);
+				locals.setReference(2, helper.newUtf8("main"));
+				helper.invoke(init, locals);
+			}
+			mainThreadGroup = mainGroup;
 			IntrinsicsNatives.init(this);
 			state.set(InitializationState.INITIALIZED);
 		} catch (Exception ex) {
@@ -848,6 +764,95 @@ public class VirtualMachine {
 		} finally {
 			threadManager.detachCurrentThread();
 		}
+	}
+
+	private void tryInitialize() {
+		if (state.compareAndSet(InitializationState.UNINITIALIZED, InitializationState.INITIALIZING)) {
+			init();
+		}
+	}
+
+	private void boot() {
+		//<editor-fold desc="VM bootstrap">
+		try {
+			VMSymbols symbols = this.symbols;
+			ThreadManager threadManager = this.threadManager;
+			threadManager.attachCurrentThread();
+			symbols.java_lang_ClassLoader().initialize();
+			VMHelper helper = this.helper;
+			InstanceJavaClass sysClass = symbols.java_lang_System();
+			MemoryManager memoryManager = this.memoryManager;
+			VMOperations ops = publicOperations;
+
+			// Inject unsafe constants
+			// This must be done first, otherwise
+			// jdk/internal/misc/Unsafe will cache wrong values
+			InstanceJavaClass unsafeConstants = (InstanceJavaClass) findBootstrapClass("jdk/internal/misc/UnsafeConstants", true);
+			if (unsafeConstants != null) {
+				MemoryAllocator memoryAllocator = this.memoryAllocator;
+				unsafeConstants.initialize();
+				ops.putInt(unsafeConstants, "ADDRESS_SIZE", memoryAllocator.addressSize());
+				ops.putInt(unsafeConstants, "PAGE_SIZE", memoryAllocator.pageSize());
+				ops.putBoolean(unsafeConstants, "BIG_ENDIAN", memoryAllocator.getByteOrder() == ByteOrder.BIG_ENDIAN);
+			}
+			LinkResolver linkResolver = this.publicLinkResolver;
+			ThreadStorage ts = getThreadStorage();
+			sysClass.initialize();
+			{
+				InstanceValue threadGroup = mainThreadGroup;
+				InstanceValue oop = currentJavaThread().getOop();
+				ops.putReference(oop, "group", "Ljava/lang/ThreadGroup;", threadGroup);
+				JavaMethod add = linkResolver.resolveVirtualMethod(threadGroup, "add", "(Ljava/lang/Thread;)V");
+				Locals locals = ts.newLocals(add);
+				locals.setReference(0, threadGroup);
+				locals.setReference(1, oop);
+				helper.invoke(add, locals);
+			}
+			findBootstrapClass("java/lang/reflect/Method", true);
+			findBootstrapClass("java/lang/reflect/Field", true);
+			findBootstrapClass("java/lang/reflect/Constructor", true);
+
+			JavaMethod initializeSystemClass = sysClass.getStaticMethod("initializeSystemClass", "()V");
+			if (initializeSystemClass != null) {
+				// pre JDK 9 boot
+				helper.invoke(initializeSystemClass, ts.newLocals(initializeSystemClass));
+			} else {
+				findBootstrapClass("java/lang/StringUTF16", true);
+				{
+					JavaMethod initPhase1 = linkResolver.resolveStaticMethod(sysClass, "initPhase1", "()V");
+					helper.invoke(initPhase1, ts.newLocals(initPhase1));
+				}
+				findBootstrapClass("java/lang/invoke/MethodHandle", true);
+				findBootstrapClass("java/lang/invoke/ResolvedMethodName", true);
+				findBootstrapClass("java/lang/invoke/MemberName", true);
+				findBootstrapClass("java/lang/invoke/MethodHandleNatives", true);
+
+				int result;
+				{
+					JavaMethod initPhase2 = linkResolver.resolveStaticMethod(sysClass, "initPhase2", "(ZZ)I");
+					Locals locals = ts.newLocals(initPhase2);
+					locals.setInt(0, 1);
+					locals.setInt(1, 1);
+					result = helper.invokeInt(initPhase2, locals);
+				}
+				if (result != 0) {
+					throw new IllegalStateException("VM bootstrapping failed, initPhase2 returned " + result);
+				}
+				{
+					JavaMethod initPhase3 = linkResolver.resolveStaticMethod(sysClass, "initPhase3", "()V");
+					helper.invoke(initPhase3, ts.newLocals(initPhase3));
+				}
+			}
+			{
+				JavaMethod getSystemClassLoader = linkResolver.resolveStaticMethod(symbols.java_lang_ClassLoader(), "getSystemClassLoader", "()Ljava/lang/ClassLoader;");
+				helper.invoke(getSystemClassLoader, ts.newLocals(getSystemClassLoader));
+			}
+			state.set(InitializationState.BOOTED);
+		} catch (Exception ex) {
+			state.set(InitializationState.FAILED);
+			throw new IllegalStateException("VM bootstrap failed", ex);
+		}
+		//</editor-fold>
 	}
 
 	private InstanceJavaClass internalLink(String name) {

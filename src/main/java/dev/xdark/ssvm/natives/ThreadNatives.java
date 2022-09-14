@@ -5,14 +5,15 @@ import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.jvmti.ThreadState;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.thread.VMThread;
-import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.thread.JavaThread;
 import dev.xdark.ssvm.value.ArrayValue;
-import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
+
+import java.util.List;
 
 /**
  * Initializes java/lang/Thread.
@@ -31,34 +32,31 @@ public class ThreadNatives {
 		InstanceJavaClass thread = symbols.java_lang_Thread();
 		vmi.setInvoker(thread, "registerNatives", "()V", MethodInvoker.noop());
 		vmi.setInvoker(thread, "currentThread", "()Ljava/lang/Thread;", ctx -> {
-			ctx.setResult(vm.currentThread().getOop());
+			ctx.setResult(vm.currentJavaThread().getOop());
 			return Result.ABORT;
 		});
-		vmi.setInvoker(thread, "interrupt", "()V", ctx -> {
-			VMThread th = vm.getThreadManager().getVmThread(ctx.getLocals().<InstanceValue>loadReference(0));
-			th.interrupt();
+		vmi.setInvoker(thread, "interrupt0", "()V", ctx -> {
+			vm.getThreadManager().interrupt(ctx.getLocals().loadReference(0));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "setPriority0", "(I)V", ctx -> {
 			Locals locals = ctx.getLocals();
-			VMThread th = vm.getThreadManager().getVmThread(locals.<InstanceValue>loadReference(0));
-			th.setPriority(locals.loadInt(1));
+			vm.getThreadManager().setPriority(locals.loadReference(0), locals.loadInt(1));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "start0", "()V", ctx -> {
-			VMThread th = vm.getThreadManager().getVmThread(ctx.getLocals().<InstanceValue>loadReference(0));
-			th.start();
+			vm.getThreadManager().startThread(ctx.getLocals().loadReference(0));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "isAlive", "()Z", ctx -> {
-			VMThread th = vm.getThreadManager().getVmThread(ctx.getLocals().<InstanceValue>loadReference(0));
-			ctx.setResult(th.isAlive() ? 1 : 0);
+			JavaThread th = vm.getThreadManager().getThread(ctx.getLocals().loadReference(0));
+			ctx.setResult(th != null && th.getOsThread().getState().has(ThreadState.JVMTI_THREAD_STATE_ALIVE) ? 1 : 0);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "isInterrupted", "(Z)Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			VMThread th = vm.getThreadManager().getVmThread(locals.<InstanceValue>loadReference(0));
-			ctx.setResult(th.isInterrupted(locals.loadInt(1) != 0) ? 1 : 0);
+			boolean interrupted = vm.getThreadManager().isInterrupted(locals.loadReference(0), locals.loadInt(1) != 0);
+			ctx.setResult(interrupted ? 1 : 0);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "holdsLock", "(Ljava/lang/Object;)Z", ctx -> {
@@ -67,10 +65,11 @@ public class ThreadNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "getThreads", "()[Ljava/lang/Thread;", ctx -> {
-			VMThread[] threads = vm.getThreadManager().getVisibleThreads();
-			ArrayValue array = vm.getHelper().newArray(thread, threads.length);
-			for (int i = 0; i < threads.length; i++) {
-				array.setReference(i, threads[i].getOop());
+			List<JavaThread> threads = vm.getThreadManager().snapshot();
+			int threadCount = threads.size();
+			ArrayValue array = vm.getHelper().newArray(thread, threadCount);
+			for (int i = 0; i < threadCount; i++) {
+				array.setReference(i, threads.get(i).getOop());
 			}
 			ctx.setResult(array);
 			return Result.ABORT;
@@ -80,12 +79,7 @@ public class ThreadNatives {
 			if (time < 0L) {
 				vm.getHelper().throwException(symbols.java_lang_IllegalArgumentException(), "timeout value is negative");
 			}
-			try {
-				vm.getThreadManager().sleep(time);
-			} catch (InterruptedException ex) {
-				VMHelper helper = vm.getHelper();
-				helper.throwException(symbols.java_lang_InterruptedException(), helper.newUtf8(ex.getMessage()));
-			}
+			vm.getThreadManager().sleep(time);
 			return Result.ABORT;
 		});
 	}

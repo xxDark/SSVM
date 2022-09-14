@@ -6,7 +6,7 @@ public class SynchronizationTest {
 
 	@Test
 	public void doTest() {
-		TestUtil.test(SynchronizationTest.class, false);
+		TestUtil.test(SynchronizationTest.class, true);
 	}
 
 	@VMTest

@@ -2,11 +2,6 @@ package dev.xdark.ssvm.memory.gc;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.classloading.ClassLoaderData;
-import dev.xdark.ssvm.classloading.ClassLoaders;
-import dev.xdark.ssvm.execution.ExecutionContext;
-import dev.xdark.ssvm.execution.PanicException;
-import dev.xdark.ssvm.execution.SafePoint;
-import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
 import dev.xdark.ssvm.memory.allocation.MemoryBlock;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.MemoryManager;
@@ -14,19 +9,12 @@ import dev.xdark.ssvm.mirror.FieldLayout;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaField;
-import dev.xdark.ssvm.symbol.VMPrimitives;
-import dev.xdark.ssvm.thread.backtrace.Backtrace;
-import dev.xdark.ssvm.thread.backtrace.StackFrame;
-import dev.xdark.ssvm.thread.ThreadManager;
-import dev.xdark.ssvm.thread.ThreadStorage;
-import dev.xdark.ssvm.thread.VMThread;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 import org.objectweb.asm.Type;
 
-import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Map;
 

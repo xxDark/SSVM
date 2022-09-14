@@ -58,7 +58,7 @@ public final class Handle {
 	 * @return thread-local handle.
 	 */
 	public static Handle threadLocal(long value) {
-		return ThreadLocalStorage.get().ioHandle(value);
+		return ThreadLocalStorage.get().handle(value);
 	}
 
 	/**
@@ -67,7 +67,7 @@ public final class Handle {
 	 * @return thread-local handle.
 	 */
 	public static Handle threadLocal() {
-		return ThreadLocalStorage.get().ioHandle();
+		return ThreadLocalStorage.get().handle();
 	}
 
 	/**

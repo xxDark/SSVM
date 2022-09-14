@@ -8,7 +8,6 @@ import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.symbol.VMSymbols;
-import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.backtrace.Backtrace;
 import dev.xdark.ssvm.thread.backtrace.SimpleBacktrace;
 import dev.xdark.ssvm.thread.backtrace.StackFrame;
@@ -35,8 +34,7 @@ public class ThrowableNatives {
 		InstanceJavaClass throwable = symbols.java_lang_Throwable();
 		vmi.setInvoker(throwable, "fillInStackTrace", "(I)Ljava/lang/Throwable;", ctx -> {
 			InstanceValue exception = ctx.getLocals().loadReference(0);
-			ThreadManager threadManager = vm.getThreadManager();
-			Backtrace vmBacktrace = threadManager.currentThread().getBacktrace();
+			Backtrace vmBacktrace = vm.currentOSThread().getBacktrace();
 			SimpleBacktrace copy = new SimpleBacktrace();
 			for (StackFrame frame : vmBacktrace) {
 				ExecutionContext<?> frameCtx = frame.getExecutionContext();

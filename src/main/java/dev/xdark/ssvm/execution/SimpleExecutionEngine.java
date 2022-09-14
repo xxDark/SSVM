@@ -4,8 +4,8 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvocation;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.mirror.JavaMethod;
-import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.backtrace.Backtrace;
+import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.util.BoundedQueue;
 import dev.xdark.ssvm.util.DisposeUtil;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -48,7 +48,7 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 		ExecutionOptions options = ctx.getOptions();
 		VirtualMachine vm = this.vm;
 		ThreadManager threadManager = vm.getThreadManager();
-		Backtrace backtrace = threadManager.currentThread().getBacktrace();
+		Backtrace backtrace = threadManager.currentOsThread().getBacktrace();
 		backtrace.push(((SimpleExecutionContext<?>) ctx).frame);
 		VMInterface vmi = vm.getInterface();
 		jm.increaseInvocation();

@@ -24,8 +24,6 @@ import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.mirror.MemberKey;
 import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.symbol.VMSymbols;
-import dev.xdark.ssvm.thread.ThreadState;
-import dev.xdark.ssvm.thread.VMThread;
 import dev.xdark.ssvm.thread.backtrace.Backtrace;
 import dev.xdark.ssvm.thread.backtrace.StackFrame;
 import dev.xdark.ssvm.value.ArrayValue;
@@ -39,7 +37,6 @@ import dev.xdark.ssvm.value.sink.DoubleValueSink;
 import dev.xdark.ssvm.value.sink.FloatValueSink;
 import dev.xdark.ssvm.value.sink.IntValueSink;
 import dev.xdark.ssvm.value.sink.LongValueSink;
-import dev.xdark.ssvm.value.sink.ReferenceValueSink;
 import dev.xdark.ssvm.value.sink.ValueSink;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Handle;
@@ -192,7 +189,7 @@ public final class VMHelper {
 		}
 		if (cst instanceof Type) {
 			Type type = (Type) cst;
-			StackFrame ctx = vm.currentThread().getBacktrace().last();
+			StackFrame ctx = vm.currentOSThread().getBacktrace().last();
 			InstanceJavaClass caller = ctx == null ? null : ctx.getDeclaringClass();
 			ObjectValue loader = caller == null ? vm.getMemoryManager().nullValue() : caller.getClassLoader();
 			int sort = type.getSort();
@@ -207,7 +204,7 @@ public final class VMHelper {
 		}
 
 		if (cst instanceof Handle) {
-			StackFrame ctx = vm.currentThread().getBacktrace().last();
+			StackFrame ctx = vm.currentOSThread().getBacktrace().last();
 			return linkMethodHandleConstant(ctx.getDeclaringClass(), (Handle) cst);
 		}
 
@@ -744,27 +741,6 @@ public final class VMHelper {
 	}
 
 	/**
-	 * Modifies VM oop according to native thread.
-	 *
-	 * @param vmThread Thread to modify.
-	 */
-	public void screenVmThread(VMThread vmThread) {
-		Thread javaThread = vmThread.getJavaThread();
-		InstanceValue oop = vmThread.getOop();
-		VirtualMachine vm = this.vm;
-		VMOperations ops = vm.getPublicOperations();
-		InstanceJavaClass jc = vm.getSymbols().java_lang_Thread();
-		// Copy thread name
-		ops.putReference(oop, jc, "name", "Ljava/lang/String;", newUtf8(javaThread.getName()));
-		// Copy thread priority
-		ops.putInt(oop, jc, "priority", javaThread.getPriority());
-		// Copy daemon status
-		ops.putBoolean(oop, jc, "daemon", javaThread.isDaemon());
-		// Copy thread state (JVMTI_THREAD_STATE_RUNNABLE | JVMTI_THREAD_STATE_ALIVE)
-		ops.putInt(oop, jc, "threadStatus", ThreadState.JVMTI_THREAD_STATE_RUNNABLE | ThreadState.JVMTI_THREAD_STATE_ALIVE);
-	}
-
-	/**
 	 * Creates new exception.
 	 *
 	 * @param javaClass Exception class.
@@ -1186,7 +1162,7 @@ public final class VMHelper {
 			}
 			find:
 			{
-				StackFrame ctx = vm.currentThread().getBacktrace().last();
+				StackFrame ctx = vm.currentOSThread().getBacktrace().last();
 				if (ctx != null) {
 					InstanceJavaClass caller = ctx.getDeclaringClass();
 					if (caller.getClassLoader() == loader && name.equals(caller.getInternalName())) {

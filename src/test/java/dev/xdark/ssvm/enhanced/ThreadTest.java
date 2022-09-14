@@ -1,9 +1,11 @@
 package dev.xdark.ssvm.enhanced;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 public class ThreadTest {
 
+	@Disabled
 	@Test
 	public void doTest() {
 		TestUtil.test(ThreadTest.class, true);

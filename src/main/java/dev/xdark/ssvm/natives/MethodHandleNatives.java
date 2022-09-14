@@ -123,7 +123,7 @@ public class MethodHandleNatives {
 			if ("<init>".equals(name)) {
 				helper.throwException(symbols.java_lang_InternalError(), "Bad name " + name);
 			}
-			ExecutionContext<?> last = vm.currentThread().getBacktrace().last().getExecutionContext();
+			ExecutionContext<?> last = vm.currentOSThread().getBacktrace().last().getExecutionContext();
 			JavaMethod callerMethod = last.getMethod();
 			String callName = callerMethod.getName();
 			if ("invoke".equals(callName)) {

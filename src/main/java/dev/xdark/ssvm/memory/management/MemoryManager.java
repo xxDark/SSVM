@@ -1,9 +1,9 @@
 package dev.xdark.ssvm.memory.management;
 
-import dev.xdark.ssvm.memory.gc.GarbageCollector;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.synchronizer.Mutex;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
@@ -24,6 +24,12 @@ public interface MemoryManager extends ReferenceMap {
 	 * @return {@code null} value.
 	 */
 	ObjectValue nullValue();
+
+	/**
+	 * @param reference Reference to get synchronizer for.
+	 * @return Object synchronizer.
+	 */
+	Mutex getMutex(ObjectValue reference);
 
 	/**
 	 * Allocates new object.
@@ -284,9 +290,4 @@ public interface MemoryManager extends ReferenceMap {
 	 * @param value Object to write data into.
 	 */
 	void writeDefaults(ObjectValue value);
-
-	/**
-	 * @return garbage collector.
-	 */
-	GarbageCollector getGarbageCollector();
 }

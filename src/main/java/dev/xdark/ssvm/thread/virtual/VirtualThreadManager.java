@@ -206,10 +206,10 @@ public final class VirtualThreadManager implements ThreadManager {
 		if (millis == 0L) {
 			return;
 		}
-		if (dead(th)) {
-			return;
-		}
+		Assertions.check(!dead(th), "thread is not alive");
+		OSThread osThread = th.getOsThread();
 		if (th.attached) {
+			osThread.setState(ThreadState.JVMTI_JAVA_LANG_THREAD_STATE_BLOCKED);
 			// Call to native Thread.sleep
 			th.timeout = millis;
 			try {
@@ -220,6 +220,8 @@ public final class VirtualThreadManager implements ThreadManager {
 				th.interrupted = true;
 				VirtualMachine vm = this.vm;
 				vm.getHelper().throwException(vm.getSymbols().java_lang_InterruptedException(), "sleep interrupted");
+			} finally {
+				osThread.setState(ThreadState.JVMTI_JAVA_LANG_THREAD_STATE_RUNNABLE);
 			}
 		} else {
 			Assertions.check(th.timeout == 0L, "already sleeping");
@@ -227,6 +229,7 @@ public final class VirtualThreadManager implements ThreadManager {
 				th.interrupted = false;
 				vm.getHelper().throwException(vm.getSymbols().java_lang_InterruptedException(), "sleep interrupted");
 			} else {
+				osThread.setState(ThreadState.JVMTI_JAVA_LANG_THREAD_STATE_BLOCKED);
 				th.timeout = millis;
 				// Remove form scheduled threads and put to asleep
 				scheduled.remove(th);
@@ -245,13 +248,16 @@ public final class VirtualThreadManager implements ThreadManager {
 		VirtualMachine vm = this.vm;
 		InstanceValue oop = vm.getMemoryManager().newInstance(vm.getSymbols().java_lang_Thread());
 		Thread th = Thread.currentThread();
-		VirtualJavaThread javaThread = foreignThreads.remove(th);
+		VirtualJavaThread javaThread = foreignThreads.get(th); // TODO fixme
 		if (javaThread == null) {
 			VirtualOSThread osThread = newOsThread(0L);
 			javaThread = new VirtualJavaThread(oop, osThread);
 		} else {
+			// TODO fixme
+			/*
 			javaThread.foreign = null;
 			javaThread.attached = false;
+			*/
 		}
 		currentThread = javaThread;
 		VMOperations ops = vm.getPublicOperations();

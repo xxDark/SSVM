@@ -37,11 +37,7 @@ public class SimpleStringPool implements StringPool {
 		lock.lock();
 		try {
 			return pool.computeIfAbsent(value, k -> {
-				InstanceValue utf8 = (InstanceValue) vm.getHelper().newUtf8(value, false);
-				// We never return the string from the pool,
-				// so mark it as global reference and keep forever
-				vm.getMemoryManager().getGarbageCollector().makeGlobalReference(utf8);
-				return utf8;
+				return (InstanceValue) vm.getHelper().newUtf8(value, false);
 			});
 		} finally {
 			lock.unlock();

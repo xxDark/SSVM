@@ -41,34 +41,4 @@ public final class NullValue implements ObjectValue {
 	public MemoryBlock getMemory() {
 		return memory;
 	}
-
-	@Override
-	public void monitorEnter() {
-		throw new UnsupportedOperationException("Null value");
-	}
-
-	@Override
-	public boolean monitorExit() {
-		throw new UnsupportedOperationException("Null value");
-	}
-
-	@Override
-	public void monitorWait(long timeoutMillis) throws InterruptedException {
-		throw new UnsupportedOperationException("Null value");
-	}
-
-	@Override
-	public void monitorNotify() {
-		throw new UnsupportedOperationException("Null value");
-	}
-
-	@Override
-	public void monitorNotifyAll() {
-		throw new UnsupportedOperationException("Null value");
-	}
-
-	@Override
-	public boolean isHeldByCurrentThread() {
-		throw new UnsupportedOperationException("Null value");
-	}
 }

@@ -9,7 +9,7 @@ import dev.xdark.ssvm.mirror.JavaClass;
  *
  * @author xDark
  */
-public interface ObjectValue extends Value, Synchronizable {
+public interface ObjectValue extends Value {
 
 	/**
 	 * Returns object class.

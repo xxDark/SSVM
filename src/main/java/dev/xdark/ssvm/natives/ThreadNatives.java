@@ -8,6 +8,7 @@ import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.jvmti.ThreadState;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.synchronizer.Mutex;
 import dev.xdark.ssvm.thread.JavaThread;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -60,8 +61,8 @@ public class ThreadNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "holdsLock", "(Ljava/lang/Object;)Z", ctx -> {
-			ObjectValue arg = vm.getHelper().checkNotNull(ctx.getLocals().loadReference(0));
-			ctx.setResult(arg.isHeldByCurrentThread() ? 1 : 0);
+			Mutex mutex = vm.getMemoryManager().getMutex(vm.getHelper().checkNotNull(ctx.getLocals().loadReference(0)));
+			ctx.setResult(mutex.isHeldByCurrentThread() ? 1 : 0);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "getThreads", "()[Ljava/lang/Thread;", ctx -> {

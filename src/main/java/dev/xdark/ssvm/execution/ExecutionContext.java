@@ -2,7 +2,6 @@ package dev.xdark.ssvm.execution;
 
 import dev.xdark.ssvm.LinkResolver;
 import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.memory.gc.GarbageCollector;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaMethod;
@@ -89,13 +88,6 @@ public interface ExecutionContext
 	 */
 	default SafePoint getSafePoint() {
 		return getVM().getSafePoint();
-	}
-
-	/**
-	 * @return garbage collector.
-	 */
-	default GarbageCollector getGarbageCollector() {
-		return getMemoryManager().getGarbageCollector();
 	}
 
 	/**

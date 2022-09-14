@@ -1,8 +1,8 @@
 package dev.xdark.ssvm.thread.virtual;
 
+import dev.xdark.ssvm.thread.AbstractOSThread;
 import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.thread.backtrace.Backtrace;
-import dev.xdark.ssvm.thread.AbstractOSThread;
 
 /**
  * Virtual OS thread.
@@ -10,8 +10,8 @@ import dev.xdark.ssvm.thread.AbstractOSThread;
  * @author xDark
  */
 final class VirtualOSThread extends AbstractOSThread {
-	private final Backtrace backtrace;
-	private final ThreadStorage storage;
+	private Backtrace backtrace;
+	private ThreadStorage storage;
 
 	VirtualOSThread(Backtrace backtrace, ThreadStorage storage) {
 		this.backtrace = backtrace;
@@ -30,5 +30,7 @@ final class VirtualOSThread extends AbstractOSThread {
 
 	void free() {
 		storage.free();
+		backtrace = null;
+		storage = null;
 	}
 }

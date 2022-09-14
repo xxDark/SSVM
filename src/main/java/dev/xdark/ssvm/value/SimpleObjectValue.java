@@ -15,8 +15,6 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public abstract class SimpleObjectValue implements ObjectValue {
 
-	private final ReentrantLock lock;
-	private final Condition signal;
 	private final MemoryManager memoryManager;
 	protected final MemoryBlock memory;
 
@@ -27,9 +25,6 @@ public abstract class SimpleObjectValue implements ObjectValue {
 	public SimpleObjectValue(MemoryManager memoryManager, MemoryBlock memory) {
 		this.memoryManager = memoryManager;
 		this.memory = memory;
-		ReentrantLock lock = new ReentrantLock();
-		this.lock = lock;
-		signal = lock.newCondition();
 	}
 
 	@Override
@@ -70,41 +65,6 @@ public abstract class SimpleObjectValue implements ObjectValue {
 	@Override
 	public MemoryBlock getMemory() {
 		return memory;
-	}
-
-	@Override
-	public void monitorEnter() {
-		lock.lock();
-	}
-
-	@Override
-	public boolean monitorExit() {
-		ReentrantLock lock = this.lock;
-		if (!lock.isHeldByCurrentThread()) {
-			return false;
-		}
-		lock.unlock();
-		return true;
-	}
-
-	@Override
-	public void monitorWait(long timeoutMillis) throws InterruptedException {
-		signal.await(timeoutMillis, TimeUnit.MILLISECONDS);
-	}
-
-	@Override
-	public void monitorNotify() {
-		signal.signal();
-	}
-
-	@Override
-	public void monitorNotifyAll() {
-		signal.signalAll();
-	}
-
-	@Override
-	public boolean isHeldByCurrentThread() {
-		return lock.isHeldByCurrentThread();
 	}
 
 	protected MemoryManager getMemoryManager() {

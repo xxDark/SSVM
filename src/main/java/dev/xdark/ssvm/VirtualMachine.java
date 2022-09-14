@@ -38,6 +38,8 @@ import dev.xdark.ssvm.symbol.UninitializedVMPrimitives;
 import dev.xdark.ssvm.symbol.UninitializedVMSymbols;
 import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.synchronizer.ObjectSynchronizer;
+import dev.xdark.ssvm.synchronizer.java.LockObjectSynchronizer;
 import dev.xdark.ssvm.thread.OSThread;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.ThreadStorage;
@@ -92,6 +94,7 @@ public class VirtualMachine {
 	private final InvokeDynamicLinker invokeDynamicLinker;
 	private final Reflection reflection;
 	private final MirrorFactory mirrorFactory;
+	private final ObjectSynchronizer objectSynchronizer;
 	private volatile InstanceValue systemThreadGroup;
 	private volatile InstanceValue mainThreadGroup;
 
@@ -126,6 +129,7 @@ public class VirtualMachine {
 		reflection = new Reflection(this);
 		publicOperations = createPublicOperations();
 		trustedOperations = createTrustedOperations();
+		objectSynchronizer = createObjectSynchronizer();
 
 		properties = System.getProperties().entrySet().stream().collect(Collectors.toMap(x -> x.getKey().toString(), x -> x.getValue().toString()));
 		env = new HashMap<>(System.getenv());
@@ -435,6 +439,15 @@ public class VirtualMachine {
 	}
 
 	/**
+	 * Returns object synchronizer.
+	 *
+	 * @return object synchronizer.
+	 */
+	public ObjectSynchronizer getObjectSynchronizer() {
+		return objectSynchronizer;
+	}
+
+	/**
 	 * Returns system thread group.
 	 *
 	 * @return system thread group.
@@ -703,6 +716,16 @@ public class VirtualMachine {
 	 */
 	protected VMOperations createTrustedOperations() {
 		return new DefaultVMOperations(this, true);
+	}
+
+	/**
+	 * Creates object synchronizer.
+	 * One may override this method.
+	 *
+	 * @return object synchronizer.
+	 */
+	protected ObjectSynchronizer createObjectSynchronizer() {
+		return new LockObjectSynchronizer();
 	}
 
 	private void init() {

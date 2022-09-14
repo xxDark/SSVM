@@ -4,6 +4,8 @@ import dev.xdark.ssvm.jvmti.ThreadState;
 
 /**
  * Basic OS thread.
+ *
+ * @author xDark
  */
 public abstract class AbstractOSThread implements OSThread {
 

@@ -1,9 +1,9 @@
 package dev.xdark.ssvm.memory.management;
 
-import dev.xdark.ssvm.memory.gc.GarbageCollector;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.synchronizer.Mutex;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
@@ -40,6 +40,13 @@ public class SynchronizedMemoryManager implements MemoryManager {
 	@Override
 	public ObjectValue nullValue() {
 		return memoryManager.nullValue();
+	}
+
+	@Override
+	public Mutex getMutex(ObjectValue reference) {
+		synchronized (mutex) {
+			return memoryManager.getMutex(reference);
+		}
 	}
 
 	@Override
@@ -236,10 +243,5 @@ public class SynchronizedMemoryManager implements MemoryManager {
 	@Override
 	public void writeDefaults(ObjectValue value) {
 		memoryManager.writeDefaults(value);
-	}
-
-	@Override
-	public GarbageCollector getGarbageCollector() {
-		return memoryManager.getGarbageCollector();
 	}
 }

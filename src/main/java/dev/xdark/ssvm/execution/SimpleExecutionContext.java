@@ -1,7 +1,9 @@
 package dev.xdark.ssvm.execution;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.synchronizer.Mutex;
 import dev.xdark.ssvm.thread.backtrace.StackFrame;
 import dev.xdark.ssvm.util.Disposable;
 import dev.xdark.ssvm.util.DisposeUtil;
@@ -89,9 +91,10 @@ public final class SimpleExecutionContext<R extends ValueSink> implements Execut
 
 	@Override
 	public void monitorEnter(ObjectValue value) {
-		virtualMachine.getHelper().checkNotNull(value);
-		lockMap.compute(value, (v, count) -> {
-			v.monitorEnter();
+		VirtualMachine vm = virtualMachine;
+		vm.getHelper().checkNotNull(value);
+		vm.getMemoryManager().getMutex(value).lock();
+		lockMap.compute(value, (__, count) -> {
 			if (count == null) {
 				return new LockCount();
 			}
@@ -121,13 +124,13 @@ public final class SimpleExecutionContext<R extends ValueSink> implements Execut
 		Map<ObjectValue, LockCount> lockMap = this.lockMap;
 		boolean exceptionThrown = !lockMap.isEmpty();
 		if (exceptionThrown) {
+			MemoryManager memoryManager = virtualMachine.getMemoryManager();
 			for (Map.Entry<ObjectValue, LockCount> entry : lockMap.entrySet()) {
 				int count = entry.getValue().value;
 				ObjectValue value = entry.getKey();
+				Mutex mutex = memoryManager.getMutex(value);
 				while (count-- != 0) {
-					try {
-						value.monitorExit();
-					} catch (IllegalMonitorStateException ignored) {
+					if (!mutex.tryUnlock()) {
 						break;
 					}
 				}

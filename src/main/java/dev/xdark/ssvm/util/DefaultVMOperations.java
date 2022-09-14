@@ -9,6 +9,7 @@ import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.mirror.JavaField;
 import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.synchronizer.Mutex;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -561,7 +562,9 @@ public final class DefaultVMOperations implements VMOperations {
 	@Override
 	public void monitorExit(ObjectValue value) {
 		VMHelper helper = this.helper;
-		if (!helper.<InstanceValue>checkNotNull(value).monitorExit()) {
+		helper.checkNotNull(value);
+		Mutex mutex = memoryManager.getMutex(value);
+		if (!mutex.tryUnlock()) {
 			helper.throwException(symbols.java_lang_IllegalMonitorStateException());
 		}
 	}

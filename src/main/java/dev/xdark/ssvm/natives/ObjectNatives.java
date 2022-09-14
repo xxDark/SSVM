@@ -10,6 +10,7 @@ import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.synchronizer.Mutex;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
@@ -42,25 +43,25 @@ public class ObjectNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "notify", "()V", ctx -> {
-			ObjectValue value = ctx.getLocals().loadReference(0);
-			if (!value.isHeldByCurrentThread()) {
+			Mutex mutex = ctx.getMemoryManager().getMutex(ctx.getLocals().loadReference(0));
+			if (!mutex.isHeldByCurrentThread()) {
 				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException());
 			}
-			value.monitorNotify();
+			mutex.doNotify();
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "notifyAll", "()V", ctx -> {
-			ObjectValue value = ctx.getLocals().loadReference(0);
-			if (!value.isHeldByCurrentThread()) {
+			Mutex mutex = ctx.getMemoryManager().getMutex(ctx.getLocals().loadReference(0));
+			if (!mutex.isHeldByCurrentThread()) {
 				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException());
 			}
-			value.monitorNotifyAll();
+			mutex.doNotifyAll();
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "wait", "(J)V", ctx -> {
 			Locals locals = ctx.getLocals();
-			ObjectValue value = locals.loadReference(0);
-			if (!value.isHeldByCurrentThread()) {
+			Mutex mutex = ctx.getMemoryManager().getMutex(ctx.getLocals().loadReference(0));
+			if (!mutex.isHeldByCurrentThread()) {
 				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException());
 			}
 			try {
@@ -68,7 +69,7 @@ public class ObjectNatives {
 				if (time == 0L) {
 					time = Long.MAX_VALUE;
 				}
-				value.monitorWait(time);
+				mutex.doWait(time);
 			} catch (InterruptedException ex) {
 				vm.getHelper().throwException(symbols.java_lang_InterruptedException());
 			}

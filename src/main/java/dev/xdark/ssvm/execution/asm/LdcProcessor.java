@@ -49,7 +49,6 @@ public final class LdcProcessor implements InstructionProcessor<LdcInsnNode> {
 					throw new PanicException("Bad valueFromLdc value: " + value);
 				}
 				ObjectValue ref = (ObjectValue) value;
-				ctx.getGarbageCollector().makeGlobalReference(ref);
 				list.set(insn, new ConstantReferenceInsnNode(insn, ref));
 			}
 			ctx.setInsnPosition(ctx.getInsnPosition() - 1);

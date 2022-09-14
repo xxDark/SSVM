@@ -6,13 +6,14 @@ import dev.xdark.ssvm.memory.allocation.MemoryAddress;
 import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
 import dev.xdark.ssvm.memory.allocation.MemoryBlock;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
-import dev.xdark.ssvm.memory.gc.GarbageCollector;
-import dev.xdark.ssvm.memory.gc.NoopGarbageCollector;
 import dev.xdark.ssvm.mirror.ArrayJavaClass;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
 import dev.xdark.ssvm.symbol.VMPrimitives;
+import dev.xdark.ssvm.synchronizer.Mutex;
+import dev.xdark.ssvm.synchronizer.ObjectSynchronizer;
 import dev.xdark.ssvm.tlc.ThreadLocalStorage;
+import dev.xdark.ssvm.util.Assertions;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
@@ -37,10 +38,9 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	protected final VirtualMachine vm;
 	private final MemoryAllocator allocator;
-	private final GarbageCollector garbageCollector;
 	private final NullValue nullValue;
-	private final int gcReserved;
 	private final int objectHeaderSize;
+	private final int arrayHeaderSize;
 	private final int arrayLengthOffset;
 
 	/**
@@ -50,22 +50,36 @@ public class SimpleMemoryManager implements MemoryManager {
 		this.vm = vm;
 		MemoryAllocator allocator = vm.getMemoryAllocator();
 		this.allocator = allocator;
-		GarbageCollector garbageCollector = createGarbageCollector();
-		this.garbageCollector = garbageCollector;
 		MemoryBlock emptyHeapBlock = allocator.emptyHeapBlock();
 		NullValue value = new NullValue(emptyHeapBlock);
 		objects.put(MemoryAddress.of(emptyHeapBlock.getAddress()), value);
 		nullValue = value;
-		int gcReserved = garbageCollector.reservedHeaderSize();
-		this.gcReserved = gcReserved;
-		int addressSize = allocator.addressSize() + gcReserved; // Reserve space for GC
-		objectHeaderSize = addressSize + 4;
+		// TODO shrink lock
+		int addressSize = allocator.addressSize() + 4; // 4 bytes for lock
+		objectHeaderSize = addressSize;
+		arrayHeaderSize = addressSize + 4;
 		arrayLengthOffset = addressSize;
 	}
 
 	@Override
 	public ObjectValue nullValue() {
 		return nullValue;
+	}
+
+	@Override
+	public Mutex getMutex(ObjectValue reference) {
+		Assertions.check(!reference.isNull(), "null reference");
+		MemoryData data = reference.getMemory().getData();
+		ObjectSynchronizer synchronizer = vm.getObjectSynchronizer();
+		Mutex mutex;
+		int id = data.readInt(8L);
+		if (id == -1) {
+			mutex = synchronizer.acquire();
+			data.writeInt(8L, mutex.id());
+		} else {
+			mutex = synchronizer.get(id);
+		}
+		return mutex;
 	}
 
 	@Override
@@ -159,7 +173,7 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public JavaClass readClass(ObjectValue object) {
-		ObjectValue value = objects.get(tlcAddress(object.getMemory().getData().readLong(gcReserved)));
+		ObjectValue value = objects.get(tlcAddress(object.getMemory().getData().readLong(0L)));
 		if (!(value instanceof JavaValue)) {
 			throw new PanicException("Segfault");
 		}
@@ -212,27 +226,27 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public int valueBaseOffset(ObjectValue value) {
-		return objectHeaderSize;
+		return value instanceof ArrayValue ? arrayHeaderSize : objectHeaderSize;
 	}
 
 	@Override
 	public int valueBaseOffset(JavaClass value) {
-		return objectHeaderSize;
+		return value.isArray() ? arrayHeaderSize : objectHeaderSize;
 	}
 
 	@Override
 	public int arrayBaseOffset(JavaClass javaClass) {
-		return objectHeaderSize;
+		return arrayHeaderSize;
 	}
 
 	@Override
 	public int arrayBaseOffset(ArrayValue array) {
-		return objectHeaderSize;
+		return arrayHeaderSize;
 	}
 
 	@Override
 	public int arrayBaseOffset(Class<?> javaClass) {
-		return objectHeaderSize;
+		return arrayHeaderSize;
 	}
 
 	@Override
@@ -361,20 +375,6 @@ public class SimpleMemoryManager implements MemoryManager {
 		data.set(arrayLengthOffset, data.length() - arrayLengthOffset, (byte) 0);
 	}
 
-	@Override
-	public GarbageCollector getGarbageCollector() {
-		return garbageCollector;
-	}
-
-	/**
-	 * Creates new garbage collector.
-	 *
-	 * @return garbage collector.
-	 */
-	protected GarbageCollector createGarbageCollector() {
-		return new NoopGarbageCollector();
-	}
-
 	private void outOfMemory() {
 		VirtualMachine vm = this.vm;
 		vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError(), "heap space");
@@ -382,22 +382,27 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	private MemoryBlock allocateObjectMemory(JavaClass javaClass) {
 		long objectSize = objectHeaderSize + javaClass.getVirtualFieldLayout().getSize();
-		return allocator.allocateHeap(objectSize);
+		return touch(allocator.allocateHeap(objectSize));
 	}
 
 	private MemoryBlock allocateClassMemory(JavaClass jlc, JavaClass javaClass) {
 		long size = objectHeaderSize + jlc.getVirtualFieldLayout().getSize() + javaClass.getStaticFieldLayout().getSize();
-		return allocator.allocateHeap(size);
+		return touch(allocator.allocateHeap(size));
 	}
 
 	private MemoryBlock allocateArrayMemory(int length, long componentSize) {
-		long size = objectHeaderSize + (long) length * componentSize;
-		return allocator.allocateHeap(size);
+		long size = arrayHeaderSize + (long) length * componentSize;
+		return touch(allocator.allocateHeap(size));
+	}
+
+	private MemoryBlock touch(MemoryBlock block) {
+		block.getData().writeInt(8L, -1);
+		return block;
 	}
 
 	private void setClass(MemoryBlock memory, JavaClass jc) {
 		long address = jc.getOop().getMemory().getAddress();
-		memory.getData().writeLong(gcReserved, address);
+		memory.getData().writeLong(0L, address);
 	}
 
 	private static MemoryAddress tlcAddress(long addr) {

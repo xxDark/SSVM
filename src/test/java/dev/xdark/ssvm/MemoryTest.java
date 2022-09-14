@@ -1,23 +1,13 @@
 package dev.xdark.ssvm;
 
-import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.execution.Locals;
-import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
 import dev.xdark.ssvm.memory.allocation.NavigableMemoryAllocator;
-import dev.xdark.ssvm.memory.gc.GarbageCollector;
-import dev.xdark.ssvm.memory.gc.MarkAndSweepGarbageCollector;
-import dev.xdark.ssvm.memory.management.MemoryManager;
-import dev.xdark.ssvm.memory.management.SimpleMemoryManager;
-import dev.xdark.ssvm.thread.heap.HeapThreadStorage;
 import dev.xdark.ssvm.thread.ThreadStorage;
-import dev.xdark.ssvm.value.ObjectValue;
+import dev.xdark.ssvm.thread.heap.HeapThreadStorage;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import java.util.Collection;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -67,6 +57,7 @@ public class MemoryTest {
 		assertEquals(1, b.maxSlots());
 	}
 
+	/*
 	@Disabled
 	@Test
 	public void testGC() {
@@ -109,4 +100,5 @@ public class MemoryTest {
 		}
 		System.out.println("allocated objects after GC: " + objects.size());
 	}
+	*/
 }

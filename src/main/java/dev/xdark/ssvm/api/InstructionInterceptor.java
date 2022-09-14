@@ -16,5 +16,5 @@ public interface InstructionInterceptor {
 	 * @param ctx  Execution context.
 	 * @param insn Instruction to intercept.
 	 */
-	Result intercept(ExecutionContext ctx, AbstractInsnNode insn);
+	Result intercept(ExecutionContext<?> ctx, AbstractInsnNode insn);
 }

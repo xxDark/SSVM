@@ -146,7 +146,7 @@ final class BufferMemoryData implements MemoryData {
 	}
 
 	@Override
-	public void copy(long srcOffset, MemoryData dst, long dstOffset, long bytes) {
+	public void write(long srcOffset, MemoryData dst, long dstOffset, long bytes) {
 		if (dst instanceof BufferMemoryData) {
 			ByteBuffer dstBuf = ((BufferMemoryData) dst).buffer;
 			int $srcOffset = validate(srcOffset);
@@ -448,23 +448,6 @@ final class BufferMemoryData implements MemoryData {
 		int $offset = validate(offset);
 		return new SliceMemoryData(this, $offset, validate(bytes));
 		// return MemoryData.buffer(copyOrder(((ByteBuffer) buffer.slice().position($offset).limit($offset + validate(bytes))).slice()));
-	}
-
-	@Override
-	public void transferTo(MemoryData other) {
-		if (other instanceof BufferMemoryData) {
-			ByteBuffer buffer = ((BufferMemoryData) other).buffer;
-			buffer.slice().put(this.buffer.slice());
-			return;
-		}
-		ByteBuffer buffer = this.buffer;
-		if (buffer.hasArray()) {
-			other.write(0L, buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
-		} else {
-			byte[] tmp = new byte[buffer.remaining()];
-			buffer.slice().get(tmp);
-			other.write(0L, tmp, 0, tmp.length);
-		}
 	}
 
 	// This is so stupid, calling ByteBuffer#slice()

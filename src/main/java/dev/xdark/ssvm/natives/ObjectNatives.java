@@ -96,7 +96,7 @@ public class ObjectNatives {
 			helper.checkEquals(originalOffset, offset);
 			MemoryData copyTo = clone.getMemory().getData();
 			MemoryData copyFrom = _this.getMemory().getData();
-			copyFrom.copy(
+			copyFrom.write(
 				offset,
 				copyTo,
 				offset,

@@ -25,7 +25,7 @@ public final class GetFieldDoubleProcessor implements InstructionProcessor<VMFie
 		if (field == null) {
 			InstanceJavaClass klass = instance.getJavaClass();
 			FieldInsnNode delegate = insn.getDelegate();
-			field = ctx.getLinkResolver().resolveVirtualField(klass, klass, delegate.name, "D");
+			field = ctx.getLinkResolver().resolveVirtualField(klass, delegate.name, "D");
 		}
 		ctx.getStack().pushDouble(Double.longBitsToDouble(instance.getMemory().getData().readLong(ctx.getMemoryManager().valueBaseOffset(instance) + field.getOffset())));
 		return Result.CONTINUE;

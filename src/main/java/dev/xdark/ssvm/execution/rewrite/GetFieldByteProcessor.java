@@ -25,7 +25,7 @@ public final class GetFieldByteProcessor implements InstructionProcessor<VMField
 		if (field == null) {
 			InstanceJavaClass klass = instance.getJavaClass();
 			FieldInsnNode delegate = insn.getDelegate();
-			field = ctx.getLinkResolver().resolveVirtualField(klass, klass, delegate.name, delegate.desc);
+			field = ctx.getLinkResolver().resolveVirtualField(klass, delegate.name, delegate.desc);
 		}
 		ctx.getStack().pushInt(instance.getMemory().getData().readByte(ctx.getMemoryManager().valueBaseOffset(instance) + field.getOffset()));
 		return Result.CONTINUE;

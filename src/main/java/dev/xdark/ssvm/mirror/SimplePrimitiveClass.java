@@ -90,9 +90,15 @@ public final class SimplePrimitiveClass implements PrimitiveClass {
 	public ArrayJavaClass newArrayClass() {
 		ArrayJavaClass arrayClass = this.arrayClass;
 		if (arrayClass == null) {
-			VirtualMachine vm = this.vm;
-			arrayClass = this.arrayClass = new ArrayJavaClass(vm, '[' + descriptor, 1, this);
-			vm.getHelper().setComponentType(arrayClass, this);
+			synchronized (this) {
+				arrayClass = this.arrayClass;
+				if (arrayClass == null) {
+					VirtualMachine vm = this.vm;
+					arrayClass = new ArrayJavaClass(vm, '[' + descriptor, 1, this);
+					vm.getHelper().setComponentType(arrayClass, this);
+					this.arrayClass = arrayClass;
+				}
+			}
 		}
 		return arrayClass;
 	}

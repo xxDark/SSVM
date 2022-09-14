@@ -94,13 +94,11 @@ public class JitTest {
 
 	private static void doCallTest() {
 		String s = new String("hello, world");
-		if (!"hello, world".equals(s)) {
+		Number number;
+		if (!"hello, world".equals(s) || !(number = 10507).equals(Integer.valueOf(10507))) {
 			throw new IllegalStateException();
 		}
-		Number number = 10507;
-		if (!number.equals(Integer.valueOf(10507))) {
-			throw new IllegalStateException();
-		}
+		number.intValue();
 	}
 
 	private static final class JitClassLoader extends ClassLoader

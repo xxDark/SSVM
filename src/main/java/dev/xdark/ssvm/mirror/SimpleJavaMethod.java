@@ -12,6 +12,7 @@ import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 public final class SimpleJavaMethod implements JavaMethod {
 
 	private final TypeSafeMap metadata = new TypeSafeMap();
+	private final BitSet extraModifiers = new BitSet();
 	private final InstanceJavaClass owner;
 	private final MethodNode node;
 	private final String desc;
@@ -191,6 +193,11 @@ public final class SimpleJavaMethod implements JavaMethod {
 	@Override
 	public TypeSafeMap getMetadata() {
 		return metadata;
+	}
+
+	@Override
+	public BitSet extraModifiers() {
+		return extraModifiers;
 	}
 
 	@Override

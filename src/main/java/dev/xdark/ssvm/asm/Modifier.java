@@ -40,6 +40,8 @@ public class Modifier {
 		Opcodes.ACC_ABSTRACT |
 		Opcodes.ACC_STRICT |
 		Opcodes.ACC_SYNTHETIC;
+
+
 	public static final int ACC_VM_HIDDEN = 1 << 16;
 	public static final int ACC_HIDDEN_FRAME = 1 << 17;
 	public static final int ACC_COMPILED = 1 << 18;

@@ -26,7 +26,7 @@ public final class PutFieldByteProcessor implements InstructionProcessor<VMField
 		if (field == null) {
 			InstanceJavaClass klass = instance.getJavaClass();
 			FieldInsnNode delegate = insn.getDelegate();
-			field = ctx.getLinkResolver().resolveVirtualField(klass, klass, delegate.name, delegate.desc);
+			field = ctx.getLinkResolver().resolveVirtualField(klass, delegate.name, delegate.desc);
 		}
 		instance.getMemory().getData().writeByte(ctx.getMemoryManager().valueBaseOffset(instance) + field.getOffset(), value);
 		return Result.CONTINUE;

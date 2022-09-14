@@ -25,7 +25,7 @@ public final class GetFieldIntProcessor implements InstructionProcessor<VMFieldI
 		if (field == null) {
 			InstanceJavaClass klass = instance.getJavaClass();
 			FieldInsnNode delegate = insn.getDelegate();
-			field = ctx.getLinkResolver().resolveVirtualField(klass, klass, delegate.name, "I");
+			field = ctx.getLinkResolver().resolveVirtualField(klass, delegate.name, "I");
 		}
 		ctx.getStack().pushInt(instance.getMemory().getData().readInt(ctx.getMemoryManager().valueBaseOffset(instance) + field.getOffset()));
 		return Result.CONTINUE;

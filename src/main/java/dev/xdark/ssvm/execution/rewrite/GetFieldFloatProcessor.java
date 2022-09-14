@@ -25,7 +25,7 @@ public final class GetFieldFloatProcessor implements InstructionProcessor<VMFiel
 		if (field == null) {
 			InstanceJavaClass klass = instance.getJavaClass();
 			FieldInsnNode delegate = insn.getDelegate();
-			field = ctx.getLinkResolver().resolveVirtualField(klass, klass, delegate.name, "F");
+			field = ctx.getLinkResolver().resolveVirtualField(klass, delegate.name, "F");
 		}
 		ctx.getStack().pushFloat(Float.intBitsToFloat(instance.getMemory().getData().readInt(ctx.getMemoryManager().valueBaseOffset(instance) + field.getOffset())));
 		return Result.CONTINUE;

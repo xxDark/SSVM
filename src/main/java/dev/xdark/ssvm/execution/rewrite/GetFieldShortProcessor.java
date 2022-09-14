@@ -25,7 +25,7 @@ public final class GetFieldShortProcessor implements InstructionProcessor<VMFiel
 		if (field == null) {
 			InstanceJavaClass klass = instance.getJavaClass();
 			FieldInsnNode delegate = insn.getDelegate();
-			field = ctx.getLinkResolver().resolveVirtualField(klass, klass, delegate.name, "S");
+			field = ctx.getLinkResolver().resolveVirtualField(klass, delegate.name, "S");
 		}
 		ctx.getStack().pushInt(instance.getMemory().getData().readShort(ctx.getMemoryManager().valueBaseOffset(instance) + field.getOffset()));
 		return Result.CONTINUE;

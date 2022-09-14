@@ -528,7 +528,7 @@ public class UnsafeNatives {
 			long bytes = locals.loadLong(7);
 			MemoryData srcData = getData(memoryAllocator, src, srcOffset);
 			MemoryData dstData = getData(memoryAllocator, dst, dstOffset);
-			srcData.copy(0L, dstData, 0L, bytes);
+			srcData.write(0L, dstData, 0L, bytes);
 			return Result.ABORT;
 		});
 	}

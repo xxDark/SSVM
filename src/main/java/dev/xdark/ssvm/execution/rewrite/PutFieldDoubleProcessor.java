@@ -26,7 +26,7 @@ public final class PutFieldDoubleProcessor implements InstructionProcessor<VMFie
 		if (field == null) {
 			InstanceJavaClass klass = instance.getJavaClass();
 			FieldInsnNode delegate = insn.getDelegate();
-			field = ctx.getLinkResolver().resolveVirtualField(klass, klass, delegate.name, "D");
+			field = ctx.getLinkResolver().resolveVirtualField(klass, delegate.name, "D");
 		}
 		instance.getMemory().getData().writeLong(ctx.getMemoryManager().valueBaseOffset(instance) + field.getOffset(), Double.doubleToRawLongBits(value));
 		return Result.CONTINUE;

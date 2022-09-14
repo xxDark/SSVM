@@ -587,7 +587,7 @@ public final class DefaultVMOperations implements VMOperations {
 	private long getFieldOffsetForInstance(ObjectValue instance, InstanceJavaClass klass, String name, String desc) {
 		VMHelper helper = this.helper;
 		helper.checkNotNull(instance);
-		JavaField field = linkResolver.resolveVirtualField(klass, (InstanceJavaClass) instance.getJavaClass(), name, desc);
+		JavaField field = linkResolver.resolveVirtualField(klass, name, desc);
 		return field.getOffset() + memoryManager.valueBaseOffset(instance);
 	}
 }

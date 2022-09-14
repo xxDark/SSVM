@@ -26,7 +26,7 @@ public final class PutFieldFloatProcessor implements InstructionProcessor<VMFiel
 		if (field == null) {
 			InstanceJavaClass klass = instance.getJavaClass();
 			FieldInsnNode delegate = insn.getDelegate();
-			field = ctx.getLinkResolver().resolveVirtualField(klass, klass, delegate.name, "F");
+			field = ctx.getLinkResolver().resolveVirtualField(klass, delegate.name, "F");
 		}
 		instance.getMemory().getData().writeInt(ctx.getMemoryManager().valueBaseOffset(instance) + field.getOffset(), Float.floatToRawIntBits(value));
 		return Result.CONTINUE;

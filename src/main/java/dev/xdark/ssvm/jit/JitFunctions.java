@@ -264,12 +264,6 @@ public class JitFunctions {
 		checkNotNull(instance, ctx);
 		instance.getMemory().getData().writeByte(offset, value);
 	}
-
-
-
-
-
-
 	public ObjectValue getReference(ObjectValue instance, long offset, ExecutionContext<?> ctx) {
 		checkNotNull(instance, ctx);
 		return ctx.getMemoryManager().readReference(instance, offset);

@@ -14,6 +14,7 @@ import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.memory.management.StringPool;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.mirror.JavaField;
 import dev.xdark.ssvm.mirror.JavaMethod;
 import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.symbol.VMSymbols;
@@ -872,7 +873,7 @@ public final class JitCompiler implements Opcodes, VMOpcodes {
 					INVOKE_DIRECT_VOID.emit(mv);
 			}
 			mv.visitInsn(returnType.getOpcode(IRETURN));
-			mv.visitMaxs(index + 3, ctxSlot);
+			mv.visitMaxs(index + 4, ctxSlot);
 			return new MethodInsnNode(INVOKESTATIC, className, callName, newType, false);
 		});
 		loadContext();
@@ -892,9 +893,13 @@ public final class JitCompiler implements Opcodes, VMOpcodes {
 	}
 
 	private void doInvokeVirtual(MethodInsnNode node) {
-		JavaClass klass = helper().findClass(classLoader(), node.owner, true);
+		JavaClass klass = helper().findClass(classLoader(), node.owner, false);
 		JavaMethod method = linkResolver().resolveVirtualMethod(klass, klass, node.name, node.desc);
 		makeCall(method, Modifier.isFinal(method.getModifiers()) || Modifier.isFinal(method.getOwner().getModifiers()) ? CallType.DIRECT : CallType.VIRTUAL);
+	}
+
+	private void findVirtual(FieldInsnNode node) {
+		JavaClass klass = helper().findClass(classLoader(), node.owner, false);
 	}
 
 	private InstanceJavaClass owner() {

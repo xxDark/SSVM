@@ -65,7 +65,7 @@ public class SystemNatives {
 			MemoryData srcData = src.getMemory().getData();
 			long dataStartPos = start + srcPos * (long) scale;
 			MemoryData dstData = dst.getMemory().getData();
-			srcData.copy(dataStartPos, dstData, start + (long) dstPos * scale, (long) length * scale);
+			srcData.write(dataStartPos, dstData, start + (long) dstPos * scale, (long) length * scale);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "identityHashCode", "(Ljava/lang/Object;)I", ctx -> {

@@ -156,7 +156,7 @@ public interface MemoryData {
 	 * @param dstOffset Destination offset.
 	 * @param bytes     Data length.
 	 */
-	void copy(long srcOffset, MemoryData dst, long dstOffset, long bytes);
+	void write(long srcOffset, MemoryData dst, long dstOffset, long bytes);
 
 	/**
 	 * Write buffer at the specific offset.
@@ -349,14 +349,6 @@ public interface MemoryData {
 	 * @return data slice.
 	 */
 	MemoryData slice(long offset, long bytes);
-
-	/**
-	 * Transfers data of this memory to
-	 * another memory data.
-	 *
-	 * @param other Memory data to transfer to.
-	 */
-	void transferTo(MemoryData other);
 
 	/**
 	 * Creates buffer backed memory data.

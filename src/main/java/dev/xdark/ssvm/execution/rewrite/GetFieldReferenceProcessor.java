@@ -26,7 +26,7 @@ public final class GetFieldReferenceProcessor implements InstructionProcessor<VM
 		if (field == null) {
 			InstanceJavaClass klass = instance.getJavaClass();
 			FieldInsnNode delegate = insn.getDelegate();
-			field = ctx.getLinkResolver().resolveVirtualField(klass, klass, delegate.name, delegate.desc);
+			field = ctx.getLinkResolver().resolveVirtualField(klass, delegate.name, delegate.desc);
 		}
 		MemoryManager memory = ctx.getMemoryManager();
 		stack.pushReference(memory.readReference(instance, memory.valueBaseOffset(instance) + field.getOffset()));

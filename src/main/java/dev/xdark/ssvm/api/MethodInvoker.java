@@ -17,7 +17,7 @@ public interface MethodInvoker {
 	 * @param ctx content to intercept.
 	 * @return interception result.
 	 */
-	Result intercept(ExecutionContext ctx);
+	Result intercept(ExecutionContext<?> ctx);
 
 	/**
 	 * @return method invoker that does nothing.

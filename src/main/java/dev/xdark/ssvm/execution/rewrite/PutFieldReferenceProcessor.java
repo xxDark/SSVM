@@ -27,7 +27,7 @@ public final class PutFieldReferenceProcessor implements InstructionProcessor<VM
 		if (field == null) {
 			InstanceJavaClass klass = instance.getJavaClass();
 			FieldInsnNode delegate = insn.getDelegate();
-			field = ctx.getLinkResolver().resolveVirtualField(klass, klass, delegate.name, delegate.desc);
+			field = ctx.getLinkResolver().resolveVirtualField(klass, delegate.name, delegate.desc);
 		}
 		ctx.getMemoryManager().writeValue(instance, ctx.getMemoryManager().valueBaseOffset(instance) + field.getOffset(), value);
 		return Result.CONTINUE;

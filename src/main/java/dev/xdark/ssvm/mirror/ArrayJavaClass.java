@@ -93,9 +93,15 @@ public final class ArrayJavaClass implements JavaClass {
 		}
 		ArrayJavaClass arrayClass = this.arrayClass;
 		if (arrayClass == null) {
-			VirtualMachine vm = this.vm;
-			arrayClass = this.arrayClass = new ArrayJavaClass(vm, '[' + name, dimensions + 1, this);
-			vm.getHelper().setComponentType(arrayClass, this);
+			synchronized (this) {
+				arrayClass = this.arrayClass;
+				if (arrayClass == null) {
+					VirtualMachine vm = this.vm;
+					arrayClass = new ArrayJavaClass(vm, '[' + name, dimensions + 1, this);
+					vm.getHelper().setComponentType(arrayClass, this);
+					this.arrayClass = arrayClass;
+				}
+			}
 		}
 		return arrayClass;
 	}

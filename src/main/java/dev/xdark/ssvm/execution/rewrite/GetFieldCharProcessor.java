@@ -25,7 +25,7 @@ public final class GetFieldCharProcessor implements InstructionProcessor<VMField
 		if (field == null) {
 			InstanceJavaClass klass = instance.getJavaClass();
 			FieldInsnNode delegate = insn.getDelegate();
-			field = ctx.getLinkResolver().resolveVirtualField(klass, klass, delegate.name, "C");
+			field = ctx.getLinkResolver().resolveVirtualField(klass, delegate.name, "C");
 		}
 		ctx.getStack().pushInt(instance.getMemory().getData().readChar(ctx.getMemoryManager().valueBaseOffset(instance) + field.getOffset()));
 		return Result.CONTINUE;

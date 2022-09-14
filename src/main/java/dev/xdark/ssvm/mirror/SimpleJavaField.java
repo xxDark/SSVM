@@ -6,6 +6,8 @@ import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.FieldNode;
 
+import java.util.BitSet;
+
 /**
  * Field info.
  *
@@ -14,6 +16,7 @@ import org.objectweb.asm.tree.FieldNode;
 public final class SimpleJavaField implements JavaField {
 
 	private final TypeSafeMap metadata = new TypeSafeMap();
+	private final BitSet extraModifiers = new BitSet();
 	private final InstanceJavaClass owner;
 	private final FieldNode node;
 	private final int slot;
@@ -66,6 +69,11 @@ public final class SimpleJavaField implements JavaField {
 	@Override
 	public TypeSafeMap getMetadata() {
 		return metadata;
+	}
+
+	@Override
+	public BitSet extraModifiers() {
+		return extraModifiers;
 	}
 
 	@Override

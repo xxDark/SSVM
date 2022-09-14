@@ -30,7 +30,7 @@ public final class PutFieldProcessor implements InstructionProcessor<FieldInsnNo
 			JavaField field;
 			int sort;
 			try {
-				field = ctx.getLinkResolver().resolveVirtualField(klass, klass, insn.name, insn.desc);
+				field = ctx.getLinkResolver().resolveVirtualField(klass, insn.name, insn.desc);
 				sort = field.getType().getSort();
 			} catch (VMException ex) {
 				sort = Type.getType(insn.desc).getSort();

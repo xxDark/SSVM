@@ -26,7 +26,7 @@ public final class PutFieldShortProcessor implements InstructionProcessor<VMFiel
 		if (field == null) {
 			InstanceJavaClass klass = instance.getJavaClass();
 			FieldInsnNode delegate = insn.getDelegate();
-			field = ctx.getLinkResolver().resolveVirtualField(klass, klass, delegate.name, "S");
+			field = ctx.getLinkResolver().resolveVirtualField(klass, delegate.name, "S");
 		}
 		instance.getMemory().getData().writeShort(ctx.getMemoryManager().valueBaseOffset(instance) + field.getOffset(), value);
 		return Result.CONTINUE;

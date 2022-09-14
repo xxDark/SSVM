@@ -74,7 +74,7 @@ public class NavigableMemoryAllocator extends AbstractMemoryAllocator {
 			return null;
 		}
 		MemoryData newBuffer = newBlock.getData();
-		buffer.copy(0L, newBuffer, 0L, buffer.length());
+		buffer.write(0L, newBuffer, 0L, buffer.length());
 		return newBlock;
 	}
 

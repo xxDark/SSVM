@@ -49,35 +49,41 @@ public class NativeThreadManager implements ThreadManager {
 	}
 
 	@Override
-	public synchronized void attachCurrentThread() {
+	public void attachCurrentThread() {
 		Thread thread = Thread.currentThread();
 		if (thread instanceof NativeJavaThread) {
 			throw new IllegalStateException("Cannot attach Java thread");
 		}
 		Map<Thread, VMThread> systemThreads = this.systemThreads;
-		VMThread vmThread = systemThreads.get(thread);
-		if (vmThread == null) {
-			vmThread = new SystemVMThread(newBacktrace(), newThreadStorage(), vm, thread);
-			systemThreads.put(thread, vmThread);
+		synchronized (this) {
+			VMThread vmThread = systemThreads.get(thread);
+			if (vmThread == null) {
+				vmThread = new SystemVMThread(newBacktrace(), newThreadStorage(), vm, thread);
+				systemThreads.put(thread, vmThread);
+			}
 		}
 	}
 
 	@Override
-	public synchronized void detachCurrentThread() {
+	public void detachCurrentThread() {
 		Thread thread = Thread.currentThread();
 		if (thread instanceof NativeJavaThread) {
 			throw new IllegalStateException("Cannot detach Java thread");
 		}
-		systemThreads.remove(thread);
+		synchronized (this) {
+			systemThreads.remove(thread);
+		}
 	}
 
 	@Override
 	public VMThread getVmThread(Thread thread) {
 		if (!(thread instanceof NativeJavaThread)) {
 			Map<Thread, VMThread> systemThreads = this.systemThreads;
-			VMThread vmThread = systemThreads.get(thread);
-			if (vmThread != null) {
-				return vmThread;
+			synchronized (this) {
+				VMThread vmThread = systemThreads.get(thread);
+				if (vmThread != null) {
+					return vmThread;
+				}
 			}
 			throw new IllegalStateException("Access from detached thread");
 		}

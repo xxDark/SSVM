@@ -163,7 +163,7 @@ public final class InvokeDynamicLinker {
 			InstanceJavaClass memberName = symbols.java_lang_invoke_MemberName();
 			List<FieldNode> fields = memberName.getNode().fields;
 			fields.add(new FieldNode(
-				ACC_PRIVATE | ACC_VM_HIDDEN,
+				ACC_PRIVATE,
 				NativeJava.VM_INDEX,
 				"I",
 				null,
@@ -176,7 +176,7 @@ public final class InvokeDynamicLinker {
 				}
 			}
 			fields.add(new FieldNode(
-				ACC_PRIVATE | ACC_VM_HIDDEN,
+				ACC_PRIVATE,
 				"method",
 				"Ljava/lang/invoke/ResolvedMethodName;",
 				null,
@@ -188,7 +188,7 @@ public final class InvokeDynamicLinker {
 			InstanceJavaClass resolvedMethodName = symbols.java_lang_invoke_ResolvedMethodName();
 			List<FieldNode> fields = resolvedMethodName.getNode().fields;
 			fields.add(new FieldNode(
-				ACC_PRIVATE | ACC_VM_HIDDEN,
+				ACC_PRIVATE,
 				NativeJava.VM_TARGET,
 				"Ljava/lang/Object;",
 				null,

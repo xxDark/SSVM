@@ -133,15 +133,13 @@ public final class LinkResolver {
 		return null;
 	}
 
-	public JavaField resolveVirtualField(InstanceJavaClass klass, InstanceJavaClass current, String name, String desc) {
-		JavaField field = klass.getVirtualField(name, desc);
-		if (field == null) {
-			while (current != null) {
-				if ((field = current.getVirtualField(name, desc)) != null) {
-					break;
-				}
-				current = current.getSuperClass();
+	public JavaField resolveVirtualField(InstanceJavaClass current, String name, String desc) {
+		JavaField field = null;
+		while (current != null) {
+			if ((field = current.getVirtualField(name, desc)) != null) {
+				break;
 			}
+			current = current.getSuperClass();
 		}
 		if (field != null && (trusted || !Modifier.isHiddenMember(field.getModifiers()))) {
 			return field;

@@ -42,6 +42,9 @@ dependencies {
 
     testCompileOnly lombok
     testAnnotationProcessor lombok
+
+    compileOnly files('C:\\Program Files\\BellSoft\\LibericaJDK-8-Full\\lib\\tools.jar')
+    compileOnly files('C:\\Program Files\\BellSoft\\LibericaJDK-8-Full\\lib\\sa-jdi.jar')
 }
 
 test {

@@ -2,6 +2,8 @@ package dev.xdark.ssvm.mirror;
 
 import dev.xdark.ssvm.util.MetadataHolder;
 
+import java.util.BitSet;
+
 /**
  * Member of a class.
  *
@@ -43,4 +45,9 @@ public interface JavaMember extends MetadataHolder {
 	 * @return member signature.
 	 */
 	String getSignature();
+
+	/**
+	 * @return {@link BitSet} of extra modifiers.
+	 */
+	BitSet extraModifiers();
 }

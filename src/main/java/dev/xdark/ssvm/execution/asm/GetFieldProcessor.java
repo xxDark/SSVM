@@ -4,7 +4,6 @@ import dev.xdark.ssvm.asm.VMFieldInsnNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.mirror.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.JavaField;
@@ -15,8 +14,6 @@ import org.objectweb.asm.tree.InsnList;
 
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_GETFIELD_BOOLEAN;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_GETFIELD_REFERENCE;
-import static dev.xdark.ssvm.asm.VMOpcodes.VM_PUTFIELD_BOOLEAN;
-import static dev.xdark.ssvm.asm.VMOpcodes.VM_PUTFIELD_REFERENCE;
 import static org.objectweb.asm.Type.ARRAY;
 
 /**
@@ -33,7 +30,7 @@ public final class GetFieldProcessor implements InstructionProcessor<FieldInsnNo
 			JavaField field;
 			int sort;
 			try {
-				field = ctx.getLinkResolver().resolveVirtualField(klass, klass, insn.name, insn.desc);
+				field = ctx.getLinkResolver().resolveVirtualField(klass, insn.name, insn.desc);
 				sort = field.getType().getSort();
 			} catch (VMException ex) {
 				sort = Type.getType(insn.desc).getSort();

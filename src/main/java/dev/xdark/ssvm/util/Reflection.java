@@ -32,11 +32,12 @@ public final class Reflection {
 	public StackFrame getCallerFrame(int offset) {
 		Backtrace backtrace = vm.currentThread().getBacktrace();
 		int count = backtrace.count();
-		JavaMethod caller = backtrace.get(count - offset++).getExecutionContext().getMethod();
+		StackFrame frame = backtrace.get(count - offset++);
+		JavaMethod caller = frame.getExecutionContext().getMethod();
 		if (caller.isCallerSensitive()) {
 			while (true) {
-				StackFrame frame = backtrace.get(count - offset);
-				ExecutionContext frameCtx = frame.getExecutionContext();
+				frame = backtrace.get(count - offset);
+				ExecutionContext<?> frameCtx = frame.getExecutionContext();
 				if (frameCtx == null) {
 					break;
 				}
@@ -48,6 +49,6 @@ public final class Reflection {
 				}
 			}
 		}
-		return backtrace.get(count - offset);
+		return frame;
 	}
 }

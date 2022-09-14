@@ -30,7 +30,7 @@ public class NativeLibraryNatives {
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
 		boolean[] throwException = new boolean[]{false};
-		Predicate<ExecutionContext> load = ctx -> {
+		Predicate<ExecutionContext<?>> load = ctx -> {
 			VMHelper helper = vm.getHelper();
 			Locals locals = ctx.getLocals();
 			String name = helper.readUtf8(locals.loadReference(1));

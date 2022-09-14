@@ -26,7 +26,7 @@ public final class PutFieldCharProcessor implements InstructionProcessor<VMField
 		if (field == null) {
 			InstanceJavaClass klass = instance.getJavaClass();
 			FieldInsnNode delegate = insn.getDelegate();
-			field = ctx.getLinkResolver().resolveVirtualField(klass, klass, delegate.name, "C");
+			field = ctx.getLinkResolver().resolveVirtualField(klass, delegate.name, "C");
 		}
 		instance.getMemory().getData().writeChar(ctx.getMemoryManager().valueBaseOffset(instance) + field.getOffset(), value);
 		return Result.CONTINUE;

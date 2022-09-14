@@ -348,8 +348,9 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 				arrayClass = this.arrayClass;
 				if (arrayClass == null) {
 					VirtualMachine vm = this.vm;
-					arrayClass = this.arrayClass = new ArrayJavaClass(vm, '[' + getDescriptor(), 1, this);
+					arrayClass = new ArrayJavaClass(vm, '[' + getDescriptor(), 1, this);
 					vm.getHelper().setComponentType(arrayClass, this);
+					this.arrayClass = arrayClass;
 				}
 			}
 		}

@@ -25,7 +25,7 @@ public final class GetFieldLongProcessor implements InstructionProcessor<VMField
 		if (field == null) {
 			InstanceJavaClass klass = instance.getJavaClass();
 			FieldInsnNode delegate = insn.getDelegate();
-			field = ctx.getLinkResolver().resolveVirtualField(klass, klass, delegate.name, "J");
+			field = ctx.getLinkResolver().resolveVirtualField(klass, delegate.name, "J");
 		}
 		ctx.getStack().pushLong(instance.getMemory().getData().readLong(ctx.getMemoryManager().valueBaseOffset(instance) + field.getOffset()));
 		return Result.CONTINUE;

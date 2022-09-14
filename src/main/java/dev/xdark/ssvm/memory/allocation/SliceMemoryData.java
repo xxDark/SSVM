@@ -1,5 +1,7 @@
 package dev.xdark.ssvm.memory.allocation;
 
+import dev.xdark.ssvm.execution.PanicException;
+
 import java.nio.ByteBuffer;
 
 /**
@@ -131,8 +133,8 @@ public final class SliceMemoryData implements MemoryData {
 	}
 
 	@Override
-	public void copy(long srcOffset, MemoryData dst, long dstOffset, long bytes) {
-		backing.copy(offset(srcOffset), dst, dstOffset, bytes);
+	public void write(long srcOffset, MemoryData dst, long dstOffset, long bytes) {
+		backing.write(offset(srcOffset), dst, dstOffset, bytes);
 	}
 
 	@Override
@@ -232,12 +234,10 @@ public final class SliceMemoryData implements MemoryData {
 
 	@Override
 	public MemoryData slice(long offset, long bytes) {
+		if (length - bytes < 0L) {
+			throw new PanicException("Segfault");
+		}
 		return new SliceMemoryData(backing, offset(offset), bytes);
-	}
-
-	@Override
-	public void transferTo(MemoryData other) {
-
 	}
 
 	private long offset(long pos) {

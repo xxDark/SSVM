@@ -107,7 +107,7 @@ public class ConstantPoolNatives {
 		});
 	}
 
-	private int cpRangeCheck(ExecutionContext ctx, ClassFile cf) {
+	private int cpRangeCheck(ExecutionContext<?> ctx, ClassFile cf) {
 		int index = ctx.getLocals().loadInt(2);
 		if (index < 0 || index >= cf.getPool().size()) {
 			VirtualMachine vm = ctx.getVM();
@@ -116,7 +116,7 @@ public class ConstantPoolNatives {
 		return index;
 	}
 
-	private InstanceJavaClass getInstanceCpOop(ExecutionContext ctx) {
+	private InstanceJavaClass getInstanceCpOop(ExecutionContext<?> ctx) {
 		JavaClass jc = getCpOop(ctx);
 		if (!(jc instanceof InstanceJavaClass)) {
 			VirtualMachine vm = ctx.getVM();
@@ -125,7 +125,7 @@ public class ConstantPoolNatives {
 		return (InstanceJavaClass) jc;
 	}
 
-	private JavaClass getCpOop(ExecutionContext ctx) {
+	private JavaClass getCpOop(ExecutionContext<?> ctx) {
 		VirtualMachine vm = ctx.getVM();
 		Value value = ctx.getLocals().loadReference(1);
 		if (!(value instanceof JavaValue)) {

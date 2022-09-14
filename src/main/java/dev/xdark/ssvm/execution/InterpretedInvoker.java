@@ -13,7 +13,7 @@ import org.objectweb.asm.Opcodes;
 public final class InterpretedInvoker implements MethodInvoker {
 
 	@Override
-	public Result intercept(ExecutionContext ctx) {
+	public Result intercept(ExecutionContext<?> ctx) {
 		JavaMethod method = ctx.getMethod();
 		int access = method.getModifiers();
 		if ((access & Opcodes.ACC_NATIVE) != 0) {
@@ -26,11 +26,11 @@ public final class InterpretedInvoker implements MethodInvoker {
 		return Result.ABORT;
 	}
 
-	private static void throwLinkageError(ExecutionContext ctx) {
+	private static void throwLinkageError(ExecutionContext<?> ctx) {
 		ctx.getHelper().throwException(ctx.getSymbols().java_lang_UnsatisfiedLinkError(), ctx.getMethod().toString());
 	}
 
-	private static void throwAbstractError(ExecutionContext ctx) {
+	private static void throwAbstractError(ExecutionContext<?> ctx) {
 		ctx.getHelper().throwException(ctx.getSymbols().java_lang_AbstractMethodError(), ctx.getMethod().toString());
 	}
 }

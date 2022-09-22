@@ -7,13 +7,13 @@ import dev.xdark.ssvm.classloading.ClassParseResult;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.memory.allocation.MemoryData;
-import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
 import dev.xdark.ssvm.memory.allocation.MemoryBlock;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaClass;
-import dev.xdark.ssvm.mirror.JavaField;
+import dev.xdark.ssvm.memory.allocation.MemoryData;
+import dev.xdark.ssvm.memory.management.MemoryManager;
+import dev.xdark.ssvm.mirror.member.JavaField;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.ArrayValue;
@@ -150,12 +150,17 @@ public class UnsafeNatives {
 			if (!(wrapper instanceof InstanceJavaClass)) {
 				ctx.setResult(-1L);
 			} else {
-				String utf = vm.getHelper().readUtf8(locals.loadReference(2));
-				long offset = ((InstanceJavaClass) wrapper).getVirtualFieldOffsetRecursively(utf);
-				if (offset != -1L) {
-					offset += vm.getMemoryManager().valueBaseOffset(klass);
+				search: {
+					String utf = vm.getHelper().readUtf8(locals.loadReference(2));
+					List<JavaField> fields = ((InstanceJavaClass) wrapper).virtualFieldArea().list();
+					for (JavaField field : fields) {
+						if (utf.equals(field.getName())) {
+							ctx.setResult(field.getOffset());
+							break search;
+						}
+					}
+					ctx.setResult(-1L);
 				}
-				ctx.setResult(offset);
 			}
 			return Result.ABORT;
 		});
@@ -277,8 +282,7 @@ public class UnsafeNatives {
 			int slot = ops.getInt(field, "slot");
 			JavaField fn = declaringClass.getFieldBySlot(slot);
 			if (fn != null) {
-				long offset = vm.getMemoryManager().valueBaseOffset(declaringClass) + fn.getOffset();
-				ctx.setResult(offset);
+				ctx.setResult(fn.getOffset());
 			} else {
 				ctx.setResult(-1L);
 			}
@@ -292,8 +296,7 @@ public class UnsafeNatives {
 			int slot = ops.getInt(field, "slot");
 			JavaField fn = declaringClass.getFieldBySlot(slot);
 			if (fn != null) {
-				long offset = vm.getMemoryManager().getStaticOffset(declaringClass) + fn.getOffset();
-				ctx.setResult(offset);
+				ctx.setResult(fn.getOffset());
 			} else {
 				ctx.setResult(-1L);
 			}
@@ -329,8 +332,7 @@ public class UnsafeNatives {
 		});
 		vmi.setInvoker(unsafe, uhelper.staticFieldBase(), "(Ljava/lang/reflect/Field;)Ljava/lang/Object;", ctx -> {
 			InstanceValue field = vm.getHelper().<InstanceValue>checkNotNull(ctx.getLocals().loadReference(1));
-			JavaClass klass = ((JavaValue<JavaClass>) field.getValue("clazz", "Ljava/lang/Class;")).getValue();
-			ctx.setResult(klass.getOop());
+			ctx.setResult(vm.getPublicOperations().getReference(field, "clazz", "Ljava/lang/Class;"));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, uhelper.defineClass(), "(Ljava/lang/String;[BIILjava/lang/ClassLoader;Ljava/security/ProtectionDomain;)Ljava/lang/Class;", ctx -> {

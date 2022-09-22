@@ -9,8 +9,8 @@ import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
 import dev.xdark.ssvm.memory.allocation.SynchronizedMemoryAllocator;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.memory.management.SynchronizedMemoryManager;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.InstanceValue;
@@ -23,8 +23,10 @@ import org.opentest4j.TestAbortedException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 @UtilityClass
 public class TestUtil {
@@ -62,7 +64,9 @@ public class TestUtil {
 			init.accept(res);
 		}
 		ThreadStorage ts = vm.getThreadStorage();
-		for (JavaMethod m : res.getStaticMethodLayout().getAll()) {
+		for (JavaMethod m : res.methodArea().stream()
+			.filter(x -> Modifier.isStatic(x.getModifiers()))
+			.collect(Collectors.toList())) {
 			MethodNode node = m.getNode();
 			List<AnnotationNode> annotations = node.visibleAnnotations;
 			if (annotations == null || annotations.stream().noneMatch(x -> "Ldev/xdark/ssvm/enhanced/VMTest;".equals(x.desc))) {

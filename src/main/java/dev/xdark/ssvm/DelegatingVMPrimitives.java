@@ -1,6 +1,6 @@
 package dev.xdark.ssvm;
 
-import dev.xdark.ssvm.mirror.PrimitiveClass;
+import dev.xdark.ssvm.mirror.type.PrimitiveClass;
 import dev.xdark.ssvm.symbol.VMPrimitives;
 
 /**

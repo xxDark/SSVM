@@ -5,6 +5,7 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.ConstantReferenceInsnNode;
 import dev.xdark.ssvm.asm.DelegatingInsnNode;
 import dev.xdark.ssvm.asm.VMCallInsnNode;
+import dev.xdark.ssvm.asm.VMFieldInsnNode;
 import dev.xdark.ssvm.asm.VMOpcodes;
 import dev.xdark.ssvm.asm.VMTypeInsnNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
@@ -12,10 +13,10 @@ import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.memory.management.StringPool;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaClass;
-import dev.xdark.ssvm.mirror.JavaField;
-import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
+import dev.xdark.ssvm.mirror.member.JavaField;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.util.UnsafeUtil;
@@ -32,7 +33,6 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.IincInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.IntInsnNode;
@@ -328,6 +328,18 @@ public final class JitCompiler implements Opcodes, VMOpcodes {
 	 * @return {@code true} if the method can be compiled.
 	 */
 	public static boolean isSupported(JavaMethod method) {
+		InsnList list = method.getNode().instructions;
+		if (list.size() == 0) {
+			return false;
+		}
+		for (AbstractInsnNode node : list) {
+			if (node instanceof InvokeDynamicInsnNode) {
+				// TODO re-enable once I figure out a good solution
+				// The problem is to generate a code that is identical to
+				// InvokeDynamicLinker#dynamicCall, but without need for boxing
+				return false;
+			}
+		}
 		return true;
 	}
 
@@ -479,6 +491,17 @@ public final class JitCompiler implements Opcodes, VMOpcodes {
 						continue;
 					} else {
 						break;
+					}
+				default:
+					if (insn instanceof VMFieldInsnNode) {
+						VMFieldInsnNode fieldInsnNode = (VMFieldInsnNode) insn;
+						JavaField resolved = fieldInsnNode.getResolved();
+						if (resolved == null) {
+							break;
+						}
+						if (opcode >= VM_GETSTATIC_BOOLEAN && opcode <= VM_GETSTATIC_REFERENCE) {
+
+						}
 					}
 			}
 
@@ -898,8 +921,8 @@ public final class JitCompiler implements Opcodes, VMOpcodes {
 		makeCall(method, Modifier.isFinal(method.getModifiers()) || Modifier.isFinal(method.getOwner().getModifiers()) ? CallType.DIRECT : CallType.VIRTUAL);
 	}
 
-	private void findVirtual(FieldInsnNode node) {
-		JavaClass klass = helper().findClass(classLoader(), node.owner, false);
+	private void getStatic(JavaField field) {
+		InstanceValue oop = field.getOwner().getOop();
 	}
 
 	private InstanceJavaClass owner() {

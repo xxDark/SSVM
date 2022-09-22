@@ -4,8 +4,8 @@ import dev.xdark.ssvm.classloading.BootClassLoader;
 import dev.xdark.ssvm.classloading.ClassLoaderData;
 import dev.xdark.ssvm.classloading.ClassLoaders;
 import dev.xdark.ssvm.classloading.ClassParseResult;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
 
 /**
  * Holder for the boot class loader.
@@ -56,8 +56,8 @@ final class BootClassLoaderHolder {
 				VirtualMachine vm = this.vm;
 				ClassLoaders classLoaders = vm.getClassLoaders();
 				jc = vm.getMirrorFactory().newInstanceClass(vm.getMemoryManager().nullValue(), result.getClassReader(), result.getNode());
-				classLoaders.setClassOop(jc);
 				data.linkClass(jc);
+				classLoaders.setClassOop(jc);
 			}
 			res = jc;
 		}

@@ -1,6 +1,6 @@
 package dev.xdark.ssvm.jit;
 
-import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
 
 final class MethodResolution {
 	final JavaClass klass;

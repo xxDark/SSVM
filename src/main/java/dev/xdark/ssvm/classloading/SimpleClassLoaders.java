@@ -3,8 +3,8 @@ package dev.xdark.ssvm.classloading;
 import dev.xdark.ssvm.NativeJava;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.memory.management.MemoryManager;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.SimpleInstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.SimpleInstanceJavaClass;
 import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
@@ -66,14 +66,6 @@ public class SimpleClassLoaders implements ClassLoaders {
 	@Override
 	public void setClassOop(InstanceJavaClass javaClass) {
 		javaClass.setOop(vm.getMemoryManager().newClassOop(javaClass));
-	}
-
-	@Override
-	public void initializeBootClass(InstanceJavaClass javaClass) {
-		// TODO remove hack
-		SimpleInstanceJavaClass jc = (SimpleInstanceJavaClass) javaClass;
-		jc.setVirtualFieldLayout(jc.createVirtualFieldLayout());
-		jc.setStaticFieldLayout(jc.createStaticFieldLayout());
 	}
 
 	@Override

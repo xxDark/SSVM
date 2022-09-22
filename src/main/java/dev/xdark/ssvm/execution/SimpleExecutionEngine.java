@@ -3,7 +3,7 @@ package dev.xdark.ssvm.execution;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvocation;
 import dev.xdark.ssvm.api.VMInterface;
-import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.thread.backtrace.Backtrace;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.util.BoundedQueue;

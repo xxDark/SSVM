@@ -1,7 +1,7 @@
 package dev.xdark.ssvm.asm;
 
-import dev.xdark.ssvm.mirror.JavaClass;
-import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.mirror.type.JavaClass;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodInsnNode;
 

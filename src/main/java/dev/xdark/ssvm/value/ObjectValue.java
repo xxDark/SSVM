@@ -2,7 +2,7 @@ package dev.xdark.ssvm.value;
 
 import dev.xdark.ssvm.memory.allocation.MemoryBlock;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
-import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
 
 /**
  * Represents VM object value.
@@ -24,13 +24,6 @@ public interface ObjectValue extends Value {
 	 * @return memory block.
 	 */
 	MemoryBlock getMemory();
-
-	/**
-	 * Returns whether this as uninitialized value or not.
-	 *
-	 * @return {@code true} if the value is uninitialized.
-	 */
-	boolean isUninitialized();
 
 	/**
 	 * Returns whether this value is null or not.

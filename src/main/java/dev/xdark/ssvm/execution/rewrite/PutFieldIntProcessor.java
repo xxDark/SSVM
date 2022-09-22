@@ -5,8 +5,8 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.Stack;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaField;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.member.JavaField;
 import dev.xdark.ssvm.value.InstanceValue;
 import org.objectweb.asm.tree.FieldInsnNode;
 
@@ -28,7 +28,7 @@ public final class PutFieldIntProcessor implements InstructionProcessor<VMFieldI
 			FieldInsnNode delegate = insn.getDelegate();
 			field = ctx.getLinkResolver().resolveVirtualField(klass, delegate.name, "I");
 		}
-		instance.getMemory().getData().writeInt(ctx.getMemoryManager().valueBaseOffset(instance) + field.getOffset(), value);
+		instance.getMemory().getData().writeInt(field.getOffset(), value);
 		return Result.CONTINUE;
 	}
 }

@@ -4,7 +4,7 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.VMCallInsnNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Stack;
-import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.tree.MethodInsnNode;
 

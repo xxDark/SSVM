@@ -1,7 +1,7 @@
-package dev.xdark.ssvm.mirror;
+package dev.xdark.ssvm.mirror.member;
 
 import dev.xdark.ssvm.execution.VMTryCatchBlock;
-import dev.xdark.ssvm.util.MetadataHolder;
+import dev.xdark.ssvm.mirror.type.JavaClass;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -40,13 +40,6 @@ public interface JavaMethod extends JavaMember {
 	 * @return ASM method info.
 	 */
 	MethodNode getNode();
-
-	/**
-	 * Returns method slot.
-	 *
-	 * @return method slot.
-	 */
-	int getSlot();
 
 	/**
 	 * Returns method type.

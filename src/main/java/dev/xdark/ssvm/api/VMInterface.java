@@ -3,8 +3,8 @@ package dev.xdark.ssvm.api;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.InterpretedInvoker;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
 import java.util.ArrayList;

@@ -1,6 +1,6 @@
 package dev.xdark.ssvm.classloading;
 
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 
@@ -39,14 +39,6 @@ public interface ClassLoaders {
 	 * @param javaClass Class to set oop for.
 	 */
 	void setClassOop(InstanceJavaClass javaClass);
-
-	/**
-	 * Used for early initialization by the VM.
-	 * Initializes class layout.
-	 *
-	 * @param javaClass Class to initialize.
-	 */
-	void initializeBootClass(InstanceJavaClass javaClass);
 
 	/**
 	 * Used for early initialization by the VM.

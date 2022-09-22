@@ -1,4 +1,4 @@
-package dev.xdark.ssvm.mirror;
+package dev.xdark.ssvm.mirror.type;
 
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -52,20 +52,6 @@ public interface JavaClass {
 	 * @return oop.
 	 */
 	InstanceValue getOop();
-
-	/**
-	 * Returns virtual class layout.
-	 *
-	 * @return virtual class layout.
-	 */
-	FieldLayout getVirtualFieldLayout();
-
-	/**
-	 * Returns static class layout.
-	 *
-	 * @return static class layout.
-	 */
-	FieldLayout getStaticFieldLayout();
 
 	/**
 	 * Returns parent class of this class.

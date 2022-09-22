@@ -1,5 +1,6 @@
-package dev.xdark.ssvm.mirror;
+package dev.xdark.ssvm.mirror.member;
 
+import dev.xdark.ssvm.mirror.type.JavaClass;
 import org.objectweb.asm.tree.FieldNode;
 
 /**

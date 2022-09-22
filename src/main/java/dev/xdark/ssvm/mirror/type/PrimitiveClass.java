@@ -1,4 +1,4 @@
-package dev.xdark.ssvm.mirror;
+package dev.xdark.ssvm.mirror.type;
 
 /**
  * Java class implementation for long, int, double, float, etc.

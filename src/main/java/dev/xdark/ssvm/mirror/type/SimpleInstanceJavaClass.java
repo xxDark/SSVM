@@ -1,12 +1,21 @@
-package dev.xdark.ssvm.mirror;
+package dev.xdark.ssvm.mirror.type;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.Locals;
+import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.VMException;
-import dev.xdark.ssvm.tlc.ThreadLocalStorage;
-import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.memory.management.MemoryManager;
+import dev.xdark.ssvm.mirror.MirrorFactory;
+import dev.xdark.ssvm.mirror.member.JavaField;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
+import dev.xdark.ssvm.mirror.member.MemberIdentifier;
+import dev.xdark.ssvm.mirror.member.area.ClassArea;
+import dev.xdark.ssvm.mirror.member.area.SimpleClassArea;
 import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.tlc.ThreadLocalStorage;
+import dev.xdark.ssvm.util.Assertions;
+import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -21,13 +30,11 @@ import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -55,21 +62,16 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 
 	private InstanceValue oop;
 
-	private FieldLayout vrtFieldLayout;
-	private FieldLayout staticFieldLayout;
-	private JavaField[] fieldArray;
-
-	private MethodLayout vrtMethodLayout;
-	private MethodLayout staticMethodLayout;
-	private JavaMethod[] methodArray;
-
 	private InstanceJavaClass superClass;
 	private InstanceJavaClass[] interfaces;
 	private volatile ArrayJavaClass arrayClass;
-
 	private volatile State state = State.PENDING;
+	private ClassArea<JavaMethod> methodArea;
+	private ClassArea<JavaField> virtualFieldArea;
+	private ClassArea<JavaField> staticFieldArea;
+	private long occupiedInstanceSpace;
+	private long occupiedStaticSpace;
 
-	// Stuff to cache
 	private String normalName;
 	private String descriptor;
 
@@ -172,11 +174,6 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		this.state = State.IN_PROGRESS;
 		VirtualMachine vm = this.vm;
 		VMHelper helper = vm.getHelper();
-		// Build class layout
-		// VM might've set it already, do not override.
-		if (vrtFieldLayout == null) {
-			vrtFieldLayout = createVirtualFieldLayout();
-		}
 		// Initialize all hierarchy
 		InstanceJavaClass superClass = this.superClass;
 		if (superClass != null) {
@@ -185,7 +182,7 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		// note: interfaces are *not* initialized here
 		helper.initializeStaticFields(this);
 		helper.setupHiddenFrames(this);
-		JavaMethod clinit = getStaticMethod("<clinit>", "()V");
+		JavaMethod clinit = getMethod("<clinit>", "()V");
 		try {
 			if (clinit != null) {
 				Locals locals = vm.getThreadStorage().newLocals(clinit);
@@ -208,10 +205,82 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		try {
 			try {
 				loadSuperClass();
-				loadInterfaces();
+				// loadInterfaces();
 			} catch (VMException ex) {
 				markFailedInitialization(ex);
 			}
+			VMHelper helper = vm.getHelper();
+			// Create method and field area
+			List<JavaField> virtualFields = new ArrayList<>();
+			InstanceJavaClass jc = superClass;
+			JavaField lastField = null;
+			while (jc != null) {
+				ClassArea<JavaField> area = jc.virtualFieldArea();
+				// May be java/lang/Class calling to java/lang/Object
+				if (area == null) {
+					Assertions.check(jc == vm.getSymbols().java_lang_Object(), "null area is only allowed for java/lang/Object");
+				} else {
+					JavaField field = area.stream()
+						.filter(x -> (x.getModifiers() & Opcodes.ACC_STATIC) == 0)
+						.max(Comparator.comparingLong(JavaField::getOffset))
+						.orElse(null);
+					if (field != null && (lastField == null || field.getOffset() > lastField.getOffset())) {
+						lastField = field;
+					}
+				}
+				jc = jc.getSuperClass();
+			}
+			VirtualMachine vm = this.vm;
+			MemoryManager mgr = vm.getMemoryManager();
+			long offset;
+			if (lastField != null) {
+				offset = lastField.getOffset();
+				offset += helper.getDescriptorSize(lastField.getDesc());
+			} else {
+				offset = mgr.valueBaseOffset(this);
+			}
+
+			List<FieldNode> fields = node.fields;
+			MirrorFactory mf = vm.getMirrorFactory();
+			int slot = 0;
+			for (int i = 0, j = fields.size(); i < j; i++) {
+				FieldNode fieldNode = fields.get(i);
+				if ((fieldNode.access & Opcodes.ACC_STATIC) == 0) {
+					JavaField field = mf.newField(this, fieldNode, slot++, offset);
+					offset += helper.getDescriptorSize(fieldNode.desc);
+					virtualFields.add(field);
+				}
+			}
+			virtualFieldArea = new SimpleClassArea<>(virtualFields);
+			occupiedInstanceSpace = offset - mgr.valueBaseOffset(this);
+			int slotOffset = slot;
+			// Static fields are stored right after java/lang/Class virtual fields
+			// At this point of linkage java/lang/Class must already set its virtual
+			// fields as we are doing it before (see above)
+			JavaField maxVirtualField = vm.getSymbols().java_lang_Class().virtualFieldArea()
+				.stream()
+				.max(Comparator.comparingLong(JavaField::getOffset))
+				.orElseThrow(() -> new PanicException("No fields in java/lang/Class"));
+			offset = maxVirtualField.getOffset() + helper.getDescriptorSize(maxVirtualField.getDesc());
+			long baseStaticOffset = offset;
+			List<JavaField> staticFields = new ArrayList<>(fields.size() - slot);
+			for (int i = 0, j = fields.size(); i < j; i++) {
+				FieldNode fieldNode = fields.get(i);
+				if ((fieldNode.access & Opcodes.ACC_STATIC) != 0) {
+					JavaField field = mf.newField(this, fieldNode, slot++, offset);
+					offset += helper.getDescriptorSize(fieldNode.desc);
+					staticFields.add(field);
+				}
+			}
+			staticFieldArea = new SimpleClassArea<>(staticFields, slotOffset);
+			occupiedStaticSpace = offset - baseStaticOffset;
+			// Set methods
+			List<MethodNode> methods = node.methods;
+			List<JavaMethod> allMethods = new ArrayList<>(methods.size());
+			for (int i = 0, j = methods.size(); i < j; i++) {
+				allMethods.add(mf.newMethod(this, methods.get(i), i));
+			}
+			methodArea = new SimpleClassArea<>(allMethods);
 			state = State.PENDING;
 		} finally {
 			signal.signalAll();
@@ -309,34 +378,13 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	}
 
 	@Override
-	public FieldLayout getVirtualFieldLayout() {
-		FieldLayout vrtFieldLayout = this.vrtFieldLayout;
-		// Build class layout
-		// VM might've set it already, do not override.
-		if (vrtFieldLayout == null) {
-			return this.vrtFieldLayout = createVirtualFieldLayout();
-		}
-		return vrtFieldLayout;
-	}
-
-	@Override
-	public FieldLayout getStaticFieldLayout() {
-		FieldLayout staticLayout = this.staticFieldLayout;
-		// Build class layout
-		// VM might've set it already, do not override.
-		if (staticLayout == null) {
-			return this.staticFieldLayout = createStaticFieldLayout();
-		}
-		return staticLayout;
-	}
-
-	@Override
 	public InstanceJavaClass getSuperClass() {
 		return superClass;
 	}
 
 	@Override
 	public InstanceJavaClass[] getInterfaces() {
+		loadInterfaces();
 		return interfaces;
 	}
 
@@ -373,157 +421,31 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	}
 
 	@Override
-	public JavaMethod getVirtualMethodRecursively(String name, String desc) {
-		InstanceJavaClass jc = this;
-		JavaMethod method;
-		do {
-			method = jc.getVirtualMethod(name, desc);
-		} while (method == null && (jc = jc.getSuperclassWithoutResolving()) != null);
-		return method;
-	}
-
-	@Override
-	public JavaMethod getInterfaceMethodRecursively(String name, String desc) {
-		InstanceJavaClass jc = this;
-		JavaMethod method;
-		Deque<InstanceJavaClass> deque = new ArrayDeque<InstanceJavaClass>();
-		do {
-			method = jc.getVirtualMethod(name, desc);
-			deque.push(jc);
-		} while (method == null && (jc = jc.getSuperclassWithoutResolving()) != null);
-		if (method == null) {
-			search:
-			while ((jc = deque.poll()) != null) {
-				method = jc.getVirtualMethod(name, desc);
-				if (method != null) {
-					break;
-				}
-				for (InstanceJavaClass iface : jc.getInterfaces()) {
-					method = iface.getVirtualMethod(name, desc);
-					if (method != null) {
-						break search;
-					}
-					deque.addAll(Arrays.asList(iface.getInterfaces()));
-				}
-			}
+	public JavaField getField(String name, String desc) {
+		MemberIdentifier identifier = MemberIdentifier.of(name, desc);
+		JavaField field = staticFieldArea.get(identifier);
+		if (field == null) {
+			field = virtualFieldArea.get(identifier);
 		}
-		return method;
-	}
-
-	@Override
-	public JavaMethod getVirtualMethod(String name, String desc) {
-		return lookupMethodIn(getVirtualMethodLayout(), name, desc);
-	}
-
-	@Override
-	public JavaField getVirtualField(String name, String desc) {
-		return getVirtualFieldLayout().getFields().get(new SimpleMemberKey(this, name, desc));
-	}
-
-	@Override
-	public JavaField getVirtualFieldRecursively(String name, String desc) {
-		InstanceJavaClass jc = this;
-		JavaField field;
-		do {
-			field = jc.getVirtualField(name, desc);
-		} while (field == null && (jc = jc.getSuperclassWithoutResolving()) != null);
 		return field;
-	}
-
-	@Override
-	public JavaField getStaticField(String name, String desc) {
-		return getStaticFieldLayout().getFields().get(new SimpleMemberKey(this, name, desc));
-	}
-
-	@Override
-	public JavaField getStaticFieldRecursively(String name, String desc) {
-		InstanceJavaClass jc = this;
-		JavaField field;
-		do {
-			field = jc.getStaticField(name, desc);
-		} while (field == null && (jc = jc.getSuperclassWithoutResolving()) != null);
-		return field;
-	}
-
-	@Override
-	public JavaMethod getStaticMethodRecursively(String name, String desc) {
-		InstanceJavaClass jc = this;
-		JavaMethod method;
-		do {
-			method = jc.getStaticMethod(name, desc);
-		} while (method == null && (jc = jc.getSuperclassWithoutResolving()) != null);
-		return method;
-	}
-
-	@Override
-	public JavaMethod getStaticMethod(String name, String desc) {
-		return lookupMethodIn(getStaticMethodLayout(), name, desc);
 	}
 
 	@Override
 	public JavaMethod getMethod(String name, String desc) {
-		MemberKey key = new SimpleMemberKey(this, name, desc);
-		JavaMethod jm = lookupMethodIn(getVirtualMethodLayout(), key);
-		if (jm == null) {
-			jm = lookupMethodIn(getStaticMethodLayout(), key);
+		ClassArea<JavaMethod> methodArea = this.methodArea;
+		JavaMethod method = methodArea.get(name, desc);
+		if (method == null) {
+			// Polymorphic?
+			method = methodArea.get(name, POLYMORPHIC_DESC);
+			if (method != null) {
+				if (method.isPolymorphic()) {
+					method = vm.getMirrorFactory().newPolymorphicMethod(method, desc);
+				} else {
+					method = null;
+				}
+			}
 		}
-		return jm;
-	}
-
-	@Override
-	public long getStaticFieldOffset(MemberKey field) {
-		initialize();
-		return staticFieldLayout.getFieldOffset(field);
-	}
-
-	@Override
-	public long getStaticFieldOffset(String name, String desc) {
-		return getStaticFieldOffset(new SimpleMemberKey(this, name, desc));
-	}
-
-	@Override
-	public long getVirtualFieldOffset(String name, String desc) {
-		initialize();
-		return vrtFieldLayout.getFieldOffset(new SimpleMemberKey(this, name, desc));
-	}
-
-	@Override
-	public long getVirtualFieldOffsetRecursively(String name, String desc) {
-		initialize();
-		FieldLayout layout = this.vrtFieldLayout;
-		InstanceJavaClass jc = this;
-		do {
-			long offset = layout.getFieldOffset(new SimpleMemberKey(jc, name, desc));
-			if (offset != -1L) {
-				return offset;
-			}
-		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
-		return -1L;
-	}
-
-	@Override
-	public long getVirtualFieldOffsetRecursively(String name) {
-		initialize();
-		FieldLayout layout = this.vrtFieldLayout;
-		InstanceJavaClass jc = this;
-		do {
-			long offset = layout.getFieldOffset(jc, name);
-			if (offset != -1L) {
-				return offset;
-			}
-		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
-		return -1L;
-	}
-
-	@Override
-	public boolean hasVirtualField(MemberKey info) {
-		initialize();
-		return vrtFieldLayout.getFields().containsKey(info);
-	}
-
-	@Override
-	public boolean hasVirtualField(String name, String desc) {
-		return hasVirtualField(new SimpleMemberKey(this, name, desc));
+		return method;
 	}
 
 	@Override
@@ -537,62 +459,42 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	}
 
 	@Override
-	public void loadNoResolve() {
-		Lock lock = this.initializationLock;
-		lock.lock();
-		VirtualMachine vm = this.vm;
-		if (state == State.FAILED) {
-			lock.unlock();
-			vm.getHelper().throwException(vm.getSymbols().java_lang_ExceptionInInitializerError());
-		}
-		try {
-			loadSuperClass();
-			loadInterfaces();
-			for (InstanceJavaClass ifc : interfaces) {
-				ifc.loadNoResolve();
-			}
-		} catch (VMException ex) {
-			state = State.FAILED;
-			throw ex;
-		} finally {
-			lock.unlock();
-		}
-	}
-
-	@Override
 	public JavaMethod getMethodBySlot(int slot) {
-		JavaMethod[] methodArray = this.methodArray;
-		if (methodArray == null) {
-			Collection<JavaMethod> virtualMethods = getVirtualMethodLayout().getAll();
-			Collection<JavaMethod> staticMethods = getStaticMethodLayout().getAll();
-			methodArray = new JavaMethod[getTotalMethodCount()];
-			for (JavaMethod m : virtualMethods) {
-				methodArray[m.getSlot()] = m;
-			}
-			for (JavaMethod m : staticMethods) {
-				methodArray[m.getSlot()] = m;
-			}
-			this.methodArray = methodArray;
-		}
-		return slot < 0 || slot >= methodArray.length ? null : methodArray[slot];
+		return methodArea.get(slot);
 	}
 
 	@Override
 	public JavaField getFieldBySlot(int slot) {
-		JavaField[] fieldArray = this.fieldArray;
-		if (fieldArray == null) {
-			Collection<JavaField> virtualFields = getVirtualFieldLayout().getAll();
-			Collection<JavaField> staticFields = getStaticFieldLayout().getAll();
-			fieldArray = new JavaField[getTotalFieldCount()];
-			for (JavaField f : virtualFields) {
-				fieldArray[f.getSlot()] = f;
-			}
-			for (JavaField f : staticFields) {
-				fieldArray[f.getSlot()] = f;
-			}
-			this.fieldArray = fieldArray;
+		JavaField field = virtualFieldArea.get(slot);
+		if (field == null) {
+			field = staticFieldArea.get(slot);
 		}
-		return slot < 0 || slot >= fieldArray.length ? null : fieldArray[slot];
+		return field;
+	}
+
+	@Override
+	public ClassArea<JavaMethod> methodArea() {
+		return methodArea;
+	}
+
+	@Override
+	public ClassArea<JavaField> virtualFieldArea() {
+		return virtualFieldArea;
+	}
+
+	@Override
+	public ClassArea<JavaField> staticFieldArea() {
+		return staticFieldArea;
+	}
+
+	@Override
+	public long getOccupiedInstanceSpace() {
+		return occupiedInstanceSpace;
+	}
+
+	@Override
+	public long getOccupiedStaticSpace() {
+		return occupiedStaticSpace;
 	}
 
 	@Override
@@ -657,44 +559,6 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 			}
 		}
 		return rawClassFile;
-	}
-
-	@Override
-	public MethodLayout getVirtualMethodLayout() {
-		MethodLayout vrtMethodLayout = this.vrtMethodLayout;
-		if (vrtMethodLayout == null) {
-			Map<MemberKey, JavaMethod> map = new HashMap<>();
-			int slot = 0;
-			MirrorFactory factory = vm.getMirrorFactory();
-			List<MethodNode> methods = node.methods;
-			for (MethodNode method : methods) {
-				if ((method.access & Opcodes.ACC_STATIC) == 0) {
-					map.put(new SimpleMemberKey(this, method.name, method.desc), factory.newMethod(this, method, slot++));
-				}
-			}
-			vrtMethodLayout = new MethodLayout(Collections.unmodifiableMap(map));
-			this.vrtMethodLayout = vrtMethodLayout;
-		}
-		return vrtMethodLayout;
-	}
-
-	@Override
-	public MethodLayout getStaticMethodLayout() {
-		MethodLayout staticMethodLayout = this.staticMethodLayout;
-		if (staticMethodLayout == null) {
-			Map<MemberKey, JavaMethod> map = new HashMap<>();
-			int slot = getVirtualMethodCount();
-			MirrorFactory factory = vm.getMirrorFactory();
-			List<MethodNode> methods = node.methods;
-			for (MethodNode method : methods) {
-				if ((method.access & Opcodes.ACC_STATIC) != 0) {
-					map.put(new SimpleMemberKey(this, method.name, method.desc), factory.newMethod(this, method, slot++));
-				}
-			}
-			staticMethodLayout = new MethodLayout(Collections.unmodifiableMap(map));
-			this.staticMethodLayout = staticMethodLayout;
-		}
-		return staticMethodLayout;
 	}
 
 	@Override
@@ -765,63 +629,6 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 		return getName();
 	}
 
-	public void setVirtualFieldLayout(FieldLayout layout) {
-		this.vrtFieldLayout = layout;
-	}
-
-	public void setStaticFieldLayout(FieldLayout layout) {
-		this.staticFieldLayout = layout;
-	}
-
-	public FieldLayout createStaticFieldLayout() {
-		Map<MemberKey, JavaField> map = new HashMap<>();
-		long offset = 0L;
-		int slot = getVirtualFieldCount();
-		VirtualMachine vm = this.vm;
-		VMHelper helper = vm.getHelper();
-		MirrorFactory factory = vm.getMirrorFactory();
-		List<FieldNode> fields = node.fields;
-		for (FieldNode field : fields) {
-			if ((field.access & Opcodes.ACC_STATIC) != 0) {
-				String desc = field.desc;
-				map.put(new SimpleMemberKey(this, field.name, desc), factory.newField(this, field, slot++, offset));
-				offset += helper.getDescriptorSize(desc);
-			}
-		}
-		return new FieldLayout(Collections.unmodifiableMap(map), offset);
-	}
-
-	public FieldLayout createVirtualFieldLayout() {
-		HashMap<MemberKey, JavaField> map = new HashMap<MemberKey, JavaField>();
-		ArrayDeque<InstanceJavaClass> deque = new ArrayDeque<InstanceJavaClass>();
-		long offset = 0L;
-		InstanceJavaClass javaClass = getSuperclassWithoutResolving();
-		while (javaClass != null) {
-			deque.addFirst(javaClass);
-			javaClass = javaClass.getSuperclassWithoutResolving();
-		}
-		VirtualMachine vm = this.vm;
-		VMHelper helper = vm.getHelper();
-		MirrorFactory factory = vm.getMirrorFactory();
-		int slot = 0;
-		while ((javaClass = deque.pollFirst()) != null) {
-			// Propagate parent virtual field layout
-			FieldLayout layout = javaClass.getVirtualFieldLayout();
-			map.putAll(layout.getFields());
-			offset += layout.getSize();
-			slot += layout.getAll().size();
-		}
-		List<FieldNode> fields = node.fields;
-		for (FieldNode field : fields) {
-			if ((field.access & Opcodes.ACC_STATIC) == 0) {
-				String desc = field.desc;
-				map.put(new SimpleMemberKey(this, field.name, desc), factory.newField(this, field, slot++, offset));
-				offset += helper.getDescriptorSize(desc);
-			}
-		}
-		return new FieldLayout(Collections.unmodifiableMap(map), offset);
-	}
-
 	private boolean checkAllocationStatus() {
 		int acc = getModifiers();
 		if ((acc & Opcodes.ACC_ABSTRACT) == 0 && (acc & Opcodes.ACC_INTERFACE) == 0) {
@@ -831,32 +638,21 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 	}
 
 	private List<JavaMethod> getDeclaredMethods0(boolean publicOnly, boolean constructors) {
-		Stream<JavaMethod> staticMethods = constructors ? Stream.<JavaMethod>empty() : getStaticMethods0(publicOnly);
-		return Stream.concat(staticMethods, getVirtualMethodLayout()
-				.getAll()
-				.stream()
-				.filter(x -> constructors == "<init>".equals(x.getName()))
-				.filter(x -> !publicOnly || (x.getModifiers() & Opcodes.ACC_PUBLIC) != 0))
+		return methodArea.stream()
+			.filter(x -> {
+				String name = x.getName();
+				if ("<clinit>".equals(name)) {
+					return false;
+				}
+				return constructors == "<init>".equals(name);
+			})
+			.filter(x -> !publicOnly || (x.getModifiers() & Opcodes.ACC_PUBLIC) != 0)
 			.filter(NON_HIDDEN_METHOD)
 			.collect(Collectors.toList());
 	}
 
-	private Stream<JavaMethod> getStaticMethods0(boolean publicOnly) {
-		return getStaticMethodLayout()
-			.getAll()
-			.stream()
-			.filter(x -> !"<clinit>".equals(x.getName()))
-			.filter(x -> !publicOnly || (x.getModifiers() & Opcodes.ACC_PUBLIC) != 0);
-	}
-
 	private List<JavaField> getDeclaredFields0(boolean publicOnly) {
-		Stream<JavaField> staticFields = getStaticFieldLayout()
-			.getAll()
-			.stream();
-		return Stream.concat(staticFields, getVirtualFieldLayout()
-				.getAll()
-				.stream())
-			.filter(x -> this == x.getOwner())
+		return Stream.concat(virtualFieldArea.stream(), staticFieldArea.stream())
 			.filter(x -> !publicOnly || (x.getModifiers() & Opcodes.ACC_PUBLIC) != 0)
 			.filter(NON_HIDDEN_FIELD)
 			.collect(Collectors.toList());
@@ -887,80 +683,6 @@ public class SimpleInstanceJavaClass implements InstanceJavaClass {
 			}
 			this.interfaces = $interfaces;
 		}
-	}
-
-	private int getVirtualFieldCount() {
-		int count = 0;
-		InstanceJavaClass jc = this;
-		do {
-			for (FieldNode field : jc.getNode().fields) {
-				if ((field.access & Opcodes.ACC_STATIC) == 0) {
-					count++;
-				}
-			}
-		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
-		return count;
-	}
-
-	private int getTotalFieldCount() {
-		int count = 0;
-		InstanceJavaClass jc = this;
-		do {
-			count += jc.getNode().fields.size();
-		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
-		return count;
-	}
-
-	private int getTotalMethodCount() {
-		int count = 0;
-		InstanceJavaClass jc = this;
-		do {
-			count += jc.getNode().methods.size();
-		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
-		return count;
-	}
-
-	private int getVirtualMethodCount() {
-		int count = 0;
-		InstanceJavaClass jc = this;
-		do {
-			for (MethodNode field : jc.getNode().methods) {
-				if ((field.access & Opcodes.ACC_STATIC) == 0) {
-					count++;
-				}
-			}
-		} while ((jc = jc.getSuperclassWithoutResolving()) != null);
-		return count;
-	}
-
-	private JavaMethod lookupMethodIn(MethodLayout layout, MemberKey key) {
-		Map<MemberKey, JavaMethod> methods = layout.getMethods();
-		JavaMethod jm = methods.get(key);
-		return alternativeLookupMethodIn(jm, methods, key.getName(), key.getDesc());
-	}
-
-	private JavaMethod lookupMethodIn(MethodLayout layout, String name, String desc) {
-		Map<MemberKey, JavaMethod> methods = layout.getMethods();
-		JavaMethod jm = methods.get(new SimpleMemberKey(this, name, desc));
-		return alternativeLookupMethodIn(jm, methods, name, desc);
-	}
-
-	private JavaMethod alternativeLookupMethodIn(JavaMethod jm, Map<MemberKey, JavaMethod> methods, String name, String desc) {
-		if (jm == null) {
-			jm = methods.get(new SimpleMemberKey(this, name, POLYMORPHIC_DESC));
-			if (jm != null) {
-				if (!jm.isPolymorphic()) {
-					jm = null;
-				} else {
-					return linkPolymorphicCall(jm, desc);
-				}
-			}
-		}
-		return jm;
-	}
-
-	private JavaMethod linkPolymorphicCall(JavaMethod original, String desc) {
-		return vm.getMirrorFactory().newPolymorphicMethod(original, desc);
 	}
 
 	private void markFailedInitialization(VMException ex) {

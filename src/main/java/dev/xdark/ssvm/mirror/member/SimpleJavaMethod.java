@@ -1,8 +1,10 @@
-package dev.xdark.ssvm.mirror;
+package dev.xdark.ssvm.mirror.member;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.VMTryCatchBlock;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.util.TypeSafeMap;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -40,6 +42,7 @@ public final class SimpleJavaMethod implements JavaMethod {
 	private Boolean callerSensitive;
 	private Boolean isConstructor;
 	private List<VMTryCatchBlock> tryCatchBlocks;
+	private MemberIdentifier identifier;
 
 	/**
 	 * @param owner Method owner.
@@ -67,11 +70,6 @@ public final class SimpleJavaMethod implements JavaMethod {
 	@Override
 	public String getDesc() {
 		return desc;
-	}
-
-	@Override
-	public int getSlot() {
-		return slot;
 	}
 
 	@Override
@@ -198,6 +196,20 @@ public final class SimpleJavaMethod implements JavaMethod {
 	@Override
 	public BitSet extraModifiers() {
 		return extraModifiers;
+	}
+
+	@Override
+	public MemberIdentifier getIdentifier() {
+		MemberIdentifier key = this.identifier;
+		if (key == null) {
+			return this.identifier = new SimpleMemberIdentifier(getName(), desc);
+		}
+		return key;
+	}
+
+	@Override
+	public int getSlot() {
+		return slot;
 	}
 
 	@Override

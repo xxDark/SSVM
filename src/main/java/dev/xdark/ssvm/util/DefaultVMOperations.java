@@ -4,9 +4,9 @@ import dev.xdark.ssvm.LinkResolver;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.memory.management.MemoryManager;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaClass;
-import dev.xdark.ssvm.mirror.JavaField;
+import dev.xdark.ssvm.mirror.member.JavaField;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.synchronizer.Mutex;
@@ -431,63 +431,63 @@ public final class DefaultVMOperations implements VMOperations {
 		JavaField field = linkResolver.resolveStaticField(klass, name, desc);
 		klass = field.getOwner();
 		MemoryManager memoryManager = this.memoryManager;
-		return memoryManager.readReference(klass.getOop(), field.getOffset() + memoryManager.getStaticOffset(klass));
+		return memoryManager.readReference(klass.getOop(), field.getOffset());
 	}
 
 	@Override
 	public long getLong(InstanceJavaClass klass, String name) {
 		JavaField field = linkResolver.resolveStaticField(klass, name, "J");
 		klass = field.getOwner();
-		return klass.getOop().getData().readLong(field.getOffset() + memoryManager.getStaticOffset(klass));
+		return klass.getOop().getData().readLong(field.getOffset());
 	}
 
 	@Override
 	public double getDouble(InstanceJavaClass klass, String name) {
 		JavaField field = linkResolver.resolveStaticField(klass, name, "D");
 		klass = field.getOwner();
-		return Double.longBitsToDouble(klass.getOop().getData().readLong(field.getOffset() + memoryManager.getStaticOffset(klass)));
+		return Double.longBitsToDouble(klass.getOop().getData().readLong(field.getOffset()));
 	}
 
 	@Override
 	public int getInt(InstanceJavaClass klass, String name) {
 		JavaField field = linkResolver.resolveStaticField(klass, name, "I");
 		klass = field.getOwner();
-		return klass.getOop().getData().readInt(field.getOffset() + memoryManager.getStaticOffset(klass));
+		return klass.getOop().getData().readInt(field.getOffset());
 	}
 
 	@Override
 	public float getFloat(InstanceJavaClass klass, String name) {
 		JavaField field = linkResolver.resolveStaticField(klass, name, "F");
 		klass = field.getOwner();
-		return Float.intBitsToFloat(klass.getOop().getData().readInt(field.getOffset() + memoryManager.getStaticOffset(klass)));
+		return Float.intBitsToFloat(klass.getOop().getData().readInt(field.getOffset()));
 	}
 
 	@Override
 	public char getChar(InstanceJavaClass klass, String name) {
 		JavaField field = linkResolver.resolveStaticField(klass, name, "C");
 		klass = field.getOwner();
-		return klass.getOop().getData().readChar(field.getOffset() + memoryManager.getStaticOffset(klass));
+		return klass.getOop().getData().readChar(field.getOffset());
 	}
 
 	@Override
 	public short getShort(InstanceJavaClass klass, String name) {
 		JavaField field = linkResolver.resolveStaticField(klass, name, "S");
 		klass = field.getOwner();
-		return klass.getOop().getData().readShort(field.getOffset() + memoryManager.getStaticOffset(klass));
+		return klass.getOop().getData().readShort(field.getOffset());
 	}
 
 	@Override
 	public byte getByte(InstanceJavaClass klass, String name) {
 		JavaField field = linkResolver.resolveStaticField(klass, name, "B");
 		klass = field.getOwner();
-		return klass.getOop().getData().readByte(field.getOffset() + memoryManager.getStaticOffset(klass));
+		return klass.getOop().getData().readByte(field.getOffset());
 	}
 
 	@Override
 	public boolean getBoolean(InstanceJavaClass klass, String name) {
 		JavaField field = linkResolver.resolveStaticField(klass, name, "Z");
 		klass = field.getOwner();
-		return klass.getOop().getData().readByte(field.getOffset() + memoryManager.getStaticOffset(klass)) != 0;
+		return klass.getOop().getData().readByte(field.getOffset()) != 0;
 	}
 	//</editor-fold>
 
@@ -498,7 +498,7 @@ public final class DefaultVMOperations implements VMOperations {
 		JavaField field = linkResolver.resolveStaticField(klass, name, desc);
 		klass = field.getOwner();
 		MemoryManager memoryManager = this.memoryManager;
-		memoryManager.writeValue(klass.getOop(), field.getOffset() + memoryManager.getStaticOffset(klass), value);
+		memoryManager.writeValue(klass.getOop(), field.getOffset(), value);
 	}
 
 	@Override
@@ -506,56 +506,56 @@ public final class DefaultVMOperations implements VMOperations {
 		JavaField field = linkResolver.resolveStaticField(klass, name, "J");
 		klass = field.getOwner();
 		MemoryManager memoryManager = this.memoryManager;
-		klass.getOop().getData().writeLong(field.getOffset() + memoryManager.getStaticOffset(klass), value);
+		klass.getOop().getData().writeLong(field.getOffset(), value);
 	}
 
 	@Override
 	public void putDouble(InstanceJavaClass klass, String name, double value) {
 		JavaField field = linkResolver.resolveStaticField(klass, name, "D");
 		klass = field.getOwner();
-		klass.getOop().getData().writeLong(field.getOffset() + memoryManager.getStaticOffset(klass), Double.doubleToRawLongBits(value));
+		klass.getOop().getData().writeLong(field.getOffset(), Double.doubleToRawLongBits(value));
 	}
 
 	@Override
 	public void putInt(InstanceJavaClass klass, String name, int value) {
 		JavaField field = linkResolver.resolveStaticField(klass, name, "I");
 		klass = field.getOwner();
-		klass.getOop().getData().writeInt(field.getOffset() + memoryManager.getStaticOffset(klass), value);
+		klass.getOop().getData().writeInt(field.getOffset(), value);
 	}
 
 	@Override
 	public void putFloat(InstanceJavaClass klass, String name, float value) {
 		JavaField field = linkResolver.resolveStaticField(klass, name, "F");
 		klass = field.getOwner();
-		klass.getOop().getData().writeInt(field.getOffset() + memoryManager.getStaticOffset(klass), Float.floatToRawIntBits(value));
+		klass.getOop().getData().writeInt(field.getOffset(), Float.floatToRawIntBits(value));
 	}
 
 	@Override
 	public void putChar(InstanceJavaClass klass, String name, char value) {
 		JavaField field = linkResolver.resolveStaticField(klass, name, "C");
 		klass = field.getOwner();
-		klass.getOop().getData().writeChar(field.getOffset() + memoryManager.getStaticOffset(klass), value);
+		klass.getOop().getData().writeChar(field.getOffset(), value);
 	}
 
 	@Override
 	public void putShort(InstanceJavaClass klass, String name, short value) {
 		JavaField field = linkResolver.resolveStaticField(klass, name, "S");
 		klass = field.getOwner();
-		klass.getOop().getData().writeShort(field.getOffset() + memoryManager.getStaticOffset(klass), value);
+		klass.getOop().getData().writeShort(field.getOffset(), value);
 	}
 
 	@Override
 	public void putByte(InstanceJavaClass klass, String name, byte value) {
 		JavaField field = linkResolver.resolveStaticField(klass, name, "B");
 		klass = field.getOwner();
-		klass.getOop().getData().writeByte(field.getOffset() + memoryManager.getStaticOffset(klass), value);
+		klass.getOop().getData().writeByte(field.getOffset(), value);
 	}
 
 	@Override
 	public void putBoolean(InstanceJavaClass klass, String name, boolean value) {
 		JavaField field = linkResolver.resolveStaticField(klass, name, "Z");
 		klass = field.getOwner();
-		klass.getOop().getData().writeByte(field.getOffset() + memoryManager.getStaticOffset(klass), (byte) (value ? 1 : 0));
+		klass.getOop().getData().writeByte(field.getOffset(), (byte) (value ? 1 : 0));
 	}
 	//</editor-fold>
 
@@ -571,9 +571,6 @@ public final class DefaultVMOperations implements VMOperations {
 
 	@Override
 	public boolean instanceofCheck(ObjectValue value, JavaClass javaClass) {
-		if (javaClass instanceof InstanceJavaClass) {
-			((InstanceJavaClass) javaClass).loadNoResolve();
-		}
 		if (value.isNull()) {
 			return false;
 		}
@@ -591,6 +588,6 @@ public final class DefaultVMOperations implements VMOperations {
 		VMHelper helper = this.helper;
 		helper.checkNotNull(instance);
 		JavaField field = linkResolver.resolveVirtualField(klass, name, desc);
-		return field.getOffset() + memoryManager.valueBaseOffset(instance);
+		return field.getOffset();
 	}
 }

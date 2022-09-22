@@ -1,30 +1,22 @@
-package dev.xdark.ssvm.mirror;
+package dev.xdark.ssvm.mirror.member;
 
 /**
- * Class member info.
+ * Class member identifier.
  *
  * @author xDark
  */
-public final class SimpleMemberKey implements MemberKey {
+public final class SimpleMemberIdentifier implements MemberIdentifier {
 
-	private final InstanceJavaClass owner;
 	private final String name;
 	private final String desc;
 
 	/**
-	 * @param owner Member owner.
 	 * @param name  Member name.
 	 * @param desc  Member desc.
 	 */
-	public SimpleMemberKey(InstanceJavaClass owner, String name, String desc) {
-		this.owner = owner;
+	public SimpleMemberIdentifier(String name, String desc) {
 		this.name = name;
 		this.desc = desc;
-	}
-
-	@Override
-	public InstanceJavaClass getOwner() {
-		return owner;
 	}
 
 	@Override
@@ -42,15 +34,12 @@ public final class SimpleMemberKey implements MemberKey {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof MemberKey)) {
+		if (!(o instanceof MemberIdentifier)) {
 			return false;
 		}
 
-		MemberKey memberKey = (MemberKey) o;
+		MemberIdentifier memberKey = (MemberIdentifier) o;
 
-		if (!owner.equals(memberKey.getOwner())) {
-			return false;
-		}
 		if (!name.equals(memberKey.getName())) {
 			return false;
 		}
@@ -59,8 +48,7 @@ public final class SimpleMemberKey implements MemberKey {
 
 	@Override
 	public int hashCode() {
-		int result = owner.hashCode();
-		result = 31 * result + name.hashCode();
+		int result = name.hashCode();
 		result = 31 * result + desc.hashCode();
 		return result;
 	}

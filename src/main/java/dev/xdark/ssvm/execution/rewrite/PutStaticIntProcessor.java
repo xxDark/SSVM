@@ -5,8 +5,8 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.memory.management.MemoryManager;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaField;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.member.JavaField;
 
 /**
  * Fast path processor for PUTSTATIC.
@@ -19,8 +19,7 @@ public final class PutStaticIntProcessor implements InstructionProcessor<VMField
 	public Result execute(VMFieldInsnNode insn, ExecutionContext<?> ctx) {
 		JavaField field = insn.getResolved();
 		InstanceJavaClass klass = field.getOwner();
-		MemoryManager memory = ctx.getMemoryManager();
-		klass.getOop().getData().writeInt(memory.getStaticOffset(klass) + field.getOffset(), ctx.getStack().popInt());
+		klass.getOop().getData().writeInt(field.getOffset(), ctx.getStack().popInt());
 		return Result.CONTINUE;
 	}
 }

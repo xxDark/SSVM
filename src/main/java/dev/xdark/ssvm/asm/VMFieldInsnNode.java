@@ -1,6 +1,6 @@
 package dev.xdark.ssvm.asm;
 
-import dev.xdark.ssvm.mirror.JavaField;
+import dev.xdark.ssvm.mirror.member.JavaField;
 import org.objectweb.asm.tree.FieldInsnNode;
 
 /**

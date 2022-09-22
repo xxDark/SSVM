@@ -1,10 +1,10 @@
 package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.asm.Modifier;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaClass;
-import dev.xdark.ssvm.mirror.JavaField;
-import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
+import dev.xdark.ssvm.mirror.member.JavaField;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ArrayValue;
@@ -119,7 +119,7 @@ public final class LinkResolver {
 	public JavaField resolveStaticField(InstanceJavaClass klass, String name, String desc) {
 		InstanceJavaClass current = klass;
 		while (klass != null) {
-			JavaField field = klass.getStaticField(name, desc);
+			JavaField field = klass.getField(name, desc);
 			if (field != null) {
 				return field;
 			}
@@ -136,7 +136,7 @@ public final class LinkResolver {
 	public JavaField resolveVirtualField(InstanceJavaClass current, String name, String desc) {
 		JavaField field = null;
 		while (current != null) {
-			if ((field = current.getVirtualField(name, desc)) != null) {
+			if ((field = current.getField(name, desc)) != null) {
 				break;
 			}
 			current = current.getSuperClass();
@@ -214,7 +214,7 @@ public final class LinkResolver {
 		Deque<InstanceJavaClass> deque = new ArrayDeque<>();
 		deque.push(current);
 		while ((current = deque.poll()) != null) {
-			JavaField field = current.getStaticField(name, desc);
+			JavaField field = current.getField(name, desc);
 			if (field != null) {
 				return field;
 			}

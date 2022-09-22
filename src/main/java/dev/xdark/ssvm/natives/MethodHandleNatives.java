@@ -7,10 +7,10 @@ import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaClass;
-import dev.xdark.ssvm.mirror.JavaField;
-import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
+import dev.xdark.ssvm.mirror.member.JavaField;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.util.InvokeDynamicLinker;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
@@ -202,11 +202,12 @@ public class MethodHandleNatives {
 	}
 
 	private void resolveMemberName(byte speculativeResolveModeIndex, Locals locals, InstanceValue memberName) {
-		JavaValue<InstanceJavaClass> classWrapper = (JavaValue<InstanceJavaClass>) memberName.getValue("clazz", "Ljava/lang/Class;");
+		InstanceJavaClass owner = memberName.getJavaClass();
+		VirtualMachine vm = owner.getVM();
+		JavaValue<InstanceJavaClass> classWrapper = (JavaValue<InstanceJavaClass>) vm.getPublicOperations().getReference(memberName, "clazz", "Ljava/lang/Class;");
+		VMHelper helper = vm.getHelper();
 		InstanceJavaClass clazz = classWrapper.getValue();
 		clazz.initialize();
-		VirtualMachine vm = clazz.getVM();
-		VMHelper helper = vm.getHelper();
 		VMOperations ops = vm.getTrustedOperations();
 		String name = helper.readUtf8(ops.getReference(memberName, "name", "Ljava/lang/String;"));
 		ObjectValue mt = ops.getReference(memberName, "type", "Ljava/lang/Object;");
@@ -291,10 +292,12 @@ public class MethodHandleNatives {
 		Locals locals = vm.getThreadStorage().newLocals(method);
 		locals.setReference(0, methodType);
 		String desc = helper.readUtf8(helper.invokeReference(method, locals));
-		JavaMethod handle;
+		JavaMethod handle = null;
+		// TODO FIX ME
+		/*
 		switch (refKind) {
 			case REF_invokeStatic:
-				handle = clazz.getStaticMethod(name, desc);
+				handle = clazz.getMethod(name, desc);
 				break;
 			case REF_invokeSpecial:
 			case REF_newInvokeSpecial:
@@ -312,6 +315,7 @@ public class MethodHandleNatives {
 				helper.throwException(symbols.java_lang_InternalError(), "unrecognized MemberName format");
 				return;
 		}
+		*/
 		if (handle == null) {
 			if (!speculativeResolve0) {
 				return;
@@ -335,10 +339,7 @@ public class MethodHandleNatives {
 			case REF_putStatic:
 			case REF_getField:
 			case REF_putField:
-				handle = clazz.getVirtualFieldRecursively(name, desc);
-				if (handle == null) {
-					handle = clazz.getStaticFieldRecursively(name, desc);
-				}
+				handle = clazz.getField(name, desc);
 				break;
 			default:
 				helper.throwException(symbols.java_lang_InternalError(), "unrecognized MemberName format");

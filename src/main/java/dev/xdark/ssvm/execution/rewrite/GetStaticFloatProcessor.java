@@ -5,8 +5,8 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.memory.management.MemoryManager;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaField;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.member.JavaField;
 
 /**
  * Fast path processor for GETSTATIC.
@@ -19,8 +19,7 @@ public final class GetStaticFloatProcessor implements InstructionProcessor<VMFie
 	public Result execute(VMFieldInsnNode insn, ExecutionContext<?> ctx) {
 		JavaField field = insn.getResolved();
 		InstanceJavaClass klass = field.getOwner();
-		MemoryManager memory = ctx.getMemoryManager();
-		float value = Float.floatToRawIntBits(klass.getOop().getData().readInt(memory.getStaticOffset(klass) + field.getOffset()));
+		float value = Float.floatToRawIntBits(klass.getOop().getData().readInt(field.getOffset()));
 		ctx.getStack().pushFloat(value);
 		return Result.CONTINUE;
 	}

@@ -2,7 +2,7 @@ package dev.xdark.ssvm.thread;
 
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Stack;
-import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
 
 /**
  * Thread storage.

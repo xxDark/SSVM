@@ -1,6 +1,6 @@
 package dev.xdark.ssvm.asm;
 
-import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
 import org.objectweb.asm.tree.TypeInsnNode;
 
 /**

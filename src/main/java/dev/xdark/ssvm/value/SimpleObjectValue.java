@@ -2,11 +2,7 @@ package dev.xdark.ssvm.value;
 
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.memory.allocation.MemoryBlock;
-import dev.xdark.ssvm.mirror.JavaClass;
-
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
+import dev.xdark.ssvm.mirror.type.JavaClass;
 
 /**
  * Represents VM object value.

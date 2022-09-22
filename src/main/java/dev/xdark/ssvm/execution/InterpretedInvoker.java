@@ -1,7 +1,7 @@
 package dev.xdark.ssvm.execution;
 
 import dev.xdark.ssvm.api.MethodInvoker;
-import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
 import org.objectweb.asm.Opcodes;
 
 /**

@@ -1,8 +1,8 @@
 package dev.xdark.ssvm.memory.management;
 
-import dev.xdark.ssvm.mirror.ArrayJavaClass;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.mirror.type.ArrayJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.synchronizer.Mutex;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
@@ -228,11 +228,6 @@ public class SynchronizedMemoryManager implements MemoryManager {
 	@Override
 	public int objectSize() {
 		return memoryManager.objectSize();
-	}
-
-	@Override
-	public long getStaticOffset(JavaClass jc) {
-		return memoryManager.getStaticOffset(jc);
 	}
 
 	@Override

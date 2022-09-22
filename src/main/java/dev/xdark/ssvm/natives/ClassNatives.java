@@ -9,10 +9,10 @@ import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.memory.management.StringPool;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaClass;
-import dev.xdark.ssvm.mirror.JavaField;
-import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
+import dev.xdark.ssvm.mirror.member.JavaField;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.symbol.VMSymbols;
@@ -197,7 +197,6 @@ public class ClassNatives {
 				ops.putReference(constructor, "signature", "Ljava/lang/String;", pool.intern(mn.getSignature()));
 				ops.putReference(constructor, "annotations", "[B", data.annotations);
 				ops.putReference(constructor, "parameterAnnotations", "[B", data.parameterAnnotations);
-				constructor.initialize();
 				result.setReference(j, constructor);
 			}
 			ctx.setResult(result);
@@ -241,7 +240,6 @@ public class ClassNatives {
 				ops.putReference(method, "annotations", "[B", data.annotations);
 				ops.putReference(method, "parameterAnnotations", "[B", data.parameterAnnotations);
 				ops.putReference(method, "annotationDefault", "[B", data.annotationDefault);
-				method.initialize();
 				result.setReference(j, method);
 			}
 			ctx.setResult(result);
@@ -278,7 +276,6 @@ public class ClassNatives {
 				ops.putInt(field, "modifiers", Modifier.eraseField(fn.getModifiers()));
 				ops.putReference(field, "signature", "Ljava/lang/String;", pool.intern(fn.getSignature()));
 				ops.putReference(field, "annotations", "[B", readFieldAnnotations(fn));
-				field.initialize();
 				result.setReference(j, field);
 			}
 			ctx.setResult(result);
@@ -370,7 +367,7 @@ public class ClassNatives {
 			if (cl.isPrimitive()) {
 				ctx.setResult(vm.getMemoryManager().nullValue());
 			} else {
-				ctx.setResult(_this.getValue(PROTECTION_DOMAIN, "Ljava/security/ProtectionDomain;"));
+				ctx.setResult(vm.getTrustedOperations().getReference(_this, PROTECTION_DOMAIN, "Ljava/security/ProtectionDomain;"));
 			}
 			return Result.ABORT;
 		});
@@ -408,7 +405,6 @@ public class ClassNatives {
 			cpClass.initialize();
 			InstanceValue instance = vm.getMemoryManager().newInstance(cpClass);
 			vm.getTrustedOperations().putReference(instance, "constantPoolOop", "Ljava/lang/Object;", _this);
-			instance.initialize();
 			ctx.setResult(instance);
 			return Result.ABORT;
 		});

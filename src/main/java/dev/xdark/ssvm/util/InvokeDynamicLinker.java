@@ -8,9 +8,9 @@ import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.memory.management.StringPool;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaField;
-import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.mirror.member.JavaField;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.value.ArrayValue;
@@ -28,7 +28,6 @@ import java.util.List;
 
 import static dev.xdark.ssvm.asm.Modifier.ACC_VM_HIDDEN;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
-import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
 /**
  * InvokeDynamic linkage logic.
@@ -98,12 +97,12 @@ public final class InvokeDynamicLinker {
 		StringPool stringPool = vm.getStringPool();
 		ArrayValue appendix = helper.newArray(symbols.java_lang_Object(), 1);
 		InstanceJavaClass natives = symbols.java_lang_invoke_MethodHandleNatives();
-		JavaMethod method = natives.getStaticMethod("linkCallSite", "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/invoke/MemberName;");
+		JavaMethod method = natives.getMethod("linkCallSite", "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/invoke/MemberName;");
 		Locals linkArgs;
 		if (method == null) {
 			// Bogus cp index entry which was removed
 			// shortly after it was added, shaking
-			method = natives.getStaticMethod("linkCallSite", "(Ljava/lang/Object;ILjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/invoke/MemberName;");
+			method = natives.getMethod("linkCallSite", "(Ljava/lang/Object;ILjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/invoke/MemberName;");
 			linkArgs = vm.getThreadStorage().newLocals(method);
 			linkArgs.setReference(0, caller.getOop());
 			linkArgs.setInt(1, 0);
@@ -222,7 +221,6 @@ public final class InvokeDynamicLinker {
 		InstanceJavaClass rmn = symbols.java_lang_invoke_ResolvedMethodName();
 		rmn.initialize();
 		InstanceValue resolvedName = memoryManager.newInstance(rmn);
-		resolvedName.initialize();
 		ops.putReference(resolvedName, NativeJava.VM_TARGET, "Ljava/lang/Object;", vm.getHelper().boxInt(handle.getSlot()));
 		ops.putReference(resolvedName, NativeJava.VM_HOLDER, "Ljava/lang/Object;", handle.getOwner().getOop());
 		ops.putReference(memberName, "method", symbols.java_lang_invoke_ResolvedMethodName().getDescriptor(), resolvedName);
@@ -247,16 +245,10 @@ public final class InvokeDynamicLinker {
 		MemoryManager memoryManager = vm.getMemoryManager();
 		InstanceJavaClass owner = handle.getOwner();
 		long offset = handle.getOffset();
-		if ((handle.getModifiers() & ACC_STATIC) == 0) {
-			offset += memoryManager.valueBaseOffset(owner);
-		} else {
-			offset += memoryManager.getStaticOffset(owner);
-		}
 		ops.putInt(memberName, NativeJava.VM_INDEX, (int) offset);
 		InstanceJavaClass rmn = symbols.java_lang_invoke_ResolvedMethodName();
 		rmn.initialize();
 		InstanceValue resolvedName = memoryManager.newInstance(rmn);
-		resolvedName.initialize();
 		ops.putReference(resolvedName, NativeJava.VM_TARGET, "Ljava/lang/Object;", vm.getHelper().boxInt(handle.getSlot()));
 		ops.putReference(resolvedName, NativeJava.VM_HOLDER, "Ljava/lang/Object;", owner.getOop());
 		ops.putReference(memberName, "method", symbols.java_lang_invoke_ResolvedMethodName().getDescriptor(), resolvedName);

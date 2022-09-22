@@ -1,8 +1,8 @@
 package dev.xdark.ssvm.memory.management;
 
-import dev.xdark.ssvm.mirror.ArrayJavaClass;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.mirror.type.ArrayJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.synchronizer.Mutex;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
@@ -269,14 +269,6 @@ public interface MemoryManager extends ReferenceMap {
 	 * @return Size of {@link Object} type.
 	 */
 	int objectSize();
-
-	/**
-	 * Returns static data offset for the class.
-	 *
-	 * @param jc Class to get static data offset for.
-	 * @return static data offset.
-	 */
-	long getStaticOffset(JavaClass jc);
 
 	/**
 	 * @return the collection of all allocated objects.

@@ -1,6 +1,6 @@
 package dev.xdark.ssvm.execution;
 
-import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.value.sink.ValueSink;
 
 /**

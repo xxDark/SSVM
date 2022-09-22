@@ -6,9 +6,9 @@ import dev.xdark.ssvm.memory.allocation.MemoryAddress;
 import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
 import dev.xdark.ssvm.memory.allocation.MemoryBlock;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
-import dev.xdark.ssvm.mirror.ArrayJavaClass;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.mirror.type.ArrayJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.synchronizer.Mutex;
 import dev.xdark.ssvm.synchronizer.ObjectSynchronizer;
@@ -89,7 +89,7 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public InstanceValue tryNewInstance(InstanceJavaClass javaClass) {
-		MemoryBlock memory = allocateObjectMemory(javaClass);
+		MemoryBlock memory = allocateInstanceMemory(javaClass);
 		if (memory == null) {
 			return null;
 		}
@@ -110,7 +110,7 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public <V> JavaValue<V> tryNewJavaInstance(InstanceJavaClass javaClass, V value) {
-		MemoryBlock memory = allocateObjectMemory(javaClass);
+		MemoryBlock memory = allocateInstanceMemory(javaClass);
 		if (memory == null) {
 			return null;
 		}
@@ -354,12 +354,6 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public long getStaticOffset(JavaClass jc) {
-		JavaClass jlc = vm.getSymbols().java_lang_Class();
-		return objectHeaderSize + jlc.getVirtualFieldLayout().getSize();
-	}
-
-	@Override
 	public Collection<ObjectValue> listObjects() {
 		return objects.values();
 	}
@@ -380,13 +374,13 @@ public class SimpleMemoryManager implements MemoryManager {
 		vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError(), "heap space");
 	}
 
-	private MemoryBlock allocateObjectMemory(JavaClass javaClass) {
-		long objectSize = objectHeaderSize + javaClass.getVirtualFieldLayout().getSize();
+	private MemoryBlock allocateInstanceMemory(InstanceJavaClass javaClass) {
+		long objectSize = objectHeaderSize + javaClass.getOccupiedInstanceSpace();
 		return touch(allocator.allocateHeap(objectSize));
 	}
 
-	private MemoryBlock allocateClassMemory(JavaClass jlc, JavaClass javaClass) {
-		long size = objectHeaderSize + jlc.getVirtualFieldLayout().getSize() + javaClass.getStaticFieldLayout().getSize();
+	private MemoryBlock allocateClassMemory(InstanceJavaClass javaLangClass, JavaClass javaClass) {
+		long size = objectHeaderSize + javaLangClass.getOccupiedInstanceSpace() + (javaClass instanceof InstanceJavaClass ? ((InstanceJavaClass) javaClass).getOccupiedStaticSpace() : 0);
 		return touch(allocator.allocateHeap(size));
 	}
 

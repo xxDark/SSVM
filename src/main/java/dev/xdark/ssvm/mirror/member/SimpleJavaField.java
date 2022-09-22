@@ -1,6 +1,8 @@
-package dev.xdark.ssvm.mirror;
+package dev.xdark.ssvm.mirror.member;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.util.TypeSafeMap;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.Type;
@@ -22,6 +24,7 @@ public final class SimpleJavaField implements JavaField {
 	private final int slot;
 	private final long offset;
 	private JavaClass type;
+	private MemberIdentifier identifier;
 
 	/**
 	 * @param owner  Field owner.
@@ -47,11 +50,6 @@ public final class SimpleJavaField implements JavaField {
 	}
 
 	@Override
-	public int getSlot() {
-		return slot;
-	}
-
-	@Override
 	public long getOffset() {
 		return offset;
 	}
@@ -74,6 +72,20 @@ public final class SimpleJavaField implements JavaField {
 	@Override
 	public BitSet extraModifiers() {
 		return extraModifiers;
+	}
+
+	@Override
+	public MemberIdentifier getIdentifier() {
+		MemberIdentifier key = this.identifier;
+		if (key == null) {
+			return this.identifier = new SimpleMemberIdentifier(getName(), node.desc);
+		}
+		return key;
+	}
+
+	@Override
+	public int getSlot() {
+		return slot;
 	}
 
 	@Override

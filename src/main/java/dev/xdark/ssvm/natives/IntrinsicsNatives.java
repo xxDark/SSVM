@@ -8,9 +8,11 @@ import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.MemoryManager;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaMethod;
-import dev.xdark.ssvm.mirror.PrimitiveClass;
+import dev.xdark.ssvm.mirror.member.JavaField;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
+import dev.xdark.ssvm.mirror.member.area.ClassArea;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.PrimitiveClass;
 import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ArrayValue;
@@ -119,23 +121,23 @@ public class IntrinsicsNatives {
 		VMInterface vmi = vm.getInterface();
 		InstanceJavaClass jc = vm.getSymbols().java_lang_String();
 		// This will only work on JDK 8, sadly.
-		if (jc.hasVirtualField("value", "[C")) {
+		ClassArea<JavaField> area = jc.virtualFieldArea();
+		JavaField charValue = area.get("value", "[C");
+		if (charValue != null) {
 			MemoryManager memoryManager = vm.getMemoryManager();
-			int offset = memoryManager.valueBaseOffset(jc);
-			long lengthOffset = offset + jc.getVirtualFieldOffset("value", "[C");
+			long valueOffset = charValue.getOffset();
 			vmi.setInvoker(jc, "length", "()I", ctx -> {
-				ArrayValue chars = (ArrayValue) memoryManager.readReference(ctx.getLocals().loadReference(0), lengthOffset);
+				ArrayValue chars = vm.getHelper().checkNotNull(memoryManager.readReference(ctx.getLocals().loadReference(0), valueOffset));
 				ctx.setResult(chars.getLength());
 				return Result.ABORT;
 			});
-			long hashOffset = offset + jc.getVirtualFieldOffset("hash", "I");
-			long valueOffset = offset + jc.getVirtualFieldOffset("value", "[C");
+			long hashOffset = area.get("hash", "I").getOffset();
 			vmi.setInvoker(jc, "hashCode", "()I", ctx -> {
 				InstanceValue _this = ctx.getLocals().loadReference(0);
 				MemoryData data = _this.getData();
 				int hc = data.readInt(hashOffset);
 				if (hc == 0) {
-					ArrayValue value = (ArrayValue) memoryManager.readReference(_this, valueOffset);
+					ArrayValue value = vm.getHelper().checkNotNull(memoryManager.readReference(_this, valueOffset));
 					for (int i = 0, j = value.getLength(); i < j; i++) {
 						hc = 31 * hc + value.getChar(i);
 					}
@@ -147,7 +149,7 @@ public class IntrinsicsNatives {
 			vmi.setInvoker(jc, "lastIndexOf", "(II)I", ctx -> {
 				Locals locals = ctx.getLocals();
 				InstanceValue _this = locals.loadReference(0);
-				ArrayValue chars = (ArrayValue) memoryManager.readReference(_this, valueOffset);
+				ArrayValue chars = vm.getHelper().checkNotNull(memoryManager.readReference(_this, valueOffset));
 				int ch = locals.loadInt(1);
 				int fromIndex = locals.loadInt(2);
 				ctx.setResult(lastIndexOf(chars, ch, fromIndex));
@@ -168,7 +170,7 @@ public class IntrinsicsNatives {
 			vmi.setInvoker(jc, "indexOf", "(II)I", ctx -> {
 				Locals locals = ctx.getLocals();
 				InstanceValue _this = locals.loadReference(0);
-				ArrayValue chars = (ArrayValue) memoryManager.readReference(_this, valueOffset);
+				ArrayValue chars = vm.getHelper().checkNotNull(memoryManager.readReference(_this, valueOffset));
 				int ch = locals.loadInt(1);
 				int fromIndex = locals.loadInt(2);
 				ctx.setResult(indexOf(chars, ch, fromIndex));
@@ -177,7 +179,7 @@ public class IntrinsicsNatives {
 			vmi.setInvoker(jc, "indexOf", "(I)I", ctx -> {
 				Locals locals = ctx.getLocals();
 				InstanceValue _this = locals.loadReference(0);
-				ArrayValue chars = (ArrayValue) memoryManager.readReference(_this, valueOffset);
+				ArrayValue chars = vm.getHelper().checkNotNull(memoryManager.readReference(_this, valueOffset));
 				int ch = locals.loadInt(1);
 				ctx.setResult(indexOf(chars, ch, 0));
 				return Result.ABORT;
@@ -191,8 +193,8 @@ public class IntrinsicsNatives {
 						ctx.setResult(0);
 					} else {
 						InstanceValue _this = locals.loadReference(0);
-						ArrayValue chars = (ArrayValue) memoryManager.readReference(_this, valueOffset);
-						ArrayValue chars2 = (ArrayValue) memoryManager.readReference(other, valueOffset);
+						ArrayValue chars = vm.getHelper().checkNotNull(memoryManager.readReference(_this, valueOffset));
+						ArrayValue chars2 = vm.getHelper().checkNotNull(memoryManager.readReference(other, valueOffset));
 						int len = chars.getLength();
 						if (len != chars2.getLength()) {
 							ctx.setResult(0);

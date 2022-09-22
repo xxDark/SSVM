@@ -1,6 +1,6 @@
 package dev.xdark.ssvm.util;
 
-import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
 import lombok.experimental.UtilityClass;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;

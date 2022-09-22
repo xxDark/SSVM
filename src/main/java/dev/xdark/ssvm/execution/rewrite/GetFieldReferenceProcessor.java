@@ -6,8 +6,8 @@ import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.memory.management.MemoryManager;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaField;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.member.JavaField;
 import dev.xdark.ssvm.value.InstanceValue;
 import org.objectweb.asm.tree.FieldInsnNode;
 
@@ -29,7 +29,7 @@ public final class GetFieldReferenceProcessor implements InstructionProcessor<VM
 			field = ctx.getLinkResolver().resolveVirtualField(klass, delegate.name, delegate.desc);
 		}
 		MemoryManager memory = ctx.getMemoryManager();
-		stack.pushReference(memory.readReference(instance, memory.valueBaseOffset(instance) + field.getOffset()));
+		stack.pushReference(memory.readReference(instance, field.getOffset()));
 		return Result.CONTINUE;
 	}
 }

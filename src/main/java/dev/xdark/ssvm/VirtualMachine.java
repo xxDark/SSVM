@@ -24,9 +24,9 @@ import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.memory.management.SimpleMemoryManager;
 import dev.xdark.ssvm.memory.management.SimpleStringPool;
 import dev.xdark.ssvm.memory.management.StringPool;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaClass;
-import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.mirror.MirrorFactory;
 import dev.xdark.ssvm.mirror.SimpleMirrorFactory;
 import dev.xdark.ssvm.natives.IntrinsicsNatives;
@@ -741,12 +741,11 @@ public class VirtualMachine {
 			InstanceJavaClass object = internalLink("java/lang/Object");
 			initializer.bootLink(this, klass, object);
 			NativeJava.injectPhase1(this);
-			classLoaders.initializeBootClass(object);
-			classLoaders.initializeBootClass(klass);
+			klass.link();
+			object.link();
 			classLoaders.initializeBootOop(klass, klass);
 			classLoaders.initializeBootOop(object, klass);
-			object.link();
-			klass.link();
+			NativeJava.injectPhase2(this);
 			InitializedVMSymbols initializedVMSymbols = new InitializedVMSymbols(this);
 			((DelegatingVMSymbols) symbols).setSymbols(initializedVMSymbols);
 			symbols = initializedVMSymbols;
@@ -835,7 +834,7 @@ public class VirtualMachine {
 			findBootstrapClass("java/lang/reflect/Field", true);
 			findBootstrapClass("java/lang/reflect/Constructor", true);
 
-			JavaMethod initializeSystemClass = sysClass.getStaticMethod("initializeSystemClass", "()V");
+			JavaMethod initializeSystemClass = sysClass.getMethod("initializeSystemClass", "()V");
 			if (initializeSystemClass != null) {
 				// pre JDK 9 boot
 				helper.invoke(initializeSystemClass, ts.newLocals(initializeSystemClass));

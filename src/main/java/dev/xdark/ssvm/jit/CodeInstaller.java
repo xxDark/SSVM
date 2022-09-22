@@ -3,7 +3,7 @@ package dev.xdark.ssvm.jit;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.util.UnsafeUtil;
 import lombok.experimental.UtilityClass;
 import org.objectweb.asm.tree.MethodNode;

@@ -2,8 +2,8 @@ package dev.xdark.ssvm.execution;
 
 import dev.xdark.ssvm.api.InstructionInterceptor;
 import dev.xdark.ssvm.api.VMInterface;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.value.InstanceValue;
 import lombok.experimental.UtilityClass;

@@ -16,12 +16,12 @@ import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.MemoryManager;
-import dev.xdark.ssvm.mirror.ArrayJavaClass;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaClass;
-import dev.xdark.ssvm.mirror.JavaField;
-import dev.xdark.ssvm.mirror.JavaMethod;
-import dev.xdark.ssvm.mirror.MemberKey;
+import dev.xdark.ssvm.mirror.member.JavaField;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
+import dev.xdark.ssvm.mirror.member.MemberIdentifier;
+import dev.xdark.ssvm.mirror.type.ArrayJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.symbol.VMPrimitives;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.thread.backtrace.Backtrace;
@@ -578,10 +578,10 @@ public final class VMHelper {
 		if (jc != vm.getSymbols().java_lang_String()) {
 			throw new IllegalStateException("Not a string: " + value + " (" + jc + ')');
 		}
-		long off = value.getFieldOffset("value", "[C");
+		JavaField charValue = jc.getField("value", "[C");
 		ArrayValue array;
-		if (off != -1L) {
-			array = (ArrayValue) vm.getMemoryManager().readReference(value, off);
+		if (charValue != null) {
+			array = (ArrayValue) vm.getMemoryManager().readReference(value, charValue.getOffset());
 		} else {
 			JavaMethod toCharArray = vm.getPublicLinkResolver().resolveVirtualMethod(jc, jc, "toCharArray", "()[C");
 			Locals locals = vm.getThreadStorage().newLocals(toCharArray);
@@ -626,21 +626,18 @@ public final class VMHelper {
 		}
 		MemoryManager memoryManager = vm.getMemoryManager();
 		InstanceValue wrapper = memoryManager.newInstance(jc);
-		long off = wrapper.getFieldOffset("value", "[C");
-		boolean jdk8 = off != -1L;
+		JavaField charValue = jc.getField("value", "[C");
 		if (str.isEmpty()) {
 			VMPrimitives primitives = vm.getPrimitives();
-			if (jdk8) {
-				memoryManager.writeValue(wrapper, off, emptyArray(primitives.charPrimitive()));
+			if (charValue != null) {
+				memoryManager.writeValue(wrapper, charValue.getOffset(), emptyArray(primitives.charPrimitive()));
 			} else {
 				vm.getPublicOperations().putReference(wrapper, "value", "[B", emptyArray(primitives.bytePrimitive()));
 			}
-			wrapper.initialize();
 		} else {
 			ArrayValue chars = toVMChars(str);
-			if (jdk8) {
-				memoryManager.writeValue(wrapper, off, chars);
-				wrapper.initialize();
+			if (charValue != null) {
+				memoryManager.writeValue(wrapper, charValue.getOffset(), chars);
 			} else {
 				JavaMethod init = vm.getPublicLinkResolver().resolveSpecialMethod(jc, "<init>", "([C)V");
 				Locals locals = vm.getThreadStorage().newLocals(init);
@@ -674,11 +671,9 @@ public final class VMHelper {
 		jc.initialize();
 		MemoryManager memoryManager = vm.getMemoryManager();
 		InstanceValue wrapper = memoryManager.newInstance(jc);
-		long off = wrapper.getFieldOffset("value", "[C");
-		boolean jdk8 = off != -1L;
-		if (jdk8) {
-			memoryManager.writeValue(wrapper, off, chars);
-			wrapper.initialize();
+		JavaField charValue = jc.getField("value", "[C");
+		if (charValue != null) {
+			memoryManager.writeValue(wrapper, charValue.getOffset(), chars);
 		} else {
 			JavaMethod init = vm.getPublicLinkResolver().resolveSpecialMethod(jc, "<init>", "([C)V");
 			Locals locals = vm.getThreadStorage().newLocals(init);
@@ -698,44 +693,40 @@ public final class VMHelper {
 		MemoryManager memoryManager = vm.getMemoryManager();
 		InstanceValue oop = javaClass.getOop();
 		MemoryData data = oop.getData();
-		long baseOffset = memoryManager.getStaticOffset(javaClass);
-		Map<MemberKey, JavaField> fields = javaClass.getStaticFieldLayout().getFields();
-		for (Map.Entry<MemberKey, JavaField> entry : fields.entrySet()) {
-			MemberKey key = entry.getKey();
-			String desc = key.getDesc();
-			JavaField jf = entry.getValue();
-			FieldNode fn = jf.getNode();
+		for (JavaField field : javaClass.staticFieldArea().list()) {
+			MemberIdentifier identifier = field.getIdentifier();
+			String desc = identifier.getDesc();
+			FieldNode fn = field.getNode();
 			Object cst = fn.value;
 			if (cst == null) {
 				cst = AsmUtil.getDefaultValue(desc);
 			}
-			long offset = jf.getOffset();
-			long resultingOffset = baseOffset + offset;
+			long offset = field.getOffset();
 			switch (desc.charAt(0)) {
 				case 'J':
-					data.writeLong(resultingOffset, (Long) cst);
+					data.writeLong(offset, (Long) cst);
 					break;
 				case 'D':
-					data.writeLong(resultingOffset, Double.doubleToRawLongBits((Double) cst));
+					data.writeLong(offset, Double.doubleToRawLongBits((Double) cst));
 					break;
 				case 'I':
-					data.writeInt(resultingOffset, (Integer) cst);
+					data.writeInt(offset, (Integer) cst);
 					break;
 				case 'F':
-					data.writeInt(resultingOffset, Float.floatToRawIntBits((Float) cst));
+					data.writeInt(offset, Float.floatToRawIntBits((Float) cst));
 					break;
 				case 'C':
-					data.writeChar(resultingOffset, (char) ((Integer) cst).intValue());
+					data.writeChar(offset, (char) ((Integer) cst).intValue());
 					break;
 				case 'S':
-					data.writeShort(resultingOffset, ((Integer) cst).shortValue());
+					data.writeShort(offset, ((Integer) cst).shortValue());
 					break;
 				case 'B':
 				case 'Z':
-					data.writeByte(resultingOffset, ((Integer) cst).byteValue());
+					data.writeByte(offset, ((Integer) cst).byteValue());
 					break;
 				default:
-					memoryManager.writeValue(oop, resultingOffset, cst == null ? memoryManager.nullValue() : (ObjectValue) referenceFromLdc(cst));
+					memoryManager.writeValue(oop, offset, cst == null ? memoryManager.nullValue() : (ObjectValue) referenceFromLdc(cst));
 			}
 		}
 	}
@@ -1007,7 +998,8 @@ public final class VMHelper {
 		InstanceValue oop = javaClass.getOop();
 		setClassFields(oop, loader, protectionDomain);
 		if (!loader.isNull()) {
-			ObjectValue classes = ((InstanceValue) loader).getValue("classes", "Ljava/util/Vector;");
+			ObjectValue classes = vm.getPublicOperations().getReference(loader, "classes", "Ljava/util/Vector;");
+			checkNotNull(classes);
 			JavaMethod add = vm.getPublicLinkResolver().resolveVirtualMethod(classes, "add", "(Ljava/lang/Object;)Z");
 			Locals locals = vm.getThreadStorage().newLocals(add);
 			locals.setReference(0, classes);
@@ -1025,10 +1017,11 @@ public final class VMHelper {
 	 */
 	public void setComponentType(ArrayJavaClass javaClass, JavaClass componentType) {
 		InstanceValue oop = javaClass.getOop();
-		long offset = oop.getFieldOffset("componentType", "Ljava/lang/Class;");
-		if (offset != -1L) {
+		VirtualMachine vm = this.vm;
+		JavaField field = vm.getSymbols().java_lang_Class().getField("componentType", "Ljava/lang/Class;");
+		if (field != null) {
 			InstanceValue typeOop = componentType.getOop();
-			vm.getMemoryManager().writeValue(oop, offset, typeOop);
+			vm.getMemoryManager().writeValue(oop, field.getOffset(), typeOop);
 		}
 	}
 
@@ -1105,10 +1098,10 @@ public final class VMHelper {
 		locals.setReference(3, newUtf8(sourceFile));
 		locals.setInt(4, lineNumber);
 		invoke(init, locals);
-		long offset;
-		if (injectDeclaringClass && (offset = element.getFieldOffset("declaringClassObject", "Ljava/lang/Class;")) != -1L) {
+		JavaField field;
+		if (injectDeclaringClass && (field = jc.getField("declaringClassObject", "Ljava/lang/Class;")) != null) {
 			InstanceValue oop = owner.getOop();
-			memoryManager.writeValue(element, offset, oop);
+			memoryManager.writeValue(element, field.getOffset(), oop);
 		}
 		return element;
 	}
@@ -1593,11 +1586,12 @@ public final class VMHelper {
 	 *
 	 * @param jc Class to setup.
 	 */
+	@Deprecated
 	public void setupHiddenFrames(InstanceJavaClass jc) {
 		VMSymbols symbols = vm.getSymbols();
 		InstanceJavaClass throwable = symbols.java_lang_Throwable();
 		if (throwable.isAssignableFrom(jc)) {
-			for (JavaMethod jm : jc.getVirtualMethodLayout().getAll()) {
+			for (JavaMethod jm : jc.methodArea().list()) {
 				String name = jm.getName();
 				if ("<init>".equals(name)) {
 					makeHiddenMethod(jm);
@@ -1614,10 +1608,7 @@ public final class VMHelper {
 			ObjectValue loader = jc.getClassLoader();
 			if (loader.isNull()) {
 				if (jc.getInternalName().startsWith("java/lang/invoke/")) {
-					for (JavaMethod jm : jc.getVirtualMethodLayout().getAll()) {
-						hideLambdaForm(jm);
-					}
-					for (JavaMethod jm : jc.getStaticMethodLayout().getAll()) {
+					for (JavaMethod jm : jc.methodArea().list()) {
 						hideLambdaForm(jm);
 					}
 				}
@@ -1634,11 +1625,7 @@ public final class VMHelper {
 				} else if (jc == symbols.java_lang_reflect_Method()) {
 					makeCallerSensitive(jc, "invoke", "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;");
 				} else if (symbols.reflect_MethodAccessorImpl().isAssignableFrom(jc)) {
-					for (JavaMethod jm : jc.getVirtualMethodLayout().getAll()) {
-						MethodNode node = jm.getNode();
-						node.access |= Modifier.ACC_CALLER_SENSITIVE;
-					}
-					for (JavaMethod jm : jc.getStaticMethodLayout().getAll()) {
+					for (JavaMethod jm : jc.methodArea().list()) {
 						MethodNode node = jm.getNode();
 						node.access |= Modifier.ACC_CALLER_SENSITIVE;
 					}
@@ -1821,10 +1808,7 @@ public final class VMHelper {
 	}
 
 	private static void makeHiddenMethod(InstanceJavaClass jc, String name, String desc) {
-		JavaMethod mn = jc.getVirtualMethod(name, desc);
-		if (mn == null) {
-			mn = jc.getStaticMethod(name, desc);
-		}
+		JavaMethod mn = jc.getMethod(name, desc);
 		if (mn != null) {
 			MethodNode node = mn.getNode();
 			node.access |= Modifier.ACC_HIDDEN_FRAME | Modifier.ACC_CALLER_SENSITIVE;
@@ -1845,10 +1829,7 @@ public final class VMHelper {
 	}
 
 	private static void makeCallerSensitive(InstanceJavaClass jc, String name, String desc) {
-		JavaMethod jm = jc.getVirtualMethod(name, desc);
-		if (jm == null) {
-			jm = jc.getStaticMethod(name, desc);
-		}
+		JavaMethod jm = jc.getMethod(name, desc);
 		MethodNode node = jm.getNode();
 		node.access |= Modifier.ACC_CALLER_SENSITIVE;
 	}

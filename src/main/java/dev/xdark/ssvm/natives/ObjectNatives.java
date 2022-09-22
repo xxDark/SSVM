@@ -7,14 +7,13 @@ import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.MemoryManager;
-import dev.xdark.ssvm.mirror.ArrayJavaClass;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.mirror.type.ArrayJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
+import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.synchronizer.Mutex;
 import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
-import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 
@@ -34,10 +33,7 @@ public class ObjectNatives {
 		VMSymbols symbols = vm.getSymbols();
 		InstanceJavaClass object = symbols.java_lang_Object();
 		vmi.setInvoker(object, "registerNatives", "()V", MethodInvoker.noop());
-		vmi.setInvoker(object, "<init>", "()V", ctx -> {
-			ctx.getLocals().<InstanceValue>loadReference(0).initialize();
-			return Result.ABORT;
-		});
+		vmi.setInvoker(object, "<init>", "()V", MethodInvoker.noop());
 		vmi.setInvoker(object, "getClass", "()Ljava/lang/Class;", ctx -> {
 			ctx.setResult(ctx.getLocals().loadReference(0).getJavaClass().getOop());
 			return Result.ABORT;

@@ -1,7 +1,7 @@
 package dev.xdark.ssvm.thread.backtrace;
 
 import dev.xdark.ssvm.execution.ExecutionContext;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

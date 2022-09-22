@@ -132,11 +132,6 @@ public final class SimpleArrayValue extends SimpleObjectValue implements ArrayVa
 	}
 
 	@Override
-	public boolean isUninitialized() {
-		return false;
-	}
-
-	@Override
 	public boolean isNull() {
 		return false;
 	}

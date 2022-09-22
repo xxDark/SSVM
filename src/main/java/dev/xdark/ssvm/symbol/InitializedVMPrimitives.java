@@ -2,7 +2,7 @@ package dev.xdark.ssvm.symbol;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.mirror.MirrorFactory;
-import dev.xdark.ssvm.mirror.PrimitiveClass;
+import dev.xdark.ssvm.mirror.type.PrimitiveClass;
 import org.objectweb.asm.Type;
 
 /**

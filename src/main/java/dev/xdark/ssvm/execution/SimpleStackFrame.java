@@ -1,6 +1,6 @@
 package dev.xdark.ssvm.execution;
 
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
 import dev.xdark.ssvm.thread.backtrace.ContextFrozenStackFrame;
 import dev.xdark.ssvm.thread.backtrace.StackFrame;
 

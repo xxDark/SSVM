@@ -51,7 +51,7 @@ import dev.xdark.ssvm.execution.asm.*;
 import dev.xdark.ssvm.execution.rewrite.VMSpecialCallProcessor;
 import dev.xdark.ssvm.execution.rewrite.VMStaticCallProcessor;
 import dev.xdark.ssvm.execution.rewrite.VMVirtualCallProcessor;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
 import dev.xdark.ssvm.natives.*;
 import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -142,7 +142,7 @@ public final class NativeJava {
 	static void init(VirtualMachine vm) {
 		//<editor-fold desc="Natives registration">
 		setInstructions(vm);
-		injectPhase2(vm);
+		injectPhase3(vm);
 		ClassNatives.init(vm);
 		ObjectNatives.init(vm);
 		SystemNatives.init(vm);
@@ -218,9 +218,7 @@ public final class NativeJava {
 	 * @param vm VM instance.
 	 */
 	static void injectPhase2(VirtualMachine vm) {
-		//<editor-fold desc="Field injection">
-		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass classLoader = symbols.java_lang_ClassLoader();
+		InstanceJavaClass classLoader = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ClassLoader");
 
 		classLoader.getNode().fields.add(new FieldNode(
 			ACC_PRIVATE | ACC_VM_HIDDEN,
@@ -229,6 +227,16 @@ public final class NativeJava {
 			null,
 			null
 		));
+	}
+
+	/**
+	 * Injects VM related things.
+	 *
+	 * @param vm VM instance.
+	 */
+	static void injectPhase3(VirtualMachine vm) {
+		//<editor-fold desc="Field injection">
+		VMSymbols symbols = vm.getSymbols();
 
 		vm.getInvokeDynamicLinker().setupMethodHandles();
 		{

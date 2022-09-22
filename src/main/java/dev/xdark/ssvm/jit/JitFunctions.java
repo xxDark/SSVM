@@ -3,9 +3,9 @@ package dev.xdark.ssvm.jit;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.VMException;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaClass;
-import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -14,6 +14,9 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.Type;
 
 /**
+ * JIT functions, used to avoid
+ * excessive code generation.
+ *
  * @author xDark
  */
 @SuppressWarnings("unused")

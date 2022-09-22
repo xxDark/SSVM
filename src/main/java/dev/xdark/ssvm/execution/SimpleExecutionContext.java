@@ -2,7 +2,7 @@ package dev.xdark.ssvm.execution;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.memory.management.MemoryManager;
-import dev.xdark.ssvm.mirror.JavaMethod;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.synchronizer.Mutex;
 import dev.xdark.ssvm.thread.backtrace.StackFrame;
 import dev.xdark.ssvm.util.Disposable;

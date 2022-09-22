@@ -2,7 +2,7 @@ package dev.xdark.ssvm.value;
 
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.memory.allocation.MemoryBlock;
-import dev.xdark.ssvm.mirror.JavaClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
 
 /**
  * represents {@code null} value.
@@ -20,11 +20,6 @@ public final class NullValue implements ObjectValue {
 	@Override
 	public long asLong() {
 		throw new PanicException("Segfault");
-	}
-
-	@Override
-	public boolean isUninitialized() {
-		throw new UnsupportedOperationException("Null value");
 	}
 
 	@Override

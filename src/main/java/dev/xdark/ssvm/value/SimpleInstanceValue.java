@@ -1,8 +1,8 @@
 package dev.xdark.ssvm.value;
 
-import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.memory.allocation.MemoryBlock;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.memory.management.MemoryManager;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
 
 /**
  * Base implementation of instance value.
@@ -10,8 +10,6 @@ import dev.xdark.ssvm.mirror.InstanceJavaClass;
  * @author xDark
  */
 public class SimpleInstanceValue extends SimpleObjectValue implements InstanceValue {
-
-	private boolean initialized;
 
 	/**
 	 * @param memoryManager Memory manager.
@@ -24,27 +22,6 @@ public class SimpleInstanceValue extends SimpleObjectValue implements InstanceVa
 	@Override
 	public final InstanceJavaClass getJavaClass() {
 		return (InstanceJavaClass) super.getJavaClass();
-	}
-
-	@Override
-	public boolean isUninitialized() {
-		return !initialized;
-	}
-
-	@Override
-	public ObjectValue getValue(String field, String desc) {
-		return getMemoryManager().readReference(this, getFieldOffset(field, desc));
-	}
-
-	@Override
-	public void initialize() {
-		initialized = true;
-	}
-
-	@Override
-	public long getFieldOffset(String name, String desc) {
-		long offset = getJavaClass().getVirtualFieldOffsetRecursively(name, desc);
-		return offset == -1L ? -1L : getMemoryManager().valueBaseOffset(this) + offset;
 	}
 
 	@Override

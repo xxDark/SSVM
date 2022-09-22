@@ -1,5 +1,9 @@
 package dev.xdark.ssvm.mirror;
 
+import dev.xdark.ssvm.mirror.member.JavaField;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.PrimitiveClass;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;

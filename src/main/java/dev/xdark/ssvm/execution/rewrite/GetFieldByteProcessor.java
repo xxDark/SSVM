@@ -5,8 +5,8 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.Stack;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.JavaField;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.member.JavaField;
 import dev.xdark.ssvm.value.InstanceValue;
 import org.objectweb.asm.tree.FieldInsnNode;
 
@@ -27,7 +27,7 @@ public final class GetFieldByteProcessor implements InstructionProcessor<VMField
 			FieldInsnNode delegate = insn.getDelegate();
 			field = ctx.getLinkResolver().resolveVirtualField(klass, delegate.name, delegate.desc);
 		}
-		ctx.getStack().pushInt(instance.getMemory().getData().readByte(ctx.getMemoryManager().valueBaseOffset(instance) + field.getOffset()));
+		ctx.getStack().pushInt(instance.getMemory().getData().readByte(field.getOffset()));
 		return Result.CONTINUE;
 	}
 }

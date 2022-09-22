@@ -1,6 +1,6 @@
 package dev.xdark.ssvm;
 
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
 import dev.xdark.ssvm.symbol.VMSymbols;
 
 /**

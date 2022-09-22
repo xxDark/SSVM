@@ -1,4 +1,4 @@
-package dev.xdark.ssvm.mirror;
+package dev.xdark.ssvm.mirror.type;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.PanicException;
@@ -63,16 +63,6 @@ public final class ArrayJavaClass implements JavaClass {
 	@Override
 	public InstanceValue getOop() {
 		return oop;
-	}
-
-	@Override
-	public FieldLayout getVirtualFieldLayout() {
-		return objectClass.getVirtualFieldLayout();
-	}
-
-	@Override
-	public FieldLayout getStaticFieldLayout() {
-		return FieldLayout.EMPTY;
 	}
 
 	@Override

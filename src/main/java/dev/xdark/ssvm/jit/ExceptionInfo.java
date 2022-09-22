@@ -1,6 +1,6 @@
 package dev.xdark.ssvm.jit;
 
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
 import dev.xdark.ssvm.value.ObjectValue;
 
 import java.util.Set;

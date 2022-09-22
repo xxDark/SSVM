@@ -4,7 +4,7 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.mirror.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
 import dev.xdark.ssvm.thread.backtrace.Backtrace;
 import dev.xdark.ssvm.thread.backtrace.StackFrame;
 import dev.xdark.ssvm.util.VMHelper;
@@ -32,7 +32,7 @@ public class StackTraceElementNatives {
 			Locals locals = ctx.getLocals();
 			ArrayValue arr = helper.checkNotNull(locals.loadReference(0));
 			InstanceValue ex = helper.checkNotNull(locals.loadReference(1));
-			Backtrace backtrace = ((JavaValue<Backtrace>) ex.getValue("backtrace", "Ljava/lang/Object;")).getValue();
+			Backtrace backtrace = ((JavaValue<Backtrace>) vm.getPublicOperations().getReference(ex, "backtrace", "Ljava/lang/Object;")).getValue();
 
 			int x = 0;
 			for (int i = backtrace.count(); i != 0; ) {

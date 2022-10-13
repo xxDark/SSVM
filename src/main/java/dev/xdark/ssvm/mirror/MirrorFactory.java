@@ -2,7 +2,9 @@ package dev.xdark.ssvm.mirror;
 
 import dev.xdark.ssvm.mirror.member.JavaField;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.ArrayClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.mirror.type.PrimitiveClass;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.ClassReader;
@@ -24,15 +26,15 @@ public interface MirrorFactory {
 	 * @param node        Class node.
 	 * @return new class.
 	 */
-	InstanceJavaClass newInstanceClass(ObjectValue classLoader, ClassReader classReader, ClassNode node);
+	InstanceClass newInstanceClass(ObjectValue classLoader, ClassReader classReader, ClassNode node);
 
 	/**
-	 * @param name       Primitive name.
-	 * @param descriptor Primitive descriptor.
-	 * @param sort       Primitive type.
+	 * @param type       Primitive type.
 	 * @return new class.
 	 */
-	PrimitiveClass newPrimitiveClass(String name, String descriptor, Type sort);
+	PrimitiveClass newPrimitiveClass(Type type);
+
+	ArrayClass newArrayClass(JavaClass componentType);
 
 	/**
 	 * @param owner  Field owner.
@@ -41,7 +43,7 @@ public interface MirrorFactory {
 	 * @param offset Field offset.
 	 * @return new field.
 	 */
-	JavaField newField(InstanceJavaClass owner, FieldNode node, int slot, long offset);
+	JavaField newField(InstanceClass owner, FieldNode node, int slot, long offset);
 
 	/**
 	 * @param owner Method owner.
@@ -49,7 +51,7 @@ public interface MirrorFactory {
 	 * @param slot  Method slot.
 	 * @return new method.
 	 */
-	JavaMethod newMethod(InstanceJavaClass owner, MethodNode node, int slot);
+	JavaMethod newMethod(InstanceClass owner, MethodNode node, int slot);
 
 	/**
 	 * @param method Original method.

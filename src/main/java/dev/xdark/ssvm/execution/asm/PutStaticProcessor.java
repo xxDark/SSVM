@@ -4,7 +4,7 @@ import dev.xdark.ssvm.asm.VMFieldInsnNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.member.JavaField;
 import dev.xdark.ssvm.util.AsmUtil;
 import org.objectweb.asm.tree.FieldInsnNode;
@@ -23,7 +23,7 @@ public final class PutStaticProcessor implements InstructionProcessor<FieldInsnN
 	@Override
 	public Result execute(FieldInsnNode insn, ExecutionContext<?> ctx) {
 		if (AsmUtil.isValid(insn)) {
-			InstanceJavaClass klass = (InstanceJavaClass) ctx.getHelper().tryFindClass(ctx.getClassLoader(), insn.owner, true);
+			InstanceClass klass = (InstanceClass) ctx.getHelper().tryFindClass(ctx.getClassLoader(), insn.owner, true);
 			JavaField field = ctx.getLinkResolver().resolveStaticField(klass, insn.name, insn.desc);
 			int sort = field.getType().getSort();
 			int opcode;

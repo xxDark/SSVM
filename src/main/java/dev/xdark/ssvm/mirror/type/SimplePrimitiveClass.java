@@ -1,8 +1,8 @@
 package dev.xdark.ssvm.mirror.type;
 
-import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.mirror.MirrorFactory;
+import dev.xdark.ssvm.util.Assertions;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
@@ -13,27 +13,22 @@ import org.objectweb.asm.Type;
  */
 public final class SimplePrimitiveClass implements PrimitiveClass {
 
-	private final VirtualMachine vm;
+	private final MirrorFactory mirrorFactory;
 	private final String name;
 	private final String descriptor;
-	private final InstanceValue oop;
-	private final InstanceJavaClass objectClass;
 	private final Type type;
-	private ArrayJavaClass arrayClass;
+	private InstanceValue oop;
+	private ArrayClass arrayClass;
 
 	/**
-	 * @param vm         VM instance.
-	 * @param name       Name of the class.
-	 * @param descriptor Descriptor of the class.
-	 * @param type       Type.
+	 * @param mirrorFactory Mirror factory.
+	 * @param type          Type.
 	 */
-	public SimplePrimitiveClass(VirtualMachine vm, String name, String descriptor, Type type) {
-		this.vm = vm;
-		this.name = name;
-		this.descriptor = descriptor;
+	public SimplePrimitiveClass(MirrorFactory mirrorFactory, Type type) {
+		this.mirrorFactory = mirrorFactory;
+		this.name = type.getClassName();
+		this.descriptor = type.getDescriptor();
 		this.type = type;
-		oop = vm.getMemoryManager().newClassOop(this);
-		objectClass = vm.getSymbols().java_lang_Object();
 	}
 
 	@Override
@@ -57,35 +52,23 @@ public final class SimplePrimitiveClass implements PrimitiveClass {
 	}
 
 	@Override
-	public ObjectValue getClassLoader() {
-		return vm.getMemoryManager().nullValue();
-	}
-
-	@Override
 	public InstanceValue getOop() {
 		return oop;
 	}
 
 	@Override
-	public InstanceJavaClass getSuperClass() {
-		return objectClass;
+	public InstanceClass[] getInterfaces() {
+		return new InstanceClass[0];
 	}
 
 	@Override
-	public InstanceJavaClass[] getInterfaces() {
-		return new InstanceJavaClass[0];
-	}
-
-	@Override
-	public ArrayJavaClass newArrayClass() {
-		ArrayJavaClass arrayClass = this.arrayClass;
+	public ArrayClass newArrayClass() {
+		ArrayClass arrayClass = this.arrayClass;
 		if (arrayClass == null) {
 			synchronized (this) {
 				arrayClass = this.arrayClass;
 				if (arrayClass == null) {
-					VirtualMachine vm = this.vm;
-					arrayClass = new ArrayJavaClass(vm, '[' + descriptor, 1, this);
-					vm.getHelper().setComponentType(arrayClass, this);
+					arrayClass = mirrorFactory.newArrayClass(this);
 					this.arrayClass = arrayClass;
 				}
 			}
@@ -94,12 +77,8 @@ public final class SimplePrimitiveClass implements PrimitiveClass {
 	}
 
 	@Override
-	public ArrayJavaClass getArrayClass() {
+	public ArrayClass getArrayClass() {
 		return arrayClass;
-	}
-
-	@Override
-	public void initialize() {
 	}
 
 	@Override
@@ -135,5 +114,12 @@ public final class SimplePrimitiveClass implements PrimitiveClass {
 	@Override
 	public int getSort() {
 		return type.getSort();
+	}
+
+	@Override
+	public void setOop(InstanceValue oop) {
+		Assertions.notNull(oop, "class oop");
+		Assertions.isNull(this.oop, "cannot re-assign class oop");
+		this.oop = oop;
 	}
 }

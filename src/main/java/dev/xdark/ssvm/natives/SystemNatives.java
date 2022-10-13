@@ -7,12 +7,12 @@ import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.MemoryManager;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
+import dev.xdark.ssvm.operation.VMOperations;
+import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.thread.ThreadStorage;
-import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.symbol.VMSymbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -33,8 +33,8 @@ public class SystemNatives {
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass sys = symbols.java_lang_System();
+		Symbols symbols = vm.getSymbols();
+		InstanceClass sys = symbols.java_lang_System();
 		vmi.setInvoker(sys, "registerNatives", "()V", MethodInvoker.noop());
 		vmi.setInvoker(sys, "currentTimeMillis", "()J", ctx -> {
 			ctx.setResult(vm.getTimeManager().currentTimeMillis());
@@ -45,10 +45,10 @@ public class SystemNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "arraycopy", "(Ljava/lang/Object;ILjava/lang/Object;II)V", ctx -> {
-			VMHelper helper = vm.getHelper();
+			VMOperations ops = vm.getOperations();
 			Locals locals = ctx.getLocals();
-			ArrayValue src = helper.checkNotNull(locals.loadReference(0));
-			ArrayValue dst = helper.checkNotNull(locals.loadReference(2));
+			ArrayValue src = ops.checkNotNull(locals.loadReference(0));
+			ArrayValue dst = ops.checkNotNull(locals.loadReference(2));
 			int srcPos = locals.loadInt(1);
 			int dstPos = locals.loadInt(3);
 			int length = locals.loadInt(4);
@@ -56,11 +56,11 @@ public class SystemNatives {
 			JavaClass srcComponent = src.getJavaClass().getComponentType();
 			JavaClass dstComponent = dst.getJavaClass().getComponentType();
 
-			int scale = memoryManager.sizeOfType(srcComponent);
-			helper.checkEquals(scale, memoryManager.sizeOfType(dstComponent));
+			long scale = memoryManager.sizeOfType(srcComponent);
+			ops.checkEquals(scale, memoryManager.sizeOfType(dstComponent));
 
 			int start = memoryManager.arrayBaseOffset(srcComponent);
-			helper.checkEquals(start, memoryManager.arrayBaseOffset(dstComponent));
+			ops.checkEquals(start, memoryManager.arrayBaseOffset(dstComponent));
 
 			MemoryData srcData = src.getMemory().getData();
 			long dataStartPos = start + srcPos * (long) scale;
@@ -74,10 +74,10 @@ public class SystemNatives {
 		});
 		vmi.setInvoker(sys, "initProperties", "(Ljava/util/Properties;)Ljava/util/Properties;", ctx -> {
 			InstanceValue value = ctx.getLocals().loadReference(0);
-			InstanceJavaClass jc = value.getJavaClass();
-			JavaMethod mn = vm.getPublicLinkResolver().resolveVirtualMethod(jc, value.getJavaClass(), "setProperty", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;");
+			InstanceClass jc = value.getJavaClass();
+			JavaMethod mn = vm.getLinkResolver().resolveVirtualMethod(jc, value.getJavaClass(), "setProperty", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;");
 			Map<String, String> properties = vm.getProperties();
-			VMHelper helper = vm.getHelper();
+			VMOperations ops = vm.getOperations();
 
 			ThreadStorage ts = vm.getThreadStorage();
 			for (Map.Entry<String, String> entry : properties.entrySet()) {
@@ -85,33 +85,33 @@ public class SystemNatives {
 				String property = entry.getValue();
 				Locals locals = ts.newLocals(mn);
 				locals.setReference(0, value);
-				locals.setReference(1, helper.newUtf8(key));
-				locals.setReference(2, helper.newUtf8(property));
-				helper.invoke(mn, locals);
+				locals.setReference(1, ops.newUtf8(key));
+				locals.setReference(2, ops.newUtf8(property));
+				ops.invokeVoid(mn, locals);
 			}
 			ctx.setResult(value);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "setIn0", "(Ljava/io/InputStream;)V", ctx -> {
 			ObjectValue stream = ctx.getLocals().loadReference(0);
-			ctx.getOperations().putReference(sys, "in", "Ljava/io/InputStream;", stream);
+			vm.getOperations().putReference(sys, "in", "Ljava/io/InputStream;", stream);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "setOut0", "(Ljava/io/PrintStream;)V", ctx -> {
 			ObjectValue stream = ctx.getLocals().loadReference(0);
-			ctx.getOperations().putReference(sys, "out", "Ljava/io/PrintStream;", stream);
+			vm.getOperations().putReference(sys, "out", "Ljava/io/PrintStream;", stream);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "setErr0", "(Ljava/io/PrintStream;)V", ctx -> {
 			ObjectValue stream = ctx.getLocals().loadReference(0);
-			ctx.getOperations().putReference(sys, "err", "Ljava/io/PrintStream;", stream);
+			vm.getOperations().putReference(sys, "err", "Ljava/io/PrintStream;", stream);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(sys, "mapLibraryName", "(Ljava/lang/String;)Ljava/lang/String;", ctx -> {
 			ObjectValue name = ctx.getLocals().loadReference(0);
-			VMHelper helper = vm.getHelper();
-			helper.checkNotNull(name);
-			ctx.setResult(helper.newUtf8(vm.getNativeLibraryManager().mapLibraryName(helper.readUtf8(name))));
+			VMOperations ops = vm.getOperations();
+			ops.checkNotNull(name);
+			ctx.setResult(ops.newUtf8(vm.getNativeLibraryManager().mapLibraryName(ops.readUtf8(name))));
 			return Result.ABORT;
 		});
 	}

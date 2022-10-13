@@ -5,8 +5,8 @@ import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
-import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
+import dev.xdark.ssvm.util.Helper;
 import dev.xdark.ssvm.value.ArrayValue;
 import lombok.experimental.UtilityClass;
 
@@ -25,9 +25,9 @@ public class FileSystemNativeDispatcherNatives {
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		InstanceJavaClass windowsDispatcher = (InstanceJavaClass) vm.findBootstrapClass("sun/nio/fs/WindowsNativeDispatcher");
+		InstanceClass windowsDispatcher = (InstanceClass) vm.findBootstrapClass("sun/nio/fs/WindowsNativeDispatcher");
 		if (windowsDispatcher == null) {
-			InstanceJavaClass unixDispatcher = (InstanceJavaClass) vm.findBootstrapClass("sun/nio/fs/UnixNativeDispatcher");
+			InstanceClass unixDispatcher = (InstanceClass) vm.findBootstrapClass("sun/nio/fs/UnixNativeDispatcher");
 			vmi.setInvoker(unixDispatcher, "getcwd", "()[B", ctx -> {
 				byte[] cwd = vm.getFileDescriptorManager().getCurrentWorkingDirectory().getBytes(StandardCharsets.UTF_8);
 				ctx.setResult(vm.getHelper().toVMBytes(cwd));
@@ -38,17 +38,17 @@ public class FileSystemNativeDispatcherNatives {
 				ctx.setResult(0);
 				return Result.ABORT;
 			});
-			InstanceJavaClass linuxDispatcher = (InstanceJavaClass) vm.findBootstrapClass("sun/nio/fs/LinuxNativeDispatcher");
+			InstanceClass linuxDispatcher = (InstanceClass) vm.findBootstrapClass("sun/nio/fs/LinuxNativeDispatcher");
 			if (linuxDispatcher != null) {
 				vmi.setInvoker(linuxDispatcher, "init", "()V", MethodInvoker.noop());
 			} else {
-				InstanceJavaClass bsdDispatcher = (InstanceJavaClass) vm.findBootstrapClass("sun/nio/fs/BsdNativeDispatcher");
+				InstanceClass bsdDispatcher = (InstanceClass) vm.findBootstrapClass("sun/nio/fs/BsdNativeDispatcher");
 				vmi.setInvoker(bsdDispatcher, "initIDs", "()V", MethodInvoker.noop());
-				InstanceJavaClass macDispatcher = (InstanceJavaClass) vm.findBootstrapClass("sun/nui/fs/MacOSXNativeDispatcher");
+				InstanceClass macDispatcher = (InstanceClass) vm.findBootstrapClass("sun/nui/fs/MacOSXNativeDispatcher");
 				if (macDispatcher != null) {
 					vmi.setInvoker(macDispatcher, "normalizepath", "([CI)[C", ctx -> {
 						Locals locals = ctx.getLocals();
-						VMHelper helper = vm.getHelper();
+						Helper helper = vm.getHelper();
 						ArrayValue path = helper.checkNotNull(locals.loadReference(0));
 						// int form = locals.load(1).asInt();
 						ctx.setResult(path);

@@ -4,13 +4,10 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
-import dev.xdark.ssvm.thread.backtrace.Backtrace;
-import dev.xdark.ssvm.thread.backtrace.StackFrame;
-import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
+import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.JavaValue;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -26,19 +23,17 @@ public class StackTraceElementNatives {
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		InstanceJavaClass stackTraceElement = (InstanceJavaClass) vm.findBootstrapClass("java/lang/StackTraceElement");
+		InstanceClass stackTraceElement = (InstanceClass) vm.findBootstrapClass("java/lang/StackTraceElement");
 		vmi.setInvoker(stackTraceElement, "initStackTraceElements", "([Ljava/lang/StackTraceElement;Ljava/lang/Throwable;)V", ctx -> {
-			VMHelper helper = vm.getHelper();
+			VMOperations ops = vm.getOperations();
 			Locals locals = ctx.getLocals();
-			ArrayValue arr = helper.checkNotNull(locals.loadReference(0));
-			InstanceValue ex = helper.checkNotNull(locals.loadReference(1));
-			Backtrace backtrace = ((JavaValue<Backtrace>) vm.getPublicOperations().getReference(ex, "backtrace", "Ljava/lang/Object;")).getValue();
+			ArrayValue arr = ops.checkNotNull(locals.loadReference(0));
+			InstanceValue ex = ops.checkNotNull(locals.loadReference(1));
+			ArrayValue initialized = ops.checkNotNull(ops.getReference(ex, "backtrace", "Ljava/lang/Object;"));
 
 			int x = 0;
-			for (int i = backtrace.count(); i != 0; ) {
-				StackFrame frame = backtrace.get(--i);
-				InstanceValue element = helper.newStackTraceElement(frame, true);
-				arr.setReference(x++, element);
+			for (int i = initialized.getLength(); i != 0; ) {
+				arr.setReference(x++, initialized.getReference(--i));
 			}
 			return Result.ABORT;
 		});

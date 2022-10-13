@@ -2,7 +2,7 @@ package dev.xdark.ssvm.value;
 
 import dev.xdark.ssvm.memory.allocation.MemoryBlock;
 import dev.xdark.ssvm.memory.management.MemoryManager;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 
 /**
  * Base implementation of instance value.
@@ -20,8 +20,8 @@ public class SimpleInstanceValue extends SimpleObjectValue implements InstanceVa
 	}
 
 	@Override
-	public final InstanceJavaClass getJavaClass() {
-		return (InstanceJavaClass) super.getJavaClass();
+	public final InstanceClass getJavaClass() {
+		return (InstanceClass) super.getJavaClass();
 	}
 
 	@Override

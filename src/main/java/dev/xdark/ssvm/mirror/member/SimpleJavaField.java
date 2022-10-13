@@ -1,7 +1,7 @@
 package dev.xdark.ssvm.mirror.member;
 
 import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.util.TypeSafeMap;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -19,7 +19,7 @@ public final class SimpleJavaField implements JavaField {
 
 	private final TypeSafeMap metadata = new TypeSafeMap();
 	private final BitSet extraModifiers = new BitSet();
-	private final InstanceJavaClass owner;
+	private final InstanceClass owner;
 	private final FieldNode node;
 	private final int slot;
 	private final long offset;
@@ -32,7 +32,7 @@ public final class SimpleJavaField implements JavaField {
 	 * @param slot   Field slot.
 	 * @param offset Field offset.
 	 */
-	public SimpleJavaField(InstanceJavaClass owner, FieldNode node, int slot, long offset) {
+	public SimpleJavaField(InstanceClass owner, FieldNode node, int slot, long offset) {
 		this.owner = owner;
 		this.node = node;
 		this.slot = slot;
@@ -40,7 +40,7 @@ public final class SimpleJavaField implements JavaField {
 	}
 
 	@Override
-	public InstanceJavaClass getOwner() {
+	public InstanceClass getOwner() {
 		return owner;
 	}
 
@@ -100,7 +100,7 @@ public final class SimpleJavaField implements JavaField {
 	}
 
 	private void resolveFieldType() {
-		InstanceJavaClass owner = this.owner;
+		InstanceClass owner = this.owner;
 		VirtualMachine vm = owner.getVM();
 		ObjectValue cl = owner.getClassLoader();
 		type = vm.getHelper().findClass(cl, Type.getType(node.desc), false);

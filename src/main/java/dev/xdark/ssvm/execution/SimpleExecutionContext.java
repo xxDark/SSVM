@@ -1,26 +1,16 @@
 package dev.xdark.ssvm.execution;
 
-import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
-import dev.xdark.ssvm.synchronizer.Mutex;
 import dev.xdark.ssvm.thread.backtrace.StackFrame;
 import dev.xdark.ssvm.util.Disposable;
 import dev.xdark.ssvm.util.DisposeUtil;
-import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.sink.ValueSink;
-
-import java.util.IdentityHashMap;
-import java.util.Map;
 
 
 public final class SimpleExecutionContext<R extends ValueSink> implements ExecutionContext<R>, Disposable {
 
-	private final Map<ObjectValue, LockCount> lockMap = new IdentityHashMap<>();
 	private final EngineReference<ExecutionContext<?>> engineReference;
-	private VirtualMachine virtualMachine;
-	private ExecutionOptions options;
 	private JavaMethod method;
 	private Stack stack;
 	private Locals locals;
@@ -30,23 +20,17 @@ public final class SimpleExecutionContext<R extends ValueSink> implements Execut
 	final StackFrame frame = new SimpleStackFrame(this);
 
 	/**
-	 * @param method Method being executed.
 	 * @param stack  Execution stack.
 	 * @param locals Local variable table.
 	 * @param sink   Value sink, where the result will be put.
 	 */
-	public SimpleExecutionContext(ExecutionOptions options, JavaMethod method, Stack stack, Locals locals, R sink) {
+	public SimpleExecutionContext(JavaMethod method, Stack stack, Locals locals, R sink) {
 		engineReference = null;
-		init(options, method, stack, locals, sink);
+		init(method, stack, locals, sink);
 	}
 
 	SimpleExecutionContext(EngineReference<ExecutionContext<?>> engineReference) {
 		this.engineReference = engineReference;
-	}
-
-	@Override
-	public VirtualMachine getVM() {
-		return virtualMachine;
 	}
 
 	@Override
@@ -85,72 +69,8 @@ public final class SimpleExecutionContext<R extends ValueSink> implements Execut
 	}
 
 	@Override
-	public R getResult() {
+	public R returnSink() {
 		return sink;
-	}
-
-	@Override
-	public void monitorEnter(ObjectValue value) {
-		VirtualMachine vm = virtualMachine;
-		vm.getHelper().checkNotNull(value);
-		vm.getMemoryManager().getMutex(value).lock();
-		lockMap.compute(value, (__, count) -> {
-			if (count == null) {
-				return new LockCount();
-			}
-			count.value++;
-			return count;
-		});
-	}
-
-	@Override
-	public void monitorExit(ObjectValue value) {
-		VirtualMachine vm = virtualMachine;
-		VMHelper helper = vm.getHelper();
-		helper.checkNotNull(value);
-		Map<ObjectValue, LockCount> lockMap = this.lockMap;
-		LockCount count = lockMap.get(value);
-		if (count == null) {
-			helper.throwException(vm.getSymbols().java_lang_IllegalMonitorStateException());
-		}
-		if (--count.value == 0) {
-			lockMap.remove(value);
-		}
-		vm.getPublicOperations().monitorExit(value);
-	}
-
-	@Override
-	public void verifyMonitors() {
-		Map<ObjectValue, LockCount> lockMap = this.lockMap;
-		boolean exceptionThrown = !lockMap.isEmpty();
-		if (exceptionThrown) {
-			MemoryManager memoryManager = virtualMachine.getMemoryManager();
-			for (Map.Entry<ObjectValue, LockCount> entry : lockMap.entrySet()) {
-				int count = entry.getValue().value;
-				ObjectValue value = entry.getKey();
-				Mutex mutex = memoryManager.getMutex(value);
-				while (count-- != 0) {
-					if (!mutex.tryUnlock()) {
-						break;
-					}
-				}
-			}
-			lockMap.clear();
-		}
-		if (exceptionThrown) {
-			VirtualMachine vm = virtualMachine;
-			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalMonitorStateException());
-		}
-	}
-
-	@Override
-	public void unwind() {
-		stack.clear();
-	}
-
-	@Override
-	public ExecutionOptions getOptions() {
-		return options;
 	}
 
 	@Override
@@ -185,23 +105,12 @@ public final class SimpleExecutionContext<R extends ValueSink> implements Execut
 		engineReference.recycle(this);
 	}
 
-	void init(ExecutionOptions options, JavaMethod method, Stack stack, Locals locals, R sink) {
-		this.options = options;
-		this.virtualMachine = method.getOwner().getVM();
+	void init(JavaMethod method, Stack stack, Locals locals, R sink) {
 		this.method = method;
 		this.stack = stack;
 		this.locals = locals;
 		this.sink = sink;
 		insnPosition = 0;
 		lineNumber = -1;
-	}
-
-	private static final class LockCount {
-
-		int value;
-
-		LockCount() {
-			value = 1;
-		}
 	}
 }

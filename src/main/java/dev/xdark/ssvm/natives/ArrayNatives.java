@@ -4,10 +4,10 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
-import dev.xdark.ssvm.symbol.VMSymbols;
-import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.symbol.Symbols;
+import dev.xdark.ssvm.util.Helper;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -26,8 +26,8 @@ public class ArrayNatives {
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass array = symbols.java_lang_reflect_Array();
+		Symbols symbols = vm.getSymbols();
+		InstanceClass array = symbols.java_lang_reflect_Array();
 		vmi.setInvoker(array, "getLength", "(Ljava/lang/Object;)I", ctx -> {
 			ObjectValue value = ctx.getLocals().loadReference(0);
 			vm.getHelper().checkNotNull(value);
@@ -37,7 +37,7 @@ public class ArrayNatives {
 		vmi.setInvoker(array, "newArray", "(Ljava/lang/Class;I)Ljava/lang/Object;", ctx -> {
 			Locals locals = ctx.getLocals();
 			ObjectValue local = locals.loadReference(0);
-			VMHelper helper = vm.getHelper();
+			Helper helper = vm.getHelper();
 			helper.checkNotNull(local);
 			if (!(local instanceof JavaValue)) {
 				helper.throwException(symbols.java_lang_IllegalArgumentException());

@@ -1,9 +1,9 @@
 package dev.xdark.ssvm.util;
 
-import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
+import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.backtrace.Backtrace;
 import dev.xdark.ssvm.thread.backtrace.StackFrame;
 
@@ -14,13 +14,10 @@ import dev.xdark.ssvm.thread.backtrace.StackFrame;
  */
 public final class Reflection {
 
-	private final VirtualMachine vm;
+	private final ThreadManager threadManager;
 
-	/**
-	 * @param vm VM instance.
-	 */
-	public Reflection(VirtualMachine vm) {
-		this.vm = vm;
+	public Reflection(ThreadManager threadManager) {
+		this.threadManager = threadManager;
 	}
 
 	/**
@@ -29,19 +26,15 @@ public final class Reflection {
 	 * @param offset Caller offset.
 	 * @return caller frame.
 	 */
-	public StackFrame getCallerFrame(int offset) {
-		Backtrace backtrace = vm.currentOSThread().getBacktrace();
-		int count = backtrace.count();
-		StackFrame frame = backtrace.get(count - offset++);
-		JavaMethod caller = frame.getExecutionContext().getMethod();
+	public ExecutionContext<?> getCallerFrame(int offset) {
+		Backtrace backtrace = threadManager.currentOsThread().getBacktrace();
+		int count = backtrace.depth();
+		ExecutionContext<?> frame = backtrace.at(count - offset++);
+		JavaMethod caller = frame.getMethod();
 		if (caller.isCallerSensitive()) {
 			while (true) {
-				frame = backtrace.get(count - offset);
-				ExecutionContext<?> frameCtx = frame.getExecutionContext();
-				if (frameCtx == null) {
-					break;
-				}
-				JavaMethod method = frameCtx.getMethod();
+				frame = backtrace.at(count - offset);
+				JavaMethod method = frame.getMethod();
 				if (Modifier.isCallerSensitive(method.getModifiers())) {
 					offset++;
 				} else {

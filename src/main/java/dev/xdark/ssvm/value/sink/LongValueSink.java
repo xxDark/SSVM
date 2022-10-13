@@ -2,6 +2,11 @@ package dev.xdark.ssvm.value.sink;
 
 import dev.xdark.ssvm.value.ObjectValue;
 
+/**
+ * Value sink that accepts longs.
+ *
+ * @author xDark
+ */
 public final class LongValueSink extends AbstractValueSink {
 	private long value;
 

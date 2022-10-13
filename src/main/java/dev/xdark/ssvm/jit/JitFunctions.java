@@ -3,7 +3,7 @@ package dev.xdark.ssvm.jit;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.VMException;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.value.ArrayValue;
@@ -114,8 +114,8 @@ public class JitFunctions {
 			return info.nullConstant;
 		}
 		InstanceValue oop = ex.getOop();
-		InstanceJavaClass type = oop.getJavaClass();
-		for (InstanceJavaClass candidate : info.types) {
+		InstanceClass type = oop.getJavaClass();
+		for (InstanceClass candidate : info.types) {
 			if (candidate.isAssignableFrom(type)) {
 				return oop;
 			}
@@ -142,7 +142,7 @@ public class JitFunctions {
 
 	/* allocation */
 	public InstanceValue newInstance(Object /* InstanceJavaClass */ type, ExecutionContext<?> ctx) {
-		return ctx.getOperations().allocateInstance((InstanceJavaClass) type);
+		return ctx.getOperations().allocateInstance((InstanceClass) type);
 	}
 
 	public ArrayValue newReferenceArray(int length, Object /* JavaClass */ type, ExecutionContext<?> ctx) {

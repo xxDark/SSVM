@@ -7,14 +7,14 @@ import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.mirror.member.JavaField;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.util.InvokeDynamicLinker;
-import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.symbol.VMSymbols;
-import dev.xdark.ssvm.util.VMOperations;
+import dev.xdark.ssvm.util.Helper;
+import dev.xdark.ssvm.symbol.Symbols;
+import dev.xdark.ssvm.util.Operations;
 import dev.xdark.ssvm.value.*;
 import lombok.experimental.UtilityClass;
 
@@ -37,12 +37,12 @@ public class MethodHandleNatives {
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass natives = symbols.java_lang_invoke_MethodHandleNatives();
+		Symbols symbols = vm.getSymbols();
+		InstanceClass natives = symbols.java_lang_invoke_MethodHandleNatives();
 		vmi.setInvoker(natives, "registerNatives", "()V", MethodInvoker.noop());
 		byte[] speculativeResolve = new byte[]{-1};
 		MethodInvoker resolve = ctx -> {
-			VMHelper helper = vm.getHelper();
+			Helper helper = vm.getHelper();
 			Locals locals = ctx.getLocals();
 			InstanceValue memberName = helper.checkNotNull(locals.loadReference(0));
 			resolveMemberName(speculativeResolve[0], locals, memberName);
@@ -65,10 +65,10 @@ public class MethodHandleNatives {
 		});
 		vmi.setInvoker(natives, "init", "(Ljava/lang/invoke/MemberName;Ljava/lang/Object;)V", ctx -> {
 			Locals locals = ctx.getLocals();
-			VMHelper helper = ctx.getHelper();
+			Helper helper = vm.getHelper();
 			InstanceValue memberName = helper.checkNotNull(locals.loadReference(0));
 			InstanceValue obj = helper.checkNotNull(locals.loadReference(1));
-			InstanceJavaClass objClass = obj.getJavaClass();
+			InstanceClass objClass = obj.getJavaClass();
 			if (objClass == symbols.java_lang_reflect_Method()) {
 				initMemberNameMethod(vm, memberName, obj);
 			} else if (objClass == symbols.java_lang_reflect_Field()) {
@@ -82,17 +82,17 @@ public class MethodHandleNatives {
 		});
 		vmi.setInvoker(natives, "objectFieldOffset", "(Ljava/lang/invoke/MemberName;)J", ctx -> {
 			InstanceValue _this = vm.getHelper().checkNotNull(ctx.getLocals().loadReference(0));
-			ctx.setResult((long) vm.getTrustedOperations().getInt(_this, VM_INDEX));
+			ctx.setResult((long) vm.getOperations().getInt(_this, VM_INDEX));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(natives, "staticFieldBase", "(Ljava/lang/invoke/MemberName;)Ljava/lang/Object;", ctx -> {
 			InstanceValue _this = vm.getHelper().checkNotNull(ctx.getLocals().loadReference(0));
-			ctx.setResult(vm.getTrustedOperations().getReference(_this, "clazz", "Ljava/lang/Class;"));
+			ctx.setResult(vm.getOperations().getReference(_this, "clazz", "Ljava/lang/Class;"));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(natives, "staticFieldOffset", "(Ljava/lang/invoke/MemberName;)J", ctx -> {
 			InstanceValue _this = vm.getHelper().checkNotNull(ctx.getLocals().loadReference(0));
-			ctx.setResult((long) vm.getTrustedOperations().getInt(_this, VM_INDEX));
+			ctx.setResult((long) vm.getOperations().getInt(_this, VM_INDEX));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(natives, "getMembers", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Class;I[Ljava/lang/invoke/MemberName;)I", ctx -> {
@@ -103,17 +103,17 @@ public class MethodHandleNatives {
 		MethodInvoker setCallSiteTarget = ctx -> {
 			Locals locals = ctx.getLocals();
 			InstanceValue _this = vm.getHelper().checkNotNull(locals.loadReference(0));
-			vm.getTrustedOperations().putReference(_this, "target", "Ljava/lang/invoke/MethodHandle;", locals.loadReference(1));
+			vm.getOperations().putReference(_this, "target", "Ljava/lang/invoke/MethodHandle;", locals.loadReference(1));
 			return Result.ABORT;
 		};
 		vmi.setInvoker(natives, "setCallSiteTargetNormal", "(Ljava/lang/invoke/CallSite;Ljava/lang/invoke/MethodHandle;)V", setCallSiteTarget);
 		vmi.setInvoker(natives, "setCallSiteTargetVolatile", "(Ljava/lang/invoke/CallSite;Ljava/lang/invoke/MethodHandle;)V", setCallSiteTarget);
 
-		InstanceJavaClass mh = symbols.java_lang_invoke_MethodHandle();
+		InstanceClass mh = symbols.java_lang_invoke_MethodHandle();
 		MethodInvoker invoke = ctx -> {
 			Locals locals = ctx.getLocals();
-			VMHelper helper = vm.getHelper();
-			VMOperations ops = vm.getTrustedOperations();
+			Helper helper = vm.getHelper();
+			Operations ops = vm.getOperations();
 			InstanceValue _this = locals.loadReference(0);
 			InstanceValue form = helper.checkNotNull(ops.getReference(_this, "form", "Ljava/lang/invoke/LambdaForm;"));
 			InstanceValue vmentry = helper.checkNotNull(ops.getReference(form, "vmentry", "Ljava/lang/invoke/MemberName;"));
@@ -123,16 +123,16 @@ public class MethodHandleNatives {
 			if ("<init>".equals(name)) {
 				helper.throwException(symbols.java_lang_InternalError(), "Bad name " + name);
 			}
-			ExecutionContext<?> last = vm.currentOSThread().getBacktrace().last().getExecutionContext();
+			ExecutionContext<?> last = vm.currentOSThread().getBacktrace().peek();
 			JavaMethod callerMethod = last.getMethod();
 			String callName = callerMethod.getName();
 			if ("invoke".equals(callName)) {
 				// Ask VM about caller
-				JavaClass jc = vm.getReflection().getCallerFrame(2).getDeclaringClass();
+				JavaClass jc = vm.getReflection().getCallerFrame(2).getMethod().getOwner();
 				// Construct MT
 				InstanceValue mt = helper.methodType(jc.getClassLoader(), callerMethod.getType());
 				// Invoke asType
-				JavaMethod asType = vm.getPublicLinkResolver().resolveVirtualMethod(_this, "asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;");
+				JavaMethod asType = vm.getLinkResolver().resolveVirtualMethod(_this, "asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;");
 				Locals table = vm.getThreadStorage().newLocals(asType);
 				table.setReference(0, _this);
 				table.setReference(1, mt);
@@ -148,13 +148,13 @@ public class MethodHandleNatives {
 				int flags = ops.getInt(vmentry, "flags");
 				int refKind = (flags >> MN_REFERENCE_KIND_SHIFT) & MN_REFERENCE_KIND_MASK;
 				if (refKind != REF_invokeSpecial && refKind != REF_newInvokeSpecial) {
-					vmtarget = vm.getPublicLinkResolver().resolveVirtualMethod(_this, name, vmtarget.getDesc());
+					vmtarget = vm.getLinkResolver().resolveVirtualMethod(_this, name, vmtarget.getDesc());
 				}
 			}
 			Locals table = vm.getThreadStorage().newLocals(vmtarget);
 			table.copyFrom(locals, 0, 0, locals.maxSlots());
 			table.setReference(0, _this);
-			helper.invoke(vmtarget, table, ctx.getResult());
+			helper.invoke(vmtarget, table, ctx.returnSink());
 			return Result.ABORT;
 		};
 		vmi.setInvoker(mh, "invoke", "([Ljava/lang/Object;)Ljava/lang/Object;", invoke);
@@ -163,11 +163,11 @@ public class MethodHandleNatives {
 
 		MethodInvoker linkToXX = ctx -> {
 			Locals locals = ctx.getLocals();
-			VMOperations ops = vm.getTrustedOperations();
-			VMHelper helper = vm.getHelper();
+			Operations ops = vm.getOperations();
+			Helper helper = vm.getHelper();
 			InstanceValue memberName = locals.loadReference(locals.maxSlots() - 1);
 			InstanceValue resolved = (InstanceValue) ops.getReference(memberName, "method", symbols.java_lang_invoke_ResolvedMethodName().getDescriptor());
-			InstanceJavaClass clazz = ((JavaValue<InstanceJavaClass>) ops.getReference(memberName, "clazz", "Ljava/lang/Class;")).getValue();
+			InstanceClass clazz = ((JavaValue<InstanceClass>) ops.getReference(memberName, "clazz", "Ljava/lang/Class;")).getValue();
 			JavaMethod vmtarget = helper.getMethodBySlot(clazz, ops.getInt(ops.getReference(resolved, VM_TARGET, "Ljava/lang/Object;"), "value"));
 
 			if ((vmtarget.getModifiers() & ACC_STATIC) == 0) {
@@ -176,12 +176,12 @@ public class MethodHandleNatives {
 				if (refKind != REF_invokeSpecial) {
 					ObjectValue instance = locals.loadReference(0);
 					helper.checkNotNull(instance);
-					vmtarget = vm.getPublicLinkResolver().resolveVirtualMethod(instance, vmtarget.getName(), vmtarget.getDesc());
+					vmtarget = vm.getLinkResolver().resolveVirtualMethod(instance, vmtarget.getName(), vmtarget.getDesc());
 				}
 			}
 			Locals newLocals = vm.getThreadStorage().newLocals(vmtarget.getMaxLocals());
 			newLocals.copyFrom(locals, 0, 0, locals.maxSlots() - 1);
-			helper.invoke(vmtarget, newLocals, ctx.getResult());
+			helper.invoke(vmtarget, newLocals, ctx.returnSink());
 			return Result.ABORT;
 		};
 
@@ -190,11 +190,11 @@ public class MethodHandleNatives {
 		vmi.setInvoker(mh, "linkToInterface", "([Ljava/lang/Object;)Ljava/lang/Object;", linkToXX);
 		vmi.setInvoker(mh, "linkToSpecial", "([Ljava/lang/Object;)Ljava/lang/Object;", linkToXX);
 
-		InstanceJavaClass lookup = symbols.java_lang_invoke_MethodHandles$Lookup();
+		InstanceClass lookup = symbols.java_lang_invoke_MethodHandles$Lookup();
 		vmi.setInvoker(lookup, "checkAccess", "(BLjava/lang/Class;Ljava/lang/invoke/MemberName;)V", MethodInvoker.noop());
 
 		// TODO impl getMemberVMInfo
-		InstanceJavaClass memberName = symbols.java_lang_invoke_MemberName();
+		InstanceClass memberName = symbols.java_lang_invoke_MemberName();
 		vmi.setInvoker(memberName, "vminfoIsConsistent", "()Z", ctx -> {
 			ctx.setResult(1);
 			return Result.ABORT;
@@ -202,13 +202,13 @@ public class MethodHandleNatives {
 	}
 
 	private void resolveMemberName(byte speculativeResolveModeIndex, Locals locals, InstanceValue memberName) {
-		InstanceJavaClass owner = memberName.getJavaClass();
+		InstanceClass owner = memberName.getJavaClass();
 		VirtualMachine vm = owner.getVM();
-		JavaValue<InstanceJavaClass> classWrapper = (JavaValue<InstanceJavaClass>) vm.getPublicOperations().getReference(memberName, "clazz", "Ljava/lang/Class;");
-		VMHelper helper = vm.getHelper();
-		InstanceJavaClass clazz = classWrapper.getValue();
+		JavaValue<InstanceClass> classWrapper = (JavaValue<InstanceClass>) vm.getOperations().getReference(memberName, "clazz", "Ljava/lang/Class;");
+		Helper helper = vm.getHelper();
+		InstanceClass clazz = classWrapper.getValue();
 		clazz.initialize();
-		VMOperations ops = vm.getTrustedOperations();
+		Operations ops = vm.getOperations();
 		String name = helper.readUtf8(ops.getReference(memberName, "name", "Ljava/lang/String;"));
 		ObjectValue mt = ops.getReference(memberName, "type", "Ljava/lang/Object;");
 		int flags = ops.getInt(memberName, "flags");
@@ -230,10 +230,10 @@ public class MethodHandleNatives {
 	}
 
 	private void initMemberNameMethod(VirtualMachine vm, InstanceValue memberName, InstanceValue obj) {
-		VMHelper helper = vm.getHelper();
-		VMOperations ops = vm.getTrustedOperations();
+		Helper helper = vm.getHelper();
+		Operations ops = vm.getOperations();
 		// Copy over clazz, name, type & invoke expand
-		InstanceJavaClass clazz = ((JavaValue<InstanceJavaClass>) ops.getReference(obj, "clazz", "Ljava/lang/Class;")).getValue();
+		InstanceClass clazz = ((JavaValue<InstanceClass>) ops.getReference(obj, "clazz", "Ljava/lang/Class;")).getValue();
 		int slot = ops.getInt(obj, "slot");
 		JavaMethod method = helper.getMethodBySlot(clazz, slot);
 
@@ -251,10 +251,10 @@ public class MethodHandleNatives {
 	}
 
 	private void initMemberNameConstructor(VirtualMachine vm, InstanceValue memberName, InstanceValue obj) {
-		VMHelper helper = vm.getHelper();
-		VMOperations ops = vm.getTrustedOperations();
+		Helper helper = vm.getHelper();
+		Operations ops = vm.getOperations();
 		// Copy over clazz, name, type & invoke expand
-		InstanceJavaClass clazz = ((JavaValue<InstanceJavaClass>) ops.getReference(obj, "clazz", "Ljava/lang/Class;")).getValue();
+		InstanceClass clazz = ((JavaValue<InstanceClass>) ops.getReference(obj, "clazz", "Ljava/lang/Class;")).getValue();
 		int slot = ops.getInt(obj, "slot");
 		JavaMethod method = helper.getMethodBySlot(clazz, slot);
 
@@ -266,10 +266,10 @@ public class MethodHandleNatives {
 	}
 
 	private void initMemberNameField(VirtualMachine vm, InstanceValue memberName, InstanceValue obj) {
-		VMHelper helper = vm.getHelper();
-		VMOperations ops = vm.getTrustedOperations();
+		Helper helper = vm.getHelper();
+		Operations ops = vm.getOperations();
 		// Copy over clazz, name, type & invoke expand
-		InstanceJavaClass clazz = ((JavaValue<InstanceJavaClass>) ops.getReference(obj, "clazz", "Ljava/lang/Class;")).getValue();
+		InstanceClass clazz = ((JavaValue<InstanceClass>) ops.getReference(obj, "clazz", "Ljava/lang/Class;")).getValue();
 		int slot = ops.getInt(obj, "slot");
 		JavaField field = helper.getFieldBySlot(clazz, slot);
 		ops.putReference(memberName, "clazz", "Ljava/lang/Class;", clazz.getOop());
@@ -285,10 +285,10 @@ public class MethodHandleNatives {
 		vm.getInvokeDynamicLinker().initFieldMember(refKind, memberName, field);
 	}
 
-	private void initMethodMember(int refKind, VirtualMachine vm, InstanceValue memberName, InstanceJavaClass clazz, String name, ObjectValue methodType, int type, boolean speculativeResolve0) {
-		VMHelper helper = vm.getHelper();
-		VMSymbols symbols = vm.getSymbols();
-		JavaMethod method = vm.getPublicLinkResolver().resolveVirtualMethod(methodType, "toMethodDescriptorString", "()Ljava/lang/String;");
+	private void initMethodMember(int refKind, VirtualMachine vm, InstanceValue memberName, InstanceClass clazz, String name, ObjectValue methodType, int type, boolean speculativeResolve0) {
+		Helper helper = vm.getHelper();
+		Symbols symbols = vm.getSymbols();
+		JavaMethod method = vm.getLinkResolver().resolveVirtualMethod(methodType, "toMethodDescriptorString", "()Ljava/lang/String;");
 		Locals locals = vm.getThreadStorage().newLocals(method);
 		locals.setReference(0, methodType);
 		String desc = helper.readUtf8(helper.invokeReference(method, locals));
@@ -325,9 +325,9 @@ public class MethodHandleNatives {
 		vm.getInvokeDynamicLinker().initMethodMember(refKind, memberName, handle, type);
 	}
 
-	private void initFieldMember(int refKind, VirtualMachine vm, InstanceValue memberName, InstanceJavaClass clazz, String name, Value type, boolean speculativeResolve0) {
-		VMHelper helper = vm.getHelper();
-		VMSymbols symbols = vm.getSymbols();
+	private void initFieldMember(int refKind, VirtualMachine vm, InstanceValue memberName, InstanceClass clazz, String name, Value type, boolean speculativeResolve0) {
+		Helper helper = vm.getHelper();
+		Symbols symbols = vm.getSymbols();
 		String desc = ((JavaValue<JavaClass>) type).getValue().getDescriptor();
 
 		// TODO hotspot "feature"?

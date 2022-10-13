@@ -2,6 +2,11 @@ package dev.xdark.ssvm.value.sink;
 
 import dev.xdark.ssvm.value.ObjectValue;
 
+/**
+ * Value sink that accepts floats.
+ *
+ * @author xDark
+ */
 public final class FloatValueSink extends AbstractValueSink {
 	private float value;
 

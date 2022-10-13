@@ -2,6 +2,11 @@ package dev.xdark.ssvm.value.sink;
 
 import dev.xdark.ssvm.value.ObjectValue;
 
+/**
+ * Value sink that discards any value.
+ *
+ * @author xDark
+ */
 public final class BlackholeValueSink extends AbstractValueSink {
 	public static final ValueSink INSTANCE = new BlackholeValueSink();
 

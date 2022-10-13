@@ -26,11 +26,6 @@ public interface ExecutionRequest<R extends ValueSink> {
 	Locals getLocals();
 
 	/**
-	 * @return execution options.
-	 */
-	ExecutionOptions getOptions();
-
-	/**
 	 * @return Result sink.
 	 */
 	R getResultSink();

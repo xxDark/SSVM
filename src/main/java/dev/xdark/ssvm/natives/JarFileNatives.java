@@ -4,10 +4,10 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.fs.ZipFile;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
-import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.symbol.VMSymbols;
-import dev.xdark.ssvm.util.VMOperations;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
+import dev.xdark.ssvm.util.Helper;
+import dev.xdark.ssvm.symbol.Symbols;
+import dev.xdark.ssvm.util.Operations;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 
@@ -27,14 +27,14 @@ public class JarFileNatives {
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass zf = symbols.java_util_zip_ZipFile();
-		InstanceJavaClass jf = symbols.java_util_jar_JarFile();
+		Symbols symbols = vm.getSymbols();
+		InstanceClass zf = symbols.java_util_zip_ZipFile();
+		InstanceClass jf = symbols.java_util_jar_JarFile();
 		vmi.setInvoker(jf, "getMetaInfEntryNames", "()[Ljava/lang/String;", ctx -> {
-			VMOperations ops = vm.getPublicOperations();
+			Operations ops = vm.getOperations();
 			long handle = ops.getLong(ctx.getLocals().loadReference(0), zf, "jzfile");
 			ZipFile zip = vm.getFileDescriptorManager().getZipFile(handle);
-			VMHelper helper = vm.getHelper();
+			Helper helper = vm.getHelper();
 			if (zip == null) {
 				helper.throwException(symbols.java_lang_IllegalStateException(), "zip closed");
 			}

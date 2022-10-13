@@ -1,15 +1,15 @@
 package dev.xdark.ssvm.memory.management;
 
-import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.LanguageSpecification;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.memory.allocation.MemoryAddress;
 import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
 import dev.xdark.ssvm.memory.allocation.MemoryBlock;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
-import dev.xdark.ssvm.mirror.type.ArrayJavaClass;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.ArrayClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
-import dev.xdark.ssvm.symbol.VMPrimitives;
+import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.synchronizer.Mutex;
 import dev.xdark.ssvm.synchronizer.ObjectSynchronizer;
 import dev.xdark.ssvm.tlc.ThreadLocalStorage;
@@ -35,26 +35,23 @@ import java.util.Map;
 public class SimpleMemoryManager implements MemoryManager {
 
 	private final Map<MemoryAddress, ObjectValue> objects = new HashMap<>();
-
-	protected final VirtualMachine vm;
+	private final ObjectSynchronizer synchronizer;
 	private final MemoryAllocator allocator;
+	private final Symbols symbols;
 	private final NullValue nullValue;
 	private final int objectHeaderSize;
 	private final int arrayHeaderSize;
 	private final int arrayLengthOffset;
 
-	/**
-	 * @param vm VM instance.
-	 */
-	public SimpleMemoryManager(VirtualMachine vm) {
-		this.vm = vm;
-		MemoryAllocator allocator = vm.getMemoryAllocator();
+	public SimpleMemoryManager(MemoryAllocator allocator, ObjectSynchronizer synchronizer, Symbols symbols) {
 		this.allocator = allocator;
+		this.synchronizer = synchronizer;
+		this.symbols = symbols;
 		MemoryBlock emptyHeapBlock = allocator.emptyHeapBlock();
 		NullValue value = new NullValue(emptyHeapBlock);
 		objects.put(MemoryAddress.of(emptyHeapBlock.getAddress()), value);
 		nullValue = value;
-		// TODO shrink lock
+		// TODO rework object headers.
 		int addressSize = allocator.addressSize() + 4; // 4 bytes for lock
 		objectHeaderSize = addressSize;
 		arrayHeaderSize = addressSize + 4;
@@ -70,7 +67,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	public Mutex getMutex(ObjectValue reference) {
 		Assertions.check(!reference.isNull(), "null reference");
 		MemoryData data = reference.getMemory().getData();
-		ObjectSynchronizer synchronizer = vm.getObjectSynchronizer();
+		ObjectSynchronizer synchronizer = this.synchronizer;
 		Mutex mutex;
 		int id = data.readInt(8L);
 		if (id == -1) {
@@ -88,7 +85,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public InstanceValue tryNewInstance(InstanceJavaClass javaClass) {
+	public InstanceValue tryNewInstance(InstanceClass javaClass) {
 		MemoryBlock memory = allocateInstanceMemory(javaClass);
 		if (memory == null) {
 			return null;
@@ -100,20 +97,13 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public InstanceValue newInstance(InstanceJavaClass javaClass) {
-		InstanceValue value = tryNewInstance(javaClass);
-		if (value == null) {
-			outOfMemory();
-		}
-		return value;
+	public InstanceValue newInstance(InstanceClass javaClass) {
+		return tryNewInstance(javaClass);
 	}
 
 	@Override
-	public <V> JavaValue<V> tryNewJavaInstance(InstanceJavaClass javaClass, V value) {
+	public <V> JavaValue<V> tryNewJavaInstance(InstanceClass javaClass, V value) {
 		MemoryBlock memory = allocateInstanceMemory(javaClass);
-		if (memory == null) {
-			return null;
-		}
 		setClass(memory, javaClass);
 		SimpleJavaValue<V> wrapper = new SimpleJavaValue<>(this, memory, value);
 		objects.put(MemoryAddress.of(memory.getAddress()), wrapper);
@@ -121,47 +111,27 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public <V> JavaValue<V> newJavaInstance(InstanceJavaClass javaClass, V value) {
-		JavaValue<V> wrapper = tryNewJavaInstance(javaClass, value);
-		if (wrapper == null) {
-			outOfMemory();
-		}
-		return wrapper;
+	public <V> JavaValue<V> newJavaInstance(InstanceClass javaClass, V value) {
+		return tryNewJavaInstance(javaClass, value);
 	}
 
 	@Override
-	public JavaValue<InstanceJavaClass> newJavaLangClass(InstanceJavaClass javaClass) {
+	public JavaValue<InstanceClass> newJavaLangClass(InstanceClass javaClass) {
 		MemoryBlock memory = allocateClassMemory(javaClass, javaClass);
-		if (memory == null) {
-			outOfMemory();
-		}
-		SimpleJavaValue<InstanceJavaClass> wrapper = new SimpleJavaValue<>(this, memory, javaClass);
+		SimpleJavaValue<InstanceClass> wrapper = new SimpleJavaValue<>(this, memory, javaClass);
 		javaClass.setOop(wrapper);
-		//noinspection ConstantConditions
 		setClass(memory, javaClass);
 		objects.put(MemoryAddress.of(memory.getAddress()), wrapper);
 		return wrapper;
 	}
 
 	@Override
-	public ArrayValue tryNewArray(ArrayJavaClass javaClass, int length) {
+	public ArrayValue newArray(ArrayClass javaClass, int length) {
 		MemoryBlock memory = allocateArrayMemory(length, sizeOfType(javaClass.getComponentType()));
-		if (memory == null) {
-			return null;
-		}
 		setClass(memory, javaClass);
 		SimpleArrayValue value = new SimpleArrayValue(this, memory);
 		memory.getData().writeInt(arrayLengthOffset, length);
 		objects.put(MemoryAddress.of(memory.getAddress()), value);
-		return value;
-	}
-
-	@Override
-	public ArrayValue newArray(ArrayJavaClass javaClass, int length) {
-		ArrayValue value = tryNewArray(javaClass, length);
-		if (value == null) {
-			outOfMemory();
-		}
 		return value;
 	}
 
@@ -203,25 +173,13 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public <C extends JavaClass> JavaValue<C> tryNewClassOop(C javaClass) {
-		InstanceJavaClass javaLangClass = vm.getSymbols().java_lang_Class();
+	public InstanceValue newClassOop(JavaClass javaClass) {
+		InstanceClass javaLangClass = symbols.java_lang_Class();
 		MemoryBlock memory = allocateClassMemory(javaLangClass, javaClass);
-		if (memory == null) {
-			return null;
-		}
 		setClass(memory, javaLangClass);
-		SimpleJavaValue<C> wrapper = new SimpleJavaValue<>(this, memory, javaClass);
+		InstanceValue wrapper = new SimpleInstanceValue(this, memory);
 		objects.put(MemoryAddress.of(memory.getAddress()), wrapper);
 		return wrapper;
-	}
-
-	@Override
-	public <C extends JavaClass> JavaValue<C> newClassOop(C javaClass) {
-		JavaValue<C> value = tryNewClassOop(javaClass);
-		if (value == null) {
-			outOfMemory();
-		}
-		return value;
 	}
 
 	@Override
@@ -250,107 +208,24 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public int sizeOfType(JavaClass javaClass) {
-		VMPrimitives primitives = vm.getPrimitives();
-		if (javaClass == primitives.longPrimitive()) {
-			return longSize();
-		}
-		if (javaClass == primitives.doublePrimitive()) {
-			return doubleSize();
-		}
-		if (javaClass == primitives.intPrimitive()) {
-			return intSize();
-		}
-		if (javaClass == primitives.floatPrimitive()) {
-			return floatSize();
-		}
-		if (javaClass == primitives.charPrimitive()) {
-			return charSize();
-		}
-		if (javaClass == primitives.shortPrimitive()) {
-			return 2;
-		}
-		if (javaClass == primitives.bytePrimitive()) {
-			return byteSize();
-		}
-		if (javaClass == primitives.booleanPrimitive()) {
-			return booleanSize();
+	public long sizeOfType(JavaClass javaClass) {
+		if (javaClass.isPrimitive()) {
+			return LanguageSpecification.primitiveSize(javaClass.getSort());
 		}
 		return objectSize();
 	}
 
 	@Override
-	public int sizeOfType(Class<?> javaClass) {
-		if (javaClass == long.class) {
-			return longSize();
-		}
-		if (javaClass == double.class) {
-			return doubleSize();
-		}
-		if (javaClass == int.class) {
-			return intSize();
-		}
-		if (javaClass == float.class) {
-			return floatSize();
-		}
-		if (javaClass == char.class) {
-			return charSize();
-		}
-		if (javaClass == short.class) {
-			return 2;
-		}
-		if (javaClass == byte.class) {
-			return byteSize();
-		}
-		if (javaClass == boolean.class) {
-			return booleanSize();
+	public long sizeOfType(Class<?> javaClass) {
+		if (javaClass.isPrimitive()) {
+			return LanguageSpecification.primitiveSize(javaClass);
 		}
 		return objectSize();
-	}
-
-	@Override
-	public int longSize() {
-		return 8;
-	}
-
-	@Override
-	public int doubleSize() {
-		return 8;
-	}
-
-	@Override
-	public int intSize() {
-		return 4;
-	}
-
-	@Override
-	public int floatSize() {
-		return 4;
-	}
-
-	@Override
-	public int charSize() {
-		return 2;
-	}
-
-	@Override
-	public int shortSize() {
-		return 2;
-	}
-
-	@Override
-	public int byteSize() {
-		return 1;
-	}
-
-	@Override
-	public int booleanSize() {
-		return 1;
 	}
 
 	@Override
 	public int objectSize() {
-		return 8;
+		return allocator.addressSize();
 	}
 
 	@Override
@@ -369,18 +244,13 @@ public class SimpleMemoryManager implements MemoryManager {
 		data.set(arrayLengthOffset, data.length() - arrayLengthOffset, (byte) 0);
 	}
 
-	private void outOfMemory() {
-		VirtualMachine vm = this.vm;
-		vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError(), "heap space");
-	}
-
-	private MemoryBlock allocateInstanceMemory(InstanceJavaClass javaClass) {
+	private MemoryBlock allocateInstanceMemory(InstanceClass javaClass) {
 		long objectSize = objectHeaderSize + javaClass.getOccupiedInstanceSpace();
 		return touch(allocator.allocateHeap(objectSize));
 	}
 
-	private MemoryBlock allocateClassMemory(InstanceJavaClass javaLangClass, JavaClass javaClass) {
-		long size = objectHeaderSize + javaLangClass.getOccupiedInstanceSpace() + (javaClass instanceof InstanceJavaClass ? ((InstanceJavaClass) javaClass).getOccupiedStaticSpace() : 0);
+	private MemoryBlock allocateClassMemory(InstanceClass javaLangClass, JavaClass javaClass) {
+		long size = objectHeaderSize + javaLangClass.getOccupiedInstanceSpace() + (javaClass instanceof InstanceClass ? ((InstanceClass) javaClass).getOccupiedStaticSpace() : 0);
 		return touch(allocator.allocateHeap(size));
 	}
 

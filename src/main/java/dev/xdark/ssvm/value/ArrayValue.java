@@ -13,6 +13,7 @@ public interface ArrayValue extends ObjectValue {
 	 * @param index Index to get long from.
 	 * @return long value.
 	 */
+	@Deprecated
 	long getLong(int index);
 
 	/**
@@ -21,6 +22,7 @@ public interface ArrayValue extends ObjectValue {
 	 * @param index Index to get double from.
 	 * @return double value.
 	 */
+	@Deprecated
 	double getDouble(int index);
 
 	/**
@@ -29,6 +31,7 @@ public interface ArrayValue extends ObjectValue {
 	 * @param index Index to get int from.
 	 * @return double value.
 	 */
+	@Deprecated
 	int getInt(int index);
 
 	/**
@@ -37,6 +40,7 @@ public interface ArrayValue extends ObjectValue {
 	 * @param index Index to get float from.
 	 * @return float value.
 	 */
+	@Deprecated
 	float getFloat(int index);
 
 	/**
@@ -45,6 +49,7 @@ public interface ArrayValue extends ObjectValue {
 	 * @param index Index to get char from.
 	 * @return char value.
 	 */
+	@Deprecated
 	char getChar(int index);
 
 	/**
@@ -53,6 +58,7 @@ public interface ArrayValue extends ObjectValue {
 	 * @param index Index to get short from.
 	 * @return short value.
 	 */
+	@Deprecated
 	short getShort(int index);
 
 	/**
@@ -61,6 +67,7 @@ public interface ArrayValue extends ObjectValue {
 	 * @param index Index to get byte from.
 	 * @return byte value.
 	 */
+	@Deprecated
 	byte getByte(int index);
 
 	/**
@@ -69,6 +76,7 @@ public interface ArrayValue extends ObjectValue {
 	 * @param index Index to get boolean from.
 	 * @return boolean value.
 	 */
+	@Deprecated
 	boolean getBoolean(int index);
 
 	/**
@@ -77,6 +85,7 @@ public interface ArrayValue extends ObjectValue {
 	 * @param index Index to get value from.
 	 * @return VM value.
 	 */
+	@Deprecated
 	ObjectValue getReference(int index);
 
 	/**
@@ -85,6 +94,7 @@ public interface ArrayValue extends ObjectValue {
 	 * @param index Index to store value to.
 	 * @param value Value to set.
 	 */
+	@Deprecated
 	void setLong(int index, long value);
 
 	/**
@@ -93,6 +103,7 @@ public interface ArrayValue extends ObjectValue {
 	 * @param index Index to store value to.
 	 * @param value Value to set.
 	 */
+	@Deprecated
 	void setDouble(int index, double value);
 
 	/**
@@ -101,6 +112,7 @@ public interface ArrayValue extends ObjectValue {
 	 * @param index Index to store value to.
 	 * @param value Value to set.
 	 */
+	@Deprecated
 	void setInt(int index, int value);
 
 	/**
@@ -109,6 +121,7 @@ public interface ArrayValue extends ObjectValue {
 	 * @param index Index to store value to.
 	 * @param value Value to set.
 	 */
+	@Deprecated
 	void setFloat(int index, float value);
 
 	/**
@@ -117,6 +130,7 @@ public interface ArrayValue extends ObjectValue {
 	 * @param index Index to store value to.
 	 * @param value Value to set.
 	 */
+	@Deprecated
 	void setChar(int index, char value);
 
 	/**
@@ -125,6 +139,7 @@ public interface ArrayValue extends ObjectValue {
 	 * @param index Index to store value to.
 	 * @param value Value to set.
 	 */
+	@Deprecated
 	void setShort(int index, short value);
 
 	/**
@@ -133,6 +148,7 @@ public interface ArrayValue extends ObjectValue {
 	 * @param index Index to store value to.
 	 * @param value Value to set.
 	 */
+	@Deprecated
 	void setByte(int index, byte value);
 
 	/**
@@ -141,6 +157,7 @@ public interface ArrayValue extends ObjectValue {
 	 * @param index Index to store value to.
 	 * @param value Value to set.
 	 */
+	@Deprecated
 	void setBoolean(int index, boolean value);
 
 	/**
@@ -149,6 +166,7 @@ public interface ArrayValue extends ObjectValue {
 	 * @param index Index to store value to.
 	 * @param value Value to set.
 	 */
+	@Deprecated
 	void setReference(int index, ObjectValue value);
 
 	/**
@@ -156,5 +174,6 @@ public interface ArrayValue extends ObjectValue {
 	 *
 	 * @return array length.
 	 */
+	@Deprecated
 	int getLength();
 }

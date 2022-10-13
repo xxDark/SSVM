@@ -4,8 +4,8 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
-import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
+import dev.xdark.ssvm.symbol.Symbols;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -21,8 +21,8 @@ public class MathNatives {
 	 */
 	public static void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass jc = symbols.java_lang_StrictMath();
+		Symbols symbols = vm.getSymbols();
+		InstanceClass jc = symbols.java_lang_StrictMath();
 		vmi.setInvoker(jc, "sin", "(D)D", ctx -> {
 			ctx.setResult(Math.sin(ctx.getLocals().loadDouble(0)));
 			return Result.ABORT;

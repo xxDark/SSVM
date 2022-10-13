@@ -4,7 +4,7 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -19,7 +19,7 @@ public class CDSNatives {
 	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
-		InstanceJavaClass jc = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/CDS");
+		InstanceClass jc = (InstanceClass) vm.findBootstrapClass("jdk/internal/misc/CDS");
 		if (jc != null) {
 			VMInterface vmi = vm.getInterface();
 			MethodInvoker stub = ctx -> {

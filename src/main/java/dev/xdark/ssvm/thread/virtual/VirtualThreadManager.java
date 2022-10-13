@@ -1,10 +1,10 @@
 package dev.xdark.ssvm.thread.virtual;
 
-import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.fs.Handle;
 import dev.xdark.ssvm.jvmti.ThreadState;
 import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
 import dev.xdark.ssvm.memory.management.MemoryManager;
+import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.thread.backtrace.Backtrace;
 import dev.xdark.ssvm.thread.backtrace.SimpleBacktrace;
@@ -13,8 +13,8 @@ import dev.xdark.ssvm.thread.JavaThread;
 import dev.xdark.ssvm.thread.OSThread;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.util.Assertions;
-import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.util.VMOperations;
+import dev.xdark.ssvm.util.Helper;
+import dev.xdark.ssvm.util.Operations;
 import dev.xdark.ssvm.value.InstanceValue;
 
 import java.util.ArrayList;
@@ -35,7 +35,6 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public final class VirtualThreadManager implements ThreadManager {
 	private static final VirtualJavaThread SENTINEL = new VirtualJavaThread(null, null);
-	private final VirtualMachine vm;
 	// Mapping between eetop and Java thread
 	private final Map<Handle, VirtualJavaThread> javaThreads = new HashMap<>();
 	// Attached threads
@@ -49,10 +48,6 @@ public final class VirtualThreadManager implements ThreadManager {
 	private final Object threadLock = new Object[0];
 	private VirtualJavaThread currentThread;
 
-	public VirtualThreadManager(VirtualMachine vm) {
-		this.vm = vm;
-	}
-
 	@Override
 	public void startThread(InstanceValue oop) {
 		startThread0(oop, false);
@@ -61,15 +56,13 @@ public final class VirtualThreadManager implements ThreadManager {
 	@Override
 	public void suspendThread(InstanceValue oop) {
 		// TODO
-		VirtualMachine vm = this.vm;
-		vm.getHelper().throwException(vm.getSymbols().java_lang_UnsatisfiedLinkError());
+		helper.throwException(symbols.java_lang_UnsatisfiedLinkError());
 	}
 
 	@Override
 	public void resumeThread(InstanceValue oop) {
 		// TODO
-		VirtualMachine vm = this.vm;
-		vm.getHelper().throwException(vm.getSymbols().java_lang_UnsatisfiedLinkError());
+		helper.throwException(symbols.java_lang_UnsatisfiedLinkError());
 	}
 
 	@Override
@@ -105,8 +98,7 @@ public final class VirtualThreadManager implements ThreadManager {
 				if (th.timeout != 0L) {
 					th.timeout = 0L;
 					// Wake up thread from sleep
-					VirtualMachine vm = this.vm;
-					th.exception = vm.getHelper().newException(vm.getSymbols().java_lang_InterruptedException(), "sleep interrupted");
+					th.exception = helper.newException(symbols.java_lang_InterruptedException(), "sleep interrupted");
 					asleep.remove(th);
 					scheduled.offer(th);
 				} else {
@@ -148,23 +140,18 @@ public final class VirtualThreadManager implements ThreadManager {
 		Map<Thread, VirtualJavaThread> foreignThreads = this.foreignThreads;
 		synchronized (threadLock) {
 			if (foreignThreads.putIfAbsent(th, SENTINEL) == null) {
-				VirtualMachine vm = this.vm;
 				VirtualOSThread osThread = newOsThread(0L);
-				InstanceValue oop = vm.getMemoryManager().newInstance(vm.getSymbols().java_lang_Thread());
+				InstanceValue oop = memoryManager.newInstance(symbols.java_lang_Thread());
 				VirtualJavaThread javaThread = new VirtualJavaThread(oop, osThread);
 				foreignThreads.put(th, javaThread);
 				setThreadEeetop(javaThread);
 				javaThread.foreign = th;
-				VMOperations ops = vm.getPublicOperations();
-				VMHelper helper = vm.getHelper();
+				Operations ops = this.ops;
+				Helper helper = this.helper;
 				String name = th.getName();
 				ops.putReference(oop, "name", "Ljava/lang/String;", helper.newUtf8(name));
 				int priority = th.getPriority();
 				ops.putInt(oop, "priority", priority);
-				InstanceValue group = vm.getSystemThreadGroup();
-				if (group != null) {
-					ops.putReference(oop, "group", "Ljava/lang/ThreadGroup;", group);
-				}
 				syncThread(osThread, oop);
 			}
 		}
@@ -218,8 +205,7 @@ public final class VirtualThreadManager implements ThreadManager {
 				// Propagate to VM code
 				th.timeout = 0L;
 				th.interrupted = true;
-				VirtualMachine vm = this.vm;
-				vm.getHelper().throwException(vm.getSymbols().java_lang_InterruptedException(), "sleep interrupted");
+				helper.throwException(symbols.java_lang_InterruptedException(), "sleep interrupted");
 			} finally {
 				osThread.setState(ThreadState.JVMTI_JAVA_LANG_THREAD_STATE_RUNNABLE);
 			}
@@ -227,7 +213,7 @@ public final class VirtualThreadManager implements ThreadManager {
 			Assertions.check(th.timeout == 0L, "already sleeping");
 			if (th.interrupted) {
 				th.interrupted = false;
-				vm.getHelper().throwException(vm.getSymbols().java_lang_InterruptedException(), "sleep interrupted");
+				helper.throwException(symbols.java_lang_InterruptedException(), "sleep interrupted");
 			} else {
 				osThread.setState(ThreadState.JVMTI_JAVA_LANG_THREAD_STATE_BLOCKED);
 				th.timeout = millis;
@@ -245,27 +231,25 @@ public final class VirtualThreadManager implements ThreadManager {
 
 	@Override
 	public JavaThread createMainThread() {
-		VirtualMachine vm = this.vm;
-		InstanceValue oop = vm.getMemoryManager().newInstance(vm.getSymbols().java_lang_Thread());
+		InstanceValue oop = memoryManager.newInstance(symbols.java_lang_Thread());
 		Thread th = Thread.currentThread();
 		VirtualJavaThread javaThread = foreignThreads.get(th); // TODO fixme
 		if (javaThread == null) {
 			VirtualOSThread osThread = newOsThread(0L);
 			javaThread = new VirtualJavaThread(oop, osThread);
 		} else {
-			// TODO fixme
+			// TODO this is invalid, VM must be started from valid thread created by ThreadManager
 			/*
 			javaThread.foreign = null;
 			javaThread.attached = false;
 			*/
 		}
 		currentThread = javaThread;
-		VMOperations ops = vm.getPublicOperations();
-		VMHelper helper = vm.getHelper();
+		Operations ops = this.ops;
+		Helper helper = this.helper;
 		ops.putReference(oop, "name", "Ljava/lang/String;", helper.newUtf8("main"));
 		int priority = th.getPriority();
 		ops.putInt(oop, "priority", priority);
-		ops.putReference(oop, "group", "Ljava/lang/ThreadGroup;", vm.getMainThreadGroup());
 		OSThread osThread = javaThread.getOsThread();
 		syncThread(osThread, oop);
 		osThread.setState(ThreadState.JVMTI_JAVA_LANG_THREAD_STATE_RUNNABLE);
@@ -300,18 +284,15 @@ public final class VirtualThreadManager implements ThreadManager {
 			// TODO configurable, like Java's -Xss flag.
 			stackSize = 1024L * 1024L;
 		}
-		VirtualMachine vm = this.vm;
-		Backtrace backtrace = new SimpleBacktrace();
-		MemoryManager manager = vm.getMemoryManager();
-		MemoryAllocator allocator = vm.getMemoryAllocator();
-		ThreadStorage storage = new HeapThreadStorage(manager, allocator, allocator.allocateHeap(stackSize));
+		Backtrace backtrace = new SimpleBacktrace(1024);
+		MemoryAllocator memoryAllocator = this.memoryAllocator;
+		ThreadStorage storage = new HeapThreadStorage(memoryManager, memoryAllocator, memoryAllocator.allocateHeap(stackSize));
 		return new VirtualOSThread(backtrace, storage);
 	}
 
 	private VirtualJavaThread startThread0(InstanceValue oop, boolean attached) {
-		VirtualMachine vm = this.vm;
-		VMOperations oops = vm.getPublicOperations();
-		long stackSize = oops.getLong(oop, "stackSize");
+		Operations ops = this.ops;
+		long stackSize = ops.getLong(oop, "stackSize");
 		VirtualOSThread thread = newOsThread(stackSize);
 		// Do sync between OS thread and Java thread
 		syncThread(thread, oop);
@@ -339,26 +320,20 @@ public final class VirtualThreadManager implements ThreadManager {
 		do {
 			handle.set(rng.nextLong());
 		} while (javaThreads.putIfAbsent(handle, th) != null);
-		vm.getPublicOperations().putLong(th.getOop(), "eetop", handle.get());
+		ops.putLong(th.getOop(), "eetop", handle.get());
 	}
 
 	private void syncThread(OSThread thread, InstanceValue oop) {
-		VirtualMachine helper = vm;
-		VMOperations ops = helper.getPublicOperations();
-		thread.setName(helper.getHelper().readUtf8(ops.getReference(oop, "name", "Ljava/lang/String;")));
+		Operations ops = this.ops;
+		thread.setName(helper.readUtf8(ops.getReference(oop, "name", "Ljava/lang/String;")));
 		thread.setPriority(ops.getInt(oop, "priority"));
 		thread.setState(ThreadState.JVMTI_JAVA_LANG_THREAD_STATE_RUNNABLE);
 	}
 
 	private VirtualJavaThread forThread(InstanceValue oop) {
-		long eetop = vm.getPublicOperations().getLong(oop, "eetop");
+		long eetop = ops.getLong(oop, "eetop");
 		Handle handle = Handle.threadLocal(eetop);
 		return javaThreads.get(handle);
-	}
-
-	private static void free(JavaThread thread) {
-		OSThread ost = thread.getOsThread();
-		ost.getStorage().free();
 	}
 
 	private static boolean dead(JavaThread th) {

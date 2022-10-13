@@ -2,14 +2,12 @@ package dev.xdark.ssvm.enhanced;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.Locals;
-import dev.xdark.ssvm.fs.FileDescriptorManager;
-import dev.xdark.ssvm.fs.HostFileDescriptorManager;
 import dev.xdark.ssvm.jit.CodeInstaller;
 import dev.xdark.ssvm.jit.CompiledData;
 import dev.xdark.ssvm.jit.JitCompiler;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
-import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
+import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.Type;
@@ -26,12 +24,7 @@ public class JitTest {
 
 	@Test
 	public void testJit() throws Exception {
-		VirtualMachine vm = new VirtualMachine() {
-			@Override
-			protected FileDescriptorManager createFileDescriptorManager() {
-				return new HostFileDescriptorManager();
-			}
-		};
+		VirtualMachine vm = new VirtualMachine();
 		vm.bootstrap();
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try (InputStream in = JitTest.class.getClassLoader().getResourceAsStream(Type.getInternalName(JitTest.class) + ".class")) {
@@ -42,40 +35,41 @@ public class JitTest {
 			}
 		}
 		byte[] bc = baos.toByteArray();
-		VMHelper helper = vm.getHelper();
+		VMOperations ops = vm.getOperations();
 		ObjectValue nullValue = vm.getMemoryManager().nullValue();
-		InstanceJavaClass jc = helper.defineClass(
+		InstanceClass jc = ops.defineClass(
 			nullValue,
 			null,
 			bc, 0, bc.length,
 			nullValue,
-			"JVM_DefineClass"
+			"JVM_DefineClass",
+			true
 		);
-		JavaMethod m = vm.getPublicLinkResolver().resolveStaticMethod(jc, "doMixTest", "()J");
+		JavaMethod m = vm.getLinkResolver().resolveStaticMethod(jc, "doMixTest", "()J");
 		long test = doMixTest();
 		{
 			Locals ts = vm.getThreadStorage().newLocals(m);
-			helper.invoke(m, ts);
+			ops.invokeVoid(m, ts);
 		}
 		{
 			Locals ts = vm.getThreadStorage().newLocals(m);
-			assertEquals(test, helper.invokeLong(m, ts));
+			assertEquals(test, ops.invokeLong(m, ts));
 		}
 		CodeInstaller.ClassDefiner definer = new JitClassLoader();
 		CodeInstaller.install(m, definer, JitCompiler.compile(m));
 		{
-			JavaMethod mix = vm.getPublicLinkResolver().resolveStaticMethod(jc, "mix", "(I)I");
+			JavaMethod mix = vm.getLinkResolver().resolveStaticMethod(jc, "mix", "(I)I");
 			CodeInstaller.install(mix, definer, JitCompiler.compile(mix));
 		}
 		{
 			Locals ts = vm.getThreadStorage().newLocals(m);
-			assertEquals(test, helper.invokeLong(m, ts));
+			assertEquals(test, ops.invokeLong(m, ts));
 		}
 		{
-			JavaMethod call = vm.getPublicLinkResolver().resolveStaticMethod(jc, "doCallTest", "()V");
+			JavaMethod call = vm.getLinkResolver().resolveStaticMethod(jc, "doCallTest", "()V");
 			CodeInstaller.install(call, definer, JitCompiler.compile(call));
 			Locals ts = vm.getThreadStorage().newLocals(call);
-			helper.invoke(call, ts);
+			ops.invokeVoid(call, ts);
 
 		}
 	}

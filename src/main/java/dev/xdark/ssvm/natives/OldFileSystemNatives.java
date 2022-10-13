@@ -4,8 +4,8 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
-import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
+import dev.xdark.ssvm.util.Helper;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
@@ -27,10 +27,10 @@ public class OldFileSystemNatives {
 	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
-		InstanceJavaClass fs = (InstanceJavaClass) vm.findBootstrapClass("java/io/WinNTFileSystem");
+		InstanceClass fs = (InstanceClass) vm.findBootstrapClass("java/io/WinNTFileSystem");
 		boolean unix = false;
 		if (fs == null) {
-			fs = (InstanceJavaClass) vm.findBootstrapClass("java/io/UnixFileSystem");
+			fs = (InstanceClass) vm.findBootstrapClass("java/io/UnixFileSystem");
 			if (fs == null) {
 				throw new IllegalStateException("Unable to locate file system implementation class for java.io package");
 			}
@@ -39,7 +39,7 @@ public class OldFileSystemNatives {
 		VMInterface vmi = vm.getInterface();
 		vmi.setInvoker(fs, "initIDs", "()V", MethodInvoker.noop());
 		vmi.setInvoker(fs, "canonicalize0", "(Ljava/lang/String;)Ljava/lang/String;", ctx -> {
-			VMHelper helper = vm.getHelper();
+			Helper helper = vm.getHelper();
 			String path = helper.readUtf8(ctx.getLocals().loadReference(1));
 			try {
 				ctx.setResult(helper.newUtf8(vm.getFileDescriptorManager().canonicalize(path)));
@@ -49,11 +49,11 @@ public class OldFileSystemNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fs, unix ? "getBooleanAttributes0" : "getBooleanAttributes", "(Ljava/io/File;)I", ctx -> {
-			VMHelper helper = vm.getHelper();
+			Helper helper = vm.getHelper();
 			ObjectValue value = ctx.getLocals().loadReference(1);
 			helper.checkNotNull(value);
 			try {
-				String path = helper.readUtf8(vm.getPublicOperations().getReference(value, "path", "Ljava/lang/String;"));
+				String path = helper.readUtf8(vm.getOperations().getReference(value, "path", "Ljava/lang/String;"));
 				BasicFileAttributes attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
 				if (attributes == null) {
 					ctx.setResult(0);
@@ -72,10 +72,10 @@ public class OldFileSystemNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fs, "list", "(Ljava/io/File;)[Ljava/lang/String;", ctx -> {
-			VMHelper helper = vm.getHelper();
+			Helper helper = vm.getHelper();
 			ObjectValue value = ctx.getLocals().loadReference(1);
 			helper.checkNotNull(value);
-			String path = helper.readUtf8(vm.getPublicOperations().getReference(value, "path", "Ljava/lang/String;"));
+			String path = helper.readUtf8(vm.getOperations().getReference(value, "path", "Ljava/lang/String;"));
 			String[] list = vm.getFileDescriptorManager().list(path);
 			if (list == null) {
 				ctx.setResult(vm.getMemoryManager().nullValue());
@@ -93,11 +93,11 @@ public class OldFileSystemNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fs, "getLastModifiedTime", "(Ljava/io/File;)J", ctx -> {
-			VMHelper helper = vm.getHelper();
+			Helper helper = vm.getHelper();
 			ObjectValue value = ctx.getLocals().loadReference(1);
 			helper.checkNotNull(value);
 			try {
-				String path = helper.readUtf8(vm.getPublicOperations().getReference(value, "path", "Ljava/lang/String;"));
+				String path = helper.readUtf8(vm.getOperations().getReference(value, "path", "Ljava/lang/String;"));
 				BasicFileAttributes attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
 				if (attributes == null) {
 					ctx.setResult(0L);
@@ -110,11 +110,11 @@ public class OldFileSystemNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fs, "getLength", "(Ljava/io/File;)J", ctx -> {
-			VMHelper helper = vm.getHelper();
+			Helper helper = vm.getHelper();
 			ObjectValue value = ctx.getLocals().loadReference(1);
 			helper.checkNotNull(value);
 			try {
-				String path = helper.readUtf8(vm.getPublicOperations().getReference(value, "path", "Ljava/lang/String;"));
+				String path = helper.readUtf8(vm.getOperations().getReference(value, "path", "Ljava/lang/String;"));
 				BasicFileAttributes attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
 				if (attributes == null) {
 					ctx.setResult(0L);

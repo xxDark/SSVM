@@ -5,7 +5,7 @@ import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
 import dev.xdark.ssvm.memory.allocation.MemoryAllocatorStatistics;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -21,7 +21,7 @@ public class RuntimeNatives {
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		InstanceJavaClass runtime = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Runtime");
+		InstanceClass runtime = (InstanceClass) vm.findBootstrapClass("java/lang/Runtime");
 		vmi.setInvoker(runtime, "availableProcessors", "()I", ctx -> {
 			ctx.setResult(Runtime.getRuntime().availableProcessors());
 			return Result.ABORT;

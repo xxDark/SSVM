@@ -4,10 +4,10 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.thread.ThreadStorage;
-import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.util.Helper;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
@@ -27,14 +27,14 @@ public class ProcessEnvironmentNatives {
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		InstanceJavaClass processEnvironment = vm.getSymbols().java_lang_ProcessEnvironment();
+		InstanceClass processEnvironment = vm.getSymbols().java_lang_ProcessEnvironment();
 		if (!vmi.setInvoker(processEnvironment, "environ", "()[[B", ctx -> {
-			VMHelper helper = vm.getHelper();
+			Helper helper = vm.getHelper();
 			Map<String, String> env = vm.getenv();
 			int idx = 0;
 			int len = env.size();
 			ArrayValue array = helper.newArray(vm.getPrimitives().bytePrimitive().newArrayClass(), len * 2);
-			JavaMethod getBytes = vm.getPublicLinkResolver().resolveSpecialMethod(vm.getSymbols().java_lang_String(), "getBytes", "()[B");
+			JavaMethod getBytes = vm.getLinkResolver().resolveSpecialMethod(vm.getSymbols().java_lang_String(), "getBytes", "()[B");
 			ThreadStorage ts = vm.getThreadStorage();
 			for (Map.Entry<String, String> entry : env.entrySet()) {
 				ObjectValue key = helper.newUtf8(entry.getKey());

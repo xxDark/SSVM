@@ -1,6 +1,6 @@
 package dev.xdark.ssvm.value;
 
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 
 /**
  * Represents instance value.
@@ -11,5 +11,5 @@ import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
 public interface InstanceValue extends ObjectValue {
 
 	@Override
-	InstanceJavaClass getJavaClass();
+	InstanceClass getJavaClass();
 }

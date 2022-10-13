@@ -4,11 +4,11 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
-import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.util.VMOperations;
+import dev.xdark.ssvm.util.Helper;
+import dev.xdark.ssvm.util.Operations;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
@@ -28,9 +28,9 @@ public class ConstructorAccessorNatives {
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		InstanceJavaClass accessor = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/NativeConstructorAccessorImpl");
+		InstanceClass accessor = (InstanceClass) vm.findBootstrapClass("jdk/internal/reflect/NativeConstructorAccessorImpl");
 		if (accessor == null) {
-			accessor = (InstanceJavaClass) vm.findBootstrapClass("sun/reflect/NativeConstructorAccessorImpl");
+			accessor = (InstanceClass) vm.findBootstrapClass("sun/reflect/NativeConstructorAccessorImpl");
 			if (accessor == null) {
 				throw new IllegalStateException("Unable to locate NativeConstructorAccessorImpl class");
 			}
@@ -38,10 +38,10 @@ public class ConstructorAccessorNatives {
 		vmi.setInvoker(accessor, "newInstance0", "(Ljava/lang/reflect/Constructor;[Ljava/lang/Object;)Ljava/lang/Object;", ctx -> {
 			Locals locals = ctx.getLocals();
 			InstanceValue c = locals.loadReference(0);
-			VMOperations ops = vm.getPublicOperations();
+			Operations ops = vm.getOperations();
 			int slot = ops.getInt(c, "slot");
-			InstanceJavaClass declaringClass = ((JavaValue<InstanceJavaClass>) ops.getReference(c, "clazz", "Ljava/lang/Class;")).getValue();
-			VMHelper helper = vm.getHelper();
+			InstanceClass declaringClass = ((JavaValue<InstanceClass>) ops.getReference(c, "clazz", "Ljava/lang/Class;")).getValue();
+			Helper helper = vm.getHelper();
 			JavaMethod mn = helper.getMethodBySlot(declaringClass, slot);
 			if (mn == null || !"<init>".equals(mn.getName())) {
 				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException());

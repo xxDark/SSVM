@@ -3,8 +3,8 @@ package dev.xdark.ssvm.natives;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
-import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
+import dev.xdark.ssvm.symbol.Symbols;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -20,8 +20,8 @@ public class PackageNatives {
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass jc = symbols.java_lang_Package();
+		Symbols symbols = vm.getSymbols();
+		InstanceClass jc = symbols.java_lang_Package();
 		vmi.setInvoker(jc, "getSystemPackage0", "(Ljava/lang/String;)Ljava/lang/String;", ctx -> {
 			ctx.setResult(vm.getMemoryManager().nullValue());
 			return Result.ABORT;

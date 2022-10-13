@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.value;
 
+import dev.xdark.ssvm.LanguageSpecification;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.memory.allocation.MemoryBlock;
 
@@ -20,50 +21,43 @@ public final class SimpleArrayValue extends SimpleObjectValue implements ArrayVa
 
 	@Override
 	public long getLong(int index) {
-		MemoryManager memoryManager = getMemoryManager();
-		return getData().readLong(dataOffset(validate(index) * (long) memoryManager.longSize()));
+		return getData().readLong(dataOffset(validate(index) * LanguageSpecification.LONG_SIZE));
 	}
 
 	@Override
 	public double getDouble(int index) {
-		MemoryManager memoryManager = getMemoryManager();
-		return Double.longBitsToDouble(getData().readLong(dataOffset(validate(index) * (long) memoryManager.doubleSize())));
+		return Double.longBitsToDouble(getData().readLong(dataOffset(validate(index) * LanguageSpecification.DOUBLE_SIZE)));
 	}
 
 	@Override
 	public int getInt(int index) {
-		MemoryManager memoryManager = getMemoryManager();
-		return getData().readInt(dataOffset(validate(index) * (long) memoryManager.intSize()));
+		return getData().readInt(dataOffset(validate(index) * LanguageSpecification.INT_SIZE));
 	}
 
 	@Override
 	public float getFloat(int index) {
 		MemoryManager memoryManager = getMemoryManager();
-		return Float.intBitsToFloat(getData().readInt(dataOffset(validate(index) * (long) memoryManager.floatSize())));
+		return Float.intBitsToFloat(getData().readInt(dataOffset(validate(index) * LanguageSpecification.FLOAT_SIZE)));
 	}
 
 	@Override
 	public char getChar(int index) {
-		MemoryManager memoryManager = getMemoryManager();
-		return getData().readChar(dataOffset(validate(index) * (long) memoryManager.charSize()));
+		return getData().readChar(dataOffset(validate(index) * LanguageSpecification.CHAR_SIZE));
 	}
 
 	@Override
 	public short getShort(int index) {
-		MemoryManager memoryManager = getMemoryManager();
-		return getData().readShort(dataOffset(validate(index) * (long) memoryManager.shortSize()));
+		return getData().readShort(dataOffset(validate(index) * LanguageSpecification.SHORT_SIZE));
 	}
 
 	@Override
 	public byte getByte(int index) {
-		MemoryManager memoryManager = getMemoryManager();
-		return getData().readByte(dataOffset(validate(index) * (long) memoryManager.byteSize()));
+		return getData().readByte(dataOffset(validate(index) * LanguageSpecification.BYTE_SIZE));
 	}
 
 	@Override
 	public boolean getBoolean(int index) {
-		MemoryManager memoryManager = getMemoryManager();
-		return getData().readByte(dataOffset(validate(index) * (long) memoryManager.booleanSize())) != 0;
+		return getData().readByte(dataOffset(validate(index) * LanguageSpecification.BOOLEAN_SIZE)) != 0;
 	}
 
 	@Override
@@ -74,50 +68,42 @@ public final class SimpleArrayValue extends SimpleObjectValue implements ArrayVa
 
 	@Override
 	public void setLong(int index, long value) {
-		MemoryManager memoryManager = getMemoryManager();
-		getData().writeLong(dataOffset(validate(index) * (long) memoryManager.longSize()), value);
+		getData().writeLong(dataOffset(validate(index) * LanguageSpecification.LONG_SIZE), value);
 	}
 
 	@Override
 	public void setDouble(int index, double value) {
-		MemoryManager memoryManager = getMemoryManager();
-		getData().writeLong(dataOffset(validate(index) * (long) memoryManager.doubleSize()), Double.doubleToRawLongBits(value));
+		getData().writeLong(dataOffset(validate(index) * LanguageSpecification.DOUBLE_SIZE), Double.doubleToRawLongBits(value));
 	}
 
 	@Override
 	public void setInt(int index, int value) {
-		MemoryManager memoryManager = getMemoryManager();
-		getData().writeInt(dataOffset(validate(index) * (long) memoryManager.intSize()), value);
+		getData().writeInt(dataOffset(validate(index) * LanguageSpecification.INT_SIZE), value);
 	}
 
 	@Override
 	public void setFloat(int index, float value) {
-		MemoryManager memoryManager = getMemoryManager();
-		getData().writeInt(dataOffset(validate(index) * (long) memoryManager.floatSize()), Float.floatToRawIntBits(value));
+		getData().writeInt(dataOffset(validate(index) * LanguageSpecification.FLOAT_SIZE), Float.floatToRawIntBits(value));
 	}
 
 	@Override
 	public void setChar(int index, char value) {
-		MemoryManager memoryManager = getMemoryManager();
-		getData().writeChar(dataOffset(validate(index) * (long) memoryManager.charSize()), value);
+		getData().writeChar(dataOffset(validate(index) * LanguageSpecification.CHAR_SIZE), value);
 	}
 
 	@Override
 	public void setShort(int index, short value) {
-		MemoryManager memoryManager = getMemoryManager();
-		getData().writeShort(dataOffset(validate(index) * (long) memoryManager.shortSize()), value);
+		getData().writeShort(dataOffset(validate(index) * LanguageSpecification.SHORT_SIZE), value);
 	}
 
 	@Override
 	public void setByte(int index, byte value) {
-		MemoryManager memoryManager = getMemoryManager();
-		getData().writeByte(dataOffset(validate(index) * (long) memoryManager.byteSize()), value);
+		getData().writeByte(dataOffset(validate(index) * LanguageSpecification.BYTE_SIZE), value);
 	}
 
 	@Override
 	public void setBoolean(int index, boolean value) {
-		MemoryManager memoryManager = getMemoryManager();
-		getData().writeByte(dataOffset(validate(index) * (long) memoryManager.booleanSize()), (byte) (value ? 1 : 0));
+		getData().writeByte(dataOffset(validate(index) * LanguageSpecification.BOOLEAN_SIZE), (byte) (value ? 1 : 0));
 	}
 
 	@Override

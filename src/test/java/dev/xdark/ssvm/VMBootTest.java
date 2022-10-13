@@ -7,7 +7,7 @@ public final class VMBootTest {
 
 	@Test
 	public void testBoot() {
-		VirtualMachine vm = new VirtualMachine();
+		VirtualMachine vm = new VirtualMachine(anInterface, memoryAllocator, memoryManager, helper, classDefiner, threadManager, fileDescriptorManager, nativeLibraryManager, stringPool, managementInterface, timeManager, classLoaders, executionEngine, publicOperations, trustedOperations, publicLinkResolver, trustedLinkResolver, mirrorFactory, objectSynchronizer, properties, env);
 		try {
 			vm.bootstrap();
 		} catch (IllegalStateException ex) {

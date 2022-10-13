@@ -3,8 +3,8 @@ package dev.xdark.ssvm.natives;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
-import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
+import dev.xdark.ssvm.util.Helper;
 import dev.xdark.ssvm.value.ArrayValue;
 import lombok.experimental.UtilityClass;
 
@@ -63,7 +63,7 @@ public class SystemPropsNatives {
 	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
-		InstanceJavaClass jc = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/util/SystemProps$Raw");
+		InstanceClass jc = (InstanceClass) vm.findBootstrapClass("jdk/internal/util/SystemProps$Raw");
 		if (jc != null) {
 			VMInterface vmi = vm.getInterface();
 			vmi.setInvoker(jc, "platformProperties", "()[Ljava/lang/String;", ctx -> {
@@ -72,7 +72,7 @@ public class SystemPropsNatives {
 			});
 			vmi.setInvoker(jc, "vmProperties", "()[Ljava/lang/String;", ctx -> {
 				Map<String, String> properties = vm.getProperties();
-				VMHelper helper = vm.getHelper();
+				Helper helper = vm.getHelper();
 				ArrayValue array = helper.newArray(vm.getSymbols().java_lang_String(), properties.size() * 2);
 				int i = 0;
 				for (Map.Entry<String, String> entry : properties.entrySet()) {

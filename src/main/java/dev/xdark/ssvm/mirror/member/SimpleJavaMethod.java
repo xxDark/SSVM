@@ -3,7 +3,7 @@ package dev.xdark.ssvm.mirror.member;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.VMTryCatchBlock;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.util.TypeSafeMap;
@@ -28,7 +28,7 @@ public final class SimpleJavaMethod implements JavaMethod {
 
 	private final TypeSafeMap metadata = new TypeSafeMap();
 	private final BitSet extraModifiers = new BitSet();
-	private final InstanceJavaClass owner;
+	private final InstanceClass owner;
 	private final MethodNode node;
 	private final String desc;
 	private final int slot;
@@ -50,7 +50,7 @@ public final class SimpleJavaMethod implements JavaMethod {
 	 * @param desc  Method descriptor override.
 	 * @param slot  Method slot.
 	 */
-	public SimpleJavaMethod(InstanceJavaClass owner, MethodNode node, String desc, int slot) {
+	public SimpleJavaMethod(InstanceClass owner, MethodNode node, String desc, int slot) {
 		this.owner = owner;
 		this.node = node;
 		this.desc = desc;
@@ -58,7 +58,7 @@ public final class SimpleJavaMethod implements JavaMethod {
 	}
 
 	@Override
-	public InstanceJavaClass getOwner() {
+	public InstanceClass getOwner() {
 		return owner;
 	}
 
@@ -243,7 +243,7 @@ public final class SimpleJavaMethod implements JavaMethod {
 		if (blocks == null) {
 			tryCatchBlocks = Collections.emptyList();
 		} else {
-			InstanceJavaClass owner = this.owner;
+			InstanceClass owner = this.owner;
 			ObjectValue loader = owner.getClassLoader();
 			VirtualMachine vm = owner.getVM();
 			tryCatchBlocks = blocks.stream()
@@ -255,14 +255,14 @@ public final class SimpleJavaMethod implements JavaMethod {
 	}
 
 	private void resolveReturnType() {
-		InstanceJavaClass owner = this.owner;
+		InstanceClass owner = this.owner;
 		VirtualMachine vm = owner.getVM();
 		ObjectValue cl = owner.getClassLoader();
 		returnType = vm.getHelper().findClass(cl, getType().getReturnType(), false);
 	}
 
 	private void resolveArgumentTypes() {
-		InstanceJavaClass owner = this.owner;
+		InstanceClass owner = this.owner;
 		VirtualMachine vm = owner.getVM();
 		ObjectValue cl = owner.getClassLoader();
 		Type[] types = getType().getArgumentTypes();

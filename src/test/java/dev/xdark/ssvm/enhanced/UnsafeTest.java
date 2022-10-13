@@ -12,7 +12,7 @@ public class UnsafeTest {
 	public void doTest() {
 		TestUtil.test(InnerUnsafeTest.class, true, c -> {
 			VirtualMachine vm = c.getVM();
-			vm.getPublicOperations().putInt(c, "addressSize", vm.getMemoryAllocator().addressSize());
+			vm.getOperations().putInt(c, "addressSize", vm.getMemoryAllocator().addressSize());
 		});
 	}
 

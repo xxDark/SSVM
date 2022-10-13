@@ -8,7 +8,7 @@ package dev.xdark.ssvm.classloading;
 public interface ClassDefiner {
 
 	/**
-	 * Converts an array of bytes into an instance of {@link ClassParseResult}.
+	 * Converts an array of bytes into an instance of {@link ParsedClassData}.
 	 *
 	 * @param name       Name of the class.
 	 * @param classBytes Class bytes.
@@ -17,5 +17,5 @@ public interface ClassDefiner {
 	 * @param source     Source of class parsing.
 	 * @return parsed class or {@code null}, if failed.
 	 */
-	ClassParseResult parseClass(String name, byte[] classBytes, int off, int len, String source);
+	ParsedClassData parseClass(String name, byte[] classBytes, int off, int len, String source);
 }

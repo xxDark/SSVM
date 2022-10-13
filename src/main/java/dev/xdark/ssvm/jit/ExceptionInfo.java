@@ -1,15 +1,15 @@
 package dev.xdark.ssvm.jit;
 
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.value.ObjectValue;
 
 import java.util.Set;
 
 final class ExceptionInfo {
-	final Set<InstanceJavaClass> types;
+	final Set<InstanceClass> types;
 	final ObjectValue nullConstant;
 
-	ExceptionInfo(Set<InstanceJavaClass> types, ObjectValue nullConstant) {
+	ExceptionInfo(Set<InstanceClass> types, ObjectValue nullConstant) {
 		this.types = types;
 		this.nullConstant = nullConstant;
 	}

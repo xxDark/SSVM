@@ -2,7 +2,7 @@ package dev.xdark.ssvm.execution;
 
 import dev.xdark.ssvm.api.InstructionInterceptor;
 import dev.xdark.ssvm.api.VMInterface;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.value.InstanceValue;
@@ -33,15 +33,13 @@ public class Interpreter {
 		MethodNode mn = jm.getNode();
 		InsnList instructions = mn.instructions;
 		List<InstructionInterceptor> interceptors = vmi.getInterceptors();
-		ExecutionOptions options = ctx.getOptions();
-		boolean updateLineNumbers = options.setLineNumbers();
 		exec:
 		while (true) {
 			try {
 				int pos = ctx.getInsnPosition();
 				ctx.setInsnPosition(pos + 1);
 				AbstractInsnNode insn = instructions.get(pos);
-				if (updateLineNumbers && insn instanceof LineNumberNode) {
+				if (insn instanceof LineNumberNode) {
 					ctx.setLineNumber(((LineNumberNode) insn).line);
 				}
 				for (int i = 0, j = interceptors.size(); i < j; i++) {
@@ -54,7 +52,6 @@ public class Interpreter {
 				}
 				InstructionProcessor<AbstractInsnNode> processor = vmi.getProcessor(insn);
 				if (processor.execute(insn, ctx) == Result.ABORT) {
-					ctx.pollSafePointAndSuspend();
 					break;
 				}
 			} catch (VMException ex) {
@@ -66,7 +63,7 @@ public class Interpreter {
 	private static void handleExceptionCaught(ExecutionContext<?> ctx, VMException ex) {
 		ctx.unwind();
 		InstanceValue oop = ex.getOop();
-		InstanceJavaClass exceptionType = oop.getJavaClass();
+		InstanceClass exceptionType = oop.getJavaClass();
 		List<VMTryCatchBlock> tryCatchBlocks = ctx.getMethod().getTryCatchBlocks();
 		int index = ctx.getInsnPosition() - 1;
 		boolean shouldRepeat;
@@ -78,7 +75,7 @@ public class Interpreter {
 				if (index < AsmUtil.getIndex(block.getStart()) || index > AsmUtil.getIndex(block.getEnd())) {
 					continue;
 				}
-				InstanceJavaClass candidate = block.getType();
+				InstanceClass candidate = block.getType();
 				boolean handle = candidate == null;
 				if (!handle) {
 					try {

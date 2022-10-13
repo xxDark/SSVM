@@ -3,7 +3,7 @@ package dev.xdark.ssvm.api;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.InterpretedInvoker;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import org.objectweb.asm.tree.AbstractInsnNode;
 
@@ -112,7 +112,7 @@ public final class VMInterface {
 	 * {@code false} otherwise.
 	 * @see Modifier#ACC_COMPILED
 	 */
-	public boolean setInvoker(InstanceJavaClass jc, String name, String desc, MethodInvoker invoker) {
+	public boolean setInvoker(InstanceClass jc, String name, String desc, MethodInvoker invoker) {
 		JavaMethod method = jc.getMethod(name, desc);
 		if (method == null) {
 			return false;
@@ -177,7 +177,7 @@ public final class VMInterface {
 	 * @return {@code true} if method was registered,
 	 * {@code false} otherwise.
 	 */
-	public boolean registerMethodEnter(InstanceJavaClass jc, String name, String desc, MethodInvocation invocation) {
+	public boolean registerMethodEnter(InstanceClass jc, String name, String desc, MethodInvocation invocation) {
 		JavaMethod method = jc.getMethod(name, desc);
 		if (method == null) {
 			return false;
@@ -216,7 +216,7 @@ public final class VMInterface {
 	 * @return {@code true} if method was registered,
 	 * {@code false} otherwise.
 	 */
-	public boolean registerMethodExit(InstanceJavaClass jc, String name, String desc, MethodInvocation invocation) {
+	public boolean registerMethodExit(InstanceClass jc, String name, String desc, MethodInvocation invocation) {
 		JavaMethod method = jc.getMethod(name, desc);
 		if (method == null) {
 			return false;

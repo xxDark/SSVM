@@ -1,15 +1,13 @@
 package dev.xdark.ssvm.classloading;
 
 import dev.xdark.ssvm.NativeJava;
-import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.memory.management.MemoryManager;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.type.SimpleInstanceJavaClass;
-import dev.xdark.ssvm.util.VMOperations;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
+import dev.xdark.ssvm.symbol.Symbols;
+import dev.xdark.ssvm.util.Operations;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import lombok.RequiredArgsConstructor;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -21,13 +19,20 @@ import java.util.WeakHashMap;
  *
  * @author xDark
  */
-@RequiredArgsConstructor
 public class SimpleClassLoaders implements ClassLoaders {
 
 	private final Set<InstanceValue> classLoaders = Collections.newSetFromMap(new WeakHashMap<>());
 	private final Set<InstanceValue> classLoadersView = Collections.unmodifiableSet(classLoaders);
-	private final VirtualMachine vm;
+	private final Symbols symbols;
+	private final Operations ops;
+	private final MemoryManager memoryManager;
 	private ClassLoaderData bootClassLoaderData;
+
+	public SimpleClassLoaders(Symbols symbols, Operations ops, MemoryManager memoryManager) {
+		this.symbols = symbols;
+		this.ops = ops;
+		this.memoryManager = memoryManager;
+	}
 
 	@Override
 	public synchronized ClassLoaderData setClassLoaderData(ObjectValue classLoader) {
@@ -37,13 +42,13 @@ public class SimpleClassLoaders implements ClassLoaders {
 			}
 			return bootClassLoaderData = createClassLoaderData();
 		} else {
-			VMOperations ops = vm.getTrustedOperations();
+			Operations ops = this.ops;
 			InstanceValue instance = (InstanceValue) classLoader;
 			if (!ops.getReference(instance, NativeJava.CLASS_LOADER_OOP, "Ljava/lang/Object;").isNull()) {
 				throw new IllegalStateException("Class loader data for " + classLoader + " is already set");
 			}
 			ClassLoaderData data = createClassLoaderData();
-			JavaValue<ClassLoaderData> oop = vm.getMemoryManager().newJavaInstance(vm.getSymbols().java_lang_Object(), data);
+			JavaValue<ClassLoaderData> oop = memoryManager.newJavaInstance(symbols.java_lang_Object(), data);
 			ops.putReference(instance, NativeJava.CLASS_LOADER_OOP, "Ljava/lang/Object;", oop);
 			classLoaders.add(instance);
 			return data;
@@ -55,7 +60,7 @@ public class SimpleClassLoaders implements ClassLoaders {
 		if (classLoader.isNull()) {
 			return bootClassLoaderData;
 		}
-		return ((JavaValue<ClassLoaderData>) vm.getTrustedOperations().getReference(classLoader, NativeJava.CLASS_LOADER_OOP, "Ljava/lang/Object;")).getValue();
+		return ((JavaValue<ClassLoaderData>) ops.getReference(classLoader, NativeJava.CLASS_LOADER_OOP, "Ljava/lang/Object;")).getValue();
 	}
 
 	@Override
@@ -64,26 +69,20 @@ public class SimpleClassLoaders implements ClassLoaders {
 	}
 
 	@Override
-	public void setClassOop(InstanceJavaClass javaClass) {
-		javaClass.setOop(vm.getMemoryManager().newClassOop(javaClass));
-	}
-
-	@Override
-	public void initializeBootOop(InstanceJavaClass javaClass, InstanceJavaClass javaLangClass) {
-		VirtualMachine vm = this.vm;
-		MemoryManager memoryManager = vm.getMemoryManager();
-		JavaValue<InstanceJavaClass> oop = javaLangClass == javaClass ? memoryManager.newJavaLangClass(javaClass) : memoryManager.newClassOop(javaClass);
+	public void initializeBootOop(InstanceClass javaClass, InstanceClass javaLangClass) {
+		MemoryManager memoryManager = this.memoryManager;
+		InstanceValue oop = javaLangClass == javaClass ? memoryManager.newJavaLangClass(javaClass) : memoryManager.newClassOop(javaClass);
 		javaClass.setOop(oop);
 	}
 
 	@Override
-	public void setClassData(InstanceJavaClass javaClass, ObjectValue classData) {
-		vm.getTrustedOperations().putReference(javaClass.getOop(), "classData", "Ljava/lang/Object;", classData);
+	public void setClassData(InstanceClass javaClass, ObjectValue classData) {
+		ops.putReference(javaClass.getOop(), "classData", "Ljava/lang/Object;", classData);
 	}
 
 	@Override
-	public ObjectValue getClassData(InstanceJavaClass javaClass) {
-		return vm.getTrustedOperations().getReference(javaClass.getOop(), "classData", "Ljava/lang/Object;");
+	public ObjectValue getClassData(InstanceClass javaClass) {
+		return ops.getReference(javaClass.getOop(), "classData", "Ljava/lang/Object;");
 	}
 
 	/**

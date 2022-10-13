@@ -1,8 +1,10 @@
 package dev.xdark.ssvm.classloading;
 
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
+import dev.xdark.ssvm.util.AutoCloseableLock;
 
 import java.util.Collection;
+import java.util.function.Consumer;
 
 /**
  * Holds all classes loaded by the loader.
@@ -17,34 +19,37 @@ public interface ClassLoaderData {
 	 * @param name Name of the class.
 	 * @return class.
 	 */
-	InstanceJavaClass getClass(String name);
+	InstanceClass getClass(String name);
 
 
 	/**
 	 * Attempts to register a class.
 	 *
 	 * @param jc Class to register.
-	 * @throws IllegalStateException If the class with the name of {@code jc} is already linked.
+	 * @return {@code true} if class has been successfully linked.
 	 */
-	void linkClass(InstanceJavaClass jc);
+	boolean linkClass(InstanceClass jc);
 
 	/**
-	 * Registers a class.
-	 * This method will REPLACE existing class.
+	 * @return Acquired lock.
+	 */
+	AutoCloseableLock lock();
+
+	/**
+	 * Returns a collection of all classes.
+	 * The returned collection is unmodifiable and not thread-safe,
+	 * this method is suggested to be used in conjunction with
+	 * {@link ClassLoaderData#lock()}.
 	 *
-	 * @param jc Class to register.
+	 * @return A collection of all classes.
+	 * @see AutoCloseableLock
 	 */
-	void forceLinkClass(InstanceJavaClass jc);
+	Collection<InstanceClass> all();
 
 	/**
-	 * @return a collection of all classes.
-	 */
-	Collection<InstanceJavaClass> getAll();
-
-	/**
-	 * Claims another class loader data.
+	 * Visits all classes in this class loader.
 	 *
-	 * @param classLoaderData Class loader data to claim.
+	 * @param fn Function to apply on each class loader.
 	 */
-	void claim(ClassLoaderData classLoaderData);
+	void visit(Consumer<? super InstanceClass> fn);
 }

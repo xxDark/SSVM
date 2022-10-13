@@ -1,7 +1,7 @@
 package dev.xdark.ssvm.memory.management;
 
-import dev.xdark.ssvm.mirror.type.ArrayJavaClass;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.ArrayClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.synchronizer.Mutex;
 import dev.xdark.ssvm.value.ArrayValue;
@@ -37,7 +37,7 @@ public interface MemoryManager extends ReferenceMap {
 	 * @param javaClass Class of the object.
 	 * @return allocated object.
 	 */
-	InstanceValue tryNewInstance(InstanceJavaClass javaClass);
+	InstanceValue tryNewInstance(InstanceClass javaClass);
 
 	/**
 	 * Allocates new object.
@@ -46,7 +46,7 @@ public interface MemoryManager extends ReferenceMap {
 	 * @param javaClass Class of the object.
 	 * @return allocated object.
 	 */
-	InstanceValue newInstance(InstanceJavaClass javaClass);
+	InstanceValue newInstance(InstanceClass javaClass);
 
 	/**
 	 * Allocates new Java wrapper.
@@ -56,7 +56,7 @@ public interface MemoryManager extends ReferenceMap {
 	 * @param <V>       Type of Java value.
 	 * @return allocated Java wrapper.
 	 */
-	<V> JavaValue<V> tryNewJavaInstance(InstanceJavaClass javaClass, V value);
+	<V> JavaValue<V> tryNewJavaInstance(InstanceClass javaClass, V value);
 
 	/**
 	 * Allocates new Java wrapper.
@@ -67,7 +67,7 @@ public interface MemoryManager extends ReferenceMap {
 	 * @param <V>       Type of Java value.
 	 * @return allocated Java wrapper.
 	 */
-	<V> JavaValue<V> newJavaInstance(InstanceJavaClass javaClass, V value);
+	<V> JavaValue<V> newJavaInstance(InstanceClass javaClass, V value);
 
 	/**
 	 * Allocates new Java wrapper for {@code java/lang/Class}.
@@ -79,16 +79,7 @@ public interface MemoryManager extends ReferenceMap {
 	 * @param javaClass java/lang/Class mirror.
 	 * @return allocated Java wrapper.
 	 */
-	JavaValue<InstanceJavaClass> newJavaLangClass(InstanceJavaClass javaClass);
-
-	/**
-	 * Allocates new array.
-	 *
-	 * @param javaClass Array class.
-	 * @param length    Array length.
-	 * @return allocated array.
-	 */
-	ArrayValue tryNewArray(ArrayJavaClass javaClass, int length);
+	JavaValue<InstanceClass> newJavaLangClass(InstanceClass javaClass);
 
 	/**
 	 * Allocates new array.
@@ -98,7 +89,7 @@ public interface MemoryManager extends ReferenceMap {
 	 * @param length    Array length.
 	 * @return allocated array.
 	 */
-	ArrayValue newArray(ArrayJavaClass javaClass, int length);
+	ArrayValue newArray(ArrayClass javaClass, int length);
 
 	/**
 	 * Reads VM value from an object.
@@ -151,18 +142,9 @@ public interface MemoryManager extends ReferenceMap {
 	 * Creates new class oop.
 	 *
 	 * @param javaClass Class to create oop for.
-	 * @return oop.
+	 * @return Oop.
 	 */
-	<C extends JavaClass> JavaValue<C> tryNewClassOop(C javaClass);
-
-	/**
-	 * Creates new class oop.
-	 * Throws VM exception if allocation fails.
-	 *
-	 * @param javaClass Class to create oop for.
-	 * @return oop.
-	 */
-	<C extends JavaClass> JavaValue<C> newClassOop(C javaClass);
+	InstanceValue newClassOop(JavaClass javaClass);
 
 	/**
 	 * Reports the offset of the data in
@@ -215,7 +197,7 @@ public interface MemoryManager extends ReferenceMap {
 	 * @param javaClass Array component class.
 	 * @return size of the type.
 	 */
-	int sizeOfType(JavaClass javaClass);
+	long sizeOfType(JavaClass javaClass);
 
 	/**
 	 * Reports the size of the type.
@@ -223,47 +205,7 @@ public interface MemoryManager extends ReferenceMap {
 	 * @param javaClass Array component class.
 	 * @return size of the type.
 	 */
-	int sizeOfType(Class<?> javaClass);
-
-	/**
-	 * @return Size of {@code long} type.
-	 */
-	int longSize();
-
-	/**
-	 * @return Size of {@code double} type.
-	 */
-	int doubleSize();
-
-	/**
-	 * @return Size of {@code int} type.
-	 */
-	int intSize();
-
-	/**
-	 * @return Size of {@code float} type.
-	 */
-	int floatSize();
-
-	/**
-	 * @return Size of {@code char} type.
-	 */
-	int charSize();
-
-	/**
-	 * @return Size of {@code short} type.
-	 */
-	int shortSize();
-
-	/**
-	 * @return Size of {@code byte} type.
-	 */
-	int byteSize();
-
-	/**
-	 * @return Size of {@code boolean} type.
-	 */
-	int booleanSize();
+	long sizeOfType(Class<?> javaClass);
 
 	/**
 	 * @return Size of {@link Object} type.

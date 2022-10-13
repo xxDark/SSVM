@@ -1,6 +1,6 @@
 package dev.xdark.ssvm;
 
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 
 /**
  * Called upon VM initialization.
@@ -32,7 +32,7 @@ public interface VMInitializer {
 	 * @param klass  {@code java/lang/Class} class.
 	 * @param object {@code java/lang/Object} class.
 	 */
-	default void bootLink(VirtualMachine vm, InstanceJavaClass klass, InstanceJavaClass object) {
+	default void bootLink(VirtualMachine vm, InstanceClass klass, InstanceClass object) {
 	}
 
 	/**

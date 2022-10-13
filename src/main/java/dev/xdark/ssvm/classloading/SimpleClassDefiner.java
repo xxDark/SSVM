@@ -11,8 +11,8 @@ import org.objectweb.asm.ClassReader;
 public final class SimpleClassDefiner implements ClassDefiner {
 
 	@Override
-	public ClassParseResult parseClass(String name, byte[] classBytes, int off, int len, String source) {
+	public ParsedClassData parseClass(String name, byte[] classBytes, int off, int len, String source) {
 		ClassReader cr = new ClassReader(classBytes, off, len);
-		return new ClassParseResult(cr, ClassUtil.readNode(cr));
+		return new ParsedClassData(cr, ClassUtil.readNode(cr));
 	}
 }

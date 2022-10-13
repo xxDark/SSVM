@@ -6,8 +6,8 @@ import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.jvmti.ThreadState;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
-import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
+import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.synchronizer.Mutex;
 import dev.xdark.ssvm.thread.JavaThread;
 import dev.xdark.ssvm.value.ArrayValue;
@@ -28,8 +28,8 @@ public class ThreadNatives {
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass thread = symbols.java_lang_Thread();
+		Symbols symbols = vm.getSymbols();
+		InstanceClass thread = symbols.java_lang_Thread();
 		vmi.setInvoker(thread, "registerNatives", "()V", MethodInvoker.noop());
 		vmi.setInvoker(thread, "currentThread", "()Ljava/lang/Thread;", ctx -> {
 			ctx.setResult(vm.currentJavaThread().getOop());

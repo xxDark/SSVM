@@ -1,79 +1,46 @@
 package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.api.VMInterface;
-import dev.xdark.ssvm.classloading.BootClassLoader;
+import dev.xdark.ssvm.classloading.BootClassFinder;
 import dev.xdark.ssvm.classloading.ClassDefiner;
-import dev.xdark.ssvm.classloading.ClassLoaderData;
 import dev.xdark.ssvm.classloading.ClassLoaders;
-import dev.xdark.ssvm.classloading.ClassParseResult;
-import dev.xdark.ssvm.classloading.RuntimeBootClassLoader;
-import dev.xdark.ssvm.classloading.SimpleClassDefiner;
-import dev.xdark.ssvm.classloading.SimpleClassLoaders;
+import dev.xdark.ssvm.classloading.ParsedClassData;
 import dev.xdark.ssvm.execution.ExecutionEngine;
 import dev.xdark.ssvm.execution.Locals;
-import dev.xdark.ssvm.execution.NoopSafePoint;
-import dev.xdark.ssvm.execution.SafePoint;
-import dev.xdark.ssvm.execution.SimpleExecutionEngine;
 import dev.xdark.ssvm.fs.FileDescriptorManager;
-import dev.xdark.ssvm.fs.SimpleFileDescriptorManager;
 import dev.xdark.ssvm.jvm.ManagementInterface;
-import dev.xdark.ssvm.jvm.SimpleManagementInterface;
 import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
-import dev.xdark.ssvm.memory.allocation.NavigableMemoryAllocator;
 import dev.xdark.ssvm.memory.management.MemoryManager;
-import dev.xdark.ssvm.memory.management.SimpleMemoryManager;
-import dev.xdark.ssvm.memory.management.SimpleStringPool;
 import dev.xdark.ssvm.memory.management.StringPool;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
-import dev.xdark.ssvm.mirror.type.JavaClass;
-import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.mirror.MirrorFactory;
-import dev.xdark.ssvm.mirror.SimpleMirrorFactory;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.natives.IntrinsicsNatives;
 import dev.xdark.ssvm.nt.NativeLibraryManager;
-import dev.xdark.ssvm.nt.SimpleNativeLibraryManager;
-import dev.xdark.ssvm.symbol.InitializedVMPrimitives;
-import dev.xdark.ssvm.symbol.InitializedVMSymbols;
-import dev.xdark.ssvm.symbol.UninitializedVMPrimitives;
-import dev.xdark.ssvm.symbol.UninitializedVMSymbols;
-import dev.xdark.ssvm.symbol.VMPrimitives;
-import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.operation.VMOperations;
+import dev.xdark.ssvm.symbol.InitializedPrimitives;
+import dev.xdark.ssvm.symbol.InitializedSymbols;
+import dev.xdark.ssvm.symbol.Primitives;
+import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.synchronizer.ObjectSynchronizer;
-import dev.xdark.ssvm.synchronizer.java.LockObjectSynchronizer;
+import dev.xdark.ssvm.thread.JavaThread;
 import dev.xdark.ssvm.thread.OSThread;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.ThreadStorage;
-import dev.xdark.ssvm.thread.JavaThread;
-import dev.xdark.ssvm.thread.virtual.VirtualThreadManager;
-import dev.xdark.ssvm.tz.SimpleTimeManager;
 import dev.xdark.ssvm.tz.TimeManager;
-import dev.xdark.ssvm.util.DefaultVMOperations;
-import dev.xdark.ssvm.util.InvokeDynamicLinker;
 import dev.xdark.ssvm.util.Reflection;
-import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.util.VMOperations;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.JavaValue;
-import dev.xdark.ssvm.value.ObjectValue;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.tree.ClassNode;
 
 import java.nio.ByteOrder;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
-public class VirtualMachine {
+public class VirtualMachine implements VirtualMachineFacade {
 
 	private final AtomicReference<InitializationState> state = new AtomicReference<>(InitializationState.UNINITIALIZED);
-	private final BootClassLoaderHolder bootClassLoader;
-	private final VMInterface vmInterface;
 	private final MemoryAllocator memoryAllocator;
 	private final MemoryManager memoryManager;
-	private VMSymbols symbols;
-	private VMPrimitives primitives;
-	private final VMHelper helper;
 	private final ClassDefiner classDefiner;
 	private final ThreadManager threadManager;
 	private final FileDescriptorManager fileDescriptorManager;
@@ -82,61 +49,61 @@ public class VirtualMachine {
 	private final ManagementInterface managementInterface;
 	private final TimeManager timeManager;
 	private final ClassLoaders classLoaders;
-	private final Map<String, String> properties;
-	private final Map<String, String> env;
-	private final VMInitializer initializer;
 	private final ExecutionEngine executionEngine;
-	private final SafePoint safePoint;
-	private final VMOperations publicOperations;
-	private final VMOperations trustedOperations;
-	private final LinkResolver publicLinkResolver;
-	private final LinkResolver trustedLinkResolver;
-	private final InvokeDynamicLinker invokeDynamicLinker;
-	private final Reflection reflection;
+	private final LinkResolver linkResolver;
 	private final MirrorFactory mirrorFactory;
 	private final ObjectSynchronizer objectSynchronizer;
+	private final BootClassFinder bootClassFinder;
+	private final Map<String, String> properties;
+	private final Map<String, String> env;
+	private final VMInterface vmInterface;
+	private final Reflection reflection;
+	private final VMOperations operations;
+	private Symbols symbols;
+	private Primitives primitives;
 	private volatile InstanceValue systemThreadGroup;
 	private volatile InstanceValue mainThreadGroup;
 
-	public VirtualMachine(VMInitializer initializer) {
-		this.initializer = initializer;
-		ClassLoaders classLoaders = createClassLoaders();
+	public VirtualMachine(
+		VMInterface vmInterface,
+		MemoryAllocator memoryAllocator,
+		MemoryManager memoryManager,
+		ClassDefiner classDefiner,
+		ThreadManager threadManager,
+		FileDescriptorManager fileDescriptorManager,
+		NativeLibraryManager nativeLibraryManager,
+		StringPool stringPool,
+		ManagementInterface managementInterface,
+		TimeManager timeManager,
+		ClassLoaders classLoaders,
+		ExecutionEngine executionEngine,
+		LinkResolver linkResolver,
+		MirrorFactory mirrorFactory,
+		ObjectSynchronizer objectSynchronizer,
+		BootClassFinder bootClassFinder,
+		Map<String, String> properties,
+		Map<String, String> env
+	) {
+		this.vmInterface = vmInterface;
+		this.memoryAllocator = memoryAllocator;
+		this.memoryManager = memoryManager;
+		this.classDefiner = classDefiner;
+		this.threadManager = threadManager;
+		this.fileDescriptorManager = fileDescriptorManager;
+		this.nativeLibraryManager = nativeLibraryManager;
+		this.stringPool = stringPool;
+		this.managementInterface = managementInterface;
+		this.timeManager = timeManager;
 		this.classLoaders = classLoaders;
-		memoryAllocator = createMemoryAllocator();
-		safePoint = createSafePoint();
-		mirrorFactory = createMirrorFactory();
-		memoryManager = createMemoryManager();
-		bootClassLoader = new BootClassLoaderHolder(this, createBootClassLoader(), classLoaders.setClassLoaderData(memoryManager.nullValue()));
-		vmInterface = new VMInterface();
-		helper = new VMHelper(this);
-		threadManager = createThreadManager();
-		classDefiner = createClassDefiner();
-		DelegatingVMSymbols symbols = new DelegatingVMSymbols();
-		symbols.setSymbols(new UninitializedVMSymbols(this));
-		this.symbols = symbols;
-		DelegatingVMPrimitives primitives = new DelegatingVMPrimitives();
-		primitives.setPrimitives(new UninitializedVMPrimitives());
-		this.primitives = primitives;
-		fileDescriptorManager = createFileDescriptorManager();
-		nativeLibraryManager = createNativeLibraryManager();
-		stringPool = createStringPool();
-		managementInterface = createManagementInterface();
-		timeManager = createTimeManager();
-		executionEngine = createExecutionEngine();
-		publicLinkResolver = new LinkResolver(this, false);
-		trustedLinkResolver = new LinkResolver(this, true);
-		invokeDynamicLinker = new InvokeDynamicLinker(this);
-		reflection = new Reflection(this);
-		publicOperations = createPublicOperations();
-		trustedOperations = createTrustedOperations();
-		objectSynchronizer = createObjectSynchronizer();
-
-		properties = System.getProperties().entrySet().stream().collect(Collectors.toMap(x -> x.getKey().toString(), x -> x.getValue().toString()));
-		env = new HashMap<>(System.getenv());
-	}
-
-	public VirtualMachine() {
-		this(DummyVMInitializer.INSTANCE);
+		this.executionEngine = executionEngine;
+		this.linkResolver = linkResolver;
+		this.mirrorFactory = mirrorFactory;
+		this.objectSynchronizer = objectSynchronizer;
+		this.bootClassFinder = bootClassFinder;
+		this.properties = properties;
+		this.env = env;
+		reflection = new Reflection(threadManager);
+		operations = new VMOperations(this);
 	}
 
 	/**
@@ -202,56 +169,20 @@ public class VirtualMachine {
 	}
 
 	/**
-	 * This must be only invoked by the VM
-	 * to support snapshot restore.
-	 *
-	 * @param state New state.
-	 */
-	public void setState(InitializationState state) {
-		this.state.set(state);
-	}
-
-	/**
-	 * Returns properties that will be used
-	 * for initialization.
-	 *
-	 * @return system properties.
-	 */
-	public Map<String, String> getProperties() {
-		return properties;
-	}
-
-	/**
-	 * Returns process environment variables that will be used
-	 * for initialization.
-	 *
-	 * @return environment variables.
-	 */
-	public Map<String, String> getenv() {
-		return env;
-	}
-
-	/**
-	 * Returns memory allocator.
-	 *
-	 * @return memory allocator.
+	 * @inheritDoc
 	 */
 	public MemoryAllocator getMemoryAllocator() {
 		return memoryAllocator;
 	}
 
 	/**
-	 * Returns memory manager.
-	 *
-	 * @return memory manager.
+	 * @inheritDoc
 	 */
 	public MemoryManager getMemoryManager() {
 		return memoryManager;
 	}
 
 	/**
-	 * Returns VM interface.
-	 *
 	 * @return VM interface.
 	 */
 	public VMInterface getInterface() {
@@ -259,192 +190,137 @@ public class VirtualMachine {
 	}
 
 	/**
-	 * Returns VM symbols.
-	 *
-	 * @return VM symbols.
+	 * @return VM helper.
 	 */
-	public VMSymbols getSymbols() {
+	public Symbols getSymbols() {
 		return symbols;
 	}
 
 	/**
-	 * Returns VM primitives.
-	 *
 	 * @return VM primitives.
 	 */
-	public VMPrimitives getPrimitives() {
+	public Primitives getPrimitives() {
 		return primitives;
 	}
 
 	/**
-	 * Returns VM operations.
-	 *
 	 * @return VM operations.
 	 */
-	public VMOperations getPublicOperations() {
-		return publicOperations;
+	public VMOperations getOperations() {
+		return operations;
 	}
 
 	/**
-	 * Returns VM operations.
-	 *
-	 * @return VM operations.
+	 * @inheritDoc
 	 */
-	public VMOperations getTrustedOperations() {
-		return trustedOperations;
+	public LinkResolver getLinkResolver() {
+		return linkResolver;
 	}
 
 	/**
-	 * Returns link resolver.
-	 *
-	 * @return link resolver.
-	 */
-	public LinkResolver getPublicLinkResolver() {
-		return publicLinkResolver;
-	}
-
-	/**
-	 * Returns link resolver.
-	 *
-	 * @return link resolver.
-	 */
-	public LinkResolver getTrustedLinkResolver() {
-		return trustedLinkResolver;
-	}
-
-	/**
-	 * Returns invokedynamic linker.
-	 *
-	 * @return invokedynamic linker.
-	 */
-	public InvokeDynamicLinker getInvokeDynamicLinker() {
-		return invokeDynamicLinker;
-	}
-
-	/**
-	 * Returns reflection helper.
-	 *
-	 * @return reflection helper.
+	 * @return Reflection helper.
 	 */
 	public Reflection getReflection() {
 		return reflection;
 	}
 
 	/**
-	 * Returns VM helper.
-	 *
-	 * @return VM helper.
-	 */
-	public VMHelper getHelper() {
-		return helper;
-	}
-
-	/**
-	 * Returns class definer.
-	 *
-	 * @return class definer.
+	 * @inheritDoc
 	 */
 	public ClassDefiner getClassDefiner() {
 		return classDefiner;
 	}
 
 	/**
-	 * Returns thread manager.
-	 *
-	 * @return thread manager.
+	 * @inheritDoc
 	 */
 	public ThreadManager getThreadManager() {
 		return threadManager;
 	}
 
 	/**
-	 * Returns file descriptor manager.
-	 *
-	 * @return file descriptor manager.
+	 * @inheritDoc
 	 */
 	public FileDescriptorManager getFileDescriptorManager() {
 		return fileDescriptorManager;
 	}
 
 	/**
-	 * Returns native library manager.
-	 *
-	 * @return native library manager.
+	 * @inheritDoc
 	 */
 	public NativeLibraryManager getNativeLibraryManager() {
 		return nativeLibraryManager;
 	}
 
 	/**
-	 * Returns string pool.
-	 *
-	 * @return string pool.
+	 * @inheritDoc
 	 */
 	public StringPool getStringPool() {
 		return stringPool;
 	}
 
 	/**
-	 * Returns management interface.
-	 *
-	 * @return management interface.
+	 * @inheritDoc
 	 */
 	public ManagementInterface getManagementInterface() {
 		return managementInterface;
 	}
 
 	/**
-	 * Returns time manager.
-	 *
-	 * @return time manager.
+	 * @inheritDoc
 	 */
 	public TimeManager getTimeManager() {
 		return timeManager;
 	}
 
 	/**
-	 * Returns class loaders storage.
-	 *
-	 * @return class loaders storage.
+	 * @inheritDoc
 	 */
 	public ClassLoaders getClassLoaders() {
 		return classLoaders;
 	}
 
 	/**
-	 * Returns execution engine.
-	 *
-	 * @return execution engine.
+	 * @inheritDoc
 	 */
 	public ExecutionEngine getExecutionEngine() {
 		return executionEngine;
 	}
 
 	/**
-	 * Returns safepoint mechanism.
-	 *
-	 * @return safepoint mechanism.
-	 */
-	public SafePoint getSafePoint() {
-		return safePoint;
-	}
-
-	/**
-	 * Returns mirror factory.
-	 *
-	 * @return mirror factory.
+	 * @inheritDoc
 	 */
 	public MirrorFactory getMirrorFactory() {
 		return mirrorFactory;
 	}
 
 	/**
-	 * Returns object synchronizer.
-	 *
-	 * @return object synchronizer.
+	 * @inheritDoc
 	 */
 	public ObjectSynchronizer getObjectSynchronizer() {
 		return objectSynchronizer;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	@Override
+	public BootClassFinder getBootClassFinder() {
+		return bootClassFinder;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public Map<String, String> getProperties() {
+		return properties;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public Map<String, String> getenv() {
+		return env;
 	}
 
 	/**
@@ -471,7 +347,7 @@ public class VirtualMachine {
 	 * @return thread storage.
 	 */
 	public ThreadStorage getThreadStorage() {
-		return currentJavaThread().getOsThread().getStorage();
+		return threadManager.currentThreadStorage();
 	}
 
 	/**
@@ -493,15 +369,6 @@ public class VirtualMachine {
 	}
 
 	/**
-	 * Returns boot class loader data.
-	 *
-	 * @return boot class loader data.
-	 */
-	public ClassLoaderData getBootClassLoaderData() {
-		return bootClassLoader.getData();
-	}
-
-	/**
 	 * Searches for bootstrap class.
 	 *
 	 * @param name       Name of the class.
@@ -509,11 +376,7 @@ public class VirtualMachine {
 	 * @return bootstrap class or {@code null}, if not found.
 	 */
 	public JavaClass findBootstrapClass(String name, boolean initialize) {
-		JavaClass jc = bootClassLoader.findBootClass(name);
-		if (jc != null && initialize) {
-			jc.initialize();
-		}
-		return jc;
+		return operations.findClass(memoryManager.nullValue(), name, initialize);
 	}
 
 	/**
@@ -526,256 +389,51 @@ public class VirtualMachine {
 		return findBootstrapClass(name, false);
 	}
 
-	/**
-	 * Searches for the class in given loader.
-	 *
-	 * @param loader     Class loader.
-	 * @param name       CLass name.
-	 * @param initialize Should class be initialized.
-	 */
-	public JavaClass findClass(ObjectValue loader, String name, boolean initialize) {
-		JavaClass jc;
-		VMHelper helper = this.helper;
-		if (loader.isNull()) {
-			jc = findBootstrapClass(name, initialize);
-			if (jc == null) {
-				helper.throwException(symbols.java_lang_ClassNotFoundException(), name.replace('/', '.'));
-			}
-		} else {
-			ClassLoaderData data = classLoaders.getClassLoaderData(loader);
-			jc = data.getClass(name);
-			if (jc == null) {
-				JavaMethod method = publicLinkResolver.resolveVirtualMethod(loader, "loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;");
-				Locals locals = getThreadStorage().newLocals(method);
-				locals.setReference(0, loader);
-				locals.setReference(1, helper.newUtf8(name.replace('/', '.')));
-				locals.setInt(2, initialize ? 1 : 0);
-				jc = ((JavaValue<JavaClass>) helper.invokeReference(method, locals)).getValue();
-			} else if (initialize) {
-				jc.initialize();
-			}
-		}
-		return jc;
-	}
-
-	/**
-	 * Creates a boot class loader.
-	 * One may override this method.
-	 *
-	 * @return boot class loader.
-	 */
-	protected BootClassLoader createBootClassLoader() {
-		return RuntimeBootClassLoader.create();
-	}
-
-	/**
-	 * Creates memory allocator.
-	 * One may override this method.
-	 *
-	 * @return memory allocator.
-	 */
-	protected MemoryAllocator createMemoryAllocator() {
-		return new NavigableMemoryAllocator();
-	}
-
-	/**
-	 * Creates memory manager.
-	 * One may override this method.
-	 *
-	 * @return memory manager.
-	 */
-	protected MemoryManager createMemoryManager() {
-		return new SimpleMemoryManager(this);
-	}
-
-	/**
-	 * Creates class definer.
-	 * One may override this method.
-	 *
-	 * @return class definer.
-	 */
-	protected ClassDefiner createClassDefiner() {
-		return new SimpleClassDefiner();
-	}
-
-	/**
-	 * Creates thread manager.
-	 * One may override this method.
-	 *
-	 * @return thread manager.
-	 */
-	protected ThreadManager createThreadManager() {
-		return new VirtualThreadManager(this);
-	}
-
-	/**
-	 * Creates file descriptor manager.
-	 * One may override this method.
-	 *
-	 * @return file descriptor manager.
-	 */
-	protected FileDescriptorManager createFileDescriptorManager() {
-		return new SimpleFileDescriptorManager();
-	}
-
-	/**
-	 * Creates native library manager.
-	 * One may override this method.
-	 *
-	 * @return native library manager.
-	 */
-	protected NativeLibraryManager createNativeLibraryManager() {
-		return new SimpleNativeLibraryManager();
-	}
-
-	/**
-	 * Creates string pool.
-	 * One may override this method.
-	 *
-	 * @return string pool.
-	 */
-	protected StringPool createStringPool() {
-		return new SimpleStringPool(this);
-	}
-
-	/**
-	 * Creates management interface.
-	 * One may override this method.
-	 *
-	 * @return management interface.
-	 */
-	protected ManagementInterface createManagementInterface() {
-		return new SimpleManagementInterface();
-	}
-
-	/**
-	 * Creates time manager.
-	 * One may override this method.
-	 *
-	 * @return time manager.
-	 */
-	protected TimeManager createTimeManager() {
-		return new SimpleTimeManager();
-	}
-
-	/**
-	 * Creates class loaders storage.
-	 * One may override this method.
-	 *
-	 * @return class loaders.
-	 */
-	protected ClassLoaders createClassLoaders() {
-		return new SimpleClassLoaders(this);
-	}
-
-	/**
-	 * Creates execution engine.
-	 * One may override this method.
-	 *
-	 * @return execution engine.
-	 */
-	protected ExecutionEngine createExecutionEngine() {
-		return new SimpleExecutionEngine(this);
-	}
-
-	/**
-	 * Creates safepoint mechanism.
-	 * One may override this method.
-	 *
-	 * @return safepoint mechanism.
-	 */
-	protected SafePoint createSafePoint() {
-		return new NoopSafePoint();
-	}
-
-	/**
-	 * Creates mirror factory.
-	 * One may override this method.
-	 *
-	 * @return mirror factory.
-	 */
-	protected MirrorFactory createMirrorFactory() {
-		return new SimpleMirrorFactory(this);
-	}
-
-	/**
-	 * Creates public operations.
-	 * One may override this method.
-	 *
-	 * @return vm operations.
-	 */
-	protected VMOperations createPublicOperations() {
-		return new DefaultVMOperations(this, false);
-	}
-
-	/**
-	 * Creates trusted operations.
-	 * One may override this method.
-	 *
-	 * @return vm operations.
-	 */
-	protected VMOperations createTrustedOperations() {
-		return new DefaultVMOperations(this, true);
-	}
-
-	/**
-	 * Creates object synchronizer.
-	 * One may override this method.
-	 *
-	 * @return object synchronizer.
-	 */
-	protected ObjectSynchronizer createObjectSynchronizer() {
-		return new LockObjectSynchronizer();
-	}
-
 	private void init() {
 		ThreadManager threadManager = this.threadManager;
 		try {
 			ClassLoaders classLoaders = this.classLoaders;
-			VMInitializer initializer = this.initializer;
-			initializer.initBegin(this);
-			initializer.initClassLoaders(this);
+			VMOperations ops = this.operations;
+			// This is essentially the same hack HotSpot does when VM is starting up
+			// https://github.com/openjdk/jdk/blob/8ecdaa68111f2e060a3f46a5cf6f2ba95c9ebad1/src/hotspot/share/memory/universe.cpp#L480
 			// java/lang/Object & java/lang/Class must be loaded manually,
 			// otherwise some MemoryManager implementations will bottleneck.
-			InstanceJavaClass klass = internalLink("java/lang/Class");
-			InstanceJavaClass object = internalLink("java/lang/Object");
-			initializer.bootLink(this, klass, object);
-			NativeJava.injectPhase1(this);
-			klass.link();
-			object.link();
+			InstanceClass klass = internalLink("java/lang/Class");
+			InstanceClass object = internalLink("java/lang/Object");
+			ops.link(klass);
+			ops.link(object);
 			classLoaders.initializeBootOop(klass, klass);
 			classLoaders.initializeBootOop(object, klass);
 			NativeJava.injectPhase2(this);
-			InitializedVMSymbols initializedVMSymbols = new InitializedVMSymbols(this);
-			((DelegatingVMSymbols) symbols).setSymbols(initializedVMSymbols);
+			InitializedSymbols initializedVMSymbols = new InitializedSymbols(this);
+			((DelegatingSymbols) symbols).setSymbols(initializedVMSymbols);
 			symbols = initializedVMSymbols;
-			InitializedVMPrimitives initializedVMPrimitives = new InitializedVMPrimitives(this);
-			((DelegatingVMPrimitives) primitives).setPrimitives(initializedVMPrimitives);
+			InitializedPrimitives initializedVMPrimitives = new InitializedPrimitives(mirrorFactory);
+			((DelegatingPrimitives) primitives).setPrimitives(initializedVMPrimitives);
 			primitives = initializedVMPrimitives;
 			NativeJava.init(this);
-			initializer.nativeInit(this);
 			threadManager.attachCurrentThread();
-			InstanceJavaClass groupClass = symbols.java_lang_ThreadGroup();
-			groupClass.initialize();
+			InstanceClass groupClass = symbols.java_lang_ThreadGroup();
+			ops.initialize(groupClass);
 			ThreadStorage ts = currentOSThread().getStorage();
 			// Initialize system group
 			InstanceValue sysGroup = memoryManager.newInstance(groupClass);
 			{
-				JavaMethod init = publicLinkResolver.resolveSpecialMethod(groupClass, "<init>", "()V");
+				JavaMethod init = linkResolver.resolveSpecialMethod(groupClass, "<init>", "()V");
 				Locals locals = ts.newLocals(init);
 				locals.setReference(0, sysGroup);
-				helper.invoke(init, locals);
+				ops.invokeVoid(init, locals);
 			}
 			systemThreadGroup = sysGroup;
 			// Initialize main group
 			InstanceValue mainGroup = memoryManager.newInstance(groupClass);
 			{
-				JavaMethod init = publicLinkResolver.resolveSpecialMethod(groupClass, "<init>", "(Ljava/lang/ThreadGroup;Ljava/lang/String;)V");
+				JavaMethod init = linkResolver.resolveSpecialMethod(groupClass, "<init>", "(Ljava/lang/ThreadGroup;Ljava/lang/String;)V");
 				Locals locals = ts.newLocals(init);
 				locals.setReference(0, mainGroup);
 				locals.setReference(1, sysGroup);
-				locals.setReference(2, helper.newUtf8("main"));
-				helper.invoke(init, locals);
+				locals.setReference(2, ops.newUtf8("main"));
+				ops.invokeVoid(init, locals);
 			}
 			mainThreadGroup = mainGroup;
 			IntrinsicsNatives.init(this);
@@ -797,29 +455,27 @@ public class VirtualMachine {
 	private void boot() {
 		//<editor-fold desc="VM bootstrap">
 		try {
-			VMSymbols symbols = this.symbols;
+			Symbols symbols = this.symbols;
 			ThreadManager threadManager = this.threadManager;
 			threadManager.attachCurrentThread();
-			symbols.java_lang_ClassLoader().initialize();
-			VMHelper helper = this.helper;
-			InstanceJavaClass sysClass = symbols.java_lang_System();
-			MemoryManager memoryManager = this.memoryManager;
-			VMOperations ops = publicOperations;
+			VMOperations ops = operations;
+			ops.initialize(symbols.java_lang_ClassLoader());
+			InstanceClass sysClass = symbols.java_lang_System();
 
 			// Inject unsafe constants
 			// This must be done first, otherwise
 			// jdk/internal/misc/Unsafe will cache wrong values
-			InstanceJavaClass unsafeConstants = (InstanceJavaClass) findBootstrapClass("jdk/internal/misc/UnsafeConstants", true);
+			InstanceClass unsafeConstants = (InstanceClass) findBootstrapClass("jdk/internal/misc/UnsafeConstants", true);
 			if (unsafeConstants != null) {
 				MemoryAllocator memoryAllocator = this.memoryAllocator;
-				unsafeConstants.initialize();
+				ops.initialize(unsafeConstants);
 				ops.putInt(unsafeConstants, "ADDRESS_SIZE", memoryAllocator.addressSize());
 				ops.putInt(unsafeConstants, "PAGE_SIZE", memoryAllocator.pageSize());
 				ops.putBoolean(unsafeConstants, "BIG_ENDIAN", memoryAllocator.getByteOrder() == ByteOrder.BIG_ENDIAN);
 			}
-			LinkResolver linkResolver = this.publicLinkResolver;
+			LinkResolver linkResolver = this.linkResolver;
 			ThreadStorage ts = getThreadStorage();
-			sysClass.initialize();
+			ops.initialize(sysClass);
 			{
 				InstanceValue threadGroup = mainThreadGroup;
 				InstanceValue oop = currentJavaThread().getOop();
@@ -828,7 +484,7 @@ public class VirtualMachine {
 				Locals locals = ts.newLocals(add);
 				locals.setReference(0, threadGroup);
 				locals.setReference(1, oop);
-				helper.invoke(add, locals);
+				ops.invokeVoid(add, locals);
 			}
 			findBootstrapClass("java/lang/reflect/Method", true);
 			findBootstrapClass("java/lang/reflect/Field", true);
@@ -837,12 +493,12 @@ public class VirtualMachine {
 			JavaMethod initializeSystemClass = sysClass.getMethod("initializeSystemClass", "()V");
 			if (initializeSystemClass != null) {
 				// pre JDK 9 boot
-				helper.invoke(initializeSystemClass, ts.newLocals(initializeSystemClass));
+				ops.invokeVoid(initializeSystemClass, ts.newLocals(initializeSystemClass));
 			} else {
 				findBootstrapClass("java/lang/StringUTF16", true);
 				{
 					JavaMethod initPhase1 = linkResolver.resolveStaticMethod(sysClass, "initPhase1", "()V");
-					helper.invoke(initPhase1, ts.newLocals(initPhase1));
+					ops.invokeVoid(initPhase1, ts.newLocals(initPhase1));
 				}
 				findBootstrapClass("java/lang/invoke/MethodHandle", true);
 				findBootstrapClass("java/lang/invoke/ResolvedMethodName", true);
@@ -855,19 +511,19 @@ public class VirtualMachine {
 					Locals locals = ts.newLocals(initPhase2);
 					locals.setInt(0, 1);
 					locals.setInt(1, 1);
-					result = helper.invokeInt(initPhase2, locals);
+					result = ops.invokeInt(initPhase2, locals);
 				}
 				if (result != 0) {
 					throw new IllegalStateException("VM bootstrapping failed, initPhase2 returned " + result);
 				}
 				{
 					JavaMethod initPhase3 = linkResolver.resolveStaticMethod(sysClass, "initPhase3", "()V");
-					helper.invoke(initPhase3, ts.newLocals(initPhase3));
+					ops.invokeVoid(initPhase3, ts.newLocals(initPhase3));
 				}
 			}
 			{
 				JavaMethod getSystemClassLoader = linkResolver.resolveStaticMethod(symbols.java_lang_ClassLoader(), "getSystemClassLoader", "()Ljava/lang/ClassLoader;");
-				helper.invoke(getSystemClassLoader, ts.newLocals(getSystemClassLoader));
+				ops.invokeVoid(getSystemClassLoader, ts.newLocals(getSystemClassLoader));
 			}
 			state.set(InitializationState.BOOTED);
 		} catch (Exception ex) {
@@ -877,20 +533,11 @@ public class VirtualMachine {
 		//</editor-fold>
 	}
 
-	private InstanceJavaClass internalLink(String name) {
-		ClassParseResult result = bootClassLoader.lookup(name);
+	private InstanceClass internalLink(String name) {
+		ParsedClassData result = bootClassFinder.findBootClass(name);
 		if (result == null) {
 			throw new IllegalStateException("Bootstrap class not found: " + name);
 		}
-		ClassReader cr = result.getClassReader();
-		ClassNode node = result.getNode();
-		InstanceJavaClass jc = mirrorFactory.newInstanceClass(memoryManager.nullValue(), cr, node);
-		bootClassLoader.forceLink(jc);
-		return jc;
-	}
-
-	private static final class DummyVMInitializer implements VMInitializer {
-
-		static final VMInitializer INSTANCE = new DummyVMInitializer();
+		return (InstanceClass) operations.defineClass(memoryManager.nullValue(), result, memoryManager.nullValue(), "JVM_DefineClass", true);
 	}
 }

@@ -80,6 +80,15 @@ public interface ThreadManager {
 	OSThread currentOsThread();
 
 	/**
+	 * @return Current OS thread storage, or {@code null},
+	 * if current thread is not VM thread or not attached.
+	 */
+	default ThreadStorage currentThreadStorage() {
+		OSThread th = currentOsThread();
+		return th == null ? null : th.getStorage();
+	}
+
+	/**
 	 * Attaches current thread.
 	 */
 	void attachCurrentThread();

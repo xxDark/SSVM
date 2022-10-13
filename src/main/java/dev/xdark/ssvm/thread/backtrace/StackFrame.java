@@ -1,95 +1,102 @@
 package dev.xdark.ssvm.thread.backtrace;
 
-import dev.xdark.ssvm.execution.ExecutionContext;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.execution.Locals;
+import dev.xdark.ssvm.execution.Stack;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
+import dev.xdark.ssvm.util.Disposable;
+import dev.xdark.ssvm.value.ObjectValue;
+import dev.xdark.ssvm.value.sink.ValueSink;
 
 /**
- * VM stack frame information.
+ * Stack frame.
  *
  * @author xDark
  */
-public interface StackFrame {
+public interface StackFrame<R extends ValueSink> extends Disposable {
 
 	/**
-	 * Returns the class containing
-	 * the execution point represented
-	 * by the stack frame.
-	 *
-	 * @return declaring class.
+	 * @return Method being executed.
 	 */
-	InstanceJavaClass getDeclaringClass();
+	JavaMethod getMethod();
 
 	/**
-	 * Returns name of
-	 * the method containing the execution point
-	 * by the stack frame.
-	 *
-	 * @return method name.
+	 * @return Frame stack.
 	 */
-	String getMethodName();
+	Stack getStack();
 
 	/**
-	 * Returns the name of the file containing
-	 * the execution point represented
-	 * by the stack frame.
-	 *
-	 * @return source file or {@code null}, if unavailable.
+	 * @return Frame locals.
 	 */
-	String getSourceFile();
+	Locals getLocals();
 
 	/**
-	 * Returns line number of
-	 * the method containing the execution point
-	 * by the stack frame.
-	 *
-	 * @return line number.
+	 * @return Instruction position.
+	 */
+	int getInsnPosition();
+
+	/**
+	 * @param position
+	 *      New instruction position.
+	 */
+	void setInsnPosition(int position);
+
+	/**
+	 * @return Current line number.
 	 */
 	int getLineNumber();
 
 	/**
-	 * Returns execution context of
-	 * the method containing the execution point
-	 * by the stack frame.
-	 *
-	 * @return execution context or {@code null},
-	 * if no context is present.
+	 * @param lineNumber New line number.
 	 */
-	ExecutionContext<?> getExecutionContext();
+	void setLineNumber(int lineNumber);
 
 	/**
-	 * @return immutable frame.
+	 * @return Return sink.
 	 */
-	StackFrame freeze();
+	R returnSink();
 
 	/**
-	 * Creates stack frame from the execution point.
+	 * Sets execution result.
 	 *
-	 * @param ctx Execution context.
-	 * @return stack frame that mirrors it's information from
-	 * execution context.
+	 * @param result Value to set.
 	 */
-	static StackFrame ofContext(ExecutionContext<?> ctx) {
-		return new ContextStackFrame(ctx);
+	default void setResult(ObjectValue result) {
+		returnSink().acceptReference(result);
 	}
 
 	/**
-	 * Creates new stack frame.
+	 * Sets execution result.
 	 *
-	 * @param declaringClass the class containing
-	 *                       the execution point represented
-	 *                       by the stack frame.
-	 * @param methodName     name of
-	 *                       the method containing the execution point
-	 *                       by the stack frame.
-	 * @param sourceFile     name of the file containing
-	 *                       the execution point represented
-	 *                       by the stack frame.
-	 * @param lineNumber     line number of
-	 *                       the method containing the execution point
-	 *                       by the stack frame.
-	 * @return new stack frame.
+	 * @param result Value to set.
 	 */
-	static StackFrame from(InstanceJavaClass declaringClass, String methodName, String sourceFile, int lineNumber) {
-		return new ContextlessStackFrame(declaringClass, methodName, sourceFile, lineNumber);
+	default void setResult(long result) {
+		returnSink().acceptLong(result);
+	}
+
+	/**
+	 * Sets execution result.
+	 *
+	 * @param result Value to set.
+	 */
+	default void setResult(double result) {
+		returnSink().acceptDouble(result);
+	}
+
+	/**
+	 * Sets execution result.
+	 *
+	 * @param result Value to set.
+	 */
+	default void setResult(int result) {
+		returnSink().acceptInt(result);
+	}
+
+	/**
+	 * Sets execution result.
+	 *
+	 * @param result Value to set.
+	 */
+	default void setResult(float result) {
+		returnSink().acceptFloat(result);
 	}
 }

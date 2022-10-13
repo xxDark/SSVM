@@ -4,8 +4,8 @@ package dev.xdark.ssvm.natives;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
-import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
+import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import lombok.experimental.UtilityClass;
 
@@ -24,8 +24,8 @@ public class NativeSeedGeneratorNatives {
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass jc = symbols.sun_security_provider_NativeSeedGenerator();
+		Symbols symbols = vm.getSymbols();
+		InstanceClass jc = symbols.sun_security_provider_NativeSeedGenerator();
 		vmi.setInvoker(jc, "nativeGenerateSeed", "([B)Z", ctx -> {
 			ArrayValue array = vm.getHelper().checkNotNull(ctx.getLocals().loadReference(0));
 			int len = array.getLength();

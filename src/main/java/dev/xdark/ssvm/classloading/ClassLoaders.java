@@ -1,6 +1,6 @@
 package dev.xdark.ssvm.classloading;
 
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 
@@ -34,20 +34,13 @@ public interface ClassLoaders {
 	Collection<InstanceValue> getAll();
 
 	/**
-	 * Sets class oop.
-	 *
-	 * @param javaClass Class to set oop for.
-	 */
-	void setClassOop(InstanceJavaClass javaClass);
-
-	/**
 	 * Used for early initialization by the VM.
 	 * Sets oop for boot classes.
 	 *
 	 * @param javaClass     Class to set oop for.
 	 * @param javaLangClass {@code java/lang/Class} instance.
 	 */
-	void initializeBootOop(InstanceJavaClass javaClass, InstanceJavaClass javaLangClass);
+	void initializeBootOop(InstanceClass javaClass, InstanceClass javaLangClass);
 
 	/**
 	 * Sets extra class data for a class.
@@ -56,7 +49,7 @@ public interface ClassLoaders {
 	 * @param javaClass Class to set extra data for.
 	 * @param classData Class data.
 	 */
-	void setClassData(InstanceJavaClass javaClass, ObjectValue classData);
+	void setClassData(InstanceClass javaClass, ObjectValue classData);
 
 	/**
 	 * Gets extra class data for a class.
@@ -65,5 +58,5 @@ public interface ClassLoaders {
 	 * @param javaClass Class to get extra data for.
 	 * @return extra data.
 	 */
-	ObjectValue getClassData(InstanceJavaClass javaClass);
+	ObjectValue getClassData(InstanceClass javaClass);
 }

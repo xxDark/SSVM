@@ -5,7 +5,7 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.VMException;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.member.JavaField;
 import dev.xdark.ssvm.util.AsmUtil;
 import org.objectweb.asm.Type;
@@ -26,7 +26,7 @@ public final class GetFieldProcessor implements InstructionProcessor<FieldInsnNo
 	@Override
 	public Result execute(FieldInsnNode insn, ExecutionContext<?> ctx) {
 		if (AsmUtil.isValid(insn)) {
-			InstanceJavaClass klass = (InstanceJavaClass) ctx.getHelper().tryFindClass(ctx.getClassLoader(), insn.owner, true);
+			InstanceClass klass = (InstanceClass) ctx.getHelper().tryFindClass(ctx.getClassLoader(), insn.owner, true);
 			JavaField field;
 			int sort;
 			try {

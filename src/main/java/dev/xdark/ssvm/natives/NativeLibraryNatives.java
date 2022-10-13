@@ -6,11 +6,11 @@ import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.nt.LibraryLoadResult;
 import dev.xdark.ssvm.nt.NativeLibraryManager;
-import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.util.VMOperations;
+import dev.xdark.ssvm.util.Helper;
+import dev.xdark.ssvm.util.Operations;
 import dev.xdark.ssvm.value.InstanceValue;
 import lombok.experimental.UtilityClass;
 
@@ -31,7 +31,7 @@ public class NativeLibraryNatives {
 		VMInterface vmi = vm.getInterface();
 		boolean[] throwException = new boolean[]{false};
 		Predicate<ExecutionContext<?>> load = ctx -> {
-			VMHelper helper = vm.getHelper();
+			Helper helper = vm.getHelper();
 			Locals locals = ctx.getLocals();
 			String name = helper.readUtf8(locals.loadReference(1));
 			boolean builtin = locals.loadInt(2) != 0;
@@ -46,17 +46,17 @@ public class NativeLibraryNatives {
 				return false;
 			}
 			InstanceValue _this = locals.loadReference(0);
-			VMOperations ops = vm.getPublicOperations();
-			InstanceJavaClass jc = _this.getJavaClass();
+			Operations ops = vm.getOperations();
+			InstanceClass jc = _this.getJavaClass();
 			ops.putLong(_this, jc, "handle", handle);
 			ops.putInt(_this, jc, "jniVersion", result.getJniVersion());
 			return true;
 		};
-		InstanceJavaClass libraryClass = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ClassLoader$NativeLibrary");
-		InstanceJavaClass findEntryClass = libraryClass;
-		InstanceJavaClass findBuiltinLibClass;
+		InstanceClass libraryClass = (InstanceClass) vm.findBootstrapClass("java/lang/ClassLoader$NativeLibrary");
+		InstanceClass findEntryClass = libraryClass;
+		InstanceClass findBuiltinLibClass;
 		if (libraryClass == null) {
-			InstanceJavaClass librariesClass = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/loader/NativeLibraries");
+			InstanceClass librariesClass = (InstanceClass) vm.findBootstrapClass("jdk/internal/loader/NativeLibraries");
 			findEntryClass = librariesClass;
 			findBuiltinLibClass = librariesClass;
 			MethodInvoker doLoad = ctx -> {
@@ -71,7 +71,7 @@ public class NativeLibraryNatives {
 				}
 			}
 			vmi.setInvoker(librariesClass, "unload", "(Ljava/lang/String;ZJ)V", ctx -> {
-				VMHelper helper = ctx.getHelper();
+				Helper helper = ctx.getHelper();
 				Locals locals = ctx.getLocals();
 				String name = helper.readUtf8(locals.loadReference(0));
 				boolean isBuiltin = locals.loadInt(1) != 0;
@@ -99,9 +99,9 @@ public class NativeLibraryNatives {
 			findBuiltinLibClass = vm.getSymbols().java_lang_ClassLoader();
 		}
 		MethodInvoker find = ctx -> {
-			VMHelper helper = vm.getHelper();
+			Helper helper = vm.getHelper();
 			InstanceValue _this = ctx.getLocals().loadReference(0);
-			long handle = vm.getPublicOperations().getLong(_this, _this.getJavaClass(), "handle");
+			long handle = vm.getOperations().getLong(_this, _this.getJavaClass(), "handle");
 			NativeLibraryManager mgr = vm.getNativeLibraryManager();
 			ctx.setResult(mgr.find(handle, helper.readUtf8(ctx.getLocals().loadReference(1))));
 			return Result.ABORT;
@@ -114,7 +114,7 @@ public class NativeLibraryNatives {
 			}
 		}
 		MethodInvoker findBuiltinLib = ctx -> {
-			VMHelper helper = ctx.getHelper();
+			Helper helper = ctx.getHelper();
 			String name = helper.readUtf8(ctx.getLocals().loadReference(0));
 			ctx.setResult(helper.newUtf8(vm.getNativeLibraryManager().findBuiltinLibrary(name)));
 			return Result.ABORT;

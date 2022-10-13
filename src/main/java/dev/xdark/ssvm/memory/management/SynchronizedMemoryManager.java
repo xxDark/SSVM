@@ -1,7 +1,7 @@
 package dev.xdark.ssvm.memory.management;
 
-import dev.xdark.ssvm.mirror.type.ArrayJavaClass;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.ArrayClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.synchronizer.Mutex;
 import dev.xdark.ssvm.value.ArrayValue;
@@ -57,49 +57,42 @@ public class SynchronizedMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public InstanceValue tryNewInstance(InstanceJavaClass javaClass) {
+	public InstanceValue tryNewInstance(InstanceClass javaClass) {
 		synchronized (mutex) {
 			return memoryManager.tryNewInstance(javaClass);
 		}
 	}
 
 	@Override
-	public InstanceValue newInstance(InstanceJavaClass javaClass) {
+	public InstanceValue newInstance(InstanceClass javaClass) {
 		synchronized (mutex) {
 			return memoryManager.newInstance(javaClass);
 		}
 	}
 
 	@Override
-	public <V> JavaValue<V> tryNewJavaInstance(InstanceJavaClass javaClass, V value) {
+	public <V> JavaValue<V> tryNewJavaInstance(InstanceClass javaClass, V value) {
 		synchronized (mutex) {
 			return memoryManager.tryNewJavaInstance(javaClass, value);
 		}
 	}
 
 	@Override
-	public <V> JavaValue<V> newJavaInstance(InstanceJavaClass javaClass, V value) {
+	public <V> JavaValue<V> newJavaInstance(InstanceClass javaClass, V value) {
 		synchronized (mutex) {
 			return memoryManager.newJavaInstance(javaClass, value);
 		}
 	}
 
 	@Override
-	public JavaValue<InstanceJavaClass> newJavaLangClass(InstanceJavaClass javaClass) {
+	public JavaValue<InstanceClass> newJavaLangClass(InstanceClass javaClass) {
 		synchronized (mutex) {
 			return memoryManager.newJavaLangClass(javaClass);
 		}
 	}
 
 	@Override
-	public ArrayValue tryNewArray(ArrayJavaClass javaClass, int length) {
-		synchronized (mutex) {
-			return memoryManager.tryNewArray(javaClass, length);
-		}
-	}
-
-	@Override
-	public ArrayValue newArray(ArrayJavaClass javaClass, int length) {
+	public ArrayValue newArray(ArrayClass javaClass, int length) {
 		synchronized (mutex) {
 			return memoryManager.newArray(javaClass, length);
 		}
@@ -137,14 +130,7 @@ public class SynchronizedMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public <C extends JavaClass> JavaValue<C> tryNewClassOop(C javaClass) {
-		synchronized (mutex) {
-			return memoryManager.tryNewClassOop(javaClass);
-		}
-	}
-
-	@Override
-	public <C extends JavaClass> JavaValue<C> newClassOop(C javaClass) {
+	public InstanceValue newClassOop(JavaClass javaClass) {
 		synchronized (mutex) {
 			return memoryManager.newClassOop(javaClass);
 		}
@@ -176,58 +162,13 @@ public class SynchronizedMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public int sizeOfType(JavaClass javaClass) {
+	public long sizeOfType(JavaClass javaClass) {
 		return memoryManager.sizeOfType(javaClass);
 	}
 
 	@Override
-	public int sizeOfType(Class<?> javaClass) {
+	public long sizeOfType(Class<?> javaClass) {
 		return memoryManager.sizeOfType(javaClass);
-	}
-
-	@Override
-	public int longSize() {
-		return memoryManager.longSize();
-	}
-
-	@Override
-	public int doubleSize() {
-		return memoryManager.doubleSize();
-	}
-
-	@Override
-	public int intSize() {
-		return memoryManager.intSize();
-	}
-
-	@Override
-	public int floatSize() {
-		return memoryManager.floatSize();
-	}
-
-	@Override
-	public int charSize() {
-		return memoryManager.charSize();
-	}
-
-	@Override
-	public int shortSize() {
-		return memoryManager.shortSize();
-	}
-
-	@Override
-	public int byteSize() {
-		return memoryManager.byteSize();
-	}
-
-	@Override
-	public int booleanSize() {
-		return memoryManager.booleanSize();
-	}
-
-	@Override
-	public int objectSize() {
-		return memoryManager.objectSize();
 	}
 
 	@Override

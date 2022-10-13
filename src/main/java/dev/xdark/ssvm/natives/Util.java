@@ -4,7 +4,7 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.mirror.type.JavaClass;
-import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.util.Helper;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
@@ -27,7 +27,7 @@ import java.io.IOException;
 final class Util {
 
 	void copyReflectionArguments(VirtualMachine vm, JavaClass[] argTypes, ArrayValue array, Locals locals, int offset) {
-		VMHelper helper = vm.getHelper();
+		Helper helper = vm.getHelper();
 		for (int i = 0; i < argTypes.length; i++) {
 			JavaClass type = argTypes[i];
 			int sort = type.getSort();

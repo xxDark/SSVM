@@ -9,10 +9,10 @@ import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
 import dev.xdark.ssvm.memory.allocation.SynchronizedMemoryAllocator;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.memory.management.SynchronizedMemoryManager;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
+import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.thread.ThreadStorage;
-import dev.xdark.ssvm.util.VMHelper;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 @UtilityClass
 public class TestUtil {
 
-	public void test(Class<?> klass, boolean bootstrap, Consumer<InstanceJavaClass> init) {
+	public void test(Class<?> klass, boolean bootstrap, Consumer<InstanceClass> init) {
 		VirtualMachine vm = newVirtualMachine();
 		if (bootstrap) {
 			vm.bootstrap();
@@ -51,15 +51,10 @@ public class TestUtil {
 		} catch (IOException ex) {
 			throw new RuntimeException(ex);
 		}
-		VMHelper helper = vm.getHelper();
+		VMOperations ops = vm.getOperations();
 		ObjectValue nullValue = vm.getMemoryManager().nullValue();
-		InstanceJavaClass res;
-		try {
-			res = helper.defineClass(nullValue, null, result, 0, result.length, nullValue, "JVM_DefineClass");
-		} catch (VMException ex) {
-			throw new IllegalStateException(helper.toJavaException(ex.getOop()));
-		}
-		res.initialize();
+		InstanceClass res = ops.defineClass(nullValue, null, result, 0, result.length, nullValue, "JVM_DefineClass", true);
+		ops.initialize(res);
 		if (init != null) {
 			init.accept(res);
 		}
@@ -73,18 +68,17 @@ public class TestUtil {
 				continue;
 			}
 			try {
-				helper.invoke(m, ts.newLocals(m));
+				ops.invokeVoid(m, ts.newLocals(m));
 			} catch (VMException ex) {
 				InstanceValue oop = ex.getOop();
 				System.err.println(oop);
 				try {
-					JavaMethod printStackTrace = vm.getPublicLinkResolver().resolveVirtualMethod(oop, "printStackTrace", "()V");
+					JavaMethod printStackTrace = vm.getLinkResolver().resolveVirtualMethod(oop, "printStackTrace", "()V");
 					Locals locals = ts.newLocals(printStackTrace);
 					locals.setReference(0, oop);
-					helper.invoke(printStackTrace, locals);
+					ops.invokeVoid(printStackTrace, locals);
 				} catch (VMException ex1) {
 					System.err.println(ex1.getOop());
-					helper.toJavaException(ex1.getOop()).printStackTrace();
 				}
 				throw new TestAbortedException();
 			}

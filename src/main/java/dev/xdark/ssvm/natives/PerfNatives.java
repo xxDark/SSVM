@@ -5,9 +5,9 @@ import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
-import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.symbol.Symbols;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -23,11 +23,11 @@ public class PerfNatives {
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass jc = symbols.perf_Perf();
+		Symbols symbols = vm.getSymbols();
+		InstanceClass jc = symbols.perf_Perf();
 		vmi.setInvoker(jc, "registerNatives", "()V", MethodInvoker.noop());
 		vmi.setInvoker(jc, "createLong", "(Ljava/lang/String;IIJ)Ljava/nio/ByteBuffer;", ctx -> {
-			JavaMethod allocateDirect = vm.getPublicLinkResolver().resolveStaticMethod(symbols.java_nio_ByteBuffer(), "allocateDirect", "(I)Ljava/nio/ByteBuffer;");
+			JavaMethod allocateDirect = vm.getLinkResolver().resolveStaticMethod(symbols.java_nio_ByteBuffer(), "allocateDirect", "(I)Ljava/nio/ByteBuffer;");
 			Locals locals = vm.getThreadStorage().newLocals(allocateDirect);
 			locals.setInt(0, 8);
 			vm.getHelper().invoke(allocateDirect, locals, ctx.getResult());

@@ -12,6 +12,20 @@ import org.objectweb.asm.Type;
 public interface JavaClass {
 
 	/**
+	 * Returns class loader of this class.
+	 *
+	 * @return class loader.
+	 */
+	ObjectValue getClassLoader();
+
+	/**
+	 * Returns parent class of this class.
+	 *
+	 * @return parent class.
+	 */
+	InstanceClass getSuperClass();
+
+	/**
 	 * Returns name of the class.
 	 *
 	 * @return name of the class.
@@ -40,13 +54,6 @@ public interface JavaClass {
 	int getModifiers();
 
 	/**
-	 * Returns class loader of this class.
-	 *
-	 * @return class loader.
-	 */
-	ObjectValue getClassLoader();
-
-	/**
 	 * Returns VM representation of this class.
 	 *
 	 * @return oop.
@@ -54,37 +61,25 @@ public interface JavaClass {
 	InstanceValue getOop();
 
 	/**
-	 * Returns parent class of this class.
-	 *
-	 * @return parent class.
-	 */
-	InstanceJavaClass getSuperClass();
-
-	/**
 	 * Returns interfaces of this class.
 	 *
 	 * @return interfaces of this class.
 	 */
-	InstanceJavaClass[] getInterfaces();
+	InstanceClass[] getInterfaces();
 
 	/**
 	 * Creates new array class.
 	 *
 	 * @return new array class.
 	 */
-	ArrayJavaClass newArrayClass();
+	ArrayClass newArrayClass();
 
 	/**
 	 * Returns array class if present.
 	 *
 	 * @return array class.
 	 */
-	ArrayJavaClass getArrayClass();
-
-	/**
-	 * Initializes class data.
-	 */
-	void initialize();
+	ArrayClass getArrayClass();
 
 	/**
 	 * @param other The Class object to be checked.
@@ -138,4 +133,11 @@ public interface JavaClass {
 	 * @return ASM sort type.
 	 */
 	int getSort();
+
+	/**
+	 * Sets oop of the class.
+	 *
+	 * @param oop Class oop.
+	 */
+	void setOop(InstanceValue oop);
 }

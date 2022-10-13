@@ -1,12 +1,11 @@
 package dev.xdark.ssvm;
 
-import dev.xdark.ssvm.asm.Modifier;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.mirror.member.JavaField;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
-import dev.xdark.ssvm.symbol.VMSymbols;
-import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.operation.ExceptionOperations;
+import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.ObjectValue;
 
@@ -24,23 +23,17 @@ import static org.objectweb.asm.Opcodes.ACC_STATIC;
  * @author xDark
  */
 public final class LinkResolver {
-	private final VMHelper helper;
-	private final VMSymbols symbols;
-	private final boolean trusted;
+	private final Symbols symbols;
+	private final ExceptionOperations exceptionOperations;
 
-	/**
-	 * @param vm      VM instance.
-	 * @param trusted Wthether the link resolver is truted.
-	 */
-	public LinkResolver(VirtualMachine vm, boolean trusted) {
-		helper = vm.getHelper();
-		symbols = vm.getSymbols();
-		this.trusted = trusted;
+	public LinkResolver(Symbols symbols, ExceptionOperations exceptionOperations) {
+		this.symbols = symbols;
+		this.exceptionOperations = exceptionOperations;
 	}
 
 	public JavaMethod resolveMethod(JavaClass klass, String name, String desc, boolean requireMethodRef) {
 		if (requireMethodRef && klass.isInterface()) {
-			helper.throwException(symbols.java_lang_IncompatibleClassChangeError(), "Found interface " + klass.getName() + ", but class was expected");
+			exceptionOperations.throwException(symbols.java_lang_IncompatibleClassChangeError(), "Found interface " + klass.getName() + ", but class was expected");
 		}
 		return doResolveMethod(klass, name, desc);
 	}
@@ -48,10 +41,10 @@ public final class LinkResolver {
 	public JavaMethod resolveVirtualMethod(JavaClass klass, JavaClass current, String name, String desc) {
 		JavaMethod method = resolveMethod(klass, name, desc, true);
 		if (klass.isInterface() && (method.getModifiers() & ACC_PRIVATE) != 0) {
-			helper.throwException(symbols.java_lang_IncompatibleClassChangeError(), "private interface method requires invokespecial, not invokevirtual: method " + formatMethod(klass, name, desc) + ", caller-class: " + (current == null ? "<NULL>" : current.getInternalName()));
+			exceptionOperations.throwException(symbols.java_lang_IncompatibleClassChangeError(), "private interface method requires invokespecial, not invokevirtual: method " + formatMethod(klass, name, desc) + ", caller-class: " + (current == null ? "<NULL>" : current.getInternalName()));
 		}
 		if ((method.getModifiers() & ACC_STATIC) != 0) {
-			helper.throwException(symbols.java_lang_IncompatibleClassChangeError(), "Expected non-static method " + formatMethod(klass, name, desc));
+			exceptionOperations.throwException(symbols.java_lang_IncompatibleClassChangeError(), "Expected non-static method " + formatMethod(klass, name, desc));
 		}
 		return method;
 	}
@@ -78,11 +71,11 @@ public final class LinkResolver {
 
 	public JavaMethod resolveInterfaceMethod(JavaClass klass, String name, String desc, boolean nonStatic) {
 		if (!klass.isInterface()) {
-			helper.throwException(symbols.java_lang_IncompatibleClassChangeError(), "Found class " + klass.getName() + ", but interface was expected");
+			exceptionOperations.throwException(symbols.java_lang_IncompatibleClassChangeError(), "Found class " + klass.getName() + ", but interface was expected");
 		}
 		JavaMethod method = doResolveMethod(klass, name, desc);
 		if (nonStatic && (method.getModifiers() & ACC_STATIC) != 0) {
-			helper.throwException(symbols.java_lang_IncompatibleClassChangeError(), "Expected instance not static method " + formatMethod(klass, name, desc));
+			exceptionOperations.throwException(symbols.java_lang_IncompatibleClassChangeError(), "Expected instance not static method " + formatMethod(klass, name, desc));
 		}
 		return method;
 	}
@@ -95,7 +88,7 @@ public final class LinkResolver {
 			method = resolveMethod(klass, name, desc, false);
 		}
 		if ((method.getModifiers() & ACC_STATIC) == 0) {
-			helper.throwException(symbols.java_lang_IncompatibleClassChangeError(), "Expected static method " + formatMethod(klass, name, desc));
+			exceptionOperations.throwException(symbols.java_lang_IncompatibleClassChangeError(), "Expected static method " + formatMethod(klass, name, desc));
 		}
 		return method;
 	}
@@ -108,16 +101,16 @@ public final class LinkResolver {
 			method = resolveMethod(klass, name, desc, false);
 		}
 		if (method.isConstructor() && klass != method.getOwner()) {
-			helper.throwException(symbols.java_lang_NoSuchMethodError(), klass.getName() + ": method " + name + desc + " not found");
+			exceptionOperations.throwException(symbols.java_lang_NoSuchMethodError(), klass.getName() + ": method " + name + desc + " not found");
 		}
 		if ((method.getModifiers() & ACC_STATIC) != 0) {
-			helper.throwException(symbols.java_lang_IncompatibleClassChangeError(), "Expected non-static method " + formatMethod(klass, name, desc));
+			exceptionOperations.throwException(symbols.java_lang_IncompatibleClassChangeError(), "Expected non-static method " + formatMethod(klass, name, desc));
 		}
 		return method;
 	}
 
-	public JavaField resolveStaticField(InstanceJavaClass klass, String name, String desc) {
-		InstanceJavaClass current = klass;
+	public JavaField resolveStaticField(InstanceClass klass, String name, String desc) {
+		InstanceClass current = klass;
 		while (klass != null) {
 			JavaField field = klass.getField(name, desc);
 			if (field != null) {
@@ -126,14 +119,14 @@ public final class LinkResolver {
 			klass = klass.getSuperClass();
 		}
 		JavaField field = slowResolveStaticField(name, desc, current);
-		if (field != null && (trusted || !Modifier.isHiddenMember(field.getModifiers()))) {
+		if (field != null) {
 			return field;
 		}
-		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
+		exceptionOperations.throwException(symbols.java_lang_NoSuchFieldError(), name);
 		return null;
 	}
 
-	public JavaField resolveVirtualField(InstanceJavaClass current, String name, String desc) {
+	public JavaField resolveVirtualField(InstanceClass current, String name, String desc) {
 		JavaField field = null;
 		while (current != null) {
 			if ((field = current.getField(name, desc)) != null) {
@@ -141,20 +134,20 @@ public final class LinkResolver {
 			}
 			current = current.getSuperClass();
 		}
-		if (field != null && (trusted || !Modifier.isHiddenMember(field.getModifiers()))) {
+		if (field != null) {
 			return field;
 		}
-		helper.throwException(symbols.java_lang_NoSuchFieldError(), name);
+		exceptionOperations.throwException(symbols.java_lang_NoSuchFieldError(), name);
 		return null;
 	}
 
 	private JavaMethod doResolveMethod(JavaClass klass, String name, String desc) {
 		JavaMethod method = lookupMethodInClasses(klass, name, desc, false);
 		if (method == null && !klass.isArray()) {
-			method = lookupMethodInInterfaces((InstanceJavaClass) klass, name, desc);
+			method = lookupMethodInInterfaces((InstanceClass) klass, name, desc);
 		}
 		if (method == null) {
-			helper.throwException(symbols.java_lang_NoSuchMethodError(), formatMethod(klass, name, desc));
+			exceptionOperations.throwException(symbols.java_lang_NoSuchMethodError(), formatMethod(klass, name, desc));
 		}
 		return method;
 	}
@@ -173,15 +166,15 @@ public final class LinkResolver {
 			method = null;
 		}
 		if (method == null) {
-			InstanceJavaClass jc = (InstanceJavaClass) klass;
+			InstanceClass jc = (InstanceClass) klass;
 			method = jc.getMethod(name, desc);
 		}
 		return method;
 	}
 
-	private JavaMethod lookupMethodInInterfaces(InstanceJavaClass klass, String name, String desc) {
-		Deque<InstanceJavaClass> deque = new ArrayDeque<>();
-		InstanceJavaClass current = klass;
+	private JavaMethod lookupMethodInInterfaces(InstanceClass klass, String name, String desc) {
+		Deque<InstanceClass> deque = new ArrayDeque<>();
+		InstanceClass current = klass;
 		do {
 			deque.addAll(Arrays.asList(current.getInterfaces()));
 			while ((klass = deque.poll()) != null) {
@@ -191,7 +184,7 @@ public final class LinkResolver {
 				}
 				deque.addAll(Arrays.asList(klass.getInterfaces()));
 			}
-		} while ((current = current.getSuperclassWithoutResolving()) != null);
+		} while ((current = current.getSuperClass()) != null);
 		return null;
 	}
 
@@ -199,26 +192,26 @@ public final class LinkResolver {
 		if (klass.isArray()) {
 			return uncachedLookupMethod(symbols.java_lang_Object(), name, desc);
 		}
-		InstanceJavaClass jc = (InstanceJavaClass) klass;
+		InstanceClass jc = (InstanceClass) klass;
 		while (jc != null) {
 			JavaMethod method = jc.getMethod(name, desc);
 			if (method != null) {
 				return method;
 			}
-			jc = jc.getSuperclassWithoutResolving();
+			jc = jc.getSuperClass();
 		}
 		return null;
 	}
 
-	private static JavaField slowResolveStaticField(String name, String desc, InstanceJavaClass current) {
-		Deque<InstanceJavaClass> deque = new ArrayDeque<>();
+	private static JavaField slowResolveStaticField(String name, String desc, InstanceClass current) {
+		Deque<InstanceClass> deque = new ArrayDeque<>();
 		deque.push(current);
 		while ((current = deque.poll()) != null) {
 			JavaField field = current.getField(name, desc);
 			if (field != null) {
 				return field;
 			}
-			InstanceJavaClass parent = current.getSuperClass();
+			InstanceClass parent = current.getSuperClass();
 			if (parent != null) {
 				deque.push(parent);
 			}

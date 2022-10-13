@@ -5,7 +5,7 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.memory.management.MemoryManager;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.member.JavaField;
 import dev.xdark.ssvm.value.ObjectValue;
 
@@ -19,7 +19,7 @@ public final class GetStaticReferenceProcessor implements InstructionProcessor<V
 	@Override
 	public Result execute(VMFieldInsnNode insn, ExecutionContext<?> ctx) {
 		JavaField field = insn.getResolved();
-		InstanceJavaClass klass = field.getOwner();
+		InstanceClass klass = field.getOwner();
 		MemoryManager memory = ctx.getMemoryManager();
 		ObjectValue value = memory.readReference(klass.getOop(), field.getOffset());
 		ctx.getStack().pushReference(value);

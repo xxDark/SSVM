@@ -7,12 +7,12 @@ import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.MemoryManager;
-import dev.xdark.ssvm.mirror.type.ArrayJavaClass;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.SimpleArrayClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
-import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.synchronizer.Mutex;
-import dev.xdark.ssvm.util.VMHelper;
+import dev.xdark.ssvm.util.Helper;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
@@ -30,8 +30,8 @@ public class ObjectNatives {
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass object = symbols.java_lang_Object();
+		Symbols symbols = vm.getSymbols();
+		InstanceClass object = symbols.java_lang_Object();
 		vmi.setInvoker(object, "registerNatives", "()V", MethodInvoker.noop());
 		vmi.setInvoker(object, "<init>", "()V", MethodInvoker.noop());
 		vmi.setInvoker(object, "getClass", "()Ljava/lang/Class;", ctx -> {
@@ -79,14 +79,14 @@ public class ObjectNatives {
 		vmi.setInvoker(object, "clone", "()Ljava/lang/Object;", ctx -> {
 			ObjectValue _this = ctx.getLocals().loadReference(0);
 			JavaClass type = _this.getJavaClass();
-			VMHelper helper = vm.getHelper();
+			Helper helper = vm.getHelper();
 			MemoryManager memoryManager = vm.getMemoryManager();
 			ObjectValue clone;
-			if (type instanceof ArrayJavaClass) {
+			if (type instanceof SimpleArrayClass) {
 				ArrayValue arr = (ArrayValue) _this;
-				clone = memoryManager.newArray((ArrayJavaClass) type, arr.getLength());
+				clone = memoryManager.newArray((SimpleArrayClass) type, arr.getLength());
 			} else {
-				clone = memoryManager.newInstance((InstanceJavaClass) type);
+				clone = memoryManager.newInstance((InstanceClass) type);
 			}
 			int originalOffset = memoryManager.valueBaseOffset(_this);
 			int offset = memoryManager.valueBaseOffset(clone);

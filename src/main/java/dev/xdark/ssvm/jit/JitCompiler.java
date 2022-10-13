@@ -13,15 +13,15 @@ import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.memory.management.StringPool;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.mirror.member.JavaField;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
-import dev.xdark.ssvm.symbol.VMPrimitives;
-import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.symbol.Primitives;
+import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.util.UnsafeUtil;
-import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.util.VMOperations;
+import dev.xdark.ssvm.util.Helper;
+import dev.xdark.ssvm.util.Operations;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -536,9 +536,9 @@ public final class JitCompiler implements Opcodes, VMOpcodes {
 							// exceptionCaught call to JitFunctions
 							VirtualMachine vm = vm();
 							ObjectValue loader = classLoader();
-							Set<InstanceJavaClass> exceptionTypes = new HashSet<>((int) Math.ceil(types.size() / 0.75F));
+							Set<InstanceClass> exceptionTypes = new HashSet<>((int) Math.ceil(types.size() / 0.75F));
 							for (String type : types) {
-								exceptionTypes.add((InstanceJavaClass) vm.findClass(loader, type, false));
+								exceptionTypes.add((InstanceClass) vm.findClass(loader, type, false));
 							}
 							loadCompilerConstant(new ExceptionInfo(exceptionTypes, vm.getMemoryManager().nullValue()));
 							EXCEPTION_CAUGHT.emit(result);
@@ -925,7 +925,7 @@ public final class JitCompiler implements Opcodes, VMOpcodes {
 		InstanceValue oop = field.getOwner().getOop();
 	}
 
-	private InstanceJavaClass owner() {
+	private InstanceClass owner() {
 		return method.getOwner();
 	}
 
@@ -937,7 +937,7 @@ public final class JitCompiler implements Opcodes, VMOpcodes {
 		return owner().getVM();
 	}
 
-	private VMHelper helper() {
+	private Helper helper() {
 		return vm().getHelper();
 	}
 
@@ -945,20 +945,20 @@ public final class JitCompiler implements Opcodes, VMOpcodes {
 		return vm().getStringPool();
 	}
 
-	private VMSymbols symbols() {
+	private Symbols symbols() {
 		return vm().getSymbols();
 	}
 
-	private VMPrimitives primitives() {
+	private Primitives primitives() {
 		return vm().getPrimitives();
 	}
 
 	private LinkResolver linkResolver() {
-		return vm().getPublicLinkResolver();
+		return vm().getLinkResolver();
 	}
 
-	private VMOperations operations() {
-		return vm().getPublicOperations();
+	private Operations operations() {
+		return vm().getOperations();
 	}
 
 	private JitCompiler withMethod(MethodVisitor mv) {

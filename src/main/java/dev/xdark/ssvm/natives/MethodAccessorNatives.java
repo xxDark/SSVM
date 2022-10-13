@@ -5,16 +5,16 @@ import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
-import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.util.VMOperations;
+import dev.xdark.ssvm.util.Helper;
+import dev.xdark.ssvm.util.Operations;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.sink.AbstractValueSink;
+import dev.xdark.ssvm.value.sink.ReflectionSink;
 import lombok.experimental.UtilityClass;
 import org.objectweb.asm.Type;
 
@@ -33,20 +33,20 @@ public class MethodAccessorNatives {
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		InstanceJavaClass accessor = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/reflect/NativeMethodAccessorImpl");
+		InstanceClass accessor = (InstanceClass) vm.findBootstrapClass("jdk/internal/reflect/NativeMethodAccessorImpl");
 		if (accessor == null) {
-			accessor = (InstanceJavaClass) vm.findBootstrapClass("sun/reflect/NativeMethodAccessorImpl");
+			accessor = (InstanceClass) vm.findBootstrapClass("sun/reflect/NativeMethodAccessorImpl");
 			if (accessor == null) {
 				throw new IllegalStateException("Unable to locate NativeMethodAccessorImpl class");
 			}
 		}
 		vmi.setInvoker(accessor, "invoke0", "(Ljava/lang/reflect/Method;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;", ctx -> {
 			Locals locals = ctx.getLocals();
-			VMOperations ops = vm.getPublicOperations();
+			Operations ops = vm.getOperations();
 			InstanceValue m = locals.loadReference(0);
 			int slot = ops.getInt(m, "slot");
-			InstanceJavaClass declaringClass = (InstanceJavaClass) ((JavaValue<JavaClass>) ops.getReference(m, "clazz", "Ljava/lang/Class;")).getValue();
-			VMHelper helper = vm.getHelper();
+			InstanceClass declaringClass = (InstanceClass) ((JavaValue<JavaClass>) ops.getReference(m, "clazz", "Ljava/lang/Class;")).getValue();
+			Helper helper = vm.getHelper();
 			JavaMethod mn = declaringClass.getMethodBySlot(slot);
 			if (mn == null) {
 				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
@@ -73,7 +73,7 @@ public class MethodAccessorNatives {
 				offset = 0;
 				args = vm.getThreadStorage().newLocals(mn);
 			} else {
-				mn = vm.getPublicLinkResolver().resolveVirtualMethod(instance, name, desc);
+				mn = vm.getLinkResolver().resolveVirtualMethod(instance, name, desc);
 				offset = 1;
 				args = vm.getThreadStorage().newLocals(mn);
 				args.setReference(0, instance);
@@ -96,64 +96,30 @@ public class MethodAccessorNatives {
 	}
 
 	private static ObjectValue boxSink(VirtualMachine vm, ReflectionSink sink, JavaClass type) {
-		VMHelper helper = vm.getHelper();
+		Helper helper = vm.getHelper();
 		switch (type.getSort()) {
 			case Type.LONG:
-				return helper.boxLong(sink.l_value);
+				return helper.boxLong(sink.longValue);
 			case Type.DOUBLE:
-				return helper.boxDouble(Double.longBitsToDouble(sink.l_value));
+				return helper.boxDouble(Double.longBitsToDouble(sink.longValue));
 			case Type.INT:
-				return helper.boxInt(sink.i_value);
+				return helper.boxInt(sink.intValue);
 			case Type.FLOAT:
-				return helper.boxFloat(Float.intBitsToFloat(sink.i_value));
+				return helper.boxFloat(Float.intBitsToFloat(sink.intValue));
 			case Type.CHAR:
-				return helper.boxChar((char) sink.i_value);
+				return helper.boxChar((char) sink.intValue);
 			case Type.SHORT:
-				return helper.boxShort((short) sink.i_value);
+				return helper.boxShort((short) sink.intValue);
 			case Type.BYTE:
-				return helper.boxByte((byte) sink.i_value);
+				return helper.boxByte((byte) sink.intValue);
 			case Type.BOOLEAN:
-				return helper.boxBoolean(sink.i_value != 0);
+				return helper.boxBoolean(sink.intValue != 0);
 			default:
-				ObjectValue ref = sink.r_value;
+				ObjectValue ref = sink.referenceValue;
 				if (ref == null) {
 					throw new PanicException("Expected reference");
 				}
 				return ref;
-		}
-	}
-
-	private static final class ReflectionSink extends AbstractValueSink {
-		long l_value;
-		int i_value;
-		ObjectValue r_value;
-
-		@Override
-		public void acceptReference(ObjectValue value) {
-			check();
-			r_value = value;
-		}
-
-		@Override
-		public void acceptLong(long value) {
-			check();
-			l_value = value;
-		}
-
-		@Override
-		public void acceptDouble(double value) {
-			acceptLong(Double.doubleToRawLongBits(value));
-		}
-
-		@Override
-		public void acceptInt(int value) {
-			check();
-			i_value = value;
-		}
-
-		@Override
-		public void acceptFloat(float value) {
-			acceptInt(Float.floatToRawIntBits(value));
 		}
 	}
 }

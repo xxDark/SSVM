@@ -5,7 +5,7 @@ import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.value.JavaValue;
 import lombok.experimental.UtilityClass;
@@ -23,7 +23,7 @@ public class ReflectionNatives {
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		InstanceJavaClass reflection = vm.getSymbols().internal_reflect_Reflection();
+		InstanceClass reflection = vm.getSymbols().internal_reflect_Reflection();
 		vmi.setInvoker(reflection, "getCallerClass", "()Ljava/lang/Class;", getCallerClass(false));
 		vmi.setInvoker(reflection, "getCallerClass", "(I)Ljava/lang/Class;", getCallerClass(true));
 		vmi.setInvoker(reflection, "getClassAccessFlags", "(Ljava/lang/Class;)I", ctx -> {

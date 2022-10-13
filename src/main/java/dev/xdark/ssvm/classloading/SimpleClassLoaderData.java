@@ -1,13 +1,16 @@
 package dev.xdark.ssvm.classloading;
 
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
+import dev.xdark.ssvm.util.AutoCloseableLock;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
 
 /**
  * Simple class storage.
@@ -16,38 +19,59 @@ import java.util.stream.Collectors;
  */
 public final class SimpleClassLoaderData implements ClassLoaderData {
 
-	private final Map<String, InstanceJavaClass> table = new HashMap<>();
-	private final Collection<InstanceJavaClass> classesView = Collections.unmodifiableCollection(table.values());
+	private final ReadWriteLock lock = new ReentrantReadWriteLock();
+	private final Map<String, InstanceClass> table = new HashMap<>();
+	private final Collection<InstanceClass> classesView = Collections.unmodifiableCollection(table.values());
+	private final AutoCloseableLock unlocker;
 
-	@Override
-	public InstanceJavaClass getClass(String name) {
-		return table.get(name);
+	public SimpleClassLoaderData() {
+		Lock lock = this.lock.writeLock();
+		unlocker = lock::unlock;
 	}
 
 	@Override
-	public void linkClass(InstanceJavaClass jc) {
-		String name = jc.getInternalName();
-		if (table.putIfAbsent(name, jc) != null) {
-			throw new IllegalStateException(name);
+	public InstanceClass getClass(String name) {
+		Lock lock = this.lock.readLock();
+		lock.lock();
+		try {
+			return table.get(name);
+		} finally {
+			lock.unlock();
 		}
-		jc.link();
 	}
 
 	@Override
-	public void forceLinkClass(InstanceJavaClass jc) {
-		table.put(jc.getInternalName(), jc);
+	public boolean linkClass(InstanceClass jc) {
+		Lock lock = this.lock.writeLock();
+		lock.lock();
+		try {
+			String name = jc.getInternalName();
+			return table.putIfAbsent(name, jc) == null;
+		} finally {
+			lock.unlock();
+		}
 	}
 
 	@Override
-	public Collection<InstanceJavaClass> getAll() {
+	public AutoCloseableLock lock() {
+		Lock lock = this.lock.writeLock();
+		lock.lock();
+		return unlocker;
+	}
+
+	@Override
+	public Collection<InstanceClass> all() {
 		return classesView;
 	}
 
 	@Override
-	public void claim(ClassLoaderData classLoaderData) {
-		table.putAll(classLoaderData.getAll().stream().collect(Collectors.toMap(
-			InstanceJavaClass::getInternalName,
-			Function.identity()
-		)));
+	public void visit(Consumer<? super InstanceClass> fn) {
+		Lock lock = this.lock.readLock();
+		lock.lock();
+		try {
+			classesView.forEach(fn);
+		} finally {
+			lock.unlock();
+		}
 	}
 }

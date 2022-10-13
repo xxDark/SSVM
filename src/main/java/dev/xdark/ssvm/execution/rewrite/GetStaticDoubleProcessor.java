@@ -5,7 +5,7 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.member.JavaField;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 
 /**
  * Fast path processor for GETSTATIC.
@@ -17,7 +17,7 @@ public final class GetStaticDoubleProcessor implements InstructionProcessor<VMFi
 	@Override
 	public Result execute(VMFieldInsnNode insn, ExecutionContext<?> ctx) {
 		JavaField field = insn.getResolved();
-		InstanceJavaClass klass = field.getOwner();
+		InstanceClass klass = field.getOwner();
 		double value = Double.longBitsToDouble(klass.getOop().getData().readLong(field.getOffset()));
 		ctx.getStack().pushDouble(value);
 		return Result.CONTINUE;

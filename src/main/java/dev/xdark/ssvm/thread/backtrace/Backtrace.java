@@ -1,59 +1,43 @@
 package dev.xdark.ssvm.thread.backtrace;
 
+import dev.xdark.ssvm.execution.ExecutionContext;
+import dev.xdark.ssvm.execution.ExecutionRequest;
+import dev.xdark.ssvm.value.sink.ValueSink;
+
 /**
  * Thread backtrace.
  *
  * @author xDark
  */
-public interface Backtrace extends Iterable<StackFrame> {
+public interface Backtrace extends Iterable<ExecutionContext<?>> {
 
 	/**
-	 * Returns first frame.
+	 * Allocates new stack frame and pushes
+	 * it to the top.
 	 *
-	 * @return first frame.
+	 * @param request Execution request.
+	 * @return New frame.
 	 */
-	StackFrame first();
+	<R extends ValueSink> ExecutionContext<R> push(ExecutionRequest<R> request);
 
 	/**
-	 * Returns last frame.
-	 *
-	 * @return last frame.
+	 * @return Current frame.
 	 */
-	StackFrame last();
+	ExecutionContext<?> peek();
 
 	/**
-	 * Returns frame at the specific index.
-	 *
-	 * @param index Index of the frame.
-	 * @return frame at the specific index.
+	 * @param index Frame index.
+	 * @return Stack frame.
 	 */
-	StackFrame get(int index);
+	ExecutionContext<?> at(int index);
 
 	/**
-	 * Returns backtrace depth.
-	 *
-	 * @return backtrace depth.
+	 * Pops current frame.
 	 */
-	int count();
+	void pop();
 
 	/**
-	 * Pushes frame.
-	 *
-	 * @param frame Frame to push.
+	 * @return Backtrace depth.
 	 */
-	void push(StackFrame frame);
-
-	/**
-	 * Pops frame.
-	 *
-	 * @return popped frame.
-	 */
-	StackFrame pop();
-
-	/**
-	 * Copies backtrace.
-	 *
-	 * @return copied backtrace.
-	 */
-	Backtrace copy();
+	int depth();
 }

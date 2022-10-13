@@ -1,6 +1,6 @@
 package dev.xdark.ssvm.memory.management;
 
-import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.util.Helper;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 
@@ -19,25 +19,19 @@ public class SimpleStringPool implements StringPool {
 
 	private final Map<String, InstanceValue> pool = new HashMap<>();
 	private final ReadWriteLock lock = new ReentrantReadWriteLock();
-	private final VirtualMachine vm;
+	private final Helper helper;
 
-	/**
-	 * @param vm VM instance.
-	 */
-	public SimpleStringPool(VirtualMachine vm) {
-		this.vm = vm;
+	public SimpleStringPool(Helper helper) {
+		this.helper = helper;
 	}
 
 	@Override
 	public ObjectValue intern(String value) {
-		if (value == null) {
-			return vm.getMemoryManager().nullValue();
-		}
 		Lock lock = this.lock.writeLock();
 		lock.lock();
 		try {
 			return pool.computeIfAbsent(value, k -> {
-				return (InstanceValue) vm.getHelper().newUtf8(value, false);
+				return helper.newUtf8(k, false);
 			});
 		} finally {
 			lock.unlock();
@@ -46,7 +40,7 @@ public class SimpleStringPool implements StringPool {
 
 	@Override
 	public InstanceValue intern(InstanceValue value) {
-		return (InstanceValue) intern(vm.getHelper().readUtf8(value));
+		return (InstanceValue) intern(helper.readUtf8(value));
 	}
 
 	@Override

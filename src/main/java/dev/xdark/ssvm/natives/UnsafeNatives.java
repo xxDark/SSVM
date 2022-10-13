@@ -3,7 +3,7 @@ package dev.xdark.ssvm.natives;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
-import dev.xdark.ssvm.classloading.ClassParseResult;
+import dev.xdark.ssvm.classloading.ParsedClassData;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.Result;
@@ -12,15 +12,13 @@ import dev.xdark.ssvm.memory.allocation.MemoryBlock;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.member.JavaField;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
-import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.util.VMOperations;
+import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
-import dev.xdark.ssvm.value.Value;
 import lombok.experimental.UtilityClass;
 import me.coley.cafedude.classfile.ConstPool;
 import me.coley.cafedude.classfile.constant.ConstPoolEntry;
@@ -52,10 +50,10 @@ public class UnsafeNatives {
 	 * @param vm VM instance.
 	 */
 	public void init(VirtualMachine vm) {
-		InstanceJavaClass unsafe = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/Unsafe");
+		InstanceClass unsafe = (InstanceClass) vm.findBootstrapClass("jdk/internal/misc/Unsafe");
 		UnsafeHelper unsafeHelper;
 		if (unsafe == null) {
-			unsafe = (InstanceJavaClass) vm.findBootstrapClass("sun/misc/Unsafe");
+			unsafe = (InstanceClass) vm.findBootstrapClass("sun/misc/Unsafe");
 			unsafeHelper = new OldUnsafeHelper();
 		} else {
 			unsafeHelper = new NewUnsafeHelper();
@@ -69,12 +67,12 @@ public class UnsafeNatives {
 	 * @param unsafe  Unsafe class.
 	 * @param uhelper Platform-specific implementation provider.
 	 */
-	private static void init(VirtualMachine vm, InstanceJavaClass unsafe, UnsafeHelper uhelper) {
+	private static void init(VirtualMachine vm, InstanceClass unsafe, UnsafeHelper uhelper) {
 		VMInterface vmi = vm.getInterface();
 		vmi.setInvoker(unsafe, uhelper.allocateMemory(), "(J)J", ctx -> {
 			MemoryBlock block = vm.getMemoryAllocator().allocateDirect(ctx.getLocals().loadLong(1));
 			if (block == null) {
-				vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError());
+				vm.getOperations().throwException(vm.getSymbols().java_lang_OutOfMemoryError());
 			}
 			ctx.setResult(block.getAddress());
 			return Result.ABORT;
@@ -85,7 +83,7 @@ public class UnsafeNatives {
 			long bytes = locals.loadLong(3);
 			MemoryBlock block = vm.getMemoryAllocator().reallocateDirect(address, bytes);
 			if (block == null) {
-				vm.getHelper().throwException(vm.getSymbols().java_lang_OutOfMemoryError());
+				vm.getOperations().throwException(vm.getSymbols().java_lang_OutOfMemoryError());
 			}
 			ctx.setResult(block.getAddress());
 			return Result.ABORT;
@@ -113,7 +111,7 @@ public class UnsafeNatives {
 			JavaClass klass = value.getValue();
 			JavaClass component = klass.getComponentType();
 			if (component == null) {
-				vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException());
+				vm.getOperations().throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 			} else {
 				ctx.setResult(vm.getMemoryManager().arrayBaseOffset(component));
 			}
@@ -125,7 +123,7 @@ public class UnsafeNatives {
 			JavaClass klass = value.getValue();
 			JavaClass component = klass.getComponentType();
 			if (component == null) {
-				vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException());
+				vm.getOperations().throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 			} else {
 				ctx.setResult(vm.getMemoryManager().sizeOfType(component));
 			}
@@ -147,12 +145,12 @@ public class UnsafeNatives {
 			Locals locals = ctx.getLocals();
 			JavaValue<JavaClass> klass = locals.loadReference(1);
 			JavaClass wrapper = klass.getValue();
-			if (!(wrapper instanceof InstanceJavaClass)) {
+			if (!(wrapper instanceof InstanceClass)) {
 				ctx.setResult(-1L);
 			} else {
 				search: {
-					String utf = vm.getHelper().readUtf8(locals.loadReference(2));
-					List<JavaField> fields = ((InstanceJavaClass) wrapper).virtualFieldArea().list();
+					String utf = vm.getOperations().readUtf8(locals.loadReference(2));
+					List<JavaField> fields = ((InstanceClass) wrapper).virtualFieldArea().list();
 					for (JavaField field : fields) {
 						if (utf.equals(field.getName())) {
 							ctx.setResult(field.getOffset());
@@ -257,8 +255,12 @@ public class UnsafeNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, uhelper.ensureClassInitialized(), "(Ljava/lang/Class;)V", ctx -> {
-			Value value = ctx.getLocals().loadReference(1);
-			vm.getHelper().<JavaValue<JavaClass>>checkNotNull(value).getValue().initialize();
+			ObjectValue value = ctx.getLocals().loadReference(1);
+			VMOperations ops = vm.getOperations();
+			JavaClass klass = vm.getClassStorage().lookup(ops.checkNotNull(value));
+			if (klass instanceof InstanceClass) {
+				ops.initialize((InstanceClass) klass);
+			}
 			return Result.ABORT;
 		});
 		MethodInvoker getObject = ctx -> {
@@ -275,10 +277,9 @@ public class UnsafeNatives {
 			}
 		}
 		vmi.setInvoker(unsafe, uhelper.objectFieldOffset(), "(Ljava/lang/reflect/Field;)J", ctx -> {
-			VMHelper helper = vm.getHelper();
-			VMOperations ops = vm.getPublicOperations();
-			InstanceValue field = helper.<InstanceValue>checkNotNull(ctx.getLocals().loadReference(1));
-			InstanceJavaClass declaringClass = ((JavaValue<InstanceJavaClass>) ops.getReference(field, "clazz", "Ljava/lang/Class;")).getValue();
+			VMOperations ops = vm.getOperations();
+			InstanceValue field = ops.checkNotNull(ctx.getLocals().loadReference(1));
+			InstanceClass declaringClass = (InstanceClass) vm.getClassStorage().lookup(ops.checkNotNull(ops.getReference(field, "clazz", "Ljava/lang/Class;")));
 			int slot = ops.getInt(field, "slot");
 			JavaField fn = declaringClass.getFieldBySlot(slot);
 			if (fn != null) {
@@ -289,10 +290,9 @@ public class UnsafeNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, uhelper.staticFieldOffset(), "(Ljava/lang/reflect/Field;)J", ctx -> {
-			VMHelper helper = vm.getHelper();
-			VMOperations ops = vm.getPublicOperations();
-			InstanceValue field = helper.<InstanceValue>checkNotNull(ctx.getLocals().loadReference(1));
-			InstanceJavaClass declaringClass = ((JavaValue<InstanceJavaClass>) ops.getReference(field, "clazz", "Ljava/lang/Class;")).getValue();
+			VMOperations ops = vm.getOperations();
+			InstanceValue field = ops.checkNotNull(ctx.getLocals().loadReference(1));
+			InstanceClass declaringClass = (InstanceClass) vm.getClassStorage().lookup(ops.checkNotNull(ops.getReference(field, "clazz", "Ljava/lang/Class;")));
 			int slot = ops.getInt(field, "slot");
 			JavaField fn = declaringClass.getFieldBySlot(slot);
 			if (fn != null) {
@@ -331,27 +331,27 @@ public class UnsafeNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, uhelper.staticFieldBase(), "(Ljava/lang/reflect/Field;)Ljava/lang/Object;", ctx -> {
-			InstanceValue field = vm.getHelper().<InstanceValue>checkNotNull(ctx.getLocals().loadReference(1));
-			ctx.setResult(vm.getPublicOperations().getReference(field, "clazz", "Ljava/lang/Class;"));
+			InstanceValue field = vm.getOperations().checkNotNull(ctx.getLocals().loadReference(1));
+			ctx.setResult(vm.getOperations().getReference(field, "clazz", "Ljava/lang/Class;"));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, uhelper.defineClass(), "(Ljava/lang/String;[BIILjava/lang/ClassLoader;Ljava/security/ProtectionDomain;)Ljava/lang/Class;", ctx -> {
 			Locals locals = ctx.getLocals();
-			VMHelper helper = ctx.getHelper();
+			VMOperations ops = vm.getOperations();
 			ObjectValue loader = locals.loadReference(5);
 			ObjectValue name = locals.loadReference(1);
-			ArrayValue b = helper.checkNotNull(locals.loadReference(2));
+			ArrayValue b = ops.checkNotNull(locals.loadReference(2));
 			int off = locals.loadInt(3);
 			int length = locals.loadInt(4);
 			ObjectValue pd = locals.loadReference(6);
-			byte[] bytes = helper.toJavaBytes(b);
-			InstanceJavaClass defined = helper.defineClass(loader, helper.readUtf8(name), bytes, off, length, pd, "JVM_DefineClass");
+			byte[] bytes = ops.toJavaBytes(b);
+			InstanceClass defined = ops.defineClass(loader, ops.readUtf8(name), bytes, off, length, pd, "JVM_DefineClass", true);
 			ctx.setResult(defined.getOop());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(unsafe, uhelper.shouldBeInitialized(), "(Ljava/lang/Class;)Z", ctx -> {
-			JavaClass value = vm.getHelper().<JavaValue<JavaClass>>checkNotNull(ctx.getLocals().loadReference(1)).getValue();
-			ctx.setResult(value instanceof InstanceJavaClass && ((InstanceJavaClass) value).shouldBeInitialized() ? 1 : 0);
+			JavaClass value = vm.getClassStorage().lookup(vm.getOperations().checkNotNull(ctx.getLocals().loadReference(1)));
+			ctx.setResult(value instanceof InstanceClass && ((InstanceClass) value).shouldBeInitialized() ? 1 : 0);
 			return Result.ABORT;
 		});
 		MethodInvoker pageSize = ctx -> {
@@ -378,29 +378,27 @@ public class UnsafeNatives {
 		});
 		vmi.setInvoker(unsafe, "defineAnonymousClass", "(Ljava/lang/Class;[B[Ljava/lang/Object;)Ljava/lang/Class;", ctx -> {
 			Locals locals = ctx.getLocals();
-			VMHelper helper = vm.getHelper();
-			JavaValue<JavaClass> host = helper.checkNotNull(locals.loadReference(1));
-			ArrayValue bytes = helper.checkNotNull(locals.loadReference(2));
+			VMOperations ops = vm.getOperations();
+			JavaValue<JavaClass> host = ops.checkNotNull(locals.loadReference(1));
+			ArrayValue bytes = ops.checkNotNull(locals.loadReference(2));
 			JavaClass klass = host.getValue();
-			byte[] array = helper.toJavaBytes(bytes);
-			ClassParseResult result = vm.getClassDefiner().parseClass(null, array, 0, array.length, "JVM_DefineClass");
+			byte[] array = ops.toJavaBytes(bytes);
+			ParsedClassData result = vm.getClassDefiner().parseClass(null, array, 0, array.length, "JVM_DefineClass");
 			if (result == null) {
-				helper.throwException(vm.getSymbols().java_lang_ClassNotFoundException(), "Invalid class");
+				ops.throwException(vm.getSymbols().java_lang_ClassNotFoundException(), "Invalid class");
 			}
 			ObjectValue loader = klass.getClassLoader();
-			InstanceJavaClass generated = helper.newInstanceClass(loader, vm.getMemoryManager().nullValue(), result.getClassReader(), result.getNode());
+			InstanceClass generated = ops.defineClass(loader, result, vm.getMemoryManager().nullValue(), "JVM_DefineClass", true);
 
 			// force link
 			ClassNode node = generated.getNode();
 			node.access |= ACC_VM_HIDDEN;
-			vm.getClassLoaders().getClassLoaderData(loader).forceLinkClass(generated);
-			generated.link();
 
 			// handle cpPatches
 			ObjectValue cpPatches = locals.loadReference(3);
 			if (!cpPatches.isNull()) {
 				ArrayValue arr = (ArrayValue) cpPatches;
-				ObjectValue[] values = helper.toJavaValues(arr);
+				ObjectValue[] values = ops.toJavaValues(arr);
 
 				ConstPool cp = generated.getRawClassFile().getPool();
 				// TODO implement this in cafedude
@@ -479,9 +477,9 @@ public class UnsafeNatives {
 		});
 		vmi.setInvoker(unsafe, "allocateInstance", "(Ljava/lang/Class;)Ljava/lang/Object;", ctx -> {
 			Locals locals = ctx.getLocals();
-			VMHelper helper = vm.getHelper();
-			JavaClass klass = helper.<JavaValue<JavaClass>>checkNotNull(locals.loadReference(1)).getValue();
-			InstanceValue instance = ctx.getOperations().allocateInstance(klass);
+			VMOperations ops = vm.getOperations();
+			JavaClass klass = ops.<JavaValue<JavaClass>>checkNotNull(locals.loadReference(1)).getValue();
+			InstanceValue instance = ops.allocateInstance(klass);
 			ctx.setResult(instance);
 			return Result.ABORT;
 		});

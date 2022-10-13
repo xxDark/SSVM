@@ -4,7 +4,7 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -20,11 +20,11 @@ public class VMNatives {
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		InstanceJavaClass klass = (InstanceJavaClass) vm.findBootstrapClass("jdk/internal/misc/VM");
+		InstanceClass klass = (InstanceClass) vm.findBootstrapClass("jdk/internal/misc/VM");
 		if (klass != null) {
 			vmi.setInvoker(klass, "initializeFromArchive", "(Ljava/lang/Class;)V", MethodInvoker.noop());
 		} else {
-			klass = (InstanceJavaClass) vm.findBootstrapClass("sun/misc/VM");
+			klass = (InstanceClass) vm.findBootstrapClass("sun/misc/VM");
 			if (klass == null) {
 				throw new IllegalStateException("Unable to locate VM class");
 			}
@@ -34,7 +34,7 @@ public class VMNatives {
 			});
 		}
 		vmi.setInvoker(klass, "initialize", "()V", MethodInvoker.noop());
-		InstanceJavaClass win32ErrorMode = (InstanceJavaClass) vm.findBootstrapClass("sun/io/Win32ErrorMode");
+		InstanceClass win32ErrorMode = (InstanceClass) vm.findBootstrapClass("sun/io/Win32ErrorMode");
 		if (win32ErrorMode != null) {
 			vmi.setInvoker(win32ErrorMode, "setErrorMode", "(J)J", ctx -> {
 				ctx.setResult(0L);

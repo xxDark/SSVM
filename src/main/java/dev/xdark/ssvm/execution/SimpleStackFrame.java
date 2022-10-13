@@ -1,6 +1,6 @@
 package dev.xdark.ssvm.execution;
 
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.thread.backtrace.ContextFrozenStackFrame;
 import dev.xdark.ssvm.thread.backtrace.StackFrame;
 
@@ -12,7 +12,7 @@ final class SimpleStackFrame implements StackFrame {
 	}
 
 	@Override
-	public InstanceJavaClass getDeclaringClass() {
+	public InstanceClass getDeclaringClass() {
 		return context.getOwner();
 	}
 

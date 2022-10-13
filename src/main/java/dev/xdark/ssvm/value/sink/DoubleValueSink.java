@@ -2,6 +2,11 @@ package dev.xdark.ssvm.value.sink;
 
 import dev.xdark.ssvm.value.ObjectValue;
 
+/**
+ * Value sink that accepts doubles.
+ *
+ * @author xDark
+ */
 public final class DoubleValueSink extends AbstractValueSink {
 	private double value;
 

@@ -7,9 +7,9 @@ import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.fs.ZipFile;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
-import dev.xdark.ssvm.util.VMHelper;
-import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
+import dev.xdark.ssvm.util.Helper;
+import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
@@ -31,13 +31,13 @@ public class ZipFileNatives {
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		VMSymbols symbols = vm.getSymbols();
-		InstanceJavaClass zf = symbols.java_util_zip_ZipFile();
+		Symbols symbols = vm.getSymbols();
+		InstanceClass zf = symbols.java_util_zip_ZipFile();
 		vmi.setInvoker(zf, "initIDs", "()V", MethodInvoker.noop());
 		if (vmi.setInvoker(zf, "open", "(Ljava/lang/String;IJZ)J", ctx -> {
 			// Old-style zip file implementation.
 			Locals locals = ctx.getLocals();
-			VMHelper helper = vm.getHelper();
+			Helper helper = vm.getHelper();
 			ObjectValue path = locals.loadReference(0);
 			helper.checkNotNull(path);
 			String zipPath = helper.readUtf8(path);
@@ -74,7 +74,7 @@ public class ZipFileNatives {
 				Locals locals = ctx.getLocals();
 				long handle = locals.loadLong(0);
 				ZipFile zip = vm.getFileDescriptorManager().getZipFile(handle);
-				VMHelper helper = vm.getHelper();
+				Helper helper = vm.getHelper();
 				if (zip == null) {
 					throw new PanicException("Segfault");
 				}
@@ -94,7 +94,7 @@ public class ZipFileNatives {
 			});
 			vmi.setInvoker(zf, "getEntryBytes", "(JI)[B", ctx -> {
 				Locals locals = ctx.getLocals();
-				VMHelper helper = vm.getHelper();
+				Helper helper = vm.getHelper();
 				long address = locals.loadLong(0);
 				ZipEntry value = vm.getFileDescriptorManager().getZipEntry(address);
 				if (value == null) {

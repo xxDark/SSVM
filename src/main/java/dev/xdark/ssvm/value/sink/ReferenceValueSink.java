@@ -2,6 +2,11 @@ package dev.xdark.ssvm.value.sink;
 
 import dev.xdark.ssvm.value.ObjectValue;
 
+/**
+ * Value sink that accepts references.
+ *
+ * @author xDark
+ */
 public final class ReferenceValueSink extends AbstractValueSink {
 	private ObjectValue value;
 

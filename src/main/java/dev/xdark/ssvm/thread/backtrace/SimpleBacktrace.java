@@ -1,66 +1,69 @@
 package dev.xdark.ssvm.thread.backtrace;
 
-import java.util.ArrayList;
+import dev.xdark.ssvm.execution.ExecutionContext;
+import dev.xdark.ssvm.execution.ExecutionRequest;
+import dev.xdark.ssvm.util.DisposeUtil;
+import dev.xdark.ssvm.value.sink.ValueSink;
+
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
 /**
- * Basic implementation for a backtrace.
+ * Simple backtrace.
  *
  * @author xDark
  */
 public final class SimpleBacktrace implements Backtrace {
 
-	private final List<StackFrame> backtrace;
+	private static final int RESERVED_FRAMES = 12;
+	private final List<ExecutionContext<?>> frames;
+	private int frame;
 
-	private SimpleBacktrace(List<StackFrame> backtrace) {
-		this.backtrace = backtrace;
-	}
-
-	public SimpleBacktrace() {
-		this(new ArrayList<>());
-	}
-
-	@Override
-	public StackFrame first() {
-		List<StackFrame> backtrace = this.backtrace;
-		return backtrace.isEmpty() ? null : backtrace.get(0);
+	public SimpleBacktrace(int frameCount) {
+		frames = Arrays.asList(new ExecutionContext[Math.max(frameCount, RESERVED_FRAMES + 4)]);
 	}
 
 	@Override
-	public StackFrame last() {
-		List<StackFrame> backtrace = this.backtrace;
-		return backtrace.isEmpty() ? null : backtrace.get(backtrace.size() - 1);
+	public <R extends ValueSink> ExecutionContext<R> push(ExecutionRequest<R> request) {
+		int frameIndex = this.frame;
+		List<ExecutionContext<?>> frames = this.frames;
+		if (frameIndex == frames.size() - RESERVED_FRAMES) {
+			// TODO stack overflow
+		}
+		SimpleExecutionContext<R> ctx = (SimpleExecutionContext<R>) frames.get(frameIndex);
+		if (ctx == null) {
+			ctx = new SimpleExecutionContext<>();
+			frames.set(frameIndex, ctx);
+		}
+		ctx.init(request.getMethod(), request.getStack(), request.getLocals(), request.getResultSink());
+		this.frame = frameIndex + 1;
+		return ctx;
 	}
 
 	@Override
-	public StackFrame get(int index) {
-		return backtrace.get(index);
+	public ExecutionContext<?> peek() {
+		int frame = this.frame;
+		return frame == 0 ? null : frames.get(frame - 1);
 	}
 
 	@Override
-	public int count() {
-		return backtrace.size();
+	public ExecutionContext<?> at(int index) {
+		return frames.get(frame - index);
 	}
 
 	@Override
-	public void push(StackFrame frame) {
-		backtrace.add(frame);
+	public void pop() {
+		DisposeUtil.dispose(frames.get(--frame));
 	}
 
 	@Override
-	public StackFrame pop() {
-		List<StackFrame> backtrace = this.backtrace;
-		return backtrace.remove(backtrace.size() - 1);
+	public int depth() {
+		return frame;
 	}
 
 	@Override
-	public Backtrace copy() {
-		return new SimpleBacktrace(new ArrayList<>(backtrace));
-	}
-
-	@Override
-	public Iterator<StackFrame> iterator() {
-		return backtrace.iterator();
+	public Iterator<ExecutionContext<?>> iterator() {
+		return frames.subList(0, frame).iterator();
 	}
 }

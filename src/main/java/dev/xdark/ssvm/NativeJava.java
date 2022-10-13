@@ -51,9 +51,9 @@ import dev.xdark.ssvm.execution.asm.*;
 import dev.xdark.ssvm.execution.rewrite.VMSpecialCallProcessor;
 import dev.xdark.ssvm.execution.rewrite.VMStaticCallProcessor;
 import dev.xdark.ssvm.execution.rewrite.VMVirtualCallProcessor;
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.natives.*;
-import dev.xdark.ssvm.symbol.VMSymbols;
+import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.tree.FieldNode;
 
@@ -201,7 +201,7 @@ public final class NativeJava {
 	 * @param vm VM instance.
 	 */
 	static void injectPhase1(VirtualMachine vm) {
-		InstanceJavaClass cl = (InstanceJavaClass) vm.findBootstrapClass("java/lang/Class");
+		InstanceClass cl = (InstanceClass) vm.findBootstrapClass("java/lang/Class");
 		List<FieldNode> fields = cl.getNode().fields;
 		fields.add(new FieldNode(
 			ACC_PRIVATE | ACC_VM_HIDDEN,
@@ -218,7 +218,7 @@ public final class NativeJava {
 	 * @param vm VM instance.
 	 */
 	static void injectPhase2(VirtualMachine vm) {
-		InstanceJavaClass classLoader = (InstanceJavaClass) vm.findBootstrapClass("java/lang/ClassLoader");
+		InstanceClass classLoader = (InstanceClass) vm.findBootstrapClass("java/lang/ClassLoader");
 
 		classLoader.getNode().fields.add(new FieldNode(
 			ACC_PRIVATE | ACC_VM_HIDDEN,
@@ -236,11 +236,11 @@ public final class NativeJava {
 	 */
 	static void injectPhase3(VirtualMachine vm) {
 		//<editor-fold desc="Field injection">
-		VMSymbols symbols = vm.getSymbols();
+		Symbols symbols = vm.getSymbols();
 
 		vm.getInvokeDynamicLinker().setupMethodHandles();
 		{
-			InstanceJavaClass resolvedMethodName = symbols.java_lang_invoke_ResolvedMethodName();
+			InstanceClass resolvedMethodName = symbols.java_lang_invoke_ResolvedMethodName();
 			List<FieldNode> fields = resolvedMethodName.getNode().fields;
 			fields.add(new FieldNode(
 				ACC_PRIVATE | ACC_VM_HIDDEN,
@@ -259,7 +259,7 @@ public final class NativeJava {
 		}
 		inject:
 		{
-			InstanceJavaClass fd = symbols.java_io_FileDescriptor();
+			InstanceClass fd = symbols.java_io_FileDescriptor();
 			// For whatever reason unix/macos does not have
 			// 'handle' field, we need to inject it
 			List<FieldNode> fields = fd.getNode().fields;

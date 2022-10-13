@@ -1,6 +1,6 @@
 package dev.xdark.ssvm.mirror.member;
 
-import dev.xdark.ssvm.mirror.type.InstanceJavaClass;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.util.MetadataHolder;
 
 import java.util.BitSet;
@@ -17,7 +17,7 @@ public interface JavaMember extends MetadataHolder {
 	 *
 	 * @return member owner.
 	 */
-	InstanceJavaClass getOwner();
+	InstanceClass getOwner();
 
 	/**
 	 * Returns member name.

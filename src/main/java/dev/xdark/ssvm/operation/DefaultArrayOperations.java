@@ -15,12 +15,11 @@ import lombok.RequiredArgsConstructor;
 public final class DefaultArrayOperations implements ArrayOperations {
 
 	private final Symbols symbols;
-	private final VerificationOperations verificationOperations;
-	private final ExceptionOperations exceptionOperations;
+	private final VMOperations ops;
 
 	@Override
 	public int getArrayLength(ObjectValue value) {
-		return verificationOperations.<ArrayValue>checkNotNull(value).getLength();
+		return ops.<ArrayValue>checkNotNull(value).getLength();
 	}
 
 	@Override
@@ -78,7 +77,7 @@ public final class DefaultArrayOperations implements ArrayOperations {
 			JavaClass type = arrayValue.getJavaClass().getComponentType();
 			JavaClass valueType = value.getJavaClass();
 			if (!type.isAssignableFrom(valueType)) {
-				exceptionOperations.throwException(symbols.java_lang_ArrayStoreException(), valueType.getName());
+				ops.throwException(symbols.java_lang_ArrayStoreException(), valueType.getName());
 			}
 		}
 		arrayValue.setReference(index, value);
@@ -120,7 +119,7 @@ public final class DefaultArrayOperations implements ArrayOperations {
 	}
 
 	private ArrayValue verifyArrayAccess(ObjectValue value, int index) {
-		VerificationOperations ops = verificationOperations;
+		VMOperations ops = this.ops;
 		ArrayValue array = ops.checkNotNull(value);
 		ops.arrayRangeCheck(array.getLength(), index);
 		return array;

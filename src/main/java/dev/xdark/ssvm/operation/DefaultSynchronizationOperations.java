@@ -16,22 +16,21 @@ public final class DefaultSynchronizationOperations implements SynchronizationOp
 
 	private final Symbols symbols;
 	private final MemoryManager memoryManager;
-	private final VerificationOperations verificationOperations;
-	private final ExceptionOperations exceptionOperations;
+	private final VMOperations ops;
 
 	@Override
 	public void monitorEnter(ObjectValue value) {
-		verificationOperations.checkNotNull(value);
+		ops.checkNotNull(value);
 		Mutex mutex = memoryManager.getMutex(value);
 		mutex.lock();
 	}
 
 	@Override
 	public void monitorExit(ObjectValue value) {
-		verificationOperations.checkNotNull(value);
+		ops.checkNotNull(value);
 		Mutex mutex = memoryManager.getMutex(value);
 		if (!mutex.tryUnlock()) {
-			exceptionOperations.throwException(symbols.java_lang_IllegalMonitorStateException());
+			ops.throwException(symbols.java_lang_IllegalMonitorStateException());
 		}
 	}
 }

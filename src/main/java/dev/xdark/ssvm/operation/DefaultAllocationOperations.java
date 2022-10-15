@@ -22,24 +22,22 @@ public final class DefaultAllocationOperations implements AllocationOperations {
 	private final MemoryManager memoryManager;
 	private final Symbols symbols;
 	private final Primitives primitives;
-	private final ExceptionOperations exceptionOperations;
-	private final VerificationOperations verificationOperations;
-	private final ClassOperations classOperations;
+	private final VMOperations ops;
 
 	@Override
 	public InstanceValue allocateInstance(JavaClass klass) {
 		InstanceClass jc;
 		if (!(klass instanceof InstanceClass) || !(jc = (InstanceClass) klass).canAllocateInstance()) {
-			exceptionOperations.throwException(symbols.java_lang_InstantiationError());
+			ops.throwException(symbols.java_lang_InstantiationError());
 			return null;
 		}
-		classOperations.initialize(jc);
+		ops.initialize(jc);
 		return memoryManager.newInstance(jc);
 	}
 
 	@Override
 	public ArrayValue allocateArray(JavaClass componentType, int length) {
-		verificationOperations.arrayLengthCheck(length);
+		ops.arrayLengthCheck(length);
 		return memoryManager.newArray(componentType.newArrayClass(), length);
 	}
 

@@ -66,19 +66,19 @@ public final class VMOperations implements
 		ThreadManager threadManager = vm.getThreadManager();
 		LinkResolver linkResolver = vm.getLinkResolver();
 		StringPool stringPool = vm.getStringPool();
-		allocationOperations = new DefaultAllocationOperations(memoryManager, symbols, vm.getPrimitives(), this, this, this);
-		conversionOperations = new DefaultConversionOperations(symbols, memoryManager, allocationOperations);
-		arrayOperations = new DefaultArrayOperations(symbols, this, this);
-		exceptionOperations = new DefaultExceptionOperations(memoryManager, symbols, this, this, this);
+		allocationOperations = new DefaultAllocationOperations(memoryManager, symbols, vm.getPrimitives(), this);
+		conversionOperations = new DefaultConversionOperations(symbols, memoryManager, this);
+		arrayOperations = new DefaultArrayOperations(symbols, this);
+		exceptionOperations = new DefaultExceptionOperations(memoryManager, symbols, this);
 		fieldOperations = new DefaultFieldOperations(memoryManager, linkResolver, this);
 		invocationOperations = new DefaultInvocationOperations(vm.getExecutionEngine(), threadManager);
-		primitiveOperations = new DefaultPrimitiveOperations(symbols, threadManager, linkResolver, invocationOperations, this);
-		stringOperations = new DefaultStringOperations(memoryManager, threadManager, symbols, linkResolver, allocationOperations, invocationOperations, conversionOperations);
-		synchronizationOperations = new DefaultSynchronizationOperations(symbols, memoryManager, this, exceptionOperations);
-		verificationOperations = new DefaultVerificationOperations(symbols, exceptionOperations);
-		classOperations = new DefaultClassOperations(vm.getMirrorFactory(), memoryManager, threadManager, vm.getBootClassFinder(), linkResolver, symbols, vm.getClassLoaders(), vm.getClassDefiner(), null, exceptionOperations, invocationOperations, stringOperations, verificationOperations, this);
-		methodHandleOperations = new DefaultMethodHandleOperations(symbols, threadManager, linkResolver, classOperations, invocationOperations, allocationOperations, stringOperations);
-		invokeDynamicOperations = new DefaultInvokeDynamicOperations(symbols, threadManager, stringPool, linkResolver, vm.getClassStorage(), memoryManager, exceptionOperations, allocationOperations, methodHandleOperations, invocationOperations, verificationOperations, fieldOperations, classOperations, primitiveOperations);
-		constantOperations = new DefaultConstantOperations(memoryManager, threadManager, stringPool, classOperations, methodHandleOperations);
+		primitiveOperations = new DefaultPrimitiveOperations(symbols, threadManager, linkResolver, this);
+		stringOperations = new DefaultStringOperations(memoryManager, threadManager, symbols, linkResolver, this);
+		synchronizationOperations = new DefaultSynchronizationOperations(symbols, memoryManager, this);
+		verificationOperations = new DefaultVerificationOperations(symbols, this);
+		classOperations = new DefaultClassOperations(vm.getMirrorFactory(), memoryManager, threadManager, vm.getBootClassFinder(), linkResolver, symbols, vm.getClassLoaders(), vm.getClassDefiner(), vm.getClassStorage(), this);
+		methodHandleOperations = new DefaultMethodHandleOperations(symbols, threadManager, linkResolver, this);
+		invokeDynamicOperations = new DefaultInvokeDynamicOperations(symbols, threadManager, stringPool, linkResolver, vm.getClassStorage(), memoryManager, this);
+		constantOperations = new DefaultConstantOperations(memoryManager, threadManager, stringPool, this);
 	}
 }

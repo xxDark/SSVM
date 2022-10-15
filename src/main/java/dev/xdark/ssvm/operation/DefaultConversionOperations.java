@@ -16,7 +16,7 @@ public final class DefaultConversionOperations implements ConversionOperations {
 
 	private final Symbols symbols;
 	private final MemoryManager memoryManager;
-	private final AllocationOperations allocationOperations;
+	private final VMOperations ops;
 
 	@Override
 	public long[] toJavaLongs(ArrayValue array) {
@@ -95,7 +95,7 @@ public final class DefaultConversionOperations implements ConversionOperations {
 	@Override
 	public ArrayValue toVMLongs(long[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
-		ArrayValue wrapper = allocationOperations.allocateLongArray(newLength);
+		ArrayValue wrapper = ops.allocateLongArray(newLength);
 		wrapper.getMemory().getData().write(memoryManager.arrayBaseOffset(wrapper), array, startIndex, newLength);
 		return wrapper;
 	}
@@ -108,7 +108,7 @@ public final class DefaultConversionOperations implements ConversionOperations {
 	@Override
 	public ArrayValue toVMDoubles(double[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
-		ArrayValue wrapper = allocationOperations.allocateDoubleArray(newLength);
+		ArrayValue wrapper = ops.allocateDoubleArray(newLength);
 		wrapper.getMemory().getData().write(memoryManager.arrayBaseOffset(wrapper), array, startIndex, newLength);
 		return wrapper;
 	}
@@ -121,7 +121,7 @@ public final class DefaultConversionOperations implements ConversionOperations {
 	@Override
 	public ArrayValue toVMInts(int[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
-		ArrayValue wrapper = allocationOperations.allocateIntArray(newLength);
+		ArrayValue wrapper = ops.allocateIntArray(newLength);
 		wrapper.getMemory().getData().write(memoryManager.arrayBaseOffset(wrapper), array, startIndex, newLength);
 		return wrapper;
 	}
@@ -129,7 +129,7 @@ public final class DefaultConversionOperations implements ConversionOperations {
 	@Override
 	public ArrayValue toVMFloats(float[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
-		ArrayValue wrapper = allocationOperations.allocateFloatArray(newLength);
+		ArrayValue wrapper = ops.allocateFloatArray(newLength);
 		wrapper.getMemory().getData().write(memoryManager.arrayBaseOffset(wrapper), array, startIndex, newLength);
 		return wrapper;
 	}
@@ -142,7 +142,7 @@ public final class DefaultConversionOperations implements ConversionOperations {
 	@Override
 	public ArrayValue toVMChars(char[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
-		ArrayValue wrapper = allocationOperations.allocateCharArray(newLength);
+		ArrayValue wrapper = ops.allocateCharArray(newLength);
 		wrapper.getMemory().getData().write(memoryManager.arrayBaseOffset(wrapper), array, startIndex, newLength);
 		return wrapper;
 	}
@@ -155,7 +155,7 @@ public final class DefaultConversionOperations implements ConversionOperations {
 	@Override
 	public ArrayValue toVMShorts(short[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
-		ArrayValue wrapper = allocationOperations.allocateShortArray(newLength);
+		ArrayValue wrapper = ops.allocateShortArray(newLength);
 		wrapper.getMemory().getData().write(memoryManager.arrayBaseOffset(wrapper), array, startIndex, newLength);
 		return wrapper;
 	}
@@ -168,7 +168,7 @@ public final class DefaultConversionOperations implements ConversionOperations {
 	@Override
 	public ArrayValue toVMBytes(byte[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
-		ArrayValue wrapper = allocationOperations.allocateByteArray(newLength);
+		ArrayValue wrapper = ops.allocateByteArray(newLength);
 		wrapper.getMemory().getData().write(memoryManager.arrayBaseOffset(wrapper), array, startIndex, newLength);
 		return wrapper;
 	}
@@ -181,7 +181,7 @@ public final class DefaultConversionOperations implements ConversionOperations {
 	@Override
 	public ArrayValue toVMBooleans(boolean[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
-		ArrayValue wrapper = allocationOperations.allocateBooleanArray(newLength);
+		ArrayValue wrapper = ops.allocateBooleanArray(newLength);
 		wrapper.getMemory().getData().write(memoryManager.arrayBaseOffset(wrapper), array, startIndex, newLength);
 		return wrapper;
 	}
@@ -194,7 +194,7 @@ public final class DefaultConversionOperations implements ConversionOperations {
 	@Override
 	public ArrayValue toVMReferences(ObjectValue[] array, int startIndex, int endIndex) {
 		int newLength = endIndex - startIndex;
-		ArrayValue wrapper = allocationOperations.allocateArray(symbols.java_lang_Object(), newLength);
+		ArrayValue wrapper = ops.allocateArray(symbols.java_lang_Object(), newLength);
 		for (int i = 0; startIndex < endIndex; startIndex++) {
 			wrapper.setReference(i++, array[startIndex]);
 		}

@@ -28,25 +28,26 @@ public final class DefaultStringOperations implements StringOperations {
 	private final ThreadManager threadManager;
 	private final Symbols symbols;
 	private final LinkResolver linkResolver;
-	private final AllocationOperations allocationOperations;
-	private final InvocationOperations invocationOperations;
-	private final ConversionOperations conversionOperations;
+	private final VMOperations ops;
 
 	@Override
 	public InstanceValue newUtf8(String value) {
-		MemoryManager memoryManager = this.memoryManager;
+		return newUtf8FromChars(toChars(value));
+	}
+
+	@Override
+	public InstanceValue newUtf8FromChars(ArrayValue value) {
 		InstanceClass jc = symbols.java_lang_String();
 		InstanceValue wrapper = memoryManager.newInstance(jc);
 		JavaField charValue = jc.getField("value", "[C");
-		ArrayValue chars = toChars(value);
 		if (charValue != null) {
-			memoryManager.writeValue(wrapper, charValue.getOffset(), chars);
+			memoryManager.writeValue(wrapper, charValue.getOffset(), value);
 		} else {
 			JavaMethod init = linkResolver.resolveSpecialMethod(jc, "<init>", "([C)V");
 			Locals locals = threadManager.currentThreadStorage().newLocals(init);
 			locals.setReference(0, wrapper);
-			locals.setReference(1, chars);
-			invocationOperations.invokeVoid(init, locals);
+			locals.setReference(1, value);
+			ops.invokeVoid(init, locals);
 		}
 		return wrapper;
 	}
@@ -68,15 +69,15 @@ public final class DefaultStringOperations implements StringOperations {
 			JavaMethod toCharArray = linkResolver.resolveVirtualMethod(jc, jc, "toCharArray", "()[C");
 			Locals locals = threadManager.currentThreadStorage().newLocals(toCharArray);
 			locals.setReference(0, value);
-			array = (ArrayValue) invocationOperations.invokeReference(toCharArray, locals);
+			array = (ArrayValue) ops.invokeReference(toCharArray, locals);
 		}
-		return UnsafeUtil.newString(conversionOperations.toJavaChars(array));
+		return UnsafeUtil.newString(ops.toJavaChars(array));
 	}
 
 	@Override
 	public ArrayValue toChars(String value) {
 		int length = value.length();
-		ArrayValue wrapper = allocationOperations.allocateCharArray(length);
+		ArrayValue wrapper = ops.allocateCharArray(length);
 		if (UnsafeUtil.stringValueFieldAccessible() || length <= STRING_COPY_THRESHOLD) {
 			MemoryData memory = wrapper.getMemory().getData();
 			char[] chars = UnsafeUtil.getChars(value);

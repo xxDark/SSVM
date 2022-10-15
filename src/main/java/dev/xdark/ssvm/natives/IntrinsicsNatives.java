@@ -247,7 +247,7 @@ public class IntrinsicsNatives {
 							char c = value.getChar(i);
 							buf.setChar(i++, (c == oldChar) ? newChar : c);
 						}
-						ctx.setResult(ops.newUtf8(buf));
+						ctx.setResult(ops.newUtf8FromChars(buf));
 					} else {
 						ctx.setResult(_this);
 					}

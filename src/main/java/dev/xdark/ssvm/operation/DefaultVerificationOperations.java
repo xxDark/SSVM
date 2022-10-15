@@ -14,14 +14,14 @@ import lombok.RequiredArgsConstructor;
 public final class DefaultVerificationOperations implements VerificationOperations {
 
 	private final Symbols symbols;
-	private final ExceptionOperations exceptionOperations;
+	private final VMOperations ops;
 
 	@Override
 	public ObjectValue checkCast(ObjectValue value, JavaClass klass) {
 		if (!value.isNull()) {
 			JavaClass against = value.getJavaClass();
 			if (!klass.isAssignableFrom(against)) {
-				exceptionOperations.throwException(symbols.java_lang_ClassCastException(), against.getName() + " cannot be cast to " + klass.getName());
+				ops.throwException(symbols.java_lang_ClassCastException(), against.getName() + " cannot be cast to " + klass.getName());
 			}
 		}
 		return value;
@@ -30,7 +30,7 @@ public final class DefaultVerificationOperations implements VerificationOperatio
 	@Override
 	public <V extends ObjectValue> V checkNotNull(ObjectValue value) {
 		if (value.isNull()) {
-			exceptionOperations.throwException(symbols.java_lang_NullPointerException());
+			ops.throwException(symbols.java_lang_NullPointerException());
 		}
 		return (V) value;
 	}
@@ -38,28 +38,28 @@ public final class DefaultVerificationOperations implements VerificationOperatio
 	@Override
 	public void arrayRangeCheck(int index, int length) {
 		if (index < 0 || index >= length) {
-			exceptionOperations.throwException(symbols.java_lang_ArrayIndexOutOfBoundsException());
+			ops.throwException(symbols.java_lang_ArrayIndexOutOfBoundsException());
 		}
 	}
 
 	@Override
 	public void arrayLengthCheck(int length) {
 		if (length < 0) {
-			exceptionOperations.throwException(symbols.java_lang_NegativeArraySizeException());
+			ops.throwException(symbols.java_lang_NegativeArraySizeException());
 		}
 	}
 
 	@Override
 	public void checkEquals(int a, int b) {
 		if (a != b) {
-			exceptionOperations.throwException(symbols.java_lang_IllegalStateException());
+			ops.throwException(symbols.java_lang_IllegalStateException());
 		}
 	}
 
 	@Override
 	public void checkEquals(long a, long b) {
 		if (a != b) {
-			exceptionOperations.throwException(symbols.java_lang_IllegalStateException());
+			ops.throwException(symbols.java_lang_IllegalStateException());
 		}
 	}
 }

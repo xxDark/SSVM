@@ -18,7 +18,7 @@ public final class DefaultFieldOperations implements FieldOperations {
 
 	private final MemoryManager memoryManager;
 	private final LinkResolver linkResolver;
-	private final VerificationOperations verificationOperations;
+	private final VMOperations ops;
 
 	@Override
 	public void putReference(ObjectValue instance, InstanceClass klass, String name, String desc, ObjectValue value) {
@@ -28,7 +28,7 @@ public final class DefaultFieldOperations implements FieldOperations {
 
 	@Override
 	public void putReference(ObjectValue instance, String name, String desc, ObjectValue value) {
-		putReference(instance, verificationOperations.<InstanceValue>checkNotNull(instance).getJavaClass(), name, desc, value);
+		putReference(instance, ops.<InstanceValue>checkNotNull(instance).getJavaClass(), name, desc, value);
 	}
 
 	@Override
@@ -39,7 +39,7 @@ public final class DefaultFieldOperations implements FieldOperations {
 
 	@Override
 	public void putLong(ObjectValue instance, String name, long value) {
-		putLong(instance, verificationOperations.<InstanceValue>checkNotNull(instance).getJavaClass(), name, value);
+		putLong(instance, ops.<InstanceValue>checkNotNull(instance).getJavaClass(), name, value);
 	}
 
 	@Override
@@ -50,7 +50,7 @@ public final class DefaultFieldOperations implements FieldOperations {
 
 	@Override
 	public void putDouble(ObjectValue instance, String name, double value) {
-		putDouble(instance, verificationOperations.<InstanceValue>checkNotNull(instance).getJavaClass(), name, value);
+		putDouble(instance, ops.<InstanceValue>checkNotNull(instance).getJavaClass(), name, value);
 	}
 
 	@Override
@@ -61,7 +61,7 @@ public final class DefaultFieldOperations implements FieldOperations {
 
 	@Override
 	public void putInt(ObjectValue instance, String name, int value) {
-		putInt(instance, verificationOperations.<InstanceValue>checkNotNull(instance).getJavaClass(), name, value);
+		putInt(instance, ops.<InstanceValue>checkNotNull(instance).getJavaClass(), name, value);
 	}
 
 	@Override
@@ -72,7 +72,7 @@ public final class DefaultFieldOperations implements FieldOperations {
 
 	@Override
 	public void putFloat(ObjectValue instance, String name, float value) {
-		putFloat(instance, verificationOperations.<InstanceValue>checkNotNull(instance).getJavaClass(), name, value);
+		putFloat(instance, ops.<InstanceValue>checkNotNull(instance).getJavaClass(), name, value);
 	}
 
 	@Override
@@ -83,7 +83,7 @@ public final class DefaultFieldOperations implements FieldOperations {
 
 	@Override
 	public void putChar(ObjectValue instance, String name, char value) {
-		putChar(instance, verificationOperations.<InstanceValue>checkNotNull(instance).getJavaClass(), name, value);
+		putChar(instance, ops.<InstanceValue>checkNotNull(instance).getJavaClass(), name, value);
 	}
 
 	@Override
@@ -94,7 +94,7 @@ public final class DefaultFieldOperations implements FieldOperations {
 
 	@Override
 	public void putShort(ObjectValue instance, String name, short value) {
-		putShort(instance, verificationOperations.<InstanceValue>checkNotNull(instance).getJavaClass(), name, value);
+		putShort(instance, ops.<InstanceValue>checkNotNull(instance).getJavaClass(), name, value);
 	}
 
 	@Override
@@ -105,7 +105,7 @@ public final class DefaultFieldOperations implements FieldOperations {
 
 	@Override
 	public void putByte(ObjectValue instance, String name, byte value) {
-		putByte(instance, verificationOperations.<InstanceValue>checkNotNull(instance).getJavaClass(), name, value);
+		putByte(instance, ops.<InstanceValue>checkNotNull(instance).getJavaClass(), name, value);
 	}
 
 	@Override
@@ -116,7 +116,7 @@ public final class DefaultFieldOperations implements FieldOperations {
 
 	@Override
 	public void putBoolean(ObjectValue instance, String name, boolean value) {
-		putBoolean(instance, verificationOperations.<InstanceValue>checkNotNull(instance).getJavaClass(), name, value);
+		putBoolean(instance, ops.<InstanceValue>checkNotNull(instance).getJavaClass(), name, value);
 	}
 
 	@Override
@@ -127,7 +127,7 @@ public final class DefaultFieldOperations implements FieldOperations {
 
 	@Override
 	public ObjectValue getReference(ObjectValue instance, String name, String desc) {
-		return getReference(instance, verificationOperations.<InstanceValue>checkNotNull(instance).getJavaClass(), name, desc);
+		return getReference(instance, ops.<InstanceValue>checkNotNull(instance).getJavaClass(), name, desc);
 	}
 
 	@Override
@@ -138,7 +138,7 @@ public final class DefaultFieldOperations implements FieldOperations {
 
 	@Override
 	public long getLong(ObjectValue instance, String name) {
-		return getLong(instance, verificationOperations.<InstanceValue>checkNotNull(instance).getJavaClass(), name);
+		return getLong(instance, ops.<InstanceValue>checkNotNull(instance).getJavaClass(), name);
 	}
 
 	@Override
@@ -149,7 +149,7 @@ public final class DefaultFieldOperations implements FieldOperations {
 
 	@Override
 	public double getDouble(ObjectValue instance, String name) {
-		return getDouble(instance, verificationOperations.<InstanceValue>checkNotNull(instance).getJavaClass(), name);
+		return getDouble(instance, ops.<InstanceValue>checkNotNull(instance).getJavaClass(), name);
 	}
 
 	@Override
@@ -160,7 +160,7 @@ public final class DefaultFieldOperations implements FieldOperations {
 
 	@Override
 	public int getInt(ObjectValue instance, String name) {
-		return getInt(instance, verificationOperations.<InstanceValue>checkNotNull(instance).getJavaClass(), name);
+		return getInt(instance, ops.<InstanceValue>checkNotNull(instance).getJavaClass(), name);
 	}
 
 	@Override
@@ -171,7 +171,7 @@ public final class DefaultFieldOperations implements FieldOperations {
 
 	@Override
 	public float getFloat(ObjectValue instance, String name) {
-		return getFloat(instance, verificationOperations.<InstanceValue>checkNotNull(instance).getJavaClass(), name);
+		return getFloat(instance, ops.<InstanceValue>checkNotNull(instance).getJavaClass(), name);
 	}
 
 	@Override
@@ -182,7 +182,7 @@ public final class DefaultFieldOperations implements FieldOperations {
 
 	@Override
 	public char getChar(ObjectValue instance, String name) {
-		return getChar(instance, verificationOperations.<InstanceValue>checkNotNull(instance).getJavaClass(), name);
+		return getChar(instance, ops.<InstanceValue>checkNotNull(instance).getJavaClass(), name);
 	}
 
 	@Override
@@ -193,7 +193,7 @@ public final class DefaultFieldOperations implements FieldOperations {
 
 	@Override
 	public short getShort(ObjectValue instance, String name) {
-		return getShort(instance, verificationOperations.<InstanceValue>checkNotNull(instance).getJavaClass(), name);
+		return getShort(instance, ops.<InstanceValue>checkNotNull(instance).getJavaClass(), name);
 	}
 
 	@Override
@@ -204,7 +204,7 @@ public final class DefaultFieldOperations implements FieldOperations {
 
 	@Override
 	public byte getByte(ObjectValue instance, String name) {
-		return getByte(instance, verificationOperations.<InstanceValue>checkNotNull(instance).getJavaClass(), name);
+		return getByte(instance, ops.<InstanceValue>checkNotNull(instance).getJavaClass(), name);
 	}
 
 	@Override
@@ -215,7 +215,7 @@ public final class DefaultFieldOperations implements FieldOperations {
 
 	@Override
 	public boolean getBoolean(ObjectValue instance, String name) {
-		return getBoolean(instance, verificationOperations.<InstanceValue>checkNotNull(instance).getJavaClass(), name);
+		return getBoolean(instance, ops.<InstanceValue>checkNotNull(instance).getJavaClass(), name);
 	}
 
 	@Override
@@ -350,7 +350,7 @@ public final class DefaultFieldOperations implements FieldOperations {
 	}
 
 	private long getFieldOffsetForInstance(ObjectValue instance, InstanceClass klass, String name, String desc) {
-		verificationOperations.checkNotNull(instance);
+		ops.checkNotNull(instance);
 		JavaField field = linkResolver.resolveVirtualField(klass, name, desc);
 		return field.getOffset();
 	}

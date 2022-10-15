@@ -20,26 +20,23 @@ import lombok.RequiredArgsConstructor;
 public final class DefaultExceptionOperations implements ExceptionOperations {
 	private final MemoryManager memoryManager;
 	private final Symbols symbols;
-	private final ClassOperations classOperations;
-	private final FieldOperations fieldOperations;
-	private final StringOperations stringOperations;
+	private final VMOperations ops;
 
 	@Override
 	public InstanceValue newStackTraceElement(ExecutionContext<?> frame) {
+		VMOperations ops = this.ops;
 		InstanceClass jc = symbols.java_lang_StackTraceElement();
-		classOperations.initialize(jc);
+		ops.initialize(jc);
 		InstanceValue value = memoryManager.newInstance(jc);
-		FieldOperations fops = fieldOperations;
-		StringOperations sops = stringOperations;
 		JavaMethod method = frame.getMethod();
 		InstanceClass owner = method.getOwner();
-		fops.putReference(value, "declaringClass", "Ljava/lang/String;", sops.newUtf8(owner.getName()));
-		fops.putReference(value, "methodName", "Ljava/lang/String;", sops.newUtf8(method.getName()));
+		ops.putReference(value, "declaringClass", "Ljava/lang/String;", ops.newUtf8(owner.getName()));
+		ops.putReference(value, "methodName", "Ljava/lang/String;", ops.newUtf8(method.getName()));
 		String sourceFile = owner.getNode().sourceFile;
 		if (sourceFile != null) {
-			fops.putReference(value, "fileName", "Ljava/lang/String;", sops.newUtf8(sourceFile));
+			ops.putReference(value, "fileName", "Ljava/lang/String;", ops.newUtf8(sourceFile));
 		}
-		fops.putInt(value, "lineNumber", frame.getLineNumber());
+		ops.putInt(value, "lineNumber", frame.getLineNumber());
 		// TODO FieldOperations must also accept JavaField directly
 		JavaField field = jc.getField("declaringClassObject", "Ljava/lang/Class;");
 		if (field != null) {
@@ -58,13 +55,14 @@ public final class DefaultExceptionOperations implements ExceptionOperations {
 
 	@Override
 	public InstanceValue newException(InstanceClass javaClass, String message, ObjectValue cause) {
-		classOperations.initialize(javaClass);
+		VMOperations ops = this.ops;
+		ops.initialize(javaClass);
 		InstanceValue instance = memoryManager.newInstance(javaClass);
 		if (message != null) {
-			fieldOperations.putReference(instance, "detailMessage", "Ljava/lang/String;", stringOperations.newUtf8(message));
+			ops.putReference(instance, "detailMessage", "Ljava/lang/String;", ops.newUtf8(message));
 		}
 		if (cause != null) {
-			fieldOperations.putReference(instance, "cause", "Ljava/lang/Throwable;", cause);
+			ops.putReference(instance, "cause", "Ljava/lang/Throwable;", cause);
 		}
 		return instance;
 	}

@@ -59,11 +59,7 @@ public final class DefaultClassOperations implements ClassOperations {
 	private final ClassLoaders classLoaders;
 	private final ClassDefiner classDefiner;
 	private final ClassStorage classStorage;
-	private final ExceptionOperations exceptionOperations;
-	private final InvocationOperations invocationOperations;
-	private final StringOperations stringOperations;
-	private final VerificationOperations verificationOperations;
-	private final ConstantOperations constantOperations;
+	private final VMOperations ops;
 
 	@Override
 	public void link(InstanceClass instanceClass) {
@@ -176,7 +172,7 @@ public final class DefaultClassOperations implements ClassOperations {
 		}
 		if (state.is(InstanceClass.State.FAILED)) {
 			state.unlock();
-			exceptionOperations.throwException(symbols.java_lang_NoClassDefFoundError(), instanceClass.getInternalName());
+			ops.throwException(symbols.java_lang_NoClassDefFoundError(), instanceClass.getInternalName());
 		}
 		state.set(InstanceClass.State.IN_PROGRESS);
 		try {
@@ -190,7 +186,7 @@ public final class DefaultClassOperations implements ClassOperations {
 			JavaMethod clinit = instanceClass.getMethod("<clinit>", "()V");
 			if (clinit != null) {
 				Locals locals = threadManager.currentThreadStorage().newLocals(clinit);
-				invocationOperations.invokeVoid(clinit, locals);
+				ops.invokeVoid(clinit, locals);
 			}
 		} catch (VMException ex) {
 			state.set(InstanceClass.State.FAILED);
@@ -207,8 +203,9 @@ public final class DefaultClassOperations implements ClassOperations {
 		while (internalName.charAt(dimensions) == '[') {
 			dimensions++;
 		}
+		VMOperations ops = this.ops;
 		if (dimensions >= LanguageSpecification.ARRAY_DIMENSION_LIMIT) {
-			exceptionOperations.throwException(symbols.java_lang_ClassNotFoundException(), internalName);
+			ops.throwException(symbols.java_lang_ClassNotFoundException(), internalName);
 		}
 		String trueName = dimensions == 0 ? internalName : internalName.substring(dimensions + 1, internalName.length() - 1);
 		ClassLoaderData data = classLoaders.getClassLoaderData(classLoader);
@@ -225,13 +222,13 @@ public final class DefaultClassOperations implements ClassOperations {
 					JavaMethod method = linkResolver.resolveVirtualMethod(classLoader, "loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;");
 					Locals locals = threadManager.currentThreadStorage().newLocals(method);
 					locals.setReference(0, classLoader);
-					locals.setReference(1, stringOperations.newUtf8(trueName.replace('/', '.')));
+					locals.setReference(1, ops.newUtf8(trueName.replace('/', '.')));
 					locals.setInt(2, initialize ? 1 : 0);
-					InstanceValue result = verificationOperations.checkNotNull(invocationOperations.invokeReference(method, locals));
+					InstanceValue result = ops.checkNotNull(ops.invokeReference(method, locals));
 					klass = classStorage.lookup(result);
 				}
 				if (klass == null) {
-					exceptionOperations.throwException(symbols.java_lang_ClassNotFoundException(), internalName.replace('/', '.'));
+					ops.throwException(symbols.java_lang_ClassNotFoundException(), internalName.replace('/', '.'));
 				}
 			}
 			if (initialize) {
@@ -250,7 +247,7 @@ public final class DefaultClassOperations implements ClassOperations {
 		if (shouldBeLinked) {
 			ClassLoaderData classLoaderData = classLoaders.getClassLoaderData(classLoader);
 			if (!classLoaderData.linkClass(jc)) {
-				exceptionOperations.throwException(symbols.java_lang_NoClassDefFoundError(), "Duplicate class: " + reader.getClassName());
+				ops.throwException(symbols.java_lang_NoClassDefFoundError(), "Duplicate class: " + reader.getClassName());
 			}
 		}
 		link(jc);
@@ -260,21 +257,22 @@ public final class DefaultClassOperations implements ClassOperations {
 
 	@Override
 	public InstanceClass defineClass(ObjectValue classLoader, String name, byte[] b, int off, int len, ObjectValue protectionDomain, String source, boolean shouldBeLinked) {
+		VMOperations ops = this.ops;
 		if ((off | len | (off + len) | (b.length - (off + len))) < 0) {
-			exceptionOperations.throwException(symbols.java_lang_ArrayIndexOutOfBoundsException());
+			ops.throwException(symbols.java_lang_ArrayIndexOutOfBoundsException());
 		}
 		ParsedClassData data = classDefiner.parseClass(name, b, off, len, source);
 		if (data == null) {
-			exceptionOperations.throwException(symbols.java_lang_NoClassDefFoundError(), name);
+			ops.throwException(symbols.java_lang_NoClassDefFoundError(), name);
 		}
 		String classReaderName = data.getClassReader().getClassName();
 		if (name == null) {
 			name = classReaderName;
 		} else if (!classReaderName.equals(name.replace('.', '/'))) {
-			exceptionOperations.throwException(symbols.java_lang_ClassNotFoundException(), "Expected class name " + classReaderName.replace('/', '.') + " but received: " + name);
+			ops.throwException(symbols.java_lang_ClassNotFoundException(), "Expected class name " + classReaderName.replace('/', '.') + " but received: " + name);
 		}
 		if (name.contains("[") || name.contains("(") || name.contains(")") || name.contains(";")) {
-			exceptionOperations.throwException(symbols.java_lang_NoClassDefFoundError(), "Bad class name: " + classReaderName);
+			ops.throwException(symbols.java_lang_NoClassDefFoundError(), "Bad class name: " + classReaderName);
 		}
 		return defineClass(classLoader, data, protectionDomain, source, shouldBeLinked);
 	}
@@ -324,7 +322,7 @@ public final class DefaultClassOperations implements ClassOperations {
 					data.writeByte(offset, ((Integer) cst).byteValue());
 					break;
 				default:
-					memoryManager.writeValue(oop, offset, cst == null ? memoryManager.nullValue() : constantOperations.referenceValue(cst));
+					memoryManager.writeValue(oop, offset, cst == null ? memoryManager.nullValue() : ops.referenceValue(cst));
 			}
 		}
 	}
@@ -343,7 +341,7 @@ public final class DefaultClassOperations implements ClassOperations {
 			Locals locals = threadManager.currentThreadStorage().newLocals(init);
 			locals.setReference(0, oop);
 			locals.setReference(1, cause);
-			invocationOperations.invokeVoid(init, locals);
+			ops.invokeVoid(init, locals);
 			throw new VMException(oop);
 		}
 		throw ex;

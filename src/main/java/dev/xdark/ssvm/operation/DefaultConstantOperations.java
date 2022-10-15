@@ -22,8 +22,7 @@ public final class DefaultConstantOperations implements ConstantOperations {
 	private final MemoryManager memoryManager;
 	private final ThreadManager threadManager;
 	private final StringPool stringPool;
-	private final ClassOperations classOperations;
-	private final MethodHandleOperations methodHandleOperations;
+	private final VMOperations ops;
 
 	@Override
 	public ObjectValue referenceValue(Object value) {
@@ -44,9 +43,9 @@ public final class DefaultConstantOperations implements ConstantOperations {
 				switch (type.getSort()) {
 					case Type.OBJECT:
 					case Type.ARRAY:
-						return classOperations.findClass(loader, type.getInternalName(), false).getOop();
+						return ops.findClass(loader, type.getInternalName(), false).getOop();
 					case Type.METHOD:
-						return methodHandleOperations.methodType(loader, type);
+						return ops.methodType(loader, type);
 					default:
 						break convert;
 				}
@@ -54,7 +53,7 @@ public final class DefaultConstantOperations implements ConstantOperations {
 			if (value instanceof Handle) {
 				ExecutionContext<?> ctx = threadManager.currentOsThread().getBacktrace().peek();
 				Assertions.notNull(ctx, "cannot be called without call frame");
-				return methodHandleOperations.linkMethodHandleConstant(ctx.getMethod().getOwner(), (Handle) value);
+				return ops.linkMethodHandleConstant(ctx.getMethod().getOwner(), (Handle) value);
 			}
 		}
 		throw new PanicException("Unsupported constant " + value + " " + value.getClass());

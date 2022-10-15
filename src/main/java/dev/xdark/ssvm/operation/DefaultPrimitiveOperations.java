@@ -24,54 +24,53 @@ public final class DefaultPrimitiveOperations implements PrimitiveOperations {
 	private final Symbols symbols;
 	private final ThreadManager threadManager;
 	private final LinkResolver linkResolver;
-	private final InvocationOperations invocationOperations;
-	private final VerificationOperations verificationOperations;
+	private final VMOperations ops;
 
 	@Override
 	public long unboxLong(ObjectValue value) {
-		verificationOperations.checkNotNull(value);
+		ops.checkNotNull(value);
 		return invokeUnbox(value, "longValue", "()J", new LongValueSink()).getValue();
 	}
 
 	@Override
 	public double unboxDouble(ObjectValue value) {
-		verificationOperations.checkNotNull(value);
+		ops.checkNotNull(value);
 		return invokeUnbox(value, "doubleValue", "()D", new DoubleValueSink()).getValue();
 	}
 
 	@Override
 	public int unboxInt(ObjectValue value) {
-		verificationOperations.checkNotNull(value);
+		ops.checkNotNull(value);
 		return invokeUnbox(value, "intValue", "()I", new IntValueSink()).getValue();
 	}
 
 	@Override
 	public float unboxFloat(ObjectValue value) {
-		verificationOperations.checkNotNull(value);
+		ops.checkNotNull(value);
 		return invokeUnbox(value, "floatValue", "()F", new FloatValueSink()).getValue();
 	}
 
 	@Override
 	public char unboxChar(ObjectValue value) {
-		verificationOperations.checkNotNull(value);
+		ops.checkNotNull(value);
 		return (char) invokeUnbox(value, "charValue", "()C", new IntValueSink()).getValue();
 	}
 
 	@Override
 	public short unboxShort(ObjectValue value) {
-		verificationOperations.checkNotNull(value);
+		ops.checkNotNull(value);
 		return (short) invokeUnbox(value, "shortValue", "()S", new IntValueSink()).getValue();
 	}
 
 	@Override
 	public byte unboxByte(ObjectValue value) {
-		verificationOperations.checkNotNull(value);
+		ops.checkNotNull(value);
 		return (byte) invokeUnbox(value, "byteValue", "()B", new IntValueSink()).getValue();
 	}
 
 	@Override
 	public boolean unboxBoolean(ObjectValue value) {
-		verificationOperations.checkNotNull(value);
+		ops.checkNotNull(value);
 		return invokeUnbox(value, "booleanValue", "()Z", new IntValueSink()).getValue() != 0;
 	}
 
@@ -84,7 +83,7 @@ public final class DefaultPrimitiveOperations implements PrimitiveOperations {
 		);
 		Locals locals = threadManager.currentThreadStorage().newLocals(method);
 		locals.setLong(0, value);
-		return invocationOperations.invokeReference(method, locals);
+		return ops.invokeReference(method, locals);
 	}
 
 	@Override
@@ -96,7 +95,7 @@ public final class DefaultPrimitiveOperations implements PrimitiveOperations {
 		);
 		Locals locals = threadManager.currentThreadStorage().newLocals(method);
 		locals.setDouble(0, value);
-		return invocationOperations.invokeReference(method, locals);
+		return ops.invokeReference(method, locals);
 	}
 
 	@Override
@@ -108,7 +107,7 @@ public final class DefaultPrimitiveOperations implements PrimitiveOperations {
 		);
 		Locals locals = threadManager.currentThreadStorage().newLocals(method);
 		locals.setInt(0, value);
-		return invocationOperations.invokeReference(method, locals);
+		return ops.invokeReference(method, locals);
 	}
 
 	@Override
@@ -120,7 +119,7 @@ public final class DefaultPrimitiveOperations implements PrimitiveOperations {
 		);
 		Locals locals = threadManager.currentThreadStorage().newLocals(method);
 		locals.setFloat(0, value);
-		return invocationOperations.invokeReference(method, locals);
+		return ops.invokeReference(method, locals);
 	}
 
 	@Override
@@ -132,7 +131,7 @@ public final class DefaultPrimitiveOperations implements PrimitiveOperations {
 		);
 		Locals locals = threadManager.currentThreadStorage().newLocals(method);
 		locals.setInt(0, value);
-		return invocationOperations.invokeReference(method, locals);
+		return ops.invokeReference(method, locals);
 	}
 
 	@Override
@@ -144,7 +143,7 @@ public final class DefaultPrimitiveOperations implements PrimitiveOperations {
 		);
 		Locals locals = threadManager.currentThreadStorage().newLocals(method);
 		locals.setInt(0, value);
-		return invocationOperations.invokeReference(method, locals);
+		return ops.invokeReference(method, locals);
 	}
 
 	@Override
@@ -156,7 +155,7 @@ public final class DefaultPrimitiveOperations implements PrimitiveOperations {
 		);
 		Locals locals = threadManager.currentThreadStorage().newLocals(method);
 		locals.setInt(0, value);
-		return invocationOperations.invokeReference(method, locals);
+		return ops.invokeReference(method, locals);
 	}
 
 	@Override
@@ -168,14 +167,14 @@ public final class DefaultPrimitiveOperations implements PrimitiveOperations {
 		);
 		Locals locals = threadManager.currentThreadStorage().newLocals(method);
 		locals.setInt(0, value ? 1 : 0);
-		return invocationOperations.invokeReference(method, locals);
+		return ops.invokeReference(method, locals);
 	}
 
 	private <R extends ValueSink> R invokeUnbox(ObjectValue value, String name, String desc, R sink) {
 		JavaMethod method = linkResolver.resolveVirtualMethod(value, name, desc);
 		Locals locals = threadManager.currentThreadStorage().newLocals(method);
 		locals.setReference(0, value);
-		invocationOperations.invoke(method, locals, sink);
+		ops.invoke(method, locals, sink);
 		return sink;
 	}
 }

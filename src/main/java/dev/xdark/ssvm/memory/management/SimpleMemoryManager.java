@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.memory.management;
 
 import dev.xdark.ssvm.LanguageSpecification;
+import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.memory.allocation.MemoryAddress;
 import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
@@ -9,7 +10,6 @@ import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.mirror.type.ArrayClass;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
-import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.synchronizer.Mutex;
 import dev.xdark.ssvm.synchronizer.ObjectSynchronizer;
 import dev.xdark.ssvm.tlc.ThreadLocalStorage;
@@ -35,18 +35,15 @@ import java.util.Map;
 public class SimpleMemoryManager implements MemoryManager {
 
 	private final Map<MemoryAddress, ObjectValue> objects = new HashMap<>();
-	private final ObjectSynchronizer synchronizer;
-	private final MemoryAllocator allocator;
-	private final Symbols symbols;
+	private final VirtualMachine vm;
 	private final NullValue nullValue;
 	private final int objectHeaderSize;
 	private final int arrayHeaderSize;
 	private final int arrayLengthOffset;
 
-	public SimpleMemoryManager(MemoryAllocator allocator, ObjectSynchronizer synchronizer, Symbols symbols) {
-		this.allocator = allocator;
-		this.synchronizer = synchronizer;
-		this.symbols = symbols;
+	public SimpleMemoryManager(VirtualMachine vm) {
+		this.vm = vm;
+		MemoryAllocator allocator = vm.getMemoryAllocator();
 		MemoryBlock emptyHeapBlock = allocator.emptyHeapBlock();
 		NullValue value = new NullValue(emptyHeapBlock);
 		objects.put(MemoryAddress.of(emptyHeapBlock.getAddress()), value);
@@ -67,7 +64,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	public Mutex getMutex(ObjectValue reference) {
 		Assertions.check(!reference.isNull(), "null reference");
 		MemoryData data = reference.getMemory().getData();
-		ObjectSynchronizer synchronizer = this.synchronizer;
+		ObjectSynchronizer synchronizer = vm.getObjectSynchronizer();
 		Mutex mutex;
 		int id = data.readInt(8L);
 		if (id == -1) {
@@ -174,7 +171,7 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public InstanceValue newClassOop(JavaClass javaClass) {
-		InstanceClass javaLangClass = symbols.java_lang_Class();
+		InstanceClass javaLangClass = vm.getSymbols().java_lang_Class();
 		MemoryBlock memory = allocateClassMemory(javaLangClass, javaClass);
 		setClass(memory, javaLangClass);
 		InstanceValue wrapper = new SimpleInstanceValue(this, memory);
@@ -225,7 +222,7 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public int objectSize() {
-		return allocator.addressSize();
+		return vm.getMemoryAllocator().addressSize();
 	}
 
 	@Override
@@ -246,20 +243,23 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	private MemoryBlock allocateInstanceMemory(InstanceClass javaClass) {
 		long objectSize = objectHeaderSize + javaClass.getOccupiedInstanceSpace();
-		return touch(allocator.allocateHeap(objectSize));
+		return touch(vm.getMemoryAllocator().allocateHeap(objectSize));
 	}
 
 	private MemoryBlock allocateClassMemory(InstanceClass javaLangClass, JavaClass javaClass) {
 		long size = objectHeaderSize + javaLangClass.getOccupiedInstanceSpace() + (javaClass instanceof InstanceClass ? ((InstanceClass) javaClass).getOccupiedStaticSpace() : 0);
-		return touch(allocator.allocateHeap(size));
+		return touch(vm.getMemoryAllocator().allocateHeap(size));
 	}
 
 	private MemoryBlock allocateArrayMemory(int length, long componentSize) {
 		long size = arrayHeaderSize + (long) length * componentSize;
-		return touch(allocator.allocateHeap(size));
+		return touch(vm.getMemoryAllocator().allocateHeap(size));
 	}
 
 	private MemoryBlock touch(MemoryBlock block) {
+		if (block == null) {
+			return null; // out of memory
+		}
 		block.getData().writeInt(8L, -1);
 		return block;
 	}

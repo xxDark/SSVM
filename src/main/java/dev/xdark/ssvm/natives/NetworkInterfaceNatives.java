@@ -5,7 +5,6 @@ import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
-import dev.xdark.ssvm.util.Helper;
 import dev.xdark.ssvm.symbol.Symbols;
 import lombok.experimental.UtilityClass;
 
@@ -27,8 +26,7 @@ public class NetworkInterfaceNatives {
 		vmi.setInvoker(jc, "init", "()V", MethodInvoker.noop());
 		// TODO introduce NetworkManager or something like that.
 		vmi.setInvoker(jc, "getAll", "()[Ljava/net/NetworkInterface;", ctx -> {
-			Helper helper = vm.getHelper();
-			ctx.setResult(helper.emptyArray(jc));
+			ctx.setResult(vm.getOperations().allocateArray(jc, 0));
 			return Result.ABORT;
 		});
 	}

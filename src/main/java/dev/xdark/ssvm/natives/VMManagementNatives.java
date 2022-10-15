@@ -5,8 +5,8 @@ import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
+import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.symbol.Symbols;
-import dev.xdark.ssvm.util.Helper;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 
@@ -36,13 +36,13 @@ public class VMManagementNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "getVmArguments0", "()[Ljava/lang/String;", ctx -> {
-			Helper helper = vm.getHelper();
+			VMOperations ops = vm.getOperations();
 			List<String> args = vm.getManagementInterface().getInputArguments();
 			ObjectValue[] vmArgs = new ObjectValue[args.size()];
 			for (int i = 0; i < args.size(); i++) {
-				vmArgs[i] = helper.newUtf8(args.get(i));
+				vmArgs[i] = ops.newUtf8(args.get(i));
 			}
-			ctx.setResult(helper.toVMValues(vmArgs));
+			ctx.setResult(ops.toVMReferences(vmArgs));
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jc, "initOptionalSupportFields", "()V", MethodInvoker.noop());

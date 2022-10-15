@@ -5,7 +5,7 @@ import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
-import dev.xdark.ssvm.util.Helper;
+import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
@@ -39,21 +39,21 @@ public class OldFileSystemNatives {
 		VMInterface vmi = vm.getInterface();
 		vmi.setInvoker(fs, "initIDs", "()V", MethodInvoker.noop());
 		vmi.setInvoker(fs, "canonicalize0", "(Ljava/lang/String;)Ljava/lang/String;", ctx -> {
-			Helper helper = vm.getHelper();
-			String path = helper.readUtf8(ctx.getLocals().loadReference(1));
+			VMOperations ops = vm.getOperations();
+			String path = ops.readUtf8(ctx.getLocals().loadReference(1));
 			try {
-				ctx.setResult(helper.newUtf8(vm.getFileDescriptorManager().canonicalize(path)));
+				ctx.setResult(ops.newUtf8(vm.getFileDescriptorManager().canonicalize(path)));
 			} catch (IOException ex) {
-				helper.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
+				ops.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 			}
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fs, unix ? "getBooleanAttributes0" : "getBooleanAttributes", "(Ljava/io/File;)I", ctx -> {
-			Helper helper = vm.getHelper();
+			VMOperations ops = vm.getOperations();
 			ObjectValue value = ctx.getLocals().loadReference(1);
-			helper.checkNotNull(value);
+			ops.checkNotNull(value);
 			try {
-				String path = helper.readUtf8(vm.getOperations().getReference(value, "path", "Ljava/lang/String;"));
+				String path = ops.readUtf8(ops.getReference(value, "path", "Ljava/lang/String;"));
 				BasicFileAttributes attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
 				if (attributes == null) {
 					ctx.setResult(0);
@@ -67,22 +67,22 @@ public class OldFileSystemNatives {
 					ctx.setResult(res);
 				}
 			} catch (IOException ex) {
-				helper.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
+				ops.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 			}
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fs, "list", "(Ljava/io/File;)[Ljava/lang/String;", ctx -> {
-			Helper helper = vm.getHelper();
+			VMOperations ops = vm.getOperations();
 			ObjectValue value = ctx.getLocals().loadReference(1);
-			helper.checkNotNull(value);
-			String path = helper.readUtf8(vm.getOperations().getReference(value, "path", "Ljava/lang/String;"));
+			ops.checkNotNull(value);
+			String path = ops.readUtf8(vm.getOperations().getReference(value, "path", "Ljava/lang/String;"));
 			String[] list = vm.getFileDescriptorManager().list(path);
 			if (list == null) {
 				ctx.setResult(vm.getMemoryManager().nullValue());
 			} else {
-				ArrayValue values = vm.getHelper().newArray(vm.getSymbols().java_lang_String(), list.length);
+				ArrayValue values = ops.allocateArray(vm.getSymbols().java_lang_String(), list.length);
 				for (int i = 0; i < list.length; i++) {
-					values.setReference(i, helper.newUtf8(list[i]));
+					values.setReference(i, ops.newUtf8(list[i]));
 				}
 				ctx.setResult(values);
 			}
@@ -93,11 +93,11 @@ public class OldFileSystemNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fs, "getLastModifiedTime", "(Ljava/io/File;)J", ctx -> {
-			Helper helper = vm.getHelper();
+			VMOperations ops = vm.getOperations();
 			ObjectValue value = ctx.getLocals().loadReference(1);
-			helper.checkNotNull(value);
+			ops.checkNotNull(value);
 			try {
-				String path = helper.readUtf8(vm.getOperations().getReference(value, "path", "Ljava/lang/String;"));
+				String path = ops.readUtf8(ops.getReference(value, "path", "Ljava/lang/String;"));
 				BasicFileAttributes attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
 				if (attributes == null) {
 					ctx.setResult(0L);
@@ -110,11 +110,11 @@ public class OldFileSystemNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fs, "getLength", "(Ljava/io/File;)J", ctx -> {
-			Helper helper = vm.getHelper();
+			VMOperations ops = vm.getOperations();
 			ObjectValue value = ctx.getLocals().loadReference(1);
-			helper.checkNotNull(value);
+			ops.checkNotNull(value);
 			try {
-				String path = helper.readUtf8(vm.getOperations().getReference(value, "path", "Ljava/lang/String;"));
+				String path = ops.readUtf8(ops.getReference(value, "path", "Ljava/lang/String;"));
 				BasicFileAttributes attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
 				if (attributes == null) {
 					ctx.setResult(0L);

@@ -6,7 +6,7 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
-import dev.xdark.ssvm.util.Helper;
+import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.value.*;
 import lombok.experimental.UtilityClass;
 import me.coley.cafedude.classfile.ClassFile;
@@ -29,7 +29,7 @@ public class ConstantPoolNatives {
 		InstanceClass cpClass = vm.getSymbols().reflect_ConstantPool();
 		VMInterface vmi = vm.getInterface();
 		vmi.setInvoker(cpClass, "getSize0", "(Ljav/lang/Object;)I", ctx -> {
-			JavaClass wrapper = getCpOop(ctx);
+			JavaClass wrapper = getCpOop(vm, ctx);
 			if (wrapper instanceof InstanceClass) {
 				ClassFile cf = ((InstanceClass) wrapper).getRawClassFile();
 				ctx.setResult(cf.getPool().size());
@@ -39,23 +39,23 @@ public class ConstantPoolNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(cpClass, "getClassAt0", "(Ljava/lang/Object;I)Ljava/lang/Class;", ctx -> {
-			InstanceClass wrapper = getInstanceCpOop(ctx);
+			InstanceClass wrapper = getInstanceCpOop(vm, ctx);
 			ClassFile cf = wrapper.getRawClassFile();
-			int index = cpRangeCheck(ctx, cf);
+			int index = cpRangeCheck(vm, ctx, cf);
 			ConstPoolEntry item = cf.getCp(index);
 			String className = ((CpUtf8) cf.getCp(((CpClass) item).getIndex())).getText();
-			Helper helper = vm.getHelper();
-			JavaClass result = helper.findClass(ctx.getOwner().getClassLoader(), className, false);
+			VMOperations ops = vm.getOperations();
+			JavaClass result = ops.findClass(ctx.getMethod().getOwner().getClassLoader(), className, false);
 			ctx.setResult(result.getOop());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(cpClass, "getClassAtIfLoaded0", "(Ljava/lang/Object;I)Ljava/lang/Class;", ctx -> {
-			InstanceClass wrapper = getInstanceCpOop(ctx);
+			InstanceClass wrapper = getInstanceCpOop(vm, ctx);
 			ClassFile cf = wrapper.getRawClassFile();
-			int index = cpRangeCheck(ctx, cf);
+			int index = cpRangeCheck(vm, ctx, cf);
 			ConstPoolEntry item = cf.getCp(index);
 			String className = ((CpUtf8) cf.getCp(((CpClass) item).getIndex())).getText();
-			JavaClass result = vm.getClassLoaders().getClassLoaderData(ctx.getOwner().getClassLoader()).getClass(className);
+			JavaClass result = vm.getClassLoaders().getClassLoaderData(ctx.getMethod().getOwner().getClassLoader()).getClass(className);
 			if (result == null) {
 				ctx.setResult(vm.getMemoryManager().nullValue());
 			} else {
@@ -66,75 +66,65 @@ public class ConstantPoolNatives {
 		// getClassRefIndexAt0?
 		// TODO all reflection stuff
 		vmi.setInvoker(cpClass, "getIntAt0", "(Ljava/lang/Object;I)I", ctx -> {
-			InstanceClass wrapper = getInstanceCpOop(ctx);
+			InstanceClass wrapper = getInstanceCpOop(vm, ctx);
 			ClassFile cf = wrapper.getRawClassFile();
-			int index = cpRangeCheck(ctx, cf);
+			int index = cpRangeCheck(vm, ctx, cf);
 			ConstPoolEntry item = cf.getCp(index);
 			ctx.setResult(((CpInt) item).getValue());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(cpClass, "getLongAt0", "(Ljava/lang/Object;I)J", ctx -> {
-			InstanceClass wrapper = getInstanceCpOop(ctx);
+			InstanceClass wrapper = getInstanceCpOop(vm, ctx);
 			ClassFile cf = wrapper.getRawClassFile();
-			int index = cpRangeCheck(ctx, cf);
+			int index = cpRangeCheck(vm, ctx, cf);
 			ConstPoolEntry item = cf.getCp(index);
 			ctx.setResult(((CpLong) item).getValue());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(cpClass, "getFloatAt0", "(Ljava/lang/Object;I)F", ctx -> {
-			InstanceClass wrapper = getInstanceCpOop(ctx);
+			InstanceClass wrapper = getInstanceCpOop(vm, ctx);
 			ClassFile cf = wrapper.getRawClassFile();
-			int index = cpRangeCheck(ctx, cf);
+			int index = cpRangeCheck(vm, ctx, cf);
 			ConstPoolEntry item = cf.getCp(index);
 			ctx.setResult(((CpFloat) item).getValue());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(cpClass, "getDoubleAt0", "(Ljava/lang/Object;I)D", ctx -> {
-			InstanceClass wrapper = getInstanceCpOop(ctx);
+			InstanceClass wrapper = getInstanceCpOop(vm, ctx);
 			ClassFile cf = wrapper.getRawClassFile();
-			int index = cpRangeCheck(ctx, cf);
+			int index = cpRangeCheck(vm, ctx, cf);
 			ConstPoolEntry item = cf.getCp(index);
 			ctx.setResult(((CpDouble) item).getValue());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(cpClass, "getUTF8At0", "(Ljava/lang/Object;I)Ljava/lang/String;", ctx -> {
-			InstanceClass wrapper = getInstanceCpOop(ctx);
+			InstanceClass wrapper = getInstanceCpOop(vm, ctx);
 			ClassFile cf = wrapper.getRawClassFile();
-			int index = cpRangeCheck(ctx, cf);
+			int index = cpRangeCheck(vm, ctx, cf);
 			ConstPoolEntry item = cf.getCp(index);
-			ctx.setResult(vm.getHelper().newUtf8(((CpUtf8) item).getText()));
+			ctx.setResult(vm.getOperations().newUtf8(((CpUtf8) item).getText()));
 			return Result.ABORT;
 		});
 	}
 
-	private int cpRangeCheck(ExecutionContext<?> ctx, ClassFile cf) {
+	private int cpRangeCheck(VirtualMachine vm, ExecutionContext<?> ctx, ClassFile cf) {
 		int index = ctx.getLocals().loadInt(2);
 		if (index < 0 || index >= cf.getPool().size()) {
-			VirtualMachine vm = ctx.getVM();
-			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException());
+			vm.getOperations().throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 		}
 		return index;
 	}
 
-	private InstanceClass getInstanceCpOop(ExecutionContext<?> ctx) {
-		JavaClass jc = getCpOop(ctx);
+	private InstanceClass getInstanceCpOop(VirtualMachine vm, ExecutionContext<?> ctx) {
+		JavaClass jc = getCpOop(vm, ctx);
 		if (!(jc instanceof InstanceClass)) {
-			VirtualMachine vm = ctx.getVM();
-			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException());
+			vm.getOperations().throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 		}
 		return (InstanceClass) jc;
 	}
 
-	private JavaClass getCpOop(ExecutionContext<?> ctx) {
-		VirtualMachine vm = ctx.getVM();
-		Value value = ctx.getLocals().loadReference(1);
-		if (!(value instanceof JavaValue)) {
-			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException());
-		}
-		Object wrapper = ((JavaValue<?>) value).getValue();
-		if (!(wrapper instanceof JavaClass)) {
-			vm.getHelper().throwException(vm.getSymbols().java_lang_IllegalArgumentException());
-		}
-		return (JavaClass) wrapper;
+	private JavaClass getCpOop(VirtualMachine vm, ExecutionContext<?> ctx) {
+		InstanceValue value = vm.getOperations().checkNotNull(ctx.getLocals().loadReference(1));
+		return vm.getClassStorage().lookup(value);
 	}
 }

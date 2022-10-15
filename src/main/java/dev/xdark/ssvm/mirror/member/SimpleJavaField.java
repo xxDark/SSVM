@@ -103,6 +103,6 @@ public final class SimpleJavaField implements JavaField {
 		InstanceClass owner = this.owner;
 		VirtualMachine vm = owner.getVM();
 		ObjectValue cl = owner.getClassLoader();
-		type = vm.getHelper().findClass(cl, Type.getType(node.desc), false);
+		type = vm.getOperations().findClass(cl, Type.getType(node.desc), false);
 	}
 }

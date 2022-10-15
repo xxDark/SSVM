@@ -4,14 +4,12 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
-import dev.xdark.ssvm.mirror.member.JavaMethod;
-import dev.xdark.ssvm.util.Helper;
-import dev.xdark.ssvm.util.Operations;
+import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 
@@ -38,30 +36,34 @@ public class ConstructorAccessorNatives {
 		vmi.setInvoker(accessor, "newInstance0", "(Ljava/lang/reflect/Constructor;[Ljava/lang/Object;)Ljava/lang/Object;", ctx -> {
 			Locals locals = ctx.getLocals();
 			InstanceValue c = locals.loadReference(0);
-			Operations ops = vm.getOperations();
+			VMOperations ops = vm.getOperations();
 			int slot = ops.getInt(c, "slot");
-			InstanceClass declaringClass = ((JavaValue<InstanceClass>) ops.getReference(c, "clazz", "Ljava/lang/Class;")).getValue();
-			Helper helper = vm.getHelper();
-			JavaMethod mn = helper.getMethodBySlot(declaringClass, slot);
+			JavaClass declaringClass = vm.getClassStorage().lookup(ops.checkNotNull(ops.getReference(c, "clazz", "Ljava/lang/Class;")));
+			if (!(declaringClass instanceof InstanceClass)) {
+				ops.throwException(vm.getSymbols().java_lang_InstantiationError());
+				return Result.ABORT;
+			}
+			JavaMethod mn = ((InstanceClass) declaringClass).getMethodBySlot(slot);
 			if (mn == null || !"<init>".equals(mn.getName())) {
-				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
+				ops.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
+				return Result.ABORT;
 			}
 			ObjectValue values = locals.loadReference(1);
 			JavaClass[] types = mn.getArgumentTypes();
 			ArrayValue passedArgs = null;
 			if (!values.isNull()) {
 				passedArgs = (ArrayValue) values;
-				helper.checkEquals(passedArgs.getLength(), types.length);
+				ops.checkEquals(passedArgs.getLength(), types.length);
 			} else {
-				helper.checkEquals(types.length, 0);
+				ops.checkEquals(types.length, 0);
 			}
-			InstanceValue instance = vm.getMemoryManager().newInstance(declaringClass);
+			InstanceValue instance = vm.getMemoryManager().newInstance((InstanceClass) declaringClass);
 			Locals args = vm.getThreadStorage().newLocals(mn);
 			args.setReference(0, instance);
 			if (passedArgs != null) {
 				Util.copyReflectionArguments(vm, types, passedArgs, args, 0);
 			}
-			helper.invoke(mn, args);
+			ops.invokeVoid(mn, args);
 			ctx.setResult(instance);
 			return Result.ABORT;
 		});

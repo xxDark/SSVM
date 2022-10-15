@@ -7,12 +7,13 @@ import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.MemoryManager;
+import dev.xdark.ssvm.mirror.type.ArrayClass;
 import dev.xdark.ssvm.mirror.type.SimpleArrayClass;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
+import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.synchronizer.Mutex;
-import dev.xdark.ssvm.util.Helper;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
@@ -39,26 +40,28 @@ public class ObjectNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "notify", "()V", ctx -> {
-			Mutex mutex = ctx.getMemoryManager().getMutex(ctx.getLocals().loadReference(0));
+			Mutex mutex = vm.getMemoryManager().getMutex(ctx.getLocals().loadReference(0));
 			if (!mutex.isHeldByCurrentThread()) {
-				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException());
+				vm.getOperations().throwException(symbols.java_lang_IllegalMonitorStateException());
+				return Result.ABORT;
 			}
 			mutex.doNotify();
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "notifyAll", "()V", ctx -> {
-			Mutex mutex = ctx.getMemoryManager().getMutex(ctx.getLocals().loadReference(0));
+			Mutex mutex = vm.getMemoryManager().getMutex(ctx.getLocals().loadReference(0));
 			if (!mutex.isHeldByCurrentThread()) {
-				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException());
+				vm.getOperations().throwException(symbols.java_lang_IllegalMonitorStateException());
+				return Result.ABORT;
 			}
 			mutex.doNotifyAll();
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "wait", "(J)V", ctx -> {
 			Locals locals = ctx.getLocals();
-			Mutex mutex = ctx.getMemoryManager().getMutex(ctx.getLocals().loadReference(0));
+			Mutex mutex = vm.getMemoryManager().getMutex(ctx.getLocals().loadReference(0));
 			if (!mutex.isHeldByCurrentThread()) {
-				vm.getHelper().throwException(symbols.java_lang_IllegalMonitorStateException());
+				vm.getOperations().throwException(symbols.java_lang_IllegalMonitorStateException());
 			}
 			try {
 				long time = locals.loadLong(1);
@@ -67,9 +70,8 @@ public class ObjectNatives {
 				}
 				mutex.doWait(time);
 			} catch (InterruptedException ex) {
-				vm.getHelper().throwException(symbols.java_lang_InterruptedException());
+				vm.getOperations().throwException(symbols.java_lang_InterruptedException());
 			}
-			ctx.pollSafePointAndSuspend();
 			return Result.ABORT;
 		});
 		vmi.setInvoker(object, "hashCode", "()I", ctx -> {
@@ -79,18 +81,18 @@ public class ObjectNatives {
 		vmi.setInvoker(object, "clone", "()Ljava/lang/Object;", ctx -> {
 			ObjectValue _this = ctx.getLocals().loadReference(0);
 			JavaClass type = _this.getJavaClass();
-			Helper helper = vm.getHelper();
+			VMOperations ops = vm.getOperations();
 			MemoryManager memoryManager = vm.getMemoryManager();
 			ObjectValue clone;
-			if (type instanceof SimpleArrayClass) {
+			if (type instanceof ArrayClass) {
 				ArrayValue arr = (ArrayValue) _this;
-				clone = memoryManager.newArray((SimpleArrayClass) type, arr.getLength());
+				clone = memoryManager.newArray((ArrayClass) type, arr.getLength());
 			} else {
 				clone = memoryManager.newInstance((InstanceClass) type);
 			}
 			int originalOffset = memoryManager.valueBaseOffset(_this);
 			int offset = memoryManager.valueBaseOffset(clone);
-			helper.checkEquals(originalOffset, offset);
+			ops.checkEquals(originalOffset, offset);
 			MemoryData copyTo = clone.getMemory().getData();
 			MemoryData copyFrom = _this.getMemory().getData();
 			copyFrom.write(

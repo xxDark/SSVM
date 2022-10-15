@@ -1,14 +1,15 @@
 package dev.xdark.ssvm.memory.management;
 
-import dev.xdark.ssvm.util.Helper;
+import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.ObjectValue;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Function;
 
 /**
  * Basic string pool implementation.
@@ -19,20 +20,21 @@ public class SimpleStringPool implements StringPool {
 
 	private final Map<String, InstanceValue> pool = new HashMap<>();
 	private final ReadWriteLock lock = new ReentrantReadWriteLock();
-	private final Helper helper;
+	private final VMOperations ops;
+	private final Function<? super String, ? extends InstanceValue> pooler;
 
-	public SimpleStringPool(Helper helper) {
-		this.helper = helper;
+	public SimpleStringPool(VirtualMachine vm) {
+		VMOperations ops = vm.getOperations();
+		this.ops = ops;
+		pooler = ops::newUtf8;
 	}
 
 	@Override
-	public ObjectValue intern(String value) {
+	public InstanceValue intern(String value) {
 		Lock lock = this.lock.writeLock();
 		lock.lock();
 		try {
-			return pool.computeIfAbsent(value, k -> {
-				return helper.newUtf8(k, false);
-			});
+			return pool.computeIfAbsent(value, pooler);
 		} finally {
 			lock.unlock();
 		}
@@ -40,7 +42,7 @@ public class SimpleStringPool implements StringPool {
 
 	@Override
 	public InstanceValue intern(InstanceValue value) {
-		return (InstanceValue) intern(helper.readUtf8(value));
+		return (InstanceValue) intern(ops.readUtf8(value));
 	}
 
 	@Override

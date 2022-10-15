@@ -4,7 +4,7 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
-import dev.xdark.ssvm.util.Helper;
+import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.value.ArrayValue;
 import lombok.experimental.UtilityClass;
 
@@ -67,17 +67,17 @@ public class SystemPropsNatives {
 		if (jc != null) {
 			VMInterface vmi = vm.getInterface();
 			vmi.setInvoker(jc, "platformProperties", "()[Ljava/lang/String;", ctx -> {
-				ctx.setResult(vm.getHelper().newArray(vm.getSymbols().java_lang_String(), FIXED_LENGTH));
+				ctx.setResult(vm.getOperations().allocateArray(vm.getSymbols().java_lang_String(), FIXED_LENGTH));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(jc, "vmProperties", "()[Ljava/lang/String;", ctx -> {
 				Map<String, String> properties = vm.getProperties();
-				Helper helper = vm.getHelper();
-				ArrayValue array = helper.newArray(vm.getSymbols().java_lang_String(), properties.size() * 2);
+				VMOperations ops = vm.getOperations();
+				ArrayValue array = ops.allocateArray(vm.getSymbols().java_lang_String(), properties.size() * 2);
 				int i = 0;
 				for (Map.Entry<String, String> entry : properties.entrySet()) {
-					array.setReference(i++, helper.newUtf8(entry.getKey()));
-					array.setReference(i++, helper.newUtf8(entry.getValue()));
+					array.setReference(i++, ops.newUtf8(entry.getKey()));
+					array.setReference(i++, ops.newUtf8(entry.getValue()));
 				}
 				ctx.setResult(array);
 				return Result.ABORT;

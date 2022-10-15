@@ -30,7 +30,7 @@ public final class DefaultStringOperations implements StringOperations {
 	private final LinkResolver linkResolver;
 	private final AllocationOperations allocationOperations;
 	private final InvocationOperations invocationOperations;
-	private final ArrayConversionOperations arrayConversionOperations;
+	private final ConversionOperations conversionOperations;
 
 	@Override
 	public InstanceValue newUtf8(String value) {
@@ -70,7 +70,7 @@ public final class DefaultStringOperations implements StringOperations {
 			locals.setReference(0, value);
 			array = (ArrayValue) invocationOperations.invokeReference(toCharArray, locals);
 		}
-		return UnsafeUtil.newString(arrayConversionOperations.toJavaChars(array));
+		return UnsafeUtil.newString(conversionOperations.toJavaChars(array));
 	}
 
 	@Override

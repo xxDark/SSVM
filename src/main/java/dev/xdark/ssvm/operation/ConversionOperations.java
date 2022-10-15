@@ -8,7 +8,7 @@ import dev.xdark.ssvm.value.ObjectValue;
  *
  * @author xDark
  */
-public interface ArrayConversionOperations {
+public interface ConversionOperations {
 
 	/**
 	 * Converts an array to {@code long[]} array.

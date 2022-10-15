@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
  * @author xDark
  */
 @RequiredArgsConstructor
-public final class DefaultArrayConversionOperations implements ArrayConversionOperations {
+public final class DefaultConversionOperations implements ConversionOperations {
 
 	private final Symbols symbols;
 	private final MemoryManager memoryManager;

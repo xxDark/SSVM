@@ -86,9 +86,10 @@ public final class DefaultMethodHandleOperations implements MethodHandleOperatio
 		Locals locals = threadManager.currentThreadStorage().newLocals(link);
 		locals.setReference(0, caller.getOop());
 		locals.setInt(1, handle.getTag());
-		locals.setReference(2, classOperations.findClass(caller.getClassLoader(), handle.getOwner(), false).getOop());
+		ObjectValue cl = caller.getClassLoader();
+		locals.setReference(2, classOperations.findClass(cl, handle.getOwner(), false).getOop());
 		locals.setReference(3, stringOperations.newUtf8(handle.getName()));
-		locals.setReference(4, methodType(caller.getClassLoader(), Type.getMethodType(handle.getDesc())));
+		locals.setReference(4, methodType(cl, Type.getMethodType(handle.getDesc())));
 		return (InstanceValue) invocationOperations.invokeReference(link, locals);
 	}
 }

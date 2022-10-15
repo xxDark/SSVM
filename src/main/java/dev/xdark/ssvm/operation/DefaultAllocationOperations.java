@@ -1,8 +1,10 @@
 package dev.xdark.ssvm.operation;
 
 import dev.xdark.ssvm.memory.management.MemoryManager;
+import dev.xdark.ssvm.mirror.type.ArrayClass;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
+import dev.xdark.ssvm.mirror.type.SimpleArrayClass;
 import dev.xdark.ssvm.symbol.Primitives;
 import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.value.ArrayValue;
@@ -22,6 +24,7 @@ public final class DefaultAllocationOperations implements AllocationOperations {
 	private final Primitives primitives;
 	private final ExceptionOperations exceptionOperations;
 	private final VerificationOperations verificationOperations;
+	private final ClassOperations classOperations;
 
 	@Override
 	public InstanceValue allocateInstance(JavaClass klass) {
@@ -30,7 +33,7 @@ public final class DefaultAllocationOperations implements AllocationOperations {
 			exceptionOperations.throwException(symbols.java_lang_InstantiationError());
 			return null;
 		}
-		jc.initialize();
+		classOperations.initialize(jc);
 		return memoryManager.newInstance(jc);
 	}
 
@@ -78,5 +81,28 @@ public final class DefaultAllocationOperations implements AllocationOperations {
 	@Override
 	public ArrayValue allocateBooleanArray(int length) {
 		return allocateArray(primitives.booleanPrimitive(), length);
+	}
+
+	@Override
+	public ArrayValue allocateMultiArray(ArrayClass type, int[] lengths) {
+		return newMultiArrayInner(type, lengths, 0);
+	}
+
+	private ArrayValue newMultiArrayInner(ArrayClass type, int[] lengths, int depth) {
+		JavaClass newType = type.getComponentType();
+		MemoryManager memoryManager = this.memoryManager;
+		if (!newType.isArray()) {
+			return memoryManager.newArray(type, lengths[depth]);
+		}
+		ArrayValue array = memoryManager.newArray(type, lengths[depth]);
+		if (depth == lengths.length - 1) {
+			return array;
+		}
+		int length = lengths[depth];
+		int next = depth + 1;
+		while (length-- != 0) {
+			array.setReference(length, newMultiArrayInner((SimpleArrayClass) newType, lengths, next));
+		}
+		return array;
 	}
 }

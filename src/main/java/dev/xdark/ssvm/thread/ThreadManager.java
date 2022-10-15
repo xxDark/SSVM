@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.thread;
 
+import dev.xdark.ssvm.thread.backtrace.Backtrace;
 import dev.xdark.ssvm.value.InstanceValue;
 
 import java.util.List;
@@ -86,6 +87,15 @@ public interface ThreadManager {
 	default ThreadStorage currentThreadStorage() {
 		OSThread th = currentOsThread();
 		return th == null ? null : th.getStorage();
+	}
+
+	/**
+	 * @return Current thread backtrace, or {@code null},
+	 * if current thread is not VM thread or not attached.
+	 */
+	default Backtrace currentBacktrace() {
+		OSThread th = currentOsThread();
+		return th == null ? null : th.getBacktrace();
 	}
 
 	/**

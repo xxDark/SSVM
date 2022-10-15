@@ -4,106 +4,185 @@ import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.classloading.BootClassFinder;
 import dev.xdark.ssvm.classloading.ClassDefiner;
 import dev.xdark.ssvm.classloading.ClassLoaders;
+import dev.xdark.ssvm.classloading.ClassStorage;
 import dev.xdark.ssvm.classloading.ParsedClassData;
+import dev.xdark.ssvm.classloading.RuntimeBootClassFinder;
+import dev.xdark.ssvm.classloading.SimpleClassDefiner;
+import dev.xdark.ssvm.classloading.SimpleClassLoaders;
+import dev.xdark.ssvm.classloading.SimpleClassStorage;
 import dev.xdark.ssvm.execution.ExecutionEngine;
 import dev.xdark.ssvm.execution.Locals;
+import dev.xdark.ssvm.execution.SimpleExecutionEngine;
 import dev.xdark.ssvm.fs.FileDescriptorManager;
+import dev.xdark.ssvm.fs.SimpleFileDescriptorManager;
 import dev.xdark.ssvm.jvm.ManagementInterface;
+import dev.xdark.ssvm.jvm.SimpleManagementInterface;
+import dev.xdark.ssvm.jvmti.JVMTIEnv;
+import dev.xdark.ssvm.jvmti.VMEventCollection;
 import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
+import dev.xdark.ssvm.memory.allocation.NavigableMemoryAllocator;
 import dev.xdark.ssvm.memory.management.MemoryManager;
+import dev.xdark.ssvm.memory.management.SimpleMemoryManager;
+import dev.xdark.ssvm.memory.management.SimpleStringPool;
 import dev.xdark.ssvm.memory.management.StringPool;
 import dev.xdark.ssvm.mirror.MirrorFactory;
+import dev.xdark.ssvm.mirror.SimpleMirrorFactory;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.natives.IntrinsicsNatives;
 import dev.xdark.ssvm.nt.NativeLibraryManager;
+import dev.xdark.ssvm.nt.SimpleNativeLibraryManager;
 import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.symbol.InitializedPrimitives;
 import dev.xdark.ssvm.symbol.InitializedSymbols;
 import dev.xdark.ssvm.symbol.Primitives;
 import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.synchronizer.ObjectSynchronizer;
+import dev.xdark.ssvm.synchronizer.java.LockObjectSynchronizer;
 import dev.xdark.ssvm.thread.JavaThread;
 import dev.xdark.ssvm.thread.OSThread;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.ThreadStorage;
+import dev.xdark.ssvm.thread.virtual.VirtualThreadManager;
+import dev.xdark.ssvm.tz.SimpleTimeManager;
 import dev.xdark.ssvm.tz.TimeManager;
 import dev.xdark.ssvm.util.Reflection;
 import dev.xdark.ssvm.value.InstanceValue;
+import lombok.experimental.Delegate;
 
 import java.nio.ByteOrder;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class VirtualMachine implements VirtualMachineFacade {
+public class VirtualMachine implements VMEventCollection {
 
 	private final AtomicReference<InitializationState> state = new AtomicReference<>(InitializationState.UNINITIALIZED);
+	private final VMInterface vmInterface;
 	private final MemoryAllocator memoryAllocator;
+	private final ObjectSynchronizer objectSynchronizer;
 	private final MemoryManager memoryManager;
 	private final ClassDefiner classDefiner;
 	private final ThreadManager threadManager;
 	private final FileDescriptorManager fileDescriptorManager;
 	private final NativeLibraryManager nativeLibraryManager;
-	private final StringPool stringPool;
-	private final ManagementInterface managementInterface;
 	private final TimeManager timeManager;
+	private final ManagementInterface managementInterface;
+	private final StringPool stringPool;
 	private final ClassLoaders classLoaders;
 	private final ExecutionEngine executionEngine;
-	private final LinkResolver linkResolver;
 	private final MirrorFactory mirrorFactory;
-	private final ObjectSynchronizer objectSynchronizer;
 	private final BootClassFinder bootClassFinder;
+	private final ClassStorage classStorage;
+	private final LinkResolver linkResolver;
 	private final Map<String, String> properties;
 	private final Map<String, String> env;
-	private final VMInterface vmInterface;
 	private final Reflection reflection;
+	@Delegate(types = VMEventCollection.class)
+	private final JVMTI jvmti;
 	private final VMOperations operations;
 	private Symbols symbols;
 	private Primitives primitives;
 	private volatile InstanceValue systemThreadGroup;
 	private volatile InstanceValue mainThreadGroup;
 
-	public VirtualMachine(
-		VMInterface vmInterface,
-		MemoryAllocator memoryAllocator,
-		MemoryManager memoryManager,
-		ClassDefiner classDefiner,
-		ThreadManager threadManager,
-		FileDescriptorManager fileDescriptorManager,
-		NativeLibraryManager nativeLibraryManager,
-		StringPool stringPool,
-		ManagementInterface managementInterface,
-		TimeManager timeManager,
-		ClassLoaders classLoaders,
-		ExecutionEngine executionEngine,
-		LinkResolver linkResolver,
-		MirrorFactory mirrorFactory,
-		ObjectSynchronizer objectSynchronizer,
-		BootClassFinder bootClassFinder,
-		Map<String, String> properties,
-		Map<String, String> env
-	) {
-		this.vmInterface = vmInterface;
-		this.memoryAllocator = memoryAllocator;
-		this.memoryManager = memoryManager;
-		this.classDefiner = classDefiner;
-		this.threadManager = threadManager;
-		this.fileDescriptorManager = fileDescriptorManager;
-		this.nativeLibraryManager = nativeLibraryManager;
-		this.stringPool = stringPool;
-		this.managementInterface = managementInterface;
-		this.timeManager = timeManager;
-		this.classLoaders = classLoaders;
-		this.executionEngine = executionEngine;
-		this.linkResolver = linkResolver;
-		this.mirrorFactory = mirrorFactory;
-		this.objectSynchronizer = objectSynchronizer;
-		this.bootClassFinder = bootClassFinder;
-		this.properties = properties;
-		this.env = env;
-		reflection = new Reflection(threadManager);
+	public VirtualMachine() {
+		vmInterface = new VMInterface();
+		memoryAllocator = createMemoryAllocator();
+		objectSynchronizer = createObjectSynchronizer();
+		memoryManager = createMemoryManager();
+		classDefiner = createClassDefiner();
+		threadManager = createThreadManager();
+		fileDescriptorManager = createFileDescriptorManager();
+		nativeLibraryManager = createNativeLibraryManager();
+		timeManager = createTimeManager();
+		managementInterface = createManagementInterface();
+		stringPool = createStringPool();
+		classLoaders = createClassLoaders();
+		executionEngine = createExecutionEngine();
+		mirrorFactory = createMirrorFactory();
+		bootClassFinder = createBootClassFinder();
+		classStorage = createClassStorage();
+		linkResolver = new LinkResolver(this);
+		// After this point all components are created, only utilities are left.
+		properties = createSystemProperties();
+		env = createEnvironmentVariables();
+		reflection = new Reflection(this);
+		jvmti = new JVMTI(this);
 		operations = new VMOperations(this);
+	}
+
+	protected MemoryAllocator createMemoryAllocator() {
+		return new NavigableMemoryAllocator();
+	}
+
+	protected ObjectSynchronizer createObjectSynchronizer() {
+		return new LockObjectSynchronizer(1024);
+	}
+
+	protected MemoryManager createMemoryManager() {
+		return new SimpleMemoryManager(this);
+	}
+
+	protected ClassDefiner createClassDefiner() {
+		return new SimpleClassDefiner();
+	}
+
+	protected ThreadManager createThreadManager() {
+		return new VirtualThreadManager(this);
+	}
+
+	protected FileDescriptorManager createFileDescriptorManager() {
+		return new SimpleFileDescriptorManager();
+	}
+
+	protected NativeLibraryManager createNativeLibraryManager() {
+		return new SimpleNativeLibraryManager();
+	}
+
+	protected TimeManager createTimeManager() {
+		return new SimpleTimeManager();
+	}
+
+	protected ManagementInterface createManagementInterface() {
+		return new SimpleManagementInterface();
+	}
+
+	protected StringPool createStringPool() {
+		return new SimpleStringPool(this);
+	}
+
+	protected ClassLoaders createClassLoaders() {
+		return new SimpleClassLoaders(this);
+	}
+
+	protected ExecutionEngine createExecutionEngine() {
+		return new SimpleExecutionEngine(this);
+	}
+
+	protected MirrorFactory createMirrorFactory() {
+		return new SimpleMirrorFactory(this);
+	}
+
+	protected BootClassFinder createBootClassFinder() {
+		return RuntimeBootClassFinder.create();
+	}
+
+	protected ClassStorage createClassStorage() {
+		return new SimpleClassStorage(this);
+	}
+
+	protected Map<String, String> createSystemProperties() {
+		//noinspection unchecked
+		return new LinkedHashMap<>((Map<String, String>) (Map) System.getProperties());
+	}
+
+	protected Map<String, String> createEnvironmentVariables() {
+		TreeMap<String, String> env = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+		env.putAll(System.getenv());
+		return env;
 	}
 
 	/**
@@ -132,13 +211,11 @@ public class VirtualMachine implements VirtualMachineFacade {
 	 *                               or fails to initialize.
 	 */
 	public void initialize() {
-		//<editor-fold desc="VM initialization">
 		if (state.compareAndSet(InitializationState.UNINITIALIZED, InitializationState.INITIALIZING)) {
 			init();
 		} else {
 			throw new IllegalStateException("Failed to enter in INITIALIZING state");
 		}
-		//</editor-fold>
 	}
 
 	/**
@@ -149,16 +226,13 @@ public class VirtualMachine implements VirtualMachineFacade {
 	 *                               or fails to boot.
 	 */
 	public void bootstrap() {
-		//<editor-fold desc="VM bootstrap">
 		tryInitialize();
 		assertInitialized();
-		//<editor-fold desc="VM initialization">
 		if (state.compareAndSet(InitializationState.INITIALIZED, InitializationState.BOOTING)) {
 			boot();
 		} else {
 			throw new IllegalStateException("Failed to enter in BOOTING state");
 		}
-		//</editor-fold>
 	}
 
 	/**
@@ -190,6 +264,13 @@ public class VirtualMachine implements VirtualMachineFacade {
 	}
 
 	/**
+	 * @return New JVMTI environment.
+	 */
+	public JVMTIEnv newJvmtiEnv() {
+		return jvmti.create();
+	}
+
+	/**
 	 * @return VM helper.
 	 */
 	public Symbols getSymbols() {
@@ -211,7 +292,7 @@ public class VirtualMachine implements VirtualMachineFacade {
 	}
 
 	/**
-	 * @inheritDoc
+	 * @return Link resolver.
 	 */
 	public LinkResolver getLinkResolver() {
 		return linkResolver;
@@ -225,88 +306,95 @@ public class VirtualMachine implements VirtualMachineFacade {
 	}
 
 	/**
-	 * @inheritDoc
+	 * @return Class definer.
 	 */
 	public ClassDefiner getClassDefiner() {
 		return classDefiner;
 	}
 
 	/**
-	 * @inheritDoc
+	 * @return Thread manager.
 	 */
 	public ThreadManager getThreadManager() {
 		return threadManager;
 	}
 
 	/**
-	 * @inheritDoc
+	 * @return File descriptor manager.
 	 */
 	public FileDescriptorManager getFileDescriptorManager() {
 		return fileDescriptorManager;
 	}
 
 	/**
-	 * @inheritDoc
+	 * @return Native library manager.
 	 */
 	public NativeLibraryManager getNativeLibraryManager() {
 		return nativeLibraryManager;
 	}
 
 	/**
-	 * @inheritDoc
+	 * @return Stirng pool.
 	 */
 	public StringPool getStringPool() {
 		return stringPool;
 	}
 
 	/**
-	 * @inheritDoc
+	 * @return Management interface.
+	 * TODO: remove?
 	 */
 	public ManagementInterface getManagementInterface() {
 		return managementInterface;
 	}
 
 	/**
-	 * @inheritDoc
+	 * @return Time manager.
 	 */
 	public TimeManager getTimeManager() {
 		return timeManager;
 	}
 
 	/**
-	 * @inheritDoc
+	 * @return Class loaders storage.
 	 */
 	public ClassLoaders getClassLoaders() {
 		return classLoaders;
 	}
 
 	/**
-	 * @inheritDoc
+	 * @return Executing engine.
 	 */
 	public ExecutionEngine getExecutionEngine() {
 		return executionEngine;
 	}
 
 	/**
-	 * @inheritDoc
+	 * @return Mirror factory.
 	 */
 	public MirrorFactory getMirrorFactory() {
 		return mirrorFactory;
 	}
 
 	/**
-	 * @inheritDoc
+	 * @return Object synchronizer.
 	 */
 	public ObjectSynchronizer getObjectSynchronizer() {
 		return objectSynchronizer;
 	}
 
 	/**
-	 * @inheritDoc
+	 * @return Boot class finder.
 	 */
-	@Override
 	public BootClassFinder getBootClassFinder() {
 		return bootClassFinder;
+	}
+
+	/**
+	 * @return Class storage.
+	 */
+	public ClassStorage getClassStorage() {
+		return classStorage;
 	}
 
 	/**
@@ -392,6 +480,9 @@ public class VirtualMachine implements VirtualMachineFacade {
 	private void init() {
 		ThreadManager threadManager = this.threadManager;
 		try {
+			// Create temporary JVMTI environments here to hook into some bootstrap classes
+			NativeJava.setupJVMTI(this);
+
 			ClassLoaders classLoaders = this.classLoaders;
 			VMOperations ops = this.operations;
 			// This is essentially the same hack HotSpot does when VM is starting up
@@ -400,11 +491,8 @@ public class VirtualMachine implements VirtualMachineFacade {
 			// otherwise some MemoryManager implementations will bottleneck.
 			InstanceClass klass = internalLink("java/lang/Class");
 			InstanceClass object = internalLink("java/lang/Object");
-			ops.link(klass);
-			ops.link(object);
 			classLoaders.initializeBootOop(klass, klass);
 			classLoaders.initializeBootOop(object, klass);
-			NativeJava.injectPhase2(this);
 			InitializedSymbols initializedVMSymbols = new InitializedSymbols(this);
 			((DelegatingSymbols) symbols).setSymbols(initializedVMSymbols);
 			symbols = initializedVMSymbols;
@@ -538,6 +626,6 @@ public class VirtualMachine implements VirtualMachineFacade {
 		if (result == null) {
 			throw new IllegalStateException("Bootstrap class not found: " + name);
 		}
-		return (InstanceClass) operations.defineClass(memoryManager.nullValue(), result, memoryManager.nullValue(), "JVM_DefineClass", true);
+		return operations.defineClass(memoryManager.nullValue(), result, memoryManager.nullValue(), "JVM_DefineClass", true);
 	}
 }

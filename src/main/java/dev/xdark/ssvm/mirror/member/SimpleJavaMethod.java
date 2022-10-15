@@ -40,6 +40,7 @@ public final class SimpleJavaMethod implements JavaMethod {
 	private int maxLocals = -1;
 	private int invocationCount;
 	private Boolean callerSensitive;
+	private Boolean hidden;
 	private Boolean isConstructor;
 	private List<VMTryCatchBlock> tryCatchBlocks;
 	private MemberIdentifier identifier;
@@ -163,11 +164,34 @@ public final class SimpleJavaMethod implements JavaMethod {
 	public boolean isCallerSensitive() {
 		Boolean callerSensitive = this.callerSensitive;
 		if (callerSensitive == null) {
+			if (!owner.getClassLoader().isNull()) {
+				return this.callerSensitive = false;
+			}
 			List<AnnotationNode> visibleAnnotations = node.visibleAnnotations;
 			return this.callerSensitive = visibleAnnotations != null
-				&& visibleAnnotations.stream().anyMatch(x -> "Lsun/reflect/CallerSensitive;".equals(x.desc));
+				&& visibleAnnotations.stream().anyMatch(x -> {
+				String desc = x.desc;
+				return "Lsun/reflect/CallerSensitive;".equals(desc) || "Ljava/lang/invoke/LambdaForm$Hidden;".equals(desc);
+			});
 		}
 		return callerSensitive;
+	}
+
+	@Override
+	public boolean isHidden() {
+		Boolean hidden = this.hidden;
+		if (hidden == null) {
+			if (!owner.getClassLoader().isNull()) {
+				return this.hidden = false;
+			}
+			List<AnnotationNode> visibleAnnotations = node.visibleAnnotations;
+			return this.hidden = visibleAnnotations != null
+				&& visibleAnnotations.stream().anyMatch(x -> {
+				String desc = x.desc;
+				return "L/java/lang/invoke/MethodHandle$PolymorphicSignature;".equals(desc) || "Ljava/lang/invoke/LambdaForm$Hidden;".equals(desc);
+			});
+		}
+		return false;
 	}
 
 	@Override
@@ -258,7 +282,7 @@ public final class SimpleJavaMethod implements JavaMethod {
 		InstanceClass owner = this.owner;
 		VirtualMachine vm = owner.getVM();
 		ObjectValue cl = owner.getClassLoader();
-		returnType = vm.getHelper().findClass(cl, getType().getReturnType(), false);
+		returnType = vm.getOperations().findClass(cl, getType().getReturnType(), false);
 	}
 
 	private void resolveArgumentTypes() {
@@ -266,6 +290,6 @@ public final class SimpleJavaMethod implements JavaMethod {
 		VirtualMachine vm = owner.getVM();
 		ObjectValue cl = owner.getClassLoader();
 		Type[] types = getType().getArgumentTypes();
-		argumentTypes = vm.getHelper().convertTypes(cl, types, false);
+		argumentTypes = vm.getOperations().convertTypes(cl, types, false);
 	}
 }

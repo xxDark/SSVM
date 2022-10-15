@@ -1,7 +1,7 @@
 package dev.xdark.ssvm.operation;
 
 import dev.xdark.ssvm.LinkResolver;
-import dev.xdark.ssvm.VirtualMachineFacade;
+import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.memory.management.StringPool;
 import dev.xdark.ssvm.symbol.Symbols;
@@ -15,7 +15,7 @@ import lombok.experimental.Delegate;
  */
 public final class VMOperations implements
 	AllocationOperations,
-	ArrayConversionOperations,
+	ConversionOperations,
 	ArrayOperations,
 	ExceptionOperations,
 	FieldOperations,
@@ -34,7 +34,7 @@ public final class VMOperations implements
 	@Delegate
 	private final AllocationOperations allocationOperations;
 	@Delegate
-	private final ArrayConversionOperations arrayConversionOperations;
+	private final ConversionOperations conversionOperations;
 	@Delegate
 	private final ArrayOperations arrayOperations;
 	@Delegate
@@ -60,25 +60,25 @@ public final class VMOperations implements
 	@Delegate
 	private final ConstantOperations constantOperations;
 
-	public VMOperations(VirtualMachineFacade vm) {
+	public VMOperations(VirtualMachine vm) {
 		MemoryManager memoryManager = vm.getMemoryManager();
 		Symbols symbols = vm.getSymbols();
 		ThreadManager threadManager = vm.getThreadManager();
 		LinkResolver linkResolver = vm.getLinkResolver();
 		StringPool stringPool = vm.getStringPool();
-		allocationOperations = new DefaultAllocationOperations(memoryManager, symbols, vm.getPrimitives(), this, this);
-		arrayConversionOperations = new DefaultArrayConversionOperations(symbols, memoryManager, allocationOperations);
+		allocationOperations = new DefaultAllocationOperations(memoryManager, symbols, vm.getPrimitives(), this, this, this);
+		conversionOperations = new DefaultConversionOperations(symbols, memoryManager, allocationOperations);
 		arrayOperations = new DefaultArrayOperations(symbols, this, this);
 		exceptionOperations = new DefaultExceptionOperations(memoryManager, symbols, this, this, this);
 		fieldOperations = new DefaultFieldOperations(memoryManager, linkResolver, this);
 		invocationOperations = new DefaultInvocationOperations(vm.getExecutionEngine(), threadManager);
 		primitiveOperations = new DefaultPrimitiveOperations(symbols, threadManager, linkResolver, invocationOperations, this);
-		stringOperations = new DefaultStringOperations(memoryManager, threadManager, symbols, linkResolver, allocationOperations, invocationOperations, arrayConversionOperations);
+		stringOperations = new DefaultStringOperations(memoryManager, threadManager, symbols, linkResolver, allocationOperations, invocationOperations, conversionOperations);
 		synchronizationOperations = new DefaultSynchronizationOperations(symbols, memoryManager, this, exceptionOperations);
 		verificationOperations = new DefaultVerificationOperations(symbols, exceptionOperations);
-		classOperations = new DefaultClassOperations(vm.getMirrorFactory(), memoryManager, threadManager, vm.getBootClassFinder(), linkResolver, symbols, vm.getClassLoaders(), vm.getClassDefiner(), null, exceptionOperations, invocationOperations, stringOperations, verificationOperations);
+		classOperations = new DefaultClassOperations(vm.getMirrorFactory(), memoryManager, threadManager, vm.getBootClassFinder(), linkResolver, symbols, vm.getClassLoaders(), vm.getClassDefiner(), null, exceptionOperations, invocationOperations, stringOperations, verificationOperations, this);
 		methodHandleOperations = new DefaultMethodHandleOperations(symbols, threadManager, linkResolver, classOperations, invocationOperations, allocationOperations, stringOperations);
-		invokeDynamicOperations = new DefaultInvokeDynamicOperations(symbols, threadManager, stringPool, linkResolver, exceptionOperations, allocationOperations, methodHandleOperations, invocationOperations, verificationOperations);
+		invokeDynamicOperations = new DefaultInvokeDynamicOperations(symbols, threadManager, stringPool, linkResolver, vm.getClassStorage(), memoryManager, exceptionOperations, allocationOperations, methodHandleOperations, invocationOperations, verificationOperations, fieldOperations, classOperations, primitiveOperations);
 		constantOperations = new DefaultConstantOperations(memoryManager, threadManager, stringPool, classOperations, methodHandleOperations);
 	}
 }

@@ -1,12 +1,13 @@
 package dev.xdark.ssvm.natives;
 
-import dev.xdark.ssvm.NativeJava;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.asm.Modifier;
+import dev.xdark.ssvm.classloading.ClassStorage;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.inject.InjectedClassLayout;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.memory.management.StringPool;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
@@ -15,7 +16,6 @@ import dev.xdark.ssvm.mirror.member.JavaField;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.symbol.Primitives;
-import dev.xdark.ssvm.util.Helper;
 import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
@@ -44,8 +44,6 @@ import java.util.List;
  */
 @UtilityClass
 public class ClassNatives {
-
-	private final String PROTECTION_DOMAIN = NativeJava.PROTECTION_DOMAIN;
 
 	/**
 	 * @param vm VM instance.
@@ -128,39 +126,46 @@ public class ClassNatives {
 		vmi.setInvoker(jlc, "isAssignableFrom", "(Ljava/lang/Class;)Z", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMOperations ops = vm.getOperations();
-			JavaClass _this = locals.<JavaValue<JavaClass>>loadReference(0).getValue();
-			JavaClass arg = helper.<JavaValue<JavaClass>>checkNotNull(locals.loadReference(1)).getValue();
+			ClassStorage cs = vm.getClassStorage();
+			JavaClass _this = cs.lookup(locals.loadReference(0));
+			JavaClass arg = cs.lookup(ops.checkNotNull(locals.loadReference(1)));
 			ctx.setResult(_this.isAssignableFrom(arg) ? 1 : 0);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "isInterface", "()Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			JavaClass _this = locals.<JavaValue<JavaClass>>loadReference(0).getValue();
+			ClassStorage cs = vm.getClassStorage();
+			JavaClass _this = cs.lookup(locals.loadReference(0));
 			ctx.setResult(_this.isInterface() ? 1 : 0);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "isPrimitive", "()Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			JavaClass _this = locals.<JavaValue<JavaClass>>loadReference(0).getValue();
+			ClassStorage cs = vm.getClassStorage();
+			JavaClass _this = cs.lookup(locals.loadReference(0));
 			ctx.setResult(_this.isPrimitive() ? 1 : 0);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "isHidden", "()Z", ctx -> {
 			Locals locals = ctx.getLocals();
-			JavaClass _this = locals.<JavaValue<JavaClass>>loadReference(0).getValue();
+			ClassStorage cs = vm.getClassStorage();
+			JavaClass _this = cs.lookup(locals.loadReference(0));
 			ctx.setResult(Modifier.isHiddenMember(_this.getModifiers()) ? 1 : 0);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getSuperclass", "()Ljava/lang/Class;", ctx -> {
 			Locals locals = ctx.getLocals();
-			JavaClass _this = locals.<JavaValue<JavaClass>>loadReference(0).getValue();
+			VMOperations ops = vm.getOperations();
+			ClassStorage cs = vm.getClassStorage();
+			JavaClass _this = cs.lookup(locals.loadReference(0));
 			InstanceClass superClass = _this.getSuperClass();
 			ctx.setResult(superClass == null ? vm.getMemoryManager().nullValue() : superClass.getOop());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(jlc, "getModifiers", "()I", ctx -> {
 			Locals locals = ctx.getLocals();
-			JavaClass _this = locals.<JavaValue<JavaClass>>loadReference(0).getValue();
+			ClassStorage cs = vm.getClassStorage();
+			JavaClass _this = cs.lookup(locals.loadReference(0));
 			ctx.setResult(Modifier.eraseClass(_this.getModifiers()));
 			return Result.ABORT;
 		});
@@ -170,7 +175,7 @@ public class ClassNatives {
 			VMOperations ops = vm.getOperations();
 			InstanceClass constructorClass = symbols.java_lang_reflect_Constructor();
 			if (!(klass instanceof InstanceClass)) {
-				ArrayValue empty = helper.emptyArray(constructorClass);
+				ArrayValue empty = ops.allocateArray(constructorClass, 0);
 				ctx.setResult(empty);
 				return Result.ABORT;
 			}
@@ -186,8 +191,8 @@ public class ClassNatives {
 				JavaMethod mn = methods.get(j);
 				JavaClass[] types = mn.getArgumentTypes();
 				ArrayValue parameters = helper.convertClasses(types);
-				ArrayValue exceptions = convertExceptions(helper, loader, mn.getNode().exceptions);
-				MethodRawData data = getMethodRawData(mn, false);
+				ArrayValue exceptions = convertExceptions(vm, loader, mn.getNode().exceptions);
+				MethodRawData data = getMethodRawData(vm, mn, false);
 				InstanceValue constructor = memoryManager.newInstance(constructorClass);
 				ops.putReference(constructor, "clazz", "Ljava/lang/Class;", callerOop);
 				ops.putInt(constructor, "slot", mn.getSlot());
@@ -208,7 +213,7 @@ public class ClassNatives {
 			VMOperations ops = vm.getOperations();
 			InstanceClass methodClass = symbols.java_lang_reflect_Method();
 			if (!(klass instanceof InstanceClass)) {
-				ArrayValue empty = helper.emptyArray(methodClass);
+				ArrayValue empty = ops.allocateArray(methodClass, 0);
 				ctx.setResult(empty);
 				return Result.ABORT;
 			}
@@ -223,10 +228,10 @@ public class ClassNatives {
 			for (int j = 0; j < methods.size(); j++) {
 				JavaMethod mn = methods.get(j);
 				JavaClass[] types = mn.getArgumentTypes();
-				JavaClass rt =mn.getReturnType();
+				JavaClass rt = mn.getReturnType();
 				ArrayValue parameters = helper.convertClasses(types);
-				ArrayValue exceptions = convertExceptions(helper, loader, mn.getNode().exceptions);
-				MethodRawData data = getMethodRawData(mn, true);
+				ArrayValue exceptions = convertExceptions(vm, loader, mn.getNode().exceptions);
+				MethodRawData data = getMethodRawData(vm, mn, true);
 				InstanceValue method = memoryManager.newInstance(methodClass);
 				ops.putReference(method, "clazz", "Ljava/lang/Class;", callerOop);
 				ops.putInt(method, "slot", mn.getSlot());
@@ -363,7 +368,7 @@ public class ClassNatives {
 			if (cl.isPrimitive()) {
 				ctx.setResult(vm.getMemoryManager().nullValue());
 			} else {
-				ctx.setResult(vm.getOperations().getReference(_this, PROTECTION_DOMAIN, "Ljava/security/ProtectionDomain;"));
+				ctx.setResult(vm.getOperations().getReference(_this, InjectedClassLayout.java_lang_Class_protectionDomain.name(), "Ljava/lang/Object;"));
 			}
 			return Result.ABORT;
 		});
@@ -398,7 +403,7 @@ public class ClassNatives {
 		InstanceClass cpClass = symbols.reflect_ConstantPool();
 		vmi.setInvoker(jlc, "getConstantPool", "()" + cpClass.getDescriptor(), ctx -> {
 			InstanceValue _this = ctx.getLocals().loadReference(0);
-			cpClass.initialize();
+			vm.getOperations().initialize(cpClass);
 			InstanceValue instance = vm.getMemoryManager().newInstance(cpClass);
 			vm.getOperations().putReference(instance, "constantPoolOop", "Ljava/lang/Object;", _this);
 			ctx.setResult(instance);
@@ -406,10 +411,10 @@ public class ClassNatives {
 		});
 	}
 
-	private ObjectValue readFieldAnnotations(JavaField field) {
+	private ObjectValue readFieldAnnotations(VirtualMachine vm, JavaField field) {
 		InstanceClass owner = field.getOwner();
 		ClassFile cf = owner.getRawClassFile();
-		return getAnnotationsOf(owner.getVM(), cf.getFields(), cf.getPool(), field.getName(), field.getDesc());
+		return getAnnotationsOf(vm, cf.getFields(), cf.getPool(), field.getName(), field.getDesc());
 	}
 
 	private ObjectValue getAnnotationsOf(VirtualMachine vm, List<? extends ClassMember> members, ConstPool cp, String name, String desc) {
@@ -437,17 +442,17 @@ public class ClassNatives {
 	private ObjectValue readAnnotation(Attribute attr, VirtualMachine vm) {
 		VMOperations ops = vm.getOperations();
 		if (!(attr instanceof AnnotationsAttribute)) {
-			helper.throwException(vm.getSymbols().java_lang_IllegalStateException(), "Invalid annotation");
+			ops.throwException(vm.getSymbols().java_lang_IllegalStateException(), "Invalid annotation");
 		}
-		return helper.toVMBytes(Util.toBytes((AnnotationsAttribute) attr));
+		return ops.toVMBytes(Util.toBytes((AnnotationsAttribute) attr));
 	}
 
 	private ObjectValue readParameterAnnotations(Attribute attr, VirtualMachine vm) {
 		VMOperations ops = vm.getOperations();
 		if (!(attr instanceof ParameterAnnotationsAttribute)) {
-			helper.throwException(vm.getSymbols().java_lang_IllegalStateException(), "Invalid annotation");
+			ops.throwException(vm.getSymbols().java_lang_IllegalStateException(), "Invalid annotation");
 		}
-		return helper.toVMBytes(Util.toBytes((ParameterAnnotationsAttribute) attr));
+		return ops.toVMBytes(Util.toBytes((ParameterAnnotationsAttribute) attr));
 	}
 
 	private ObjectValue readAnnotationDefault(Attribute attr, VirtualMachine vm) {
@@ -458,11 +463,10 @@ public class ClassNatives {
 		return ops.toVMBytes(Util.toBytes((AnnotationDefaultAttribute) attr));
 	}
 
-	private MethodRawData getMethodRawData(JavaMethod jm, boolean includeDefault) {
+	private MethodRawData getMethodRawData(VirtualMachine vm, JavaMethod jm, boolean includeDefault) {
 		String name = jm.getName();
 		String desc = jm.getDesc();
 		InstanceClass owner = jm.getOwner();
-		VirtualMachine vm = owner.getVM();
 		MethodRawData data = new MethodRawData(vm.getMemoryManager().nullValue());
 		ClassFile cf = owner.getRawClassFile();
 		List<Method> methods = cf.getMethods();
@@ -492,14 +496,15 @@ public class ClassNatives {
 		return data;
 	}
 
-	private ArrayValue convertExceptions(Helper helper, ObjectValue loader, List<String> exceptions) {
-		InstanceClass jlc = helper.getVM().getSymbols().java_lang_Class();
+	private ArrayValue convertExceptions(VirtualMachine vm, ObjectValue loader, List<String> exceptions) {
+		InstanceClass jlc = vm.getSymbols().java_lang_Class();
+		VMOperations ops = vm.getOperations();
 		if (exceptions == null || exceptions.isEmpty()) {
-			return helper.emptyArray(jlc);
+			return ops.allocateArray(jlc, 0);
 		}
-		ArrayValue array = helper.newArray(jlc, exceptions.size());
+		ArrayValue array = ops.allocateArray(jlc, exceptions.size());
 		for (int i = 0; i < exceptions.size(); i++) {
-			array.setReference(i, helper.findClass(loader, exceptions.get(i), false).getOop());
+			array.setReference(i, ops.findClass(loader, exceptions.get(i), false).getOop());
 		}
 		return array;
 	}

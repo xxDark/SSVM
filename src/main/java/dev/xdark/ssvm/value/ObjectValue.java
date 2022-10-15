@@ -16,6 +16,7 @@ public interface ObjectValue extends Value {
 	 *
 	 * @return object class.
 	 */
+	@Deprecated
 	JavaClass getJavaClass();
 
 	/**

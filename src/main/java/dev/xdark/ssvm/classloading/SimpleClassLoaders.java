@@ -1,18 +1,19 @@
 package dev.xdark.ssvm.classloading;
 
-import dev.xdark.ssvm.NativeJava;
+import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.inject.InjectedClassLayout;
 import dev.xdark.ssvm.memory.management.MemoryManager;
+import dev.xdark.ssvm.metadata.MetadataStorage;
+import dev.xdark.ssvm.metadata.SimpleMetadataStorage;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
-import dev.xdark.ssvm.symbol.Symbols;
-import dev.xdark.ssvm.util.Operations;
+import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.WeakHashMap;
 
 /**
  * Simple class loaders storage.
@@ -21,17 +22,14 @@ import java.util.WeakHashMap;
  */
 public class SimpleClassLoaders implements ClassLoaders {
 
-	private final Set<InstanceValue> classLoaders = Collections.newSetFromMap(new WeakHashMap<>());
+	private final Set<InstanceValue> classLoaders = new HashSet<>();
 	private final Set<InstanceValue> classLoadersView = Collections.unmodifiableSet(classLoaders);
-	private final Symbols symbols;
-	private final Operations ops;
-	private final MemoryManager memoryManager;
+	private final MetadataStorage<ClassLoaderData> classLoaderMap = new SimpleMetadataStorage<>();
+	private final VirtualMachine vm;
 	private ClassLoaderData bootClassLoaderData;
 
-	public SimpleClassLoaders(Symbols symbols, Operations ops, MemoryManager memoryManager) {
-		this.symbols = symbols;
-		this.ops = ops;
-		this.memoryManager = memoryManager;
+	public SimpleClassLoaders(VirtualMachine vm) {
+		this.vm = vm;
 	}
 
 	@Override
@@ -42,14 +40,10 @@ public class SimpleClassLoaders implements ClassLoaders {
 			}
 			return bootClassLoaderData = createClassLoaderData();
 		} else {
-			Operations ops = this.ops;
+			VMOperations ops = vm.getOperations();
 			InstanceValue instance = (InstanceValue) classLoader;
-			if (!ops.getReference(instance, NativeJava.CLASS_LOADER_OOP, "Ljava/lang/Object;").isNull()) {
-				throw new IllegalStateException("Class loader data for " + classLoader + " is already set");
-			}
 			ClassLoaderData data = createClassLoaderData();
-			JavaValue<ClassLoaderData> oop = memoryManager.newJavaInstance(symbols.java_lang_Object(), data);
-			ops.putReference(instance, NativeJava.CLASS_LOADER_OOP, "Ljava/lang/Object;", oop);
+			ops.putInt(instance, InjectedClassLayout.java_lang_ClassLoader_oop.name(), classLoaderMap.register(data));
 			classLoaders.add(instance);
 			return data;
 		}
@@ -60,7 +54,7 @@ public class SimpleClassLoaders implements ClassLoaders {
 		if (classLoader.isNull()) {
 			return bootClassLoaderData;
 		}
-		return ((JavaValue<ClassLoaderData>) ops.getReference(classLoader, NativeJava.CLASS_LOADER_OOP, "Ljava/lang/Object;")).getValue();
+		return classLoaderMap.lookup(vm.getOperations().getInt(classLoader, InjectedClassLayout.java_lang_ClassLoader_oop.name()));
 	}
 
 	@Override
@@ -70,19 +64,19 @@ public class SimpleClassLoaders implements ClassLoaders {
 
 	@Override
 	public void initializeBootOop(InstanceClass javaClass, InstanceClass javaLangClass) {
-		MemoryManager memoryManager = this.memoryManager;
+		MemoryManager memoryManager = vm.getMemoryManager();
 		InstanceValue oop = javaLangClass == javaClass ? memoryManager.newJavaLangClass(javaClass) : memoryManager.newClassOop(javaClass);
 		javaClass.setOop(oop);
 	}
 
 	@Override
 	public void setClassData(InstanceClass javaClass, ObjectValue classData) {
-		ops.putReference(javaClass.getOop(), "classData", "Ljava/lang/Object;", classData);
+		vm.getOperations().putReference(javaClass.getOop(), "classData", "Ljava/lang/Object;", classData);
 	}
 
 	@Override
 	public ObjectValue getClassData(InstanceClass javaClass) {
-		return ops.getReference(javaClass.getOop(), "classData", "Ljava/lang/Object;");
+		return vm.getOperations().getReference(javaClass.getOop(), "classData", "Ljava/lang/Object;");
 	}
 
 	/**

@@ -27,7 +27,7 @@ public class NativeSeedGeneratorNatives {
 		Symbols symbols = vm.getSymbols();
 		InstanceClass jc = symbols.sun_security_provider_NativeSeedGenerator();
 		vmi.setInvoker(jc, "nativeGenerateSeed", "([B)Z", ctx -> {
-			ArrayValue array = vm.getHelper().checkNotNull(ctx.getLocals().loadReference(0));
+			ArrayValue array = vm.getOperations().checkNotNull(ctx.getLocals().loadReference(0));
 			int len = array.getLength();
 			SecureRandom rng = new SecureRandom();
 			byte[] tmp = new byte[1];

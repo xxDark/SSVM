@@ -1,11 +1,10 @@
 package dev.xdark.ssvm.util;
 
+import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
-import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.backtrace.Backtrace;
-import dev.xdark.ssvm.thread.backtrace.StackFrame;
 
 /**
  * Reflection utilities.
@@ -14,10 +13,10 @@ import dev.xdark.ssvm.thread.backtrace.StackFrame;
  */
 public final class Reflection {
 
-	private final ThreadManager threadManager;
+	private final VirtualMachine vm;
 
-	public Reflection(ThreadManager threadManager) {
-		this.threadManager = threadManager;
+	public Reflection(VirtualMachine vm) {
+		this.vm = vm;
 	}
 
 	/**
@@ -27,7 +26,7 @@ public final class Reflection {
 	 * @return caller frame.
 	 */
 	public ExecutionContext<?> getCallerFrame(int offset) {
-		Backtrace backtrace = threadManager.currentOsThread().getBacktrace();
+		Backtrace backtrace = vm.getThreadManager().currentOsThread().getBacktrace();
 		int count = backtrace.depth();
 		ExecutionContext<?> frame = backtrace.at(count - offset++);
 		JavaMethod caller = frame.getMethod();

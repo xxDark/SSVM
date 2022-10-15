@@ -1,6 +1,6 @@
 package dev.xdark.ssvm.mirror;
 
-import dev.xdark.ssvm.memory.management.MemoryManager;
+import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.mirror.member.JavaField;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.mirror.member.SimpleJavaField;
@@ -12,7 +12,6 @@ import dev.xdark.ssvm.mirror.type.PrimitiveClass;
 import dev.xdark.ssvm.mirror.type.SimpleArrayClass;
 import dev.xdark.ssvm.mirror.type.SimpleInstanceClass;
 import dev.xdark.ssvm.mirror.type.SimplePrimitiveClass;
-import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
@@ -26,30 +25,30 @@ import org.objectweb.asm.tree.MethodNode;
  * @author xDark
  */
 public final class SimpleMirrorFactory implements MirrorFactory {
-	private final Symbols symbols;
-	private final MemoryManager memoryManager;
+	private final VirtualMachine vm;
 
-	public SimpleMirrorFactory(Symbols symbols, MemoryManager memoryManager) {
-		this.symbols = symbols;
-		this.memoryManager = memoryManager;
+	public SimpleMirrorFactory(VirtualMachine vm) {
+		this.vm = vm;
 	}
 
 	@Override
 	public InstanceClass newInstanceClass(ObjectValue classLoader, ClassReader classReader, ClassNode node) {
-		return new SimpleInstanceClass(this, symbols, classLoader, classReader, node);
+		return new SimpleInstanceClass(vm, classLoader, classReader, node);
 	}
 
 	@Override
 	public PrimitiveClass newPrimitiveClass(Type type) {
 		PrimitiveClass klass = new SimplePrimitiveClass(this, type);
-		klass.setOop(memoryManager.newClassOop(klass));
+		klass.setOop(vm.getMemoryManager().newClassOop(klass));
+		vm.getClassStorage().register(klass);
 		return klass;
 	}
 
 	@Override
 	public ArrayClass newArrayClass(JavaClass componentType) {
 		ArrayClass klass = new SimpleArrayClass(this, componentType);
-		klass.setOop(memoryManager.newClassOop(klass));
+		klass.setOop(vm.getMemoryManager().newClassOop(klass));
+		vm.getClassStorage().register(klass);
 		return klass;
 	}
 

@@ -28,7 +28,7 @@ public class SeedGeneratorNatives {
 		vmi.setInvoker(jc, "getSystemEntropy", "()[B", ctx -> {
 			byte[] bytes = new byte[20];
 			new SecureRandom().nextBytes(bytes);
-			ctx.setResult(vm.getHelper().toVMBytes(bytes));
+			ctx.setResult(vm.getOperations().toVMBytes(bytes));
 			return Result.ABORT;
 		});
 	}

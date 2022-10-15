@@ -24,16 +24,20 @@ public interface MirrorFactory {
 	 * @param classLoader Class loader.
 	 * @param classReader Class source.
 	 * @param node        Class node.
-	 * @return new class.
+	 * @return New class.
 	 */
 	InstanceClass newInstanceClass(ObjectValue classLoader, ClassReader classReader, ClassNode node);
 
 	/**
-	 * @param type       Primitive type.
-	 * @return new class.
+	 * @param type Primitive type.
+	 * @return New primitive class.
 	 */
 	PrimitiveClass newPrimitiveClass(Type type);
 
+	/**
+	 * @param componentType Array component type.
+	 * @return New array class.
+	 */
 	ArrayClass newArrayClass(JavaClass componentType);
 
 	/**
@@ -41,7 +45,7 @@ public interface MirrorFactory {
 	 * @param node   Field node.
 	 * @param slot   Field slot.
 	 * @param offset Field offset.
-	 * @return new field.
+	 * @return New field.
 	 */
 	JavaField newField(InstanceClass owner, FieldNode node, int slot, long offset);
 
@@ -49,14 +53,14 @@ public interface MirrorFactory {
 	 * @param owner Method owner.
 	 * @param node  Method node.
 	 * @param slot  Method slot.
-	 * @return new method.
+	 * @return New method.
 	 */
 	JavaMethod newMethod(InstanceClass owner, MethodNode node, int slot);
 
 	/**
 	 * @param method Original method.
 	 * @param desc   New descriptor.
-	 * @return new method.
+	 * @return New method.
 	 */
 	JavaMethod newPolymorphicMethod(JavaMethod method, String desc);
 }

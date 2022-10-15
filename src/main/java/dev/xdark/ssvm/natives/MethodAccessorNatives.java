@@ -5,11 +5,10 @@ import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
-import dev.xdark.ssvm.mirror.member.JavaMethod;
-import dev.xdark.ssvm.util.Helper;
-import dev.xdark.ssvm.util.Operations;
+import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
@@ -42,28 +41,29 @@ public class MethodAccessorNatives {
 		}
 		vmi.setInvoker(accessor, "invoke0", "(Ljava/lang/reflect/Method;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;", ctx -> {
 			Locals locals = ctx.getLocals();
-			Operations ops = vm.getOperations();
+			VMOperations ops = vm.getOperations();
 			InstanceValue m = locals.loadReference(0);
 			int slot = ops.getInt(m, "slot");
 			InstanceClass declaringClass = (InstanceClass) ((JavaValue<JavaClass>) ops.getReference(m, "clazz", "Ljava/lang/Class;")).getValue();
-			Helper helper = vm.getHelper();
 			JavaMethod mn = declaringClass.getMethodBySlot(slot);
 			if (mn == null) {
-				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
+				ops.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
+				return Result.ABORT;
 			}
 			ObjectValue instance = locals.loadReference(1);
 			boolean isStatic = (mn.getModifiers() & ACC_STATIC) != 0;
 			if (!isStatic && instance.isNull()) {
-				helper.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
+				ops.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
+				return Result.ABORT;
 			}
 			ObjectValue values = locals.loadReference(2);
 			JavaClass[] types = mn.getArgumentTypes();
 			ArrayValue passedArgs = null;
 			if (!values.isNull()) {
 				passedArgs = (ArrayValue) values;
-				helper.checkEquals(passedArgs.getLength(), types.length);
+				ops.checkEquals(passedArgs.getLength(), types.length);
 			} else {
-				helper.checkEquals(types.length, 0);
+				ops.checkEquals(types.length, 0);
 			}
 			Locals args;
 			String name = mn.getName();
@@ -82,7 +82,7 @@ public class MethodAccessorNatives {
 				Util.copyReflectionArguments(vm, types, passedArgs, args, offset);
 			}
 			ReflectionSink sink = new ReflectionSink();
-			helper.invoke(mn, args, sink);
+			ops.invoke(mn, args, sink);
 			ObjectValue result;
 			if (!sink.isSet()) {
 				result = vm.getMemoryManager().nullValue(); // void
@@ -96,24 +96,24 @@ public class MethodAccessorNatives {
 	}
 
 	private static ObjectValue boxSink(VirtualMachine vm, ReflectionSink sink, JavaClass type) {
-		Helper helper = vm.getHelper();
+		VMOperations ops = vm.getOperations();
 		switch (type.getSort()) {
 			case Type.LONG:
-				return helper.boxLong(sink.longValue);
+				return ops.boxLong(sink.longValue);
 			case Type.DOUBLE:
-				return helper.boxDouble(Double.longBitsToDouble(sink.longValue));
+				return ops.boxDouble(Double.longBitsToDouble(sink.longValue));
 			case Type.INT:
-				return helper.boxInt(sink.intValue);
+				return ops.boxInt(sink.intValue);
 			case Type.FLOAT:
-				return helper.boxFloat(Float.intBitsToFloat(sink.intValue));
+				return ops.boxFloat(Float.intBitsToFloat(sink.intValue));
 			case Type.CHAR:
-				return helper.boxChar((char) sink.intValue);
+				return ops.boxChar((char) sink.intValue);
 			case Type.SHORT:
-				return helper.boxShort((short) sink.intValue);
+				return ops.boxShort((short) sink.intValue);
 			case Type.BYTE:
-				return helper.boxByte((byte) sink.intValue);
+				return ops.boxByte((byte) sink.intValue);
 			case Type.BOOLEAN:
-				return helper.boxBoolean(sink.intValue != 0);
+				return ops.boxBoolean(sink.intValue != 0);
 			default:
 				ObjectValue ref = sink.referenceValue;
 				if (ref == null) {

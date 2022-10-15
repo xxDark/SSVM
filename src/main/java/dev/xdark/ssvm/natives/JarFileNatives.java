@@ -5,9 +5,8 @@ import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.fs.ZipFile;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
-import dev.xdark.ssvm.util.Helper;
+import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.symbol.Symbols;
-import dev.xdark.ssvm.util.Operations;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 
@@ -31,19 +30,18 @@ public class JarFileNatives {
 		InstanceClass zf = symbols.java_util_zip_ZipFile();
 		InstanceClass jf = symbols.java_util_jar_JarFile();
 		vmi.setInvoker(jf, "getMetaInfEntryNames", "()[Ljava/lang/String;", ctx -> {
-			Operations ops = vm.getOperations();
+			VMOperations ops = vm.getOperations();
 			long handle = ops.getLong(ctx.getLocals().loadReference(0), zf, "jzfile");
 			ZipFile zip = vm.getFileDescriptorManager().getZipFile(handle);
-			Helper helper = vm.getHelper();
 			if (zip == null) {
-				helper.throwException(symbols.java_lang_IllegalStateException(), "zip closed");
+				ops.throwException(symbols.java_lang_IllegalStateException(), "zip closed");
 			}
 			ObjectValue[] paths = zip.stream()
 				.map(ZipEntry::getName)
 				.filter(name -> name.toUpperCase(Locale.ENGLISH).startsWith("META-INF/"))
-				.map(helper::newUtf8)
+				.map(ops::newUtf8)
 				.toArray(ObjectValue[]::new);
-			ctx.setResult(helper.toVMValues(paths));
+			ctx.setResult(ops.toVMReferences(paths));
 			return Result.ABORT;
 		});
 	}

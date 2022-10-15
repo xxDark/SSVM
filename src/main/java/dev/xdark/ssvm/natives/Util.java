@@ -4,7 +4,7 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.mirror.type.JavaClass;
-import dev.xdark.ssvm.util.Helper;
+import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
@@ -27,7 +27,7 @@ import java.io.IOException;
 final class Util {
 
 	void copyReflectionArguments(VirtualMachine vm, JavaClass[] argTypes, ArrayValue array, Locals locals, int offset) {
-		Helper helper = vm.getHelper();
+		VMOperations ops = vm.getOperations();
 		for (int i = 0; i < argTypes.length; i++) {
 			JavaClass type = argTypes[i];
 			int sort = type.getSort();
@@ -35,25 +35,25 @@ final class Util {
 			if (sort < Type.ARRAY) {
 				switch (sort) {
 					case Type.BOOLEAN:
-						locals.setInt(offset++, helper.unboxBoolean(value) ? 1 : 0);
+						locals.setInt(offset++, ops.unboxBoolean(value) ? 1 : 0);
 						break;
 					case Type.CHAR:
-						locals.setInt(offset++, helper.unboxChar(value));
+						locals.setInt(offset++, ops.unboxChar(value));
 						break;
 					case Type.BYTE:
 					case Type.SHORT:
 					case Type.INT:
-						locals.setInt(offset++, helper.unboxInt(value));
+						locals.setInt(offset++, ops.unboxInt(value));
 						break;
 					case Type.FLOAT:
-						locals.setFloat(offset++, helper.unboxFloat(value));
+						locals.setFloat(offset++, ops.unboxFloat(value));
 						break;
 					case Type.LONG:
-						locals.setLong(offset, helper.unboxLong(value));
+						locals.setLong(offset, ops.unboxLong(value));
 						offset += 2;
 						break;
 					case Type.DOUBLE:
-						locals.setDouble(offset, helper.unboxDouble(value));
+						locals.setDouble(offset, ops.unboxDouble(value));
 						offset += 2;
 						break;
 					default:

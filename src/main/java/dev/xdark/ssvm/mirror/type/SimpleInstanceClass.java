@@ -1,12 +1,11 @@
 package dev.xdark.ssvm.mirror.type;
 
+import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
-import dev.xdark.ssvm.mirror.MirrorFactory;
 import dev.xdark.ssvm.mirror.member.JavaField;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.mirror.member.MemberIdentifier;
 import dev.xdark.ssvm.mirror.member.area.ClassArea;
-import dev.xdark.ssvm.operation.ClassOperations;
 import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.tlc.ThreadLocalStorage;
 import dev.xdark.ssvm.util.Assertions;
@@ -38,8 +37,7 @@ public class SimpleInstanceClass implements InstanceClass {
 	private static final Predicate<JavaMethod> NON_HIDDEN_METHOD = nonHidden(JavaMethod::getModifiers);
 
 
-	private final MirrorFactory mirrorFactory;
-	private final Symbols symbols;
+	private final VirtualMachine vm;
 
 	private final ObjectValue classLoader;
 	private final InitializationState state = new InitializationState();
@@ -77,21 +75,13 @@ public class SimpleInstanceClass implements InstanceClass {
 	 * This constructor must be invoked only
 	 * by the VM.
 	 *
-	 * @param mirrorFactory        Mirror factory.
-	 * @param symbols              VM symbols.
-	 * @param classLoader          Loader of the class.
-	 * @param classReader          Source of the class.
-	 * @param node                 ASM class data.
+	 * @param vm          VM in which this class is being created.
+	 * @param classLoader Loader of the class.
+	 * @param classReader Source of the class.
+	 * @param node        ASM class data.
 	 */
-	public SimpleInstanceClass(
-		MirrorFactory mirrorFactory,
-		Symbols symbols,
-		ObjectValue classLoader,
-		ClassReader classReader,
-		ClassNode node
-	) {
-		this.mirrorFactory = mirrorFactory;
-		this.symbols = symbols;
+	public SimpleInstanceClass(VirtualMachine vm, ObjectValue classLoader, ClassReader classReader, ClassNode node) {
+		this.vm = vm;
 		this.classLoader = classLoader;
 		this.classReader = classReader;
 		this.node = node;
@@ -143,7 +133,7 @@ public class SimpleInstanceClass implements InstanceClass {
 		if (other.isPrimitive()) {
 			return false;
 		}
-		Symbols symbols = this.symbols;
+		Symbols symbols = vm.getSymbols();
 		if (other.isArray()) {
 			if (isInterface()) {
 				return this == symbols.java_io_Serializable() || this == symbols.java_lang_Cloneable();
@@ -237,7 +227,7 @@ public class SimpleInstanceClass implements InstanceClass {
 			synchronized (this) {
 				arrayClass = this.arrayClass;
 				if (arrayClass == null) {
-					arrayClass = mirrorFactory.newArrayClass(this);
+					arrayClass = vm.getMirrorFactory().newArrayClass(this);
 					this.arrayClass = arrayClass;
 				}
 			}
@@ -255,6 +245,11 @@ public class SimpleInstanceClass implements InstanceClass {
 		Assertions.notNull(oop, "class oop");
 		Assertions.isNull(this.oop, "cannot re-assign class oop");
 		this.oop = oop;
+	}
+
+	@Override
+	public VirtualMachine getVM() {
+		return vm;
 	}
 
 	@Override
@@ -276,7 +271,7 @@ public class SimpleInstanceClass implements InstanceClass {
 			method = methodArea.get(name, POLYMORPHIC_DESC);
 			if (method != null) {
 				if (method.isPolymorphic()) {
-					method = mirrorFactory.newPolymorphicMethod(method, desc);
+					method = vm.getMirrorFactory().newPolymorphicMethod(method, desc);
 				} else {
 					method = null;
 				}
@@ -496,7 +491,7 @@ public class SimpleInstanceClass implements InstanceClass {
 	private boolean checkAllocationStatus() {
 		int acc = getModifiers();
 		if ((acc & Opcodes.ACC_ABSTRACT) == 0 && (acc & Opcodes.ACC_INTERFACE) == 0) {
-			return this != symbols.java_lang_Class();
+			return this != vm.getSymbols().java_lang_Class();
 		}
 		return false;
 	}

@@ -1,8 +1,124 @@
 package dev.xdark.ssvm;
 
 //<editor-fold desc="Imports">
+
 import dev.xdark.ssvm.api.VMInterface;
+import dev.xdark.ssvm.asm.Modifier;
+import dev.xdark.ssvm.execution.asm.ArrayLengthProcessor;
+import dev.xdark.ssvm.execution.asm.BiDoubleProcessor;
+import dev.xdark.ssvm.execution.asm.BiFloatProcessor;
+import dev.xdark.ssvm.execution.asm.BiIntJumpProcessor;
+import dev.xdark.ssvm.execution.asm.BiIntProcessor;
+import dev.xdark.ssvm.execution.asm.BiLongProcessor;
+import dev.xdark.ssvm.execution.asm.BiValueJumpProcessor;
+import dev.xdark.ssvm.execution.asm.BytePushProcessor;
+import dev.xdark.ssvm.execution.asm.CastProcessor;
+import dev.xdark.ssvm.execution.asm.ConstantDoubleProcessor;
+import dev.xdark.ssvm.execution.asm.ConstantFloatProcessor;
+import dev.xdark.ssvm.execution.asm.ConstantIntProcessor;
+import dev.xdark.ssvm.execution.asm.ConstantLongProcessor;
+import dev.xdark.ssvm.execution.asm.ConstantReferenceProcessor;
+import dev.xdark.ssvm.execution.asm.DoubleCompareProcessor;
+import dev.xdark.ssvm.execution.asm.DoubleLoadProcessor;
+import dev.xdark.ssvm.execution.asm.DoubleStoreProcessor;
+import dev.xdark.ssvm.execution.asm.DoubleToFloatProcessor;
+import dev.xdark.ssvm.execution.asm.DoubleToIntProcessor;
+import dev.xdark.ssvm.execution.asm.DoubleToLongProcessor;
+import dev.xdark.ssvm.execution.asm.Dup2Processor;
+import dev.xdark.ssvm.execution.asm.Dup2X1Processor;
+import dev.xdark.ssvm.execution.asm.Dup2X2Processor;
+import dev.xdark.ssvm.execution.asm.DupProcessor;
+import dev.xdark.ssvm.execution.asm.DupX1Processor;
+import dev.xdark.ssvm.execution.asm.DupX2Processor;
+import dev.xdark.ssvm.execution.asm.FloatCompareProcessor;
+import dev.xdark.ssvm.execution.asm.FloatLoadProcessor;
+import dev.xdark.ssvm.execution.asm.FloatStoreProcessor;
+import dev.xdark.ssvm.execution.asm.FloatToDoubleProcessor;
+import dev.xdark.ssvm.execution.asm.FloatToIntProcessor;
+import dev.xdark.ssvm.execution.asm.FloatToLongProcessor;
+import dev.xdark.ssvm.execution.asm.GetFieldProcessor;
+import dev.xdark.ssvm.execution.asm.GetStaticProcessor;
+import dev.xdark.ssvm.execution.asm.GotoProcessor;
+import dev.xdark.ssvm.execution.asm.InstanceofProcessor;
+import dev.xdark.ssvm.execution.asm.IntDivisionProcessor;
+import dev.xdark.ssvm.execution.asm.IntJumpProcessor;
+import dev.xdark.ssvm.execution.asm.IntLoadProcessor;
+import dev.xdark.ssvm.execution.asm.IntRemainderProcessor;
+import dev.xdark.ssvm.execution.asm.IntStoreProcessor;
+import dev.xdark.ssvm.execution.asm.IntToByteProcessor;
+import dev.xdark.ssvm.execution.asm.IntToCharProcessor;
+import dev.xdark.ssvm.execution.asm.IntToDoubleProcessor;
+import dev.xdark.ssvm.execution.asm.IntToFloatProcessor;
+import dev.xdark.ssvm.execution.asm.IntToLongProcessor;
+import dev.xdark.ssvm.execution.asm.IntToShortProcessor;
+import dev.xdark.ssvm.execution.asm.InterfaceCallProcessor;
+import dev.xdark.ssvm.execution.asm.InvokeDynamicLinkerProcessor;
+import dev.xdark.ssvm.execution.asm.JSRProcessor;
+import dev.xdark.ssvm.execution.asm.LoadArrayByteProcessor;
+import dev.xdark.ssvm.execution.asm.LoadArrayCharProcessor;
+import dev.xdark.ssvm.execution.asm.LoadArrayDoubleProcessor;
+import dev.xdark.ssvm.execution.asm.LoadArrayFloatProcessor;
+import dev.xdark.ssvm.execution.asm.LoadArrayIntProcessor;
+import dev.xdark.ssvm.execution.asm.LoadArrayLongProcessor;
+import dev.xdark.ssvm.execution.asm.LoadArrayShortProcessor;
+import dev.xdark.ssvm.execution.asm.LoadArrayValueProcessor;
+import dev.xdark.ssvm.execution.asm.LongCompareProcessor;
+import dev.xdark.ssvm.execution.asm.LongDivisionProcessor;
+import dev.xdark.ssvm.execution.asm.LongIntProcessor;
+import dev.xdark.ssvm.execution.asm.LongLoadProcessor;
+import dev.xdark.ssvm.execution.asm.LongRemainderProcessor;
+import dev.xdark.ssvm.execution.asm.LongStoreProcessor;
+import dev.xdark.ssvm.execution.asm.LongToDoubleProcessor;
+import dev.xdark.ssvm.execution.asm.LongToFloatProcessor;
+import dev.xdark.ssvm.execution.asm.LongToIntProcessor;
+import dev.xdark.ssvm.execution.asm.LookupSwitchProcessor;
+import dev.xdark.ssvm.execution.asm.MonitorEnterProcessor;
+import dev.xdark.ssvm.execution.asm.MonitorExitProcessor;
+import dev.xdark.ssvm.execution.asm.MultiNewArrayProcessor;
+import dev.xdark.ssvm.execution.asm.NegativeDoubleProcessor;
+import dev.xdark.ssvm.execution.asm.NegativeFloatProcessor;
+import dev.xdark.ssvm.execution.asm.NegativeIntProcessor;
+import dev.xdark.ssvm.execution.asm.NegativeLongProcessor;
+import dev.xdark.ssvm.execution.asm.NewProcessor;
+import dev.xdark.ssvm.execution.asm.NopProcessor;
+import dev.xdark.ssvm.execution.asm.ObjectArrayProcessor;
+import dev.xdark.ssvm.execution.asm.Pop2Processor;
+import dev.xdark.ssvm.execution.asm.PopProcessor;
+import dev.xdark.ssvm.execution.asm.PrimitiveArrayProcessor;
+import dev.xdark.ssvm.execution.asm.PutFieldProcessor;
+import dev.xdark.ssvm.execution.asm.PutStaticProcessor;
+import dev.xdark.ssvm.execution.asm.ReferenceStoreProcessor;
+import dev.xdark.ssvm.execution.asm.RetProcessor;
+import dev.xdark.ssvm.execution.asm.ReturnDoubleProcessor;
+import dev.xdark.ssvm.execution.asm.ReturnFloatProcessor;
+import dev.xdark.ssvm.execution.asm.ReturnIntProcessor;
+import dev.xdark.ssvm.execution.asm.ReturnLongProcessor;
+import dev.xdark.ssvm.execution.asm.ReturnReferenceProcessor;
+import dev.xdark.ssvm.execution.asm.ReturnVoidProcessor;
+import dev.xdark.ssvm.execution.asm.ShortPushProcessor;
+import dev.xdark.ssvm.execution.asm.SpecialCallProcessor;
+import dev.xdark.ssvm.execution.asm.StaticCallProcessor;
+import dev.xdark.ssvm.execution.asm.StoreArrayByteProcessor;
+import dev.xdark.ssvm.execution.asm.StoreArrayCharProcessor;
+import dev.xdark.ssvm.execution.asm.StoreArrayDoubleProcessor;
+import dev.xdark.ssvm.execution.asm.StoreArrayFloatProcessor;
+import dev.xdark.ssvm.execution.asm.StoreArrayIntProcessor;
+import dev.xdark.ssvm.execution.asm.StoreArrayLongProcessor;
+import dev.xdark.ssvm.execution.asm.StoreArrayShortProcessor;
+import dev.xdark.ssvm.execution.asm.StoreArrayValueProcessor;
+import dev.xdark.ssvm.execution.asm.SwapProcessor;
+import dev.xdark.ssvm.execution.asm.TableSwitchProcessor;
+import dev.xdark.ssvm.execution.asm.ThrowProcessor;
+import dev.xdark.ssvm.execution.asm.ValueJumpProcessor;
+import dev.xdark.ssvm.execution.asm.ValueLoadProcessor;
+import dev.xdark.ssvm.execution.asm.VariableIncrementProcessor;
+import dev.xdark.ssvm.execution.asm.VirtualCallProcessor;
 import dev.xdark.ssvm.execution.rewrite.BooleanArrayProcessor;
+import dev.xdark.ssvm.execution.rewrite.ByteArrayProcessor;
+import dev.xdark.ssvm.execution.rewrite.CharArrayProcessor;
+import dev.xdark.ssvm.execution.rewrite.DoubleArrayProcessor;
+import dev.xdark.ssvm.execution.rewrite.DynamicCallProcessor;
+import dev.xdark.ssvm.execution.rewrite.FloatArrayProcessor;
 import dev.xdark.ssvm.execution.rewrite.GetFieldByteProcessor;
 import dev.xdark.ssvm.execution.rewrite.GetFieldCharProcessor;
 import dev.xdark.ssvm.execution.rewrite.GetFieldDoubleProcessor;
@@ -19,6 +135,8 @@ import dev.xdark.ssvm.execution.rewrite.GetStaticIntProcessor;
 import dev.xdark.ssvm.execution.rewrite.GetStaticLongProcessor;
 import dev.xdark.ssvm.execution.rewrite.GetStaticReferenceProcessor;
 import dev.xdark.ssvm.execution.rewrite.GetStaticShortProcessor;
+import dev.xdark.ssvm.execution.rewrite.IntArrayProcessor;
+import dev.xdark.ssvm.execution.rewrite.LongArrayProcessor;
 import dev.xdark.ssvm.execution.rewrite.PutFieldByteProcessor;
 import dev.xdark.ssvm.execution.rewrite.PutFieldCharProcessor;
 import dev.xdark.ssvm.execution.rewrite.PutFieldDoubleProcessor;
@@ -36,30 +154,74 @@ import dev.xdark.ssvm.execution.rewrite.PutStaticLongProcessor;
 import dev.xdark.ssvm.execution.rewrite.PutStaticReferenceProcessor;
 import dev.xdark.ssvm.execution.rewrite.PutStaticShortProcessor;
 import dev.xdark.ssvm.execution.rewrite.ReferenceArrayProcessor;
-import dev.xdark.ssvm.execution.rewrite.ByteArrayProcessor;
-import dev.xdark.ssvm.execution.rewrite.CharArrayProcessor;
-import dev.xdark.ssvm.execution.rewrite.DoubleArrayProcessor;
-import dev.xdark.ssvm.execution.rewrite.DynamicCallProcessor;
-import dev.xdark.ssvm.execution.rewrite.FloatArrayProcessor;
-import dev.xdark.ssvm.execution.rewrite.IntArrayProcessor;
-import dev.xdark.ssvm.execution.rewrite.LongArrayProcessor;
 import dev.xdark.ssvm.execution.rewrite.ShortArrayProcessor;
 import dev.xdark.ssvm.execution.rewrite.VMCastProcessor;
 import dev.xdark.ssvm.execution.rewrite.VMInterfaceCallProcessor;
 import dev.xdark.ssvm.execution.rewrite.VMNewProcessor;
-import dev.xdark.ssvm.execution.asm.*;
 import dev.xdark.ssvm.execution.rewrite.VMSpecialCallProcessor;
 import dev.xdark.ssvm.execution.rewrite.VMStaticCallProcessor;
 import dev.xdark.ssvm.execution.rewrite.VMVirtualCallProcessor;
+import dev.xdark.ssvm.inject.InjectedClassLayout;
+import dev.xdark.ssvm.jvmti.JVMTIEnv;
+import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
-import dev.xdark.ssvm.natives.*;
-import dev.xdark.ssvm.symbol.Symbols;
+import dev.xdark.ssvm.mirror.type.JavaClass;
+import dev.xdark.ssvm.natives.AccessControllerNatives;
+import dev.xdark.ssvm.natives.ArrayNatives;
+import dev.xdark.ssvm.natives.AtomicLongNatives;
+import dev.xdark.ssvm.natives.CDSNatives;
+import dev.xdark.ssvm.natives.CRC32Natives;
+import dev.xdark.ssvm.natives.ClassLoaderNatives;
+import dev.xdark.ssvm.natives.ClassNatives;
+import dev.xdark.ssvm.natives.ConstantPoolNatives;
+import dev.xdark.ssvm.natives.ConstructorAccessorNatives;
+import dev.xdark.ssvm.natives.DoubleNatives;
+import dev.xdark.ssvm.natives.FileSystemNativeDispatcherNatives;
+import dev.xdark.ssvm.natives.FloatNatives;
+import dev.xdark.ssvm.natives.GenericFileSystemNatives;
+import dev.xdark.ssvm.natives.InflaterNatives;
+import dev.xdark.ssvm.natives.JarFileNatives;
+import dev.xdark.ssvm.natives.JigsawNatives;
+import dev.xdark.ssvm.natives.MathNatives;
+import dev.xdark.ssvm.natives.MethodAccessorNatives;
+import dev.xdark.ssvm.natives.MethodHandleNatives;
+import dev.xdark.ssvm.natives.NativeLibraryNatives;
+import dev.xdark.ssvm.natives.NativeSeedGeneratorNatives;
+import dev.xdark.ssvm.natives.NetworkInterfaceNatives;
+import dev.xdark.ssvm.natives.ObjectNatives;
+import dev.xdark.ssvm.natives.OldFileSystemNatives;
+import dev.xdark.ssvm.natives.PackageNatives;
+import dev.xdark.ssvm.natives.PerfNatives;
+import dev.xdark.ssvm.natives.ProcessEnvironmentNatives;
+import dev.xdark.ssvm.natives.ProxyNatives;
+import dev.xdark.ssvm.natives.ReferenceNatives;
+import dev.xdark.ssvm.natives.ReflectionNatives;
+import dev.xdark.ssvm.natives.RuntimeNatives;
+import dev.xdark.ssvm.natives.ScopedMemoryAccessNatives;
+import dev.xdark.ssvm.natives.SeedGeneratorNatives;
+import dev.xdark.ssvm.natives.SignalNatives;
+import dev.xdark.ssvm.natives.StackTraceElementNatives;
+import dev.xdark.ssvm.natives.StringNatives;
+import dev.xdark.ssvm.natives.SystemNatives;
+import dev.xdark.ssvm.natives.SystemPropsNatives;
+import dev.xdark.ssvm.natives.ThreadNatives;
+import dev.xdark.ssvm.natives.ThrowableNatives;
+import dev.xdark.ssvm.natives.TimeZoneNatives;
+import dev.xdark.ssvm.natives.URLClassPathNatives;
+import dev.xdark.ssvm.natives.UnsafeNatives;
+import dev.xdark.ssvm.natives.VMManagementNatives;
+import dev.xdark.ssvm.natives.VMNatives;
+import dev.xdark.ssvm.natives.ZipFileNatives;
+import dev.xdark.ssvm.symbol.Primitives;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.MethodNode;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 
-import static dev.xdark.ssvm.asm.Modifier.ACC_VM_HIDDEN;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_BOOLEAN_NEW_ARRAY;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_BYTE_NEW_ARRAY;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_CHAR_NEW_ARRAY;
@@ -117,7 +279,159 @@ import static dev.xdark.ssvm.asm.VMOpcodes.VM_PUTSTATIC_REFERENCE;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_PUTSTATIC_SHORT;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_REFERENCE_NEW_ARRAY;
 import static dev.xdark.ssvm.asm.VMOpcodes.VM_SHORT_NEW_ARRAY;
-import static org.objectweb.asm.Opcodes.*;
+import static org.objectweb.asm.Opcodes.AALOAD;
+import static org.objectweb.asm.Opcodes.AASTORE;
+import static org.objectweb.asm.Opcodes.ACONST_NULL;
+import static org.objectweb.asm.Opcodes.ALOAD;
+import static org.objectweb.asm.Opcodes.ANEWARRAY;
+import static org.objectweb.asm.Opcodes.ARETURN;
+import static org.objectweb.asm.Opcodes.ARRAYLENGTH;
+import static org.objectweb.asm.Opcodes.ASTORE;
+import static org.objectweb.asm.Opcodes.ATHROW;
+import static org.objectweb.asm.Opcodes.BALOAD;
+import static org.objectweb.asm.Opcodes.BASTORE;
+import static org.objectweb.asm.Opcodes.BIPUSH;
+import static org.objectweb.asm.Opcodes.CALOAD;
+import static org.objectweb.asm.Opcodes.CASTORE;
+import static org.objectweb.asm.Opcodes.CHECKCAST;
+import static org.objectweb.asm.Opcodes.D2F;
+import static org.objectweb.asm.Opcodes.D2I;
+import static org.objectweb.asm.Opcodes.D2L;
+import static org.objectweb.asm.Opcodes.DADD;
+import static org.objectweb.asm.Opcodes.DALOAD;
+import static org.objectweb.asm.Opcodes.DASTORE;
+import static org.objectweb.asm.Opcodes.DCMPG;
+import static org.objectweb.asm.Opcodes.DCMPL;
+import static org.objectweb.asm.Opcodes.DCONST_0;
+import static org.objectweb.asm.Opcodes.DCONST_1;
+import static org.objectweb.asm.Opcodes.DDIV;
+import static org.objectweb.asm.Opcodes.DLOAD;
+import static org.objectweb.asm.Opcodes.DMUL;
+import static org.objectweb.asm.Opcodes.DNEG;
+import static org.objectweb.asm.Opcodes.DREM;
+import static org.objectweb.asm.Opcodes.DRETURN;
+import static org.objectweb.asm.Opcodes.DSTORE;
+import static org.objectweb.asm.Opcodes.DSUB;
+import static org.objectweb.asm.Opcodes.DUP;
+import static org.objectweb.asm.Opcodes.DUP2;
+import static org.objectweb.asm.Opcodes.DUP2_X1;
+import static org.objectweb.asm.Opcodes.DUP2_X2;
+import static org.objectweb.asm.Opcodes.DUP_X1;
+import static org.objectweb.asm.Opcodes.DUP_X2;
+import static org.objectweb.asm.Opcodes.F2D;
+import static org.objectweb.asm.Opcodes.F2I;
+import static org.objectweb.asm.Opcodes.F2L;
+import static org.objectweb.asm.Opcodes.FADD;
+import static org.objectweb.asm.Opcodes.FALOAD;
+import static org.objectweb.asm.Opcodes.FASTORE;
+import static org.objectweb.asm.Opcodes.FCMPG;
+import static org.objectweb.asm.Opcodes.FCMPL;
+import static org.objectweb.asm.Opcodes.FCONST_0;
+import static org.objectweb.asm.Opcodes.FCONST_1;
+import static org.objectweb.asm.Opcodes.FCONST_2;
+import static org.objectweb.asm.Opcodes.FDIV;
+import static org.objectweb.asm.Opcodes.FLOAD;
+import static org.objectweb.asm.Opcodes.FMUL;
+import static org.objectweb.asm.Opcodes.FNEG;
+import static org.objectweb.asm.Opcodes.FREM;
+import static org.objectweb.asm.Opcodes.FRETURN;
+import static org.objectweb.asm.Opcodes.FSTORE;
+import static org.objectweb.asm.Opcodes.FSUB;
+import static org.objectweb.asm.Opcodes.GETFIELD;
+import static org.objectweb.asm.Opcodes.GETSTATIC;
+import static org.objectweb.asm.Opcodes.GOTO;
+import static org.objectweb.asm.Opcodes.I2B;
+import static org.objectweb.asm.Opcodes.I2C;
+import static org.objectweb.asm.Opcodes.I2D;
+import static org.objectweb.asm.Opcodes.I2F;
+import static org.objectweb.asm.Opcodes.I2L;
+import static org.objectweb.asm.Opcodes.I2S;
+import static org.objectweb.asm.Opcodes.IADD;
+import static org.objectweb.asm.Opcodes.IALOAD;
+import static org.objectweb.asm.Opcodes.IAND;
+import static org.objectweb.asm.Opcodes.IASTORE;
+import static org.objectweb.asm.Opcodes.ICONST_0;
+import static org.objectweb.asm.Opcodes.ICONST_5;
+import static org.objectweb.asm.Opcodes.ICONST_M1;
+import static org.objectweb.asm.Opcodes.IDIV;
+import static org.objectweb.asm.Opcodes.IFEQ;
+import static org.objectweb.asm.Opcodes.IFGE;
+import static org.objectweb.asm.Opcodes.IFGT;
+import static org.objectweb.asm.Opcodes.IFLE;
+import static org.objectweb.asm.Opcodes.IFLT;
+import static org.objectweb.asm.Opcodes.IFNE;
+import static org.objectweb.asm.Opcodes.IFNONNULL;
+import static org.objectweb.asm.Opcodes.IFNULL;
+import static org.objectweb.asm.Opcodes.IF_ACMPEQ;
+import static org.objectweb.asm.Opcodes.IF_ACMPNE;
+import static org.objectweb.asm.Opcodes.IF_ICMPEQ;
+import static org.objectweb.asm.Opcodes.IF_ICMPGE;
+import static org.objectweb.asm.Opcodes.IF_ICMPGT;
+import static org.objectweb.asm.Opcodes.IF_ICMPLE;
+import static org.objectweb.asm.Opcodes.IF_ICMPLT;
+import static org.objectweb.asm.Opcodes.IF_ICMPNE;
+import static org.objectweb.asm.Opcodes.IINC;
+import static org.objectweb.asm.Opcodes.ILOAD;
+import static org.objectweb.asm.Opcodes.IMUL;
+import static org.objectweb.asm.Opcodes.INEG;
+import static org.objectweb.asm.Opcodes.INSTANCEOF;
+import static org.objectweb.asm.Opcodes.INVOKEDYNAMIC;
+import static org.objectweb.asm.Opcodes.INVOKEINTERFACE;
+import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
+import static org.objectweb.asm.Opcodes.INVOKESTATIC;
+import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
+import static org.objectweb.asm.Opcodes.IOR;
+import static org.objectweb.asm.Opcodes.IREM;
+import static org.objectweb.asm.Opcodes.IRETURN;
+import static org.objectweb.asm.Opcodes.ISHL;
+import static org.objectweb.asm.Opcodes.ISHR;
+import static org.objectweb.asm.Opcodes.ISTORE;
+import static org.objectweb.asm.Opcodes.ISUB;
+import static org.objectweb.asm.Opcodes.IUSHR;
+import static org.objectweb.asm.Opcodes.IXOR;
+import static org.objectweb.asm.Opcodes.JSR;
+import static org.objectweb.asm.Opcodes.L2D;
+import static org.objectweb.asm.Opcodes.L2F;
+import static org.objectweb.asm.Opcodes.L2I;
+import static org.objectweb.asm.Opcodes.LADD;
+import static org.objectweb.asm.Opcodes.LALOAD;
+import static org.objectweb.asm.Opcodes.LAND;
+import static org.objectweb.asm.Opcodes.LASTORE;
+import static org.objectweb.asm.Opcodes.LCMP;
+import static org.objectweb.asm.Opcodes.LCONST_0;
+import static org.objectweb.asm.Opcodes.LCONST_1;
+import static org.objectweb.asm.Opcodes.LDC;
+import static org.objectweb.asm.Opcodes.LDIV;
+import static org.objectweb.asm.Opcodes.LLOAD;
+import static org.objectweb.asm.Opcodes.LMUL;
+import static org.objectweb.asm.Opcodes.LNEG;
+import static org.objectweb.asm.Opcodes.LOOKUPSWITCH;
+import static org.objectweb.asm.Opcodes.LOR;
+import static org.objectweb.asm.Opcodes.LREM;
+import static org.objectweb.asm.Opcodes.LRETURN;
+import static org.objectweb.asm.Opcodes.LSHL;
+import static org.objectweb.asm.Opcodes.LSHR;
+import static org.objectweb.asm.Opcodes.LSTORE;
+import static org.objectweb.asm.Opcodes.LSUB;
+import static org.objectweb.asm.Opcodes.LUSHR;
+import static org.objectweb.asm.Opcodes.LXOR;
+import static org.objectweb.asm.Opcodes.MONITORENTER;
+import static org.objectweb.asm.Opcodes.MONITOREXIT;
+import static org.objectweb.asm.Opcodes.MULTIANEWARRAY;
+import static org.objectweb.asm.Opcodes.NEW;
+import static org.objectweb.asm.Opcodes.NEWARRAY;
+import static org.objectweb.asm.Opcodes.NOP;
+import static org.objectweb.asm.Opcodes.POP;
+import static org.objectweb.asm.Opcodes.POP2;
+import static org.objectweb.asm.Opcodes.PUTFIELD;
+import static org.objectweb.asm.Opcodes.PUTSTATIC;
+import static org.objectweb.asm.Opcodes.RET;
+import static org.objectweb.asm.Opcodes.RETURN;
+import static org.objectweb.asm.Opcodes.SALOAD;
+import static org.objectweb.asm.Opcodes.SASTORE;
+import static org.objectweb.asm.Opcodes.SIPUSH;
+import static org.objectweb.asm.Opcodes.SWAP;
+import static org.objectweb.asm.Opcodes.TABLESWITCH;
 //</editor-fold>
 
 /**
@@ -127,13 +441,6 @@ import static org.objectweb.asm.Opcodes.*;
  */
 public final class NativeJava {
 
-	// https://github.com/AdoptOpenJDK/openjdk-jdk8u/blob/master/hotspot/src/share/vm/classfile/javaClasses.cpp#L3180
-	public static final String CLASS_LOADER_OOP = "classLoaderOop";
-	public static final String VM_INDEX = "vmindex";
-	public static final String VM_TARGET = "vmtarget";
-	public static final String VM_HOLDER = "vmholder";
-	public static final String PROTECTION_DOMAIN = "protectionDomain";
-
 	/**
 	 * Sets up VM instance.
 	 *
@@ -142,7 +449,6 @@ public final class NativeJava {
 	static void init(VirtualMachine vm) {
 		//<editor-fold desc="Natives registration">
 		setInstructions(vm);
-		injectPhase3(vm);
 		ClassNatives.init(vm);
 		ObjectNatives.init(vm);
 		SystemNatives.init(vm);
@@ -194,90 +500,83 @@ public final class NativeJava {
 	}
 
 	/**
-	 * Injects VM related things.
-	 * This must be invoked as early as
-	 * possible.
+	 * Sets up JVMTI hooks.
 	 *
-	 * @param vm VM instance.
+	 * @param vm VM to set JVMTI hooks for.
 	 */
-	static void injectPhase1(VirtualMachine vm) {
-		InstanceClass cl = (InstanceClass) vm.findBootstrapClass("java/lang/Class");
-		List<FieldNode> fields = cl.getNode().fields;
-		fields.add(new FieldNode(
-			ACC_PRIVATE | ACC_VM_HIDDEN,
-			PROTECTION_DOMAIN,
-			"Ljava/security/ProtectionDomain;",
-			null,
-			null
-		));
-	}
-
-	/**
-	 * Injects VM related things.
-	 *
-	 * @param vm VM instance.
-	 */
-	static void injectPhase2(VirtualMachine vm) {
-		InstanceClass classLoader = (InstanceClass) vm.findBootstrapClass("java/lang/ClassLoader");
-
-		classLoader.getNode().fields.add(new FieldNode(
-			ACC_PRIVATE | ACC_VM_HIDDEN,
-			CLASS_LOADER_OOP,
-			"Ljava/lang/Object;",
-			null,
-			null
-		));
-	}
-
-	/**
-	 * Injects VM related things.
-	 *
-	 * @param vm VM instance.
-	 */
-	static void injectPhase3(VirtualMachine vm) {
-		//<editor-fold desc="Field injection">
-		Symbols symbols = vm.getSymbols();
-
-		vm.getInvokeDynamicLinker().setupMethodHandles();
+	static void setupJVMTI(VirtualMachine vm) {
+		// Setup first JVMTI environment for injection
 		{
-			InstanceClass resolvedMethodName = symbols.java_lang_invoke_ResolvedMethodName();
-			List<FieldNode> fields = resolvedMethodName.getNode().fields;
-			fields.add(new FieldNode(
-				ACC_PRIVATE | ACC_VM_HIDDEN,
-				VM_TARGET,
-				"Ljava/lang/Object;",
-				null,
-				null
-			));
-			fields.add(new FieldNode(
-				ACC_PRIVATE | ACC_VM_HIDDEN,
-				VM_HOLDER,
-				"Ljava/lang/Object;",
-				null,
-				null
-			));
-		}
-		inject:
-		{
-			InstanceClass fd = symbols.java_io_FileDescriptor();
-			// For whatever reason unix/macos does not have
-			// 'handle' field, we need to inject it
-			List<FieldNode> fields = fd.getNode().fields;
-			for (int i = 0; i < fields.size(); i++) {
-				FieldNode fn = fields.get(i);
-				if ("handle".equals(fn.name) && "J".equals(fn.desc)) {
-					break inject;
+			JVMTIEnv env = vm.newJvmtiEnv();
+			Map<String, Consumer<InstanceClass>> map = new HashMap<>();
+			map.put("java/lang/Class", klass -> {
+				List<FieldNode> fields = klass.getNode().fields;
+				fields.add(InjectedClassLayout.java_lang_Class_id.newNode());
+				fields.add(InjectedClassLayout.java_lang_Class_protectionDomain.newNode());
+			});
+			map.put("java/lang/ClassLoader", klass -> {
+				List<FieldNode> fields = klass.getNode().fields;
+				fields.add(InjectedClassLayout.java_lang_ClassLoader_oop.newNode());
+			});
+			map.put("java/io/FileDescriptor", klass -> {
+				List<FieldNode> fields = klass.getNode().fields;
+				for (int i = 0; i < fields.size(); i++) {
+					FieldNode fn = fields.get(i);
+					if ("handle".equals(fn.name) && "J".equals(fn.desc)) {
+						return;
+					}
 				}
-			}
-			fields.add(new FieldNode(
-				ACC_PRIVATE | ACC_VM_HIDDEN,
-				"handle",
-				"J",
-				null,
-				null
-			));
+				fields.add(InjectedClassLayout.java_io_FileDescriptor_handle.newNode());
+			});
+			map.put("java/lang/invoke/MemberName", klass -> {
+				List<FieldNode> fields = klass.getNode().fields;
+				fields.add(InjectedClassLayout.java_lang_invoke_MemberName_vmindex.newNode());
+				for (int i = 0; i < fields.size(); i++) {
+					FieldNode fn = fields.get(i);
+					if ("method".equals(fn.name) && "Ljava/lang/invoke/ResolvedMethodName;".equals(fn.desc)) {
+						return;
+					}
+				}
+				fields.add(InjectedClassLayout.java_lang_invoke_MemberName_method.newNode());
+			});
+			map.put("java/lang/invoke/ResolvedMethodName", klass -> {
+				List<FieldNode> fields = klass.getNode().fields;
+				fields.add(InjectedClassLayout.java_lang_invoke_ResolvedMethodName_vmtarget.newNode());
+				fields.add(InjectedClassLayout.java_lang_invoke_ResolvedMethodName_vmholder.newNode());
+			});
+			env.setClassFilePrepare(klass -> {
+				String name = klass.getInternalName();
+				Consumer<InstanceClass> c = map.remove(name);
+				if (c != null) {
+					c.accept(klass);
+					if (map.isEmpty()) {
+						env.dispose();
+					}
+				}
+			});
 		}
-		//</editor-fold>
+		// Setup second JVMTI environment for hidden frames in java/lang/Throwable
+		{
+			JVMTIEnv env = vm.newJvmtiEnv();
+			env.setClassFilePrepare(klass -> {
+				if (vm.getSymbols().java_lang_Throwable().isAssignableFrom(klass)) {
+					Primitives primitives = vm.getPrimitives();
+					for (JavaMethod jm : klass.methodArea().list()) {
+						String name = jm.getName();
+						if ("<init>".equals(name)) {
+							makeHiddenMethod(jm);
+							continue;
+						}
+						if ("fillInStackTrace".equals(name)) {
+							JavaClass[] args = jm.getArgumentTypes();
+							if (args.length == 0 || (args[0] == primitives.intPrimitive())) {
+								makeHiddenMethod(jm);
+							}
+						}
+					}
+				}
+			});
+		}
 	}
 
 	/**
@@ -540,5 +839,10 @@ public final class NativeJava {
 		vmi.setProcessor(VM_GETFIELD_DOUBLE, new GetFieldDoubleProcessor());
 		vmi.setProcessor(VM_GETFIELD_REFERENCE, new GetFieldReferenceProcessor());
 		//</editor-fold>
+	}
+
+	private static void makeHiddenMethod(JavaMethod method) {
+		MethodNode node = method.getNode();
+		node.access |= Modifier.ACC_HIDDEN_FRAME;
 	}
 }

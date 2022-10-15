@@ -7,7 +7,6 @@ import dev.xdark.ssvm.asm.ConstantLongInsnNode;
 import dev.xdark.ssvm.asm.ConstantReferenceInsnNode;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
-import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -44,11 +43,7 @@ public final class LdcProcessor implements InstructionProcessor<LdcInsnNode> {
 			} else if (cst instanceof String) {
 				list.set(insn, new ConstantReferenceInsnNode(insn, ctx.getVM().getStringPool().intern((String) cst)));
 			} else {
-				Value value = ctx.getHelper().referenceFromLdc(cst);
-				if (!(value instanceof ObjectValue)) {
-					throw new PanicException("Bad valueFromLdc value: " + value);
-				}
-				ObjectValue ref = (ObjectValue) value;
+				ObjectValue ref = ctx.getVM().getOperations().referenceValue(cst);
 				list.set(insn, new ConstantReferenceInsnNode(insn, ref));
 			}
 			ctx.setInsnPosition(ctx.getInsnPosition() - 1);

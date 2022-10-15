@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.operation;
 
+import dev.xdark.ssvm.mirror.type.ArrayClass;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.value.ArrayValue;
@@ -103,4 +104,13 @@ public interface AllocationOperations {
 	 * @return new array.
 	 */
 	ArrayValue allocateBooleanArray(int length);
+
+	/**
+	 * Allocates multi array.
+	 *
+	 * @param type    Array type.
+	 * @param lengths Array containing length of each dimension.
+	 * @return New array.
+	 */
+	ArrayValue allocateMultiArray(ArrayClass type, int[] lengths);
 }

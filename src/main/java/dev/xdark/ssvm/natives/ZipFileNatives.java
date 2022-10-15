@@ -8,7 +8,7 @@ import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.fs.ZipFile;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
-import dev.xdark.ssvm.util.Helper;
+import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -37,27 +37,28 @@ public class ZipFileNatives {
 		if (vmi.setInvoker(zf, "open", "(Ljava/lang/String;IJZ)J", ctx -> {
 			// Old-style zip file implementation.
 			Locals locals = ctx.getLocals();
-			Helper helper = vm.getHelper();
+			VMOperations ops = vm.getOperations();
 			ObjectValue path = locals.loadReference(0);
-			helper.checkNotNull(path);
-			String zipPath = helper.readUtf8(path);
+			ops.checkNotNull(path);
+			String zipPath = ops.readUtf8(path);
 			int mode = locals.loadInt(1);
 			// last file modification & usemmap are ignored.
 			try {
 				long handle = vm.getFileDescriptorManager().openZipFile(zipPath, mode);
 				if (handle == 0L) {
-					helper.throwException(symbols.java_io_IOException(), zipPath);
+					ops.throwException(symbols.java_io_IOException(), zipPath);
 				}
 				ctx.setResult(handle);
 			} catch (IOException ex) {
-				helper.throwException(symbols.java_io_IOException(), ex.getMessage());
+				ops.throwException(symbols.java_io_IOException(), ex.getMessage());
 			}
 			return Result.ABORT;
 		})) {
 			vmi.setInvoker(zf, "getTotal", "(J)I", ctx -> {
 				ZipFile zip = vm.getFileDescriptorManager().getZipFile(ctx.getLocals().loadLong(0));
 				if (zip == null) {
-					vm.getHelper().throwException(symbols.java_lang_IllegalStateException(), "zip closed");
+					vm.getOperations().throwException(symbols.java_lang_IllegalStateException(), "zip closed");
+					return Result.ABORT;
 				}
 				ctx.setResult(zip.getTotal());
 				return Result.ABORT;
@@ -74,11 +75,11 @@ public class ZipFileNatives {
 				Locals locals = ctx.getLocals();
 				long handle = locals.loadLong(0);
 				ZipFile zip = vm.getFileDescriptorManager().getZipFile(handle);
-				Helper helper = vm.getHelper();
 				if (zip == null) {
 					throw new PanicException("Segfault");
 				}
-				String entryName = new String(helper.toJavaBytes(locals.loadReference(2)), StandardCharsets.UTF_8);
+				VMOperations ops = vm.getOperations();
+				String entryName = new String(ops.toJavaBytes(locals.loadReference(2)), StandardCharsets.UTF_8);
 				ZipEntry entry = zip.getEntry(entryName);
 				if (entry == null) {
 					entry = zip.getEntry(entryName + '/');
@@ -94,24 +95,24 @@ public class ZipFileNatives {
 			});
 			vmi.setInvoker(zf, "getEntryBytes", "(JI)[B", ctx -> {
 				Locals locals = ctx.getLocals();
-				Helper helper = vm.getHelper();
 				long address = locals.loadLong(0);
 				ZipEntry value = vm.getFileDescriptorManager().getZipEntry(address);
 				if (value == null) {
 					throw new PanicException("Segfault");
 				}
+				VMOperations ops = vm.getOperations();
 				int type = locals.loadInt(2);
 				switch (type) {
 					case 0:
-						ctx.setResult(helper.toVMBytes(value.getName().getBytes(StandardCharsets.UTF_8)));
+						ctx.setResult(ops.toVMBytes(value.getName().getBytes(StandardCharsets.UTF_8)));
 						break;
 					case 1:
 						byte[] extra = value.getExtra();
-						ctx.setResult(extra == null ? vm.getMemoryManager().nullValue() : helper.toVMBytes(extra));
+						ctx.setResult(extra == null ? vm.getMemoryManager().nullValue() : ops.toVMBytes(extra));
 						break;
 					case 2:
 						String comment = value.getComment();
-						ctx.setResult(comment == null ? vm.getMemoryManager().nullValue() : helper.toVMBytes(comment.getBytes(StandardCharsets.UTF_8)));
+						ctx.setResult(comment == null ? vm.getMemoryManager().nullValue() : ops.toVMBytes(comment.getBytes(StandardCharsets.UTF_8)));
 						break;
 					default:
 						ctx.setResult(vm.getMemoryManager().nullValue());
@@ -189,7 +190,7 @@ public class ZipFileNatives {
 				}
 				long pos = locals.loadLong(4);
 				if (pos > Integer.MAX_VALUE) {
-					vm.getHelper().throwException(vm.getSymbols().java_util_zip_ZipException(), "Entry too large");
+					vm.getOperations().throwException(vm.getSymbols().java_util_zip_ZipException(), "Entry too large");
 				}
 				ArrayValue bytes = locals.loadReference(6);
 				int off = locals.loadInt(7);
@@ -198,7 +199,7 @@ public class ZipFileNatives {
 				try {
 					read = zipFile.readEntry(entry);
 				} catch (IOException ex) {
-					vm.getHelper().throwException(vm.getSymbols().java_util_zip_ZipException(), ex.getMessage());
+					vm.getOperations().throwException(vm.getSymbols().java_util_zip_ZipException(), ex.getMessage());
 					return Result.ABORT;
 				}
 				int start = (int) pos;
@@ -245,9 +246,6 @@ public class ZipFileNatives {
 				long count = zip.stream()
 					.filter(x -> "META-INF/MANIFEST.MF".equalsIgnoreCase(x.getName()))
 					.count();
-				if (count > Integer.MAX_VALUE) {
-					count = Integer.MAX_VALUE;
-				}
 				ctx.setResult((int) count);
 				return Result.ABORT;
 			});
@@ -257,7 +255,7 @@ public class ZipFileNatives {
 						throw new PanicException("Segfault");
 					}
 				} catch (IOException ex) {
-					vm.getHelper().throwException(symbols.java_util_zip_ZipException(), ex.getMessage());
+					vm.getOperations().throwException(symbols.java_util_zip_ZipException(), ex.getMessage());
 				}
 				return Result.ABORT;
 			});

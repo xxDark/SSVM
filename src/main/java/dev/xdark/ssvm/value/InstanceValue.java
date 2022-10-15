@@ -10,6 +10,7 @@ import dev.xdark.ssvm.mirror.type.InstanceClass;
  */
 public interface InstanceValue extends ObjectValue {
 
+	@Deprecated
 	@Override
 	InstanceClass getJavaClass();
 }

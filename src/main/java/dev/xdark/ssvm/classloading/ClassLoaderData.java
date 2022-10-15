@@ -45,11 +45,4 @@ public interface ClassLoaderData {
 	 * @see AutoCloseableLock
 	 */
 	Collection<InstanceClass> all();
-
-	/**
-	 * Visits all classes in this class loader.
-	 *
-	 * @param fn Function to apply on each class loader.
-	 */
-	void visit(Consumer<? super InstanceClass> fn);
 }

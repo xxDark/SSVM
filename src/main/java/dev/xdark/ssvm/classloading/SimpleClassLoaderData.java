@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Consumer;
 
 /**
  * Simple class storage.
@@ -62,16 +61,5 @@ public final class SimpleClassLoaderData implements ClassLoaderData {
 	@Override
 	public Collection<InstanceClass> all() {
 		return classesView;
-	}
-
-	@Override
-	public void visit(Consumer<? super InstanceClass> fn) {
-		Lock lock = this.lock.readLock();
-		lock.lock();
-		try {
-			classesView.forEach(fn);
-		} finally {
-			lock.unlock();
-		}
 	}
 }

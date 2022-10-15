@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.mirror.member;
 
+import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.execution.VMTryCatchBlock;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import org.objectweb.asm.Type;
@@ -100,6 +101,12 @@ public interface JavaMethod extends JavaMember {
 	 * {@code false} otherwise.
 	 */
 	boolean isCallerSensitive();
+
+	/**
+	 * @return {@code true} if this method is hidden from the stack trace,
+	 * {@code false} otherwise.
+	 */
+	boolean isHidden();
 
 	/**
 	 * @return {@code true} if this method is a constructor,

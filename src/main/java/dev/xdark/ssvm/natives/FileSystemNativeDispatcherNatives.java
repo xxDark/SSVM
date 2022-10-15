@@ -6,7 +6,7 @@ import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
-import dev.xdark.ssvm.util.Helper;
+import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.value.ArrayValue;
 import lombok.experimental.UtilityClass;
 
@@ -30,7 +30,7 @@ public class FileSystemNativeDispatcherNatives {
 			InstanceClass unixDispatcher = (InstanceClass) vm.findBootstrapClass("sun/nio/fs/UnixNativeDispatcher");
 			vmi.setInvoker(unixDispatcher, "getcwd", "()[B", ctx -> {
 				byte[] cwd = vm.getFileDescriptorManager().getCurrentWorkingDirectory().getBytes(StandardCharsets.UTF_8);
-				ctx.setResult(vm.getHelper().toVMBytes(cwd));
+				ctx.setResult(vm.getOperations().toVMBytes(cwd));
 				return Result.ABORT;
 			});
 			vmi.setInvoker(unixDispatcher, "init", "()V", MethodInvoker.noop());
@@ -48,8 +48,8 @@ public class FileSystemNativeDispatcherNatives {
 				if (macDispatcher != null) {
 					vmi.setInvoker(macDispatcher, "normalizepath", "([CI)[C", ctx -> {
 						Locals locals = ctx.getLocals();
-						Helper helper = vm.getHelper();
-						ArrayValue path = helper.checkNotNull(locals.loadReference(0));
+						VMOperations ops = vm.getOperations();
+						ArrayValue path = ops.checkNotNull(locals.loadReference(0));
 						// int form = locals.load(1).asInt();
 						ctx.setResult(path);
 						return Result.ABORT;

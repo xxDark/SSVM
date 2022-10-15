@@ -1,6 +1,8 @@
 package dev.xdark.ssvm.execution;
 
+import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.sink.ValueSink;
 
@@ -32,8 +34,7 @@ public interface ExecutionContext<R extends ValueSink> {
 	int getInsnPosition();
 
 	/**
-	 * @param position
-	 *      New instruction position.
+	 * @param position New instruction position.
 	 */
 	void setInsnPosition(int position);
 
@@ -95,5 +96,19 @@ public interface ExecutionContext<R extends ValueSink> {
 	 */
 	default void setResult(float result) {
 		returnSink().acceptFloat(result);
+	}
+
+	/**
+	 * @return Class declaring the method being executed.
+	 */
+	default InstanceClass getOwner() {
+		return getMethod().getOwner();
+	}
+
+	/**
+	 * @return VM instance in which method is being executed.
+	 */
+	default VirtualMachine getVM() {
+		return getOwner().getVM();
 	}
 }

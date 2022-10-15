@@ -16,7 +16,7 @@ public interface StringPool {
 	 * @param value Value to pool.
 	 * @return interned string value.
 	 */
-	ObjectValue intern(String value);
+	InstanceValue intern(String value);
 
 	/**
 	 * Pools string value.

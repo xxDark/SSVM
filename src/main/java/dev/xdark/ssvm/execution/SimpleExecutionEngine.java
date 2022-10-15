@@ -1,14 +1,11 @@
 package dev.xdark.ssvm.execution;
 
+import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvocation;
 import dev.xdark.ssvm.api.VMInterface;
-import dev.xdark.ssvm.jvmti.ToolInterfaceException;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
-import dev.xdark.ssvm.operation.ExceptionOperations;
-import dev.xdark.ssvm.operation.SynchronizationOperations;
-import dev.xdark.ssvm.symbol.Symbols;
-import dev.xdark.ssvm.thread.backtrace.Backtrace;
 import dev.xdark.ssvm.thread.ThreadManager;
+import dev.xdark.ssvm.thread.backtrace.Backtrace;
 import dev.xdark.ssvm.util.DisposeUtil;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.sink.ValueSink;
@@ -22,23 +19,15 @@ import org.objectweb.asm.Opcodes;
 public class SimpleExecutionEngine implements ExecutionEngine {
 
 	private static final ExecutionOptions DEFAULT_OPTIONS = ExecutionOptions.builder().build();
-	private final VMInterface vmi;
-	private final Symbols symbols;
-	private final ThreadManager threadManager;
-	private final ExceptionOperations exceptionOperations;
-	private final SynchronizationOperations synchronizationOperations;
+	private final VirtualMachine vm;
 
-	public SimpleExecutionEngine(VMInterface vmi, Symbols symbols, ThreadManager threadManager, ExceptionOperations exceptionOperations, SynchronizationOperations synchronizationOperations) {
-		this.vmi = vmi;
-		this.symbols = symbols;
-		this.threadManager = threadManager;
-		this.exceptionOperations = exceptionOperations;
-		this.synchronizationOperations = synchronizationOperations;
+	public SimpleExecutionEngine(VirtualMachine vm) {
+		this.vm = vm;
 	}
 
 	@Override
 	public <R extends ValueSink> ExecutionContext<R> execute(ExecutionRequest<R> request) {
-		ThreadManager threadManager = this.threadManager;
+		ThreadManager threadManager = vm.getThreadManager();
 		Backtrace backtrace = threadManager.currentOsThread().getBacktrace();
 		ExecutionContext<R> ctx = backtrace.push(request);
 		JavaMethod jm = ctx.getMethod();
@@ -47,7 +36,7 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 		if (isNative) {
 			ctx.setLineNumber(-2);
 		}
-		VMInterface vmi = this.vmi;
+		VMInterface vmi = vm.getInterface();
 		jm.increaseInvocation();
 		ObjectValue lock = null;
 		if ((access & Opcodes.ACC_SYNCHRONIZED) != 0) {
@@ -56,7 +45,7 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 			} else {
 				lock = jm.getOwner().getOop();
 			}
-			synchronizationOperations.monitorEnter(lock);
+			vm.getOperations().monitorEnter(lock);
 		}
 		boolean doCleanup = true;
 		try {
@@ -67,12 +56,9 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 			if (result == Result.ABORT) {
 				return ctx;
 			}
-			exceptionOperations.throwException(symbols.java_lang_UnsatisfiedLinkError(), jm.toString());
+			vm.getOperations().throwException(vm.getSymbols().java_lang_UnsatisfiedLinkError(), jm.toString());
 		} catch (VMException ex) {
 			throw ex;
-		} catch (ToolInterfaceException ex) {
-			doCleanup = false;
-			throw new PanicException("JVMTI failed at " + jm, ex);
 		} catch (Exception ex) {
 			doCleanup = false;
 			throw new PanicException("Uncaught VM error at: " + jm, ex);
@@ -83,7 +69,7 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 			if (doCleanup) {
 				try {
 					if (lock != null) {
-						synchronizationOperations.monitorExit(lock);
+						vm.getOperations().monitorExit(lock);
 					}
 				} finally {
 					try {

@@ -60,14 +60,14 @@ public class ThreadNatives {
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "holdsLock", "(Ljava/lang/Object;)Z", ctx -> {
-			Mutex mutex = vm.getMemoryManager().getMutex(vm.getHelper().checkNotNull(ctx.getLocals().loadReference(0)));
+			Mutex mutex = vm.getMemoryManager().getMutex(vm.getOperations().checkNotNull(ctx.getLocals().loadReference(0)));
 			ctx.setResult(mutex.isHeldByCurrentThread() ? 1 : 0);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "getThreads", "()[Ljava/lang/Thread;", ctx -> {
 			List<JavaThread> threads = vm.getThreadManager().snapshot();
 			int threadCount = threads.size();
-			ArrayValue array = vm.getHelper().newArray(thread, threadCount);
+			ArrayValue array = vm.getOperations().allocateArray(thread, threadCount);
 			for (int i = 0; i < threadCount; i++) {
 				array.setReference(i, threads.get(i).getOop());
 			}
@@ -77,7 +77,8 @@ public class ThreadNatives {
 		vmi.setInvoker(thread, "sleep", "(J)V", ctx -> {
 			long time = ctx.getLocals().loadLong(0);
 			if (time < 0L) {
-				vm.getHelper().throwException(symbols.java_lang_IllegalArgumentException(), "timeout value is negative");
+				vm.getOperations().throwException(symbols.java_lang_IllegalArgumentException(), "timeout value is negative");
+				return Result.ABORT;
 			}
 			vm.getThreadManager().sleep(time);
 			return Result.ABORT;

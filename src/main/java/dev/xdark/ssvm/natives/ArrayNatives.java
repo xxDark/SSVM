@@ -6,10 +6,10 @@ import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
+import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.symbol.Symbols;
-import dev.xdark.ssvm.util.Helper;
 import dev.xdark.ssvm.value.ArrayValue;
-import dev.xdark.ssvm.value.JavaValue;
+import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 
@@ -30,28 +30,17 @@ public class ArrayNatives {
 		InstanceClass array = symbols.java_lang_reflect_Array();
 		vmi.setInvoker(array, "getLength", "(Ljava/lang/Object;)I", ctx -> {
 			ObjectValue value = ctx.getLocals().loadReference(0);
-			vm.getHelper().checkNotNull(value);
+			vm.getOperations().checkNotNull(value);
 			ctx.setResult(((ArrayValue) value).getLength());
 			return Result.ABORT;
 		});
 		vmi.setInvoker(array, "newArray", "(Ljava/lang/Class;I)Ljava/lang/Object;", ctx -> {
 			Locals locals = ctx.getLocals();
-			ObjectValue local = locals.loadReference(0);
-			Helper helper = vm.getHelper();
-			helper.checkNotNull(local);
-			if (!(local instanceof JavaValue)) {
-				helper.throwException(symbols.java_lang_IllegalArgumentException());
-			}
-			Object wrapper = ((JavaValue<?>) local).getValue();
-			if (!(wrapper instanceof JavaClass)) {
-				helper.throwException(symbols.java_lang_IllegalArgumentException());
-			}
-			JavaClass klass = (JavaClass) wrapper;
-			if (klass.isArray()) {
-				helper.throwException(symbols.java_lang_IllegalArgumentException());
-			}
+			VMOperations ops = vm.getOperations();
+			InstanceValue classType = ops.checkNotNull(locals.loadReference(0));
+			JavaClass klass = vm.getClassStorage().lookup(classType);
 			int length = locals.loadInt(1);
-			ArrayValue result = helper.newArray(klass, length);
+			ArrayValue result = ops.allocateArray(klass, length);
 			ctx.setResult(result);
 			return Result.ABORT;
 		});

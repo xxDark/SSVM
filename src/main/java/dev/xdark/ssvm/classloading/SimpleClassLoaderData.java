@@ -24,7 +24,7 @@ public final class SimpleClassLoaderData implements ClassLoaderData {
 	private final AutoCloseableLock unlocker;
 
 	public SimpleClassLoaderData() {
-		Lock lock = this.lock.writeLock();
+		Lock lock = this.lock.readLock();
 		unlocker = lock::unlock;
 	}
 

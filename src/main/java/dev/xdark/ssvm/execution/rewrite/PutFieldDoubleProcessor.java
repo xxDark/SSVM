@@ -21,7 +21,7 @@ public final class PutFieldDoubleProcessor implements InstructionProcessor<VMFie
 	public Result execute(VMFieldInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
 		double value = stack.popDouble();
-		InstanceValue instance = ctx.getHelper().checkNotNull(stack.popReference());
+		InstanceValue instance = ctx.getOperations().checkNotNull(stack.popReference());
 		JavaField field = insn.getResolved();
 		if (field == null) {
 			InstanceClass klass = instance.getJavaClass();

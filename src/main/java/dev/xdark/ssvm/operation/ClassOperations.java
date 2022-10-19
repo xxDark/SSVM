@@ -29,6 +29,15 @@ public interface ClassOperations {
 	void initialize(InstanceClass instanceClass);
 
 	/**
+	 * Performs an instanceof check.
+	 *
+	 * @param value Value to do the check on.
+	 * @param type  Class to check against.
+	 * @return {@code true} if instance type check succeeds.
+	 */
+	boolean isInstanceOf(ObjectValue value, JavaClass type);
+
+	/**
 	 * Defines new class in the VM.
 	 * Throws VM exception if class failed verification.
 	 *
@@ -78,7 +87,6 @@ public interface ClassOperations {
 	 * @param type        Class type.
 	 * @param initialize  Whether the class should be initialized.
 	 * @return Class instance.
-	 * @throws PanicException If {@literal type} is a primitive type.
 	 */
 	JavaClass findClass(ObjectValue classLoader, Type type, boolean initialize);
 }

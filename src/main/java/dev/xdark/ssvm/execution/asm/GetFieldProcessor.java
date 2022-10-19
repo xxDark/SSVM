@@ -26,7 +26,7 @@ public final class GetFieldProcessor implements InstructionProcessor<FieldInsnNo
 	@Override
 	public Result execute(FieldInsnNode insn, ExecutionContext<?> ctx) {
 		if (AsmUtil.isValid(insn)) {
-			InstanceClass klass = (InstanceClass) ctx.getHelper().tryFindClass(ctx.getClassLoader(), insn.owner, true);
+			InstanceClass klass = (InstanceClass) ctx.getOperations().findClass(ctx.getClassLoader(), insn.owner, true);
 			JavaField field;
 			int sort;
 			try {
@@ -45,7 +45,7 @@ public final class GetFieldProcessor implements InstructionProcessor<FieldInsnNo
 			InsnList list = ctx.getMethod().getNode().instructions;
 			list.set(insn, new VMFieldInsnNode(insn, opcode, field));
 			if (field != null) {
-				field.getOwner().initialize();
+				ctx.getOperations().initialize(field.getOwner());
 			}
 		}
 		ctx.setInsnPosition(ctx.getInsnPosition() - 1);

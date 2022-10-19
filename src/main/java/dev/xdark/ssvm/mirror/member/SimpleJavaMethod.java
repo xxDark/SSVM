@@ -35,6 +35,7 @@ public final class SimpleJavaMethod implements JavaMethod {
 	private Type type;
 	private JavaClass[] argumentTypes;
 	private JavaClass returnType;
+	private JavaClass[] exceptionTypes;
 	private Boolean polymorphic;
 	private int maxArgs = -1;
 	private int maxLocals = -1;
@@ -100,6 +101,16 @@ public final class SimpleJavaMethod implements JavaMethod {
 			return this.returnType;
 		}
 		return returnType;
+	}
+
+	@Override
+	public JavaClass[] getExceptionTypes() {
+		JavaClass[] exceptionTypes = this.exceptionTypes;
+		if (exceptionTypes == null) {
+			resolveExceptionTypes();
+			return this.exceptionTypes;
+		}
+		return exceptionTypes;
 	}
 
 	@Override
@@ -171,7 +182,7 @@ public final class SimpleJavaMethod implements JavaMethod {
 			return this.callerSensitive = visibleAnnotations != null
 				&& visibleAnnotations.stream().anyMatch(x -> {
 				String desc = x.desc;
-				return "Lsun/reflect/CallerSensitive;".equals(desc) || "Ljava/lang/invoke/LambdaForm$Hidden;".equals(desc);
+				return "Lsun/reflect/CallerSensitive;".equals(desc) || "Ljdk/internal/reflect/CallerSensitive;".equals(desc);
 			});
 		}
 		return callerSensitive;
@@ -290,6 +301,26 @@ public final class SimpleJavaMethod implements JavaMethod {
 		VirtualMachine vm = owner.getVM();
 		ObjectValue cl = owner.getClassLoader();
 		Type[] types = getType().getArgumentTypes();
-		argumentTypes = vm.getOperations().convertTypes(cl, types, false);
+		JavaClass[] arr = new JavaClass[types.length];
+		for (int i = 0; i < types.length; i++) {
+			arr[i] = vm.getOperations().findClass(cl, types[i], false);
+		}
+		argumentTypes = arr;
+	}
+
+	private void resolveExceptionTypes() {
+		InstanceClass owner = this.owner;
+		VirtualMachine vm = owner.getVM();
+		List<String> exceptions = getNode().exceptions;
+		if (exceptions == null || exceptions.isEmpty()) {
+			exceptionTypes = new JavaClass[0];
+		} else {
+			ObjectValue cl = owner.getClassLoader();
+			JavaClass[] arr = new JavaClass[exceptions.size()];
+			for (int i = 0; i < exceptions.size(); i++) {
+				arr[i] = vm.getOperations().findClass(cl, exceptions.get(i), false);
+			}
+			exceptionTypes = arr;
+		}
 	}
 }

@@ -85,9 +85,9 @@ public class SynchronizedMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public JavaValue<InstanceClass> newJavaLangClass(InstanceClass javaClass) {
+	public void newJavaLangClass(InstanceClass javaClass) {
 		synchronized (mutex) {
-			return memoryManager.newJavaLangClass(javaClass);
+			memoryManager.newJavaLangClass(javaClass);
 		}
 	}
 
@@ -169,6 +169,11 @@ public class SynchronizedMemoryManager implements MemoryManager {
 	@Override
 	public long sizeOfType(Class<?> javaClass) {
 		return memoryManager.sizeOfType(javaClass);
+	}
+
+	@Override
+	public int objectSize() {
+		return memoryManager.objectSize();
 	}
 
 	@Override

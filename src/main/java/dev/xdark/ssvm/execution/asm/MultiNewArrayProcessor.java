@@ -19,7 +19,7 @@ public final class MultiNewArrayProcessor implements InstructionProcessor<MultiA
 	@Override
 	public Result execute(MultiANewArrayInsnNode insn, ExecutionContext<?> ctx) {
 		int dimensions = insn.dims;
-		VMOperations ops = ctx.getVM().getOperations();
+		VMOperations ops = ctx.getOperations();
 		JavaClass type = ops.findClass(ctx.getMethod().getOwner().getClassLoader(), insn.desc, false);
 		Stack stack = ctx.getStack();
 		int[] lengths = new int[dimensions];

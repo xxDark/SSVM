@@ -17,7 +17,8 @@ public class LongDivisionProcessor implements InstructionProcessor<AbstractInsnN
 		Stack stack = ctx.getStack();
 		long v2 = stack.popLong();
 		if (v2 == 0L) {
-			ctx.getHelper().throwException(ctx.getSymbols().java_lang_ArithmeticException(), "/ by zero");
+			ctx.getOperations().throwException(ctx.getSymbols().java_lang_ArithmeticException(), "/ by zero");
+			return Result.ABORT;
 		}
 		long v1 = stack.popLong();
 		stack.pushLong(v1 / v2);

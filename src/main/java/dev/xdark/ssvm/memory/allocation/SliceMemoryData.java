@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.memory.allocation;
 
 import dev.xdark.ssvm.execution.PanicException;
+import dev.xdark.ssvm.util.Assertions;
 
 import java.nio.ByteBuffer;
 
@@ -22,6 +23,8 @@ public final class SliceMemoryData implements MemoryData {
 	}
 
 	public void init(MemoryData backing, long offset, long length) {
+		Assertions.check(offset >= 0L, "bad offset");
+		Assertions.check(length >= 0L, "bad length");
 		this.backing = backing;
 		this.offset = offset;
 		this.length = length;

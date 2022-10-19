@@ -19,13 +19,8 @@ public class DelegatingExecutionEngine implements ExecutionEngine {
 	}
 
 	@Override
-	public void execute(ExecutionContext<?> ctx) {
-		delegate.execute(ctx);
-	}
-
-	@Override
-	public <R extends ValueSink> ExecutionContext<R> createContext(ExecutionRequest<R> request) {
-		return delegate.createContext(request);
+	public <R extends ValueSink> ExecutionContext<R> execute(ExecutionRequest<R> ctx) {
+		return delegate.execute(ctx);
 	}
 
 	@Override

@@ -38,7 +38,8 @@ public final class SimpleMirrorFactory implements MirrorFactory {
 
 	@Override
 	public PrimitiveClass newPrimitiveClass(Type type) {
-		PrimitiveClass klass = new SimplePrimitiveClass(this, type);
+		VirtualMachine vm = this.vm;
+		PrimitiveClass klass = new SimplePrimitiveClass(vm, type);
 		klass.setOop(vm.getMemoryManager().newClassOop(klass));
 		vm.getClassStorage().register(klass);
 		return klass;
@@ -46,7 +47,8 @@ public final class SimpleMirrorFactory implements MirrorFactory {
 
 	@Override
 	public ArrayClass newArrayClass(JavaClass componentType) {
-		ArrayClass klass = new SimpleArrayClass(this, componentType);
+		VirtualMachine vm = this.vm;
+		ArrayClass klass = new SimpleArrayClass(vm, componentType);
 		klass.setOop(vm.getMemoryManager().newClassOop(klass));
 		vm.getClassStorage().register(klass);
 		return klass;

@@ -63,13 +63,6 @@ public class SimpleClassLoaders implements ClassLoaders {
 	}
 
 	@Override
-	public void initializeBootOop(InstanceClass javaClass, InstanceClass javaLangClass) {
-		MemoryManager memoryManager = vm.getMemoryManager();
-		InstanceValue oop = javaLangClass == javaClass ? memoryManager.newJavaLangClass(javaClass) : memoryManager.newClassOop(javaClass);
-		javaClass.setOop(oop);
-	}
-
-	@Override
 	public void setClassData(InstanceClass javaClass, ObjectValue classData) {
 		vm.getOperations().putReference(javaClass.getOop(), "classData", "Ljava/lang/Object;", classData);
 	}

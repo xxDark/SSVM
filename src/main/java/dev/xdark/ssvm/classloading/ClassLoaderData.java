@@ -1,10 +1,9 @@
 package dev.xdark.ssvm.classloading;
 
 import dev.xdark.ssvm.mirror.type.InstanceClass;
-import dev.xdark.ssvm.util.AutoCloseableLock;
+import dev.xdark.ssvm.util.CloseableLock;
 
 import java.util.Collection;
-import java.util.function.Consumer;
 
 /**
  * Holds all classes loaded by the loader.
@@ -33,7 +32,7 @@ public interface ClassLoaderData {
 	/**
 	 * @return Acquired lock.
 	 */
-	AutoCloseableLock lock();
+	CloseableLock lock();
 
 	/**
 	 * Returns a collection of all classes.
@@ -42,7 +41,7 @@ public interface ClassLoaderData {
 	 * {@link ClassLoaderData#lock()}.
 	 *
 	 * @return A collection of all classes.
-	 * @see AutoCloseableLock
+	 * @see CloseableLock
 	 */
-	Collection<InstanceClass> all();
+	Collection<InstanceClass> list();
 }

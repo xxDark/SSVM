@@ -1,12 +1,10 @@
 package dev.xdark.ssvm.execution;
 
 import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.api.MethodInvocation;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.backtrace.Backtrace;
-import dev.xdark.ssvm.util.DisposeUtil;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.sink.ValueSink;
 import org.objectweb.asm.Opcodes;
@@ -49,9 +47,6 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 		}
 		boolean doCleanup = true;
 		try {
-			for (MethodInvocation invocation : vmi.getInvocationHooks(jm, true)) {
-				invocation.handle(ctx);
-			}
 			Result result = vmi.getInvoker(jm).intercept(ctx);
 			if (result == Result.ABORT) {
 				return ctx;
@@ -72,21 +67,11 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 						vm.getOperations().monitorExit(lock);
 					}
 				} finally {
-					try {
-						try {
-							for (MethodInvocation invocation : vmi.getInvocationHooks(jm, false)) {
-								invocation.handle(ctx);
-							}
-						} finally {
-							DisposeUtil.dispose(ctx);
-						}
-					} finally {
-						backtrace.pop();
-					}
+					backtrace.pop();
 				}
 			}
 		}
-		throw new PanicException("dead code");
+		throw new PanicException("unreachable code");
 	}
 
 	@Override

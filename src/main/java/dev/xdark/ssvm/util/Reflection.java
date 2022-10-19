@@ -27,14 +27,13 @@ public final class Reflection {
 	 */
 	public ExecutionContext<?> getCallerFrame(int offset) {
 		Backtrace backtrace = vm.getThreadManager().currentOsThread().getBacktrace();
-		int count = backtrace.depth();
-		ExecutionContext<?> frame = backtrace.at(count - offset++);
+		ExecutionContext<?> frame = backtrace.at(offset++);
 		JavaMethod caller = frame.getMethod();
 		if (caller.isCallerSensitive()) {
 			while (true) {
-				frame = backtrace.at(count - offset);
+				frame = backtrace.at(offset);
 				JavaMethod method = frame.getMethod();
-				if (Modifier.isCallerSensitive(method.getModifiers())) {
+				if (method.isCallerSensitive()) {
 					offset++;
 				} else {
 					break;

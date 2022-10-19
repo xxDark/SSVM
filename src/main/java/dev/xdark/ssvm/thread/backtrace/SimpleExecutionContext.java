@@ -4,13 +4,13 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
-import dev.xdark.ssvm.util.Disposable;
-import dev.xdark.ssvm.util.DisposeUtil;
+import dev.xdark.ssvm.util.CloseableUtil;
+import dev.xdark.ssvm.util.SafeCloseable;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.sink.ValueSink;
 
 
-final class SimpleExecutionContext<R extends ValueSink> implements ExecutionContext<R>, Disposable {
+final class SimpleExecutionContext<R extends ValueSink> implements ExecutionContext<R>, SafeCloseable {
 
 	private JavaMethod method;
 	private Stack stack;
@@ -85,9 +85,9 @@ final class SimpleExecutionContext<R extends ValueSink> implements ExecutionCont
 	}
 
 	@Override
-	public void dispose() {
-		DisposeUtil.dispose(stack);
-		DisposeUtil.dispose(locals);
+	public void close() {
+		CloseableUtil.close(stack);
+		CloseableUtil.close(locals);
 	}
 
 	void init(JavaMethod method, Stack stack, Locals locals, R sink) {

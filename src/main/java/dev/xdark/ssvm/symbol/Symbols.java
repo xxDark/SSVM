@@ -167,8 +167,6 @@ public interface Symbols {
 
 	InstanceClass java_lang_IllegalAccessException();
 
-	InstanceClass java_lang_Module();
-
 	InstanceClass java_io_Serializable();
 
 	InstanceClass java_lang_Cloneable();

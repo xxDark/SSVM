@@ -11,6 +11,7 @@ import dev.xdark.ssvm.classloading.ParsedClassData;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.VMException;
+import dev.xdark.ssvm.jvmti.VMEventCollection;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.MirrorFactory;
@@ -18,16 +19,18 @@ import dev.xdark.ssvm.mirror.member.JavaField;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.mirror.member.MemberIdentifier;
 import dev.xdark.ssvm.mirror.member.area.ClassArea;
+import dev.xdark.ssvm.mirror.member.area.EmptyClassArea;
 import dev.xdark.ssvm.mirror.member.area.SimpleClassArea;
 import dev.xdark.ssvm.mirror.type.ClassLinkage;
 import dev.xdark.ssvm.mirror.type.InitializationState;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
+import dev.xdark.ssvm.symbol.Primitives;
 import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.util.Assertions;
-import dev.xdark.ssvm.util.AutoCloseableLock;
+import dev.xdark.ssvm.util.CloseableLock;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.RequiredArgsConstructor;
@@ -56,9 +59,11 @@ public final class DefaultClassOperations implements ClassOperations {
 	private final BootClassFinder bootClassFinder;
 	private final LinkResolver linkResolver;
 	private final Symbols symbols;
+	private final Primitives primitives;
 	private final ClassLoaders classLoaders;
 	private final ClassDefiner classDefiner;
 	private final ClassStorage classStorage;
+	private final VMEventCollection eventCollection;
 	private final VMOperations ops;
 
 	@Override
@@ -67,22 +72,24 @@ public final class DefaultClassOperations implements ClassOperations {
 		state.lock();
 		state.set(InstanceClass.State.IN_PROGRESS);
 		try {
+			eventCollection.getClassPrepare().invoke(instanceClass);
 			ObjectValue cl = instanceClass.getClassLoader();
 			ClassLinkage linkage = instanceClass.linkage();
 			ClassNode node = instanceClass.getNode();
 			String superName = node.superName;
+			List<String> interfaces = node.interfaces;
 			if (superName != null) {
 				linkage.setSuperClass((InstanceClass) findClass(cl, superName, false));
 			}
-			List<String> interfaces = node.interfaces;
-			if (!interfaces.isEmpty()) {
-				InstanceClass[] classes = new InstanceClass[interfaces.size()];
-				for (int i = 0; i < interfaces.size(); i++) {
-					classes[i] = (InstanceClass) findClass(cl, interfaces.get(i), false);
-				}
-				linkage.setInterfaces(classes);
-			}
 			// Create method and field area
+			MirrorFactory mf = this.mirrorFactory;
+			// Set methods
+			List<MethodNode> methods = node.methods;
+			List<JavaMethod> allMethods = new ArrayList<>(methods.size());
+			for (int i = 0, j = methods.size(); i < j; i++) {
+				allMethods.add(mf.newMethod(instanceClass, methods.get(i), i));
+			}
+			linkage.setMethodArea(new SimpleClassArea<>(allMethods));
 			List<JavaField> virtualFields = new ArrayList<>();
 			InstanceClass jc = instanceClass.getSuperClass();
 			JavaField lastField = null;
@@ -106,19 +113,18 @@ public final class DefaultClassOperations implements ClassOperations {
 			MemoryManager memoryManager = this.memoryManager;
 			if (lastField != null) {
 				offset = lastField.getOffset();
-				offset += memoryManager.sizeOfType(lastField.getType()); // TODO calling getType may lead to exception
+				offset += safeSizeOf(lastField.getDesc());
 			} else {
 				offset = memoryManager.valueBaseOffset(instanceClass);
 			}
 
 			List<FieldNode> fields = node.fields;
-			MirrorFactory mf = this.mirrorFactory;
 			int slot = 0;
 			for (int i = 0, j = fields.size(); i < j; i++) {
 				FieldNode fieldNode = fields.get(i);
 				if ((fieldNode.access & Opcodes.ACC_STATIC) == 0) {
 					JavaField field = mf.newField(instanceClass, fieldNode, slot++, offset);
-					offset += memoryManager.sizeOfType(field.getType()); // TODO calling getType may lead to exception
+					offset += safeSizeOf(field.getDesc());
 					virtualFields.add(field);
 				}
 			}
@@ -128,30 +134,56 @@ public final class DefaultClassOperations implements ClassOperations {
 			// Static fields are stored right after java/lang/Class virtual fields
 			// At this point of linkage java/lang/Class must already set its virtual
 			// fields as we are doing it before (see above)
-			JavaField maxVirtualField = symbols.java_lang_Class().virtualFieldArea()
-				.stream()
-				.max(Comparator.comparingLong(JavaField::getOffset))
-				.orElseThrow(() -> new PanicException("No fields in java/lang/Class"));
-			offset = maxVirtualField.getOffset() + memoryManager.sizeOfType(maxVirtualField.getType()); // TODO calling getType may lead to exception
-			long baseStaticOffset = offset;
-			List<JavaField> staticFields = new ArrayList<>(fields.size() - slot);
-			for (int i = 0, j = fields.size(); i < j; i++) {
-				FieldNode fieldNode = fields.get(i);
-				if ((fieldNode.access & Opcodes.ACC_STATIC) != 0) {
-					JavaField field = mf.newField(instanceClass, fieldNode, slot++, offset);
-					offset += memoryManager.sizeOfType(field.getType());
-					staticFields.add(field);
+			InstanceClass jlc = symbols.java_lang_Class();
+			if (jlc == null) {
+				// Linking it now?
+				Assertions.check("java/lang/Class".equals(node.name), "bad first class for linking");
+				jlc = instanceClass;
+			}
+			Assertions.notNull(jlc, "null java/lang/Class");
+			ClassArea<JavaField> jlcFieldArea = jlc.virtualFieldArea();
+			if (jlcFieldArea == null) {
+				Assertions.check("java/lang/Object".equals(node.name), "virtual field area");
+				// No static fields allowed here.
+				linkage.setStaticFieldArea(EmptyClassArea.create());
+				linkage.setOccupiedStaticSpace(0L);
+			} else {
+				JavaField maxVirtualField = jlcFieldArea.stream()
+					.max(Comparator.comparingLong(JavaField::getOffset))
+					.orElseThrow(() -> new PanicException("No fields in java/lang/Class"));
+				offset = maxVirtualField.getOffset() + memoryManager.sizeOfType(maxVirtualField.getType()); // TODO calling getType may lead to exception
+				long baseStaticOffset = offset;
+				List<JavaField> staticFields = new ArrayList<>(fields.size() - slot);
+				for (int i = 0, j = fields.size(); i < j; i++) {
+					FieldNode fieldNode = fields.get(i);
+					if ((fieldNode.access & Opcodes.ACC_STATIC) != 0) {
+						JavaField field = mf.newField(instanceClass, fieldNode, slot++, offset);
+						offset += safeSizeOf(field.getDesc());
+						staticFields.add(field);
+					}
 				}
+				linkage.setStaticFieldArea(new SimpleClassArea<>(staticFields, slotOffset));
+				linkage.setOccupiedStaticSpace(offset - baseStaticOffset);
 			}
-			linkage.setStaticFieldArea(new SimpleClassArea<>(staticFields, slotOffset));
-			linkage.setOccupiedStaticSpace(offset - baseStaticOffset);
-			// Set methods
-			List<MethodNode> methods = node.methods;
-			List<JavaMethod> allMethods = new ArrayList<>(methods.size());
-			for (int i = 0, j = methods.size(); i < j; i++) {
-				allMethods.add(mf.newMethod(instanceClass, methods.get(i), i));
+			// Load interfaces now
+			if (!interfaces.isEmpty()) {
+				InstanceClass[] classes = new InstanceClass[interfaces.size()];
+				for (int i1 = 0; i1 < interfaces.size(); i1++) {
+					classes[i1] = (InstanceClass) findClass(cl, interfaces.get(i1), false);
+				}
+				linkage.setInterfaces(classes);
+			} else {
+				linkage.setInterfaces(new InstanceClass[0]);
 			}
-			linkage.setMethodArea(new SimpleClassArea<>(allMethods));
+			if (jlc.getOop() != null) {
+				// VM might be still starting up
+				// All classes without mirrors will be fixed later
+				instanceClass.setOop(memoryManager.newClassOop(instanceClass));
+			}
+			eventCollection.getClassLink().invoke(instanceClass);
+			// After we're done, set the state back to PENDING,
+			// so that the class can be initialized
+			state.set(InstanceClass.State.PENDING);
 		} catch (VMException ex) {
 			state.set(InstanceClass.State.FAILED);
 			throwClassException(ex);
@@ -159,7 +191,6 @@ public final class DefaultClassOperations implements ClassOperations {
 			state.condition().signalAll();
 			state.unlock();
 		}
-
 	}
 
 	@Override
@@ -198,6 +229,14 @@ public final class DefaultClassOperations implements ClassOperations {
 	}
 
 	@Override
+	public boolean isInstanceOf(ObjectValue value, JavaClass type) {
+		if (value.isNull()) {
+			return false;
+		}
+		return type.isAssignableFrom(value.getJavaClass());
+	}
+
+	@Override
 	public JavaClass findClass(ObjectValue classLoader, String internalName, boolean initialize) {
 		int dimensions = 0;
 		while (internalName.charAt(dimensions) == '[') {
@@ -207,37 +246,49 @@ public final class DefaultClassOperations implements ClassOperations {
 		if (dimensions >= LanguageSpecification.ARRAY_DIMENSION_LIMIT) {
 			ops.throwException(symbols.java_lang_ClassNotFoundException(), internalName);
 		}
-		String trueName = dimensions == 0 ? internalName : internalName.substring(dimensions + 1, internalName.length() - 1);
-		ClassLoaderData data = classLoaders.getClassLoaderData(classLoader);
-		try (AutoCloseableLock lock = data.lock()) {
-			JavaClass klass = data.getClass(trueName);
+		JavaClass klass;
+		if (internalName.length() - dimensions == 1) {
+			// Primitive array?
+			klass = lookupPrimitiveOrNull(internalName.charAt(1));
 			if (klass == null) {
-				if (classLoader.isNull()) {
-					ParsedClassData cdata = bootClassFinder.findBootClass(trueName);
-					if (cdata != null) {
-						klass = defineClass(classLoader, cdata, null, "JVM_DefineClass", true);
-					}
-				} else {
-					// Ask Java world
-					JavaMethod method = linkResolver.resolveVirtualMethod(classLoader, "loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;");
-					Locals locals = threadManager.currentThreadStorage().newLocals(method);
-					locals.setReference(0, classLoader);
-					locals.setReference(1, ops.newUtf8(trueName.replace('/', '.')));
-					locals.setInt(2, initialize ? 1 : 0);
-					InstanceValue result = ops.checkNotNull(ops.invokeReference(method, locals));
-					klass = classStorage.lookup(result);
-				}
+				ops.throwException(symbols.java_lang_ClassNotFoundException(), internalName);
+			}
+		} else {
+			String trueName = dimensions == 0 ? internalName : internalName.substring(dimensions + 1, internalName.length() - 1);
+			ClassLoaderData data = classLoaders.getClassLoaderData(classLoader);
+			try (CloseableLock lock = data.lock()) {
+				klass = data.getClass(trueName);
 				if (klass == null) {
-					ops.throwException(symbols.java_lang_ClassNotFoundException(), internalName.replace('/', '.'));
+					if (classLoader.isNull()) {
+						ParsedClassData cdata = bootClassFinder.findBootClass(trueName);
+						if (cdata != null) {
+							klass = defineClass(classLoader, cdata, null, "JVM_DefineClass", true);
+						}
+					} else {
+						// Ask Java world
+						JavaMethod method = linkResolver.resolveVirtualMethod(classLoader, "loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;");
+						Locals locals = threadManager.currentThreadStorage().newLocals(method);
+						locals.setReference(0, classLoader);
+						locals.setReference(1, ops.newUtf8(trueName.replace('/', '.')));
+						locals.setInt(2, initialize ? 1 : 0);
+						InstanceValue result = ops.checkNotNull(ops.invokeReference(method, locals));
+						klass = classStorage.lookup(result);
+					}
+					if (klass == null) {
+						ops.throwException(symbols.java_lang_ClassNotFoundException(), internalName.replace('/', '.'));
+					}
+				}
+				if (initialize) {
+					if (klass instanceof InstanceClass) {
+						initialize((InstanceClass) klass);
+					}
 				}
 			}
-			if (initialize) {
-				if (klass instanceof InstanceClass) {
-					initialize((InstanceClass) klass);
-				}
-			}
-			return klass;
 		}
+		while (dimensions-- != 0) {
+			klass = klass.newArrayClass();
+		}
+		return klass;
 	}
 
 	@Override
@@ -279,10 +330,60 @@ public final class DefaultClassOperations implements ClassOperations {
 
 	@Override
 	public JavaClass findClass(ObjectValue classLoader, Type type, boolean initialize) {
-		Assertions.check(type.getSort() > Type.DOUBLE, "not a reference type");
+		int sort = type.getSort();
+		if (sort < Type.ARRAY) {
+			return lookupPrimitive(sort);
+		}
 		return findClass(classLoader, type.getInternalName(), initialize);
 	}
 
+	private JavaClass lookupPrimitive(int sort) {
+		Primitives primitives = this.primitives;
+		switch (sort) {
+			case Type.VOID:
+				return primitives.voidPrimitive();
+			case Type.BOOLEAN:
+				return primitives.booleanPrimitive();
+			case Type.CHAR:
+				return primitives.charPrimitive();
+			case Type.BYTE:
+				return primitives.bytePrimitive();
+			case Type.SHORT:
+				return primitives.shortPrimitive();
+			case Type.INT:
+				return primitives.intPrimitive();
+			case Type.FLOAT:
+				return primitives.floatPrimitive();
+			case Type.LONG:
+				return primitives.longPrimitive();
+			case Type.DOUBLE:
+				return primitives.doublePrimitive();
+		}
+		throw new PanicException("unreachable code");
+	}
+
+	private JavaClass lookupPrimitiveOrNull(char desc) {
+		Primitives primitives = this.primitives;
+		switch (desc) {
+			case 'Z':
+				return primitives.booleanPrimitive();
+			case 'C':
+				return primitives.charPrimitive();
+			case 'B':
+				return primitives.bytePrimitive();
+			case 'S':
+				return primitives.shortPrimitive();
+			case 'I':
+				return primitives.intPrimitive();
+			case 'F':
+				return primitives.floatPrimitive();
+			case 'J':
+				return primitives.longPrimitive();
+			case 'D':
+				return primitives.doublePrimitive();
+		}
+		return null;
+	}
 
 	private void initializeStaticFields(InstanceClass instanceClass) {
 		InstanceValue oop = instanceClass.getOop();
@@ -327,6 +428,15 @@ public final class DefaultClassOperations implements ClassOperations {
 		}
 	}
 
+	private long safeSizeOf(String desc) {
+		Type type = Type.getType(desc);
+		int sort = type.getSort();
+		if (sort < Type.ARRAY) {
+			return LanguageSpecification.primitiveSize(sort);
+		}
+		// Anything else is a reference.
+		return memoryManager.objectSize();
+	}
 
 	private void throwClassException(VMException ex) {
 		InstanceValue oop = ex.getOop();

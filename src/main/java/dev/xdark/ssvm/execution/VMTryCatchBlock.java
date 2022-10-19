@@ -50,7 +50,7 @@ public final class VMTryCatchBlock {
 		}
 		InstanceClass jc = this.jc;
 		if (jc == null) {
-			return this.jc = (InstanceClass) vm.findClass(loader, type, false);
+			return this.jc = (InstanceClass) vm.getOperations().findClass(loader, type, false);
 		}
 		return jc;
 	}

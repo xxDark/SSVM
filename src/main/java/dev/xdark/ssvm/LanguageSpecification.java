@@ -3,6 +3,7 @@ package dev.xdark.ssvm;
 import lombok.experimental.UtilityClass;
 
 import java.util.Arrays;
+import java.util.Comparator;
 
 import static org.objectweb.asm.Type.BOOLEAN;
 import static org.objectweb.asm.Type.BYTE;
@@ -46,7 +47,7 @@ public class LanguageSpecification {
 			byte.class,
 			boolean.class,
 		};
-		Arrays.sort(classes);
+		Arrays.sort(classes, Comparator.comparingInt(System::identityHashCode));
 		PRIMITIVES = classes;
 		long[] sizes = new long[classes.length];
 		for (int i = 0; i < sizes.length; i++) {

@@ -408,11 +408,6 @@ final class DelegatingSymbols implements Symbols {
 	}
 
 	@Override
-	public InstanceClass java_lang_Module() {
-		return symbols.java_lang_Module();
-	}
-
-	@Override
 	public InstanceClass java_io_Serializable() {
 		return symbols.java_io_Serializable();
 	}

@@ -4,7 +4,7 @@ import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.ReferenceMap;
 import dev.xdark.ssvm.thread.ThreadMemoryData;
-import dev.xdark.ssvm.util.Disposable;
+import dev.xdark.ssvm.util.SafeCloseable;
 import dev.xdark.ssvm.value.ObjectValue;
 
 /**
@@ -12,7 +12,7 @@ import dev.xdark.ssvm.value.ObjectValue;
  *
  * @author xDark
  */
-final class HeapLocals implements Locals, Disposable {
+final class HeapLocals implements Locals, SafeCloseable {
 	private final ReferenceMap referenceMap;
 	ThreadMemoryData threadMemoryData;
 
@@ -87,7 +87,7 @@ final class HeapLocals implements Locals, Disposable {
 	}
 
 	@Override
-	public void dispose() {
+	public void close() {
 		threadMemoryData.reclaim();
 	}
 

@@ -21,7 +21,7 @@ public final class PutFieldIntProcessor implements InstructionProcessor<VMFieldI
 	public Result execute(VMFieldInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
 		int value = stack.popInt();
-		InstanceValue instance = ctx.getHelper().checkNotNull(stack.popReference());
+		InstanceValue instance = ctx.getOperations().checkNotNull(stack.popReference());
 		JavaField field = insn.getResolved();
 		if (field == null) {
 			InstanceClass klass = instance.getJavaClass();

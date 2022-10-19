@@ -77,9 +77,8 @@ public interface MemoryManager extends ReferenceMap {
 	 * in case if its not, it may fail.
 	 *
 	 * @param javaClass java/lang/Class mirror.
-	 * @return allocated Java wrapper.
 	 */
-	JavaValue<InstanceClass> newJavaLangClass(InstanceClass javaClass);
+	void newJavaLangClass(InstanceClass javaClass);
 
 	/**
 	 * Allocates new array.

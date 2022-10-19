@@ -17,7 +17,8 @@ public class IntRemainderProcessor implements InstructionProcessor<AbstractInsnN
 		Stack stack = ctx.getStack();
 		int v2 = stack.popInt();
 		if (v2 == 0) {
-			ctx.getHelper().throwException(ctx.getSymbols().java_lang_ArithmeticException(), "/ by zero");
+			ctx.getOperations().throwException(ctx.getSymbols().java_lang_ArithmeticException(), "/ by zero");
+			return Result.ABORT;
 		}
 		int v1 = stack.popInt();
 		stack.pushInt(v1 % v2);

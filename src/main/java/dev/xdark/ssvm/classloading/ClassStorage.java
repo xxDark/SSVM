@@ -3,6 +3,7 @@ package dev.xdark.ssvm.classloading;
 import dev.xdark.ssvm.metadata.MetadataStorage;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.value.InstanceValue;
+import dev.xdark.ssvm.value.ObjectValue;
 
 /**
  * Class storage.
@@ -20,5 +21,5 @@ public interface ClassStorage extends MetadataStorage<JavaClass> {
 	 * @param oop Class to get mirror for.
 	 * @return Class mirror.
 	 */
-	JavaClass lookup(InstanceValue oop);
+	JavaClass lookup(ObjectValue oop);
 }

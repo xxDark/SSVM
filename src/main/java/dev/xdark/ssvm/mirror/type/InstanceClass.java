@@ -1,6 +1,5 @@
 package dev.xdark.ssvm.mirror.type;
 
-import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.mirror.member.JavaField;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.mirror.member.area.ClassArea;
@@ -16,11 +15,6 @@ import java.util.List;
  * @apiNote xDark
  */
 public interface InstanceClass extends JavaClass {
-
-	/**
-	 * @return VM in which this class was created.
-	 */
-	VirtualMachine getVM();
 
 	/**
 	 * Searches for a field by it's name and descriptor.

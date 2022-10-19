@@ -5,7 +5,7 @@ import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.ReferenceMap;
 import dev.xdark.ssvm.thread.ThreadMemoryData;
-import dev.xdark.ssvm.util.Disposable;
+import dev.xdark.ssvm.util.SafeCloseable;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
 
@@ -14,7 +14,7 @@ import dev.xdark.ssvm.value.Value;
  *
  * @author xDark
  */
-public final class HeapStack implements Stack, Disposable {
+public final class HeapStack implements Stack, SafeCloseable {
 	private final ReferenceMap referenceMap;
 	private ThreadMemoryData threadMemoryData;
 	private long pointer;
@@ -305,7 +305,7 @@ public final class HeapStack implements Stack, Disposable {
 	}
 
 	@Override
-	public void dispose() {
+	public void close() {
 		threadMemoryData.reclaim();
 	}
 

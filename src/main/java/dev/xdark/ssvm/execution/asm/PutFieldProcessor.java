@@ -7,6 +7,7 @@ import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.member.JavaField;
+import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.util.AsmUtil;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.FieldInsnNode;
@@ -26,7 +27,8 @@ public final class PutFieldProcessor implements InstructionProcessor<FieldInsnNo
 	@Override
 	public Result execute(FieldInsnNode insn, ExecutionContext<?> ctx) {
 		if (AsmUtil.isValid(insn)) {
-			InstanceClass klass = (InstanceClass) ctx.getHelper().tryFindClass(ctx.getClassLoader(), insn.owner, true);
+			VMOperations ops = ctx.getOperations();
+			InstanceClass klass = (InstanceClass) ops.findClass(ctx.getClassLoader(), insn.owner, true);
 			JavaField field;
 			int sort;
 			try {
@@ -45,7 +47,7 @@ public final class PutFieldProcessor implements InstructionProcessor<FieldInsnNo
 			InsnList list = ctx.getMethod().getNode().instructions;
 			list.set(insn, new VMFieldInsnNode(insn, opcode, field));
 			if (field != null) {
-				field.getOwner().initialize();
+				ops.initialize(field.getOwner());
 			}
 		}
 		ctx.setInsnPosition(ctx.getInsnPosition() - 1);

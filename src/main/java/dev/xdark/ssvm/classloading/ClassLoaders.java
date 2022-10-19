@@ -34,15 +34,6 @@ public interface ClassLoaders {
 	Collection<InstanceValue> getAll();
 
 	/**
-	 * Used for early initialization by the VM.
-	 * Sets oop for boot classes.
-	 *
-	 * @param javaClass     Class to set oop for.
-	 * @param javaLangClass {@code java/lang/Class} instance.
-	 */
-	void initializeBootOop(InstanceClass javaClass, InstanceClass javaLangClass);
-
-	/**
 	 * Sets extra class data for a class.
 	 * Used for JDK 17+.
 	 *

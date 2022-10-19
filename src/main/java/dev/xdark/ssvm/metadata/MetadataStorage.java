@@ -1,6 +1,6 @@
 package dev.xdark.ssvm.metadata;
 
-import dev.xdark.ssvm.util.AutoCloseableLock;
+import dev.xdark.ssvm.util.CloseableLock;
 
 import java.util.List;
 
@@ -29,7 +29,7 @@ public interface MetadataStorage<V> {
 	/**
 	 * @return Acquired lock.
 	 */
-	AutoCloseableLock lock();
+	CloseableLock lock();
 
 	/**
 	 * Returns a list of all values.
@@ -38,7 +38,7 @@ public interface MetadataStorage<V> {
 	 * {@link MetadataStorage#lock()}.
 	 *
 	 * @return All registered values.
-	 * @see AutoCloseableLock
+	 * @see CloseableLock
 	 */
 	List<V> list();
 }

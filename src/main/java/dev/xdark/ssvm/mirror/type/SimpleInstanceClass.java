@@ -7,7 +7,7 @@ import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.mirror.member.MemberIdentifier;
 import dev.xdark.ssvm.mirror.member.area.ClassArea;
 import dev.xdark.ssvm.symbol.Symbols;
-import dev.xdark.ssvm.tlc.ThreadLocalStorage;
+import dev.xdark.ssvm.threadlocal.ThreadLocalStorage;
 import dev.xdark.ssvm.util.Assertions;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -48,6 +48,7 @@ public class SimpleInstanceClass implements InstanceClass {
 	private ClassFile rawClassFile;
 
 	private InstanceValue oop;
+	private int id = -1;
 
 	private InstanceClass superClass;
 	private InstanceClass[] interfaces;
@@ -123,6 +124,11 @@ public class SimpleInstanceClass implements InstanceClass {
 	@Override
 	public InstanceValue getOop() {
 		return oop;
+	}
+
+	@Override
+	public int getId() {
+		return id;
 	}
 
 	@Override
@@ -247,6 +253,11 @@ public class SimpleInstanceClass implements InstanceClass {
 		this.oop = oop;
 	}
 
+	@Override
+	public void setId(int id) {
+		Assertions.check(this.id == -1 , "id already set");
+		this.id = id;
+	}
 	@Override
 	public VirtualMachine getVM() {
 		return vm;

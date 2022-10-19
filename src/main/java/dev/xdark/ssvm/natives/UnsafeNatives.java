@@ -17,7 +17,6 @@ import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 import me.coley.cafedude.classfile.ConstPool;
@@ -107,8 +106,7 @@ public class UnsafeNatives {
 		});
 		vmi.setInvoker(unsafe, uhelper.arrayBaseOffset(), "(Ljava/lang/Class;)I", ctx -> {
 			Locals locals = ctx.getLocals();
-			JavaValue<JavaClass> value = locals.loadReference(1);
-			JavaClass klass = value.getValue();
+			JavaClass klass = ctx.getClassStorage().lookup(locals.loadReference(1));
 			JavaClass component = klass.getComponentType();
 			if (component == null) {
 				vm.getOperations().throwException(vm.getSymbols().java_lang_IllegalArgumentException());
@@ -119,13 +117,12 @@ public class UnsafeNatives {
 		});
 		vmi.setInvoker(unsafe, uhelper.arrayIndexScale(), "(Ljava/lang/Class;)I", ctx -> {
 			Locals locals = ctx.getLocals();
-			JavaValue<JavaClass> value = locals.loadReference(1);
-			JavaClass klass = value.getValue();
+			JavaClass klass = ctx.getClassStorage().lookup(locals.loadReference(1));
 			JavaClass component = klass.getComponentType();
 			if (component == null) {
 				vm.getOperations().throwException(vm.getSymbols().java_lang_IllegalArgumentException());
 			} else {
-				ctx.setResult(vm.getMemoryManager().sizeOfType(component));
+				ctx.setResult((int) vm.getMemoryManager().sizeOfType(component));
 			}
 			return Result.ABORT;
 		});
@@ -143,14 +140,14 @@ public class UnsafeNatives {
 		});
 		vmi.setInvoker(unsafe, "objectFieldOffset1", "(Ljava/lang/Class;Ljava/lang/String;)J", ctx -> {
 			Locals locals = ctx.getLocals();
-			JavaValue<JavaClass> klass = locals.loadReference(1);
-			JavaClass wrapper = klass.getValue();
-			if (!(wrapper instanceof InstanceClass)) {
+			JavaClass klass = ctx.getClassStorage().lookup(locals.loadReference(1));
+			if (!(klass instanceof InstanceClass)) {
 				ctx.setResult(-1L);
 			} else {
-				search: {
+				search:
+				{
 					String utf = vm.getOperations().readUtf8(locals.loadReference(2));
-					List<JavaField> fields = ((InstanceClass) wrapper).virtualFieldArea().list();
+					List<JavaField> fields = ((InstanceClass) klass).virtualFieldArea().list();
 					for (JavaField field : fields) {
 						if (utf.equals(field.getName())) {
 							ctx.setResult(field.getOffset());
@@ -379,9 +376,9 @@ public class UnsafeNatives {
 		vmi.setInvoker(unsafe, "defineAnonymousClass", "(Ljava/lang/Class;[B[Ljava/lang/Object;)Ljava/lang/Class;", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMOperations ops = vm.getOperations();
-			JavaValue<JavaClass> host = ops.checkNotNull(locals.loadReference(1));
+			InstanceValue host = ops.checkNotNull(locals.loadReference(1));
 			ArrayValue bytes = ops.checkNotNull(locals.loadReference(2));
-			JavaClass klass = host.getValue();
+			JavaClass klass = vm.getClassStorage().lookup(host);
 			byte[] array = ops.toJavaBytes(bytes);
 			ParsedClassData result = vm.getClassDefiner().parseClass(null, array, 0, array.length, "JVM_DefineClass");
 			if (result == null) {
@@ -478,7 +475,7 @@ public class UnsafeNatives {
 		vmi.setInvoker(unsafe, "allocateInstance", "(Ljava/lang/Class;)Ljava/lang/Object;", ctx -> {
 			Locals locals = ctx.getLocals();
 			VMOperations ops = vm.getOperations();
-			JavaClass klass = ops.<JavaValue<JavaClass>>checkNotNull(locals.loadReference(1)).getValue();
+			JavaClass klass = vm.getClassStorage().lookup(ops.checkNotNull(locals.loadReference(1)));
 			InstanceValue instance = ops.allocateInstance(klass);
 			ctx.setResult(instance);
 			return Result.ABORT;

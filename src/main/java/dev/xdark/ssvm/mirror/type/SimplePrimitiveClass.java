@@ -1,8 +1,9 @@
 package dev.xdark.ssvm.mirror.type;
 
-import dev.xdark.ssvm.mirror.MirrorFactory;
+import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.util.Assertions;
 import dev.xdark.ssvm.value.InstanceValue;
+import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
@@ -13,22 +14,28 @@ import org.objectweb.asm.Type;
  */
 public final class SimplePrimitiveClass implements PrimitiveClass {
 
-	private final MirrorFactory mirrorFactory;
+	private final VirtualMachine vm;
 	private final String name;
 	private final String descriptor;
 	private final Type type;
 	private InstanceValue oop;
+	private int id = -1;
 	private ArrayClass arrayClass;
 
 	/**
-	 * @param mirrorFactory Mirror factory.
-	 * @param type          Type.
+	 * @param vm   VM instance.
+	 * @param type Type.
 	 */
-	public SimplePrimitiveClass(MirrorFactory mirrorFactory, Type type) {
-		this.mirrorFactory = mirrorFactory;
+	public SimplePrimitiveClass(VirtualMachine vm, Type type) {
+		this.vm = vm;
 		this.name = type.getClassName();
 		this.descriptor = type.getDescriptor();
 		this.type = type;
+	}
+
+	@Override
+	public VirtualMachine getVM() {
+		return vm;
 	}
 
 	@Override
@@ -57,6 +64,21 @@ public final class SimplePrimitiveClass implements PrimitiveClass {
 	}
 
 	@Override
+	public int getId() {
+		return id;
+	}
+
+	@Override
+	public ObjectValue getClassLoader() {
+		return vm.getMemoryManager().nullValue();
+	}
+
+	@Override
+	public InstanceClass getSuperClass() {
+		return vm.getSymbols().java_lang_Object();
+	}
+
+	@Override
 	public InstanceClass[] getInterfaces() {
 		return new InstanceClass[0];
 	}
@@ -68,7 +90,7 @@ public final class SimplePrimitiveClass implements PrimitiveClass {
 			synchronized (this) {
 				arrayClass = this.arrayClass;
 				if (arrayClass == null) {
-					arrayClass = mirrorFactory.newArrayClass(this);
+					arrayClass = vm.getMirrorFactory().newArrayClass(this);
 					this.arrayClass = arrayClass;
 				}
 			}
@@ -121,5 +143,11 @@ public final class SimplePrimitiveClass implements PrimitiveClass {
 		Assertions.notNull(oop, "class oop");
 		Assertions.isNull(this.oop, "cannot re-assign class oop");
 		this.oop = oop;
+	}
+
+	@Override
+	public void setId(int id) {
+		Assertions.check(this.id == -1 , "id already set");
+		this.id = id;
 	}
 }

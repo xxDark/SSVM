@@ -20,7 +20,7 @@ public final class GetFieldShortProcessor implements InstructionProcessor<VMFiel
 	@Override
 	public Result execute(VMFieldInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
-		InstanceValue instance = ctx.getHelper().checkNotNull(stack.popReference());
+		InstanceValue instance = ctx.getOperations().checkNotNull(stack.popReference());
 		JavaField field = insn.getResolved();
 		if (field == null) {
 			InstanceClass klass = instance.getJavaClass();

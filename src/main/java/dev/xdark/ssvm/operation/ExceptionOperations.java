@@ -106,4 +106,12 @@ public interface ExceptionOperations {
 	default void throwException(InstanceClass javaClass) {
 		throwException(javaClass, null, null);
 	}
+
+	/**
+	 * Converts VM exception to Java exception.
+	 *
+	 * @param exception VM exception to convert.
+	 * @return Java exception.
+	 */
+	Exception toJavaException(InstanceValue exception);
 }

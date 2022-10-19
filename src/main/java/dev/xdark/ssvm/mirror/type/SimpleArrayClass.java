@@ -1,35 +1,43 @@
 package dev.xdark.ssvm.mirror.type;
 
 import dev.xdark.ssvm.LanguageSpecification;
+import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.PanicException;
-import dev.xdark.ssvm.mirror.MirrorFactory;
+import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.util.Assertions;
 import dev.xdark.ssvm.value.InstanceValue;
+import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 public final class SimpleArrayClass implements ArrayClass {
 
-	private final MirrorFactory mirrorFactory;
+	private final VirtualMachine vm;
 	private final String internalName;
 	private final String name;
 	private final JavaClass componentType;
 	private final int dimensions;
 	private InstanceValue oop;
+	private int id = -1;
 	private ArrayClass arrayClass;
 	private Type type;
 
 	/**
-	 * @param mirrorFactory Mirror factory.
+	 * @param vm VM instance.
 	 * @param componentType Component of the array.
 	 */
-	public SimpleArrayClass(MirrorFactory mirrorFactory, JavaClass componentType) {
-		this.mirrorFactory = mirrorFactory;
+	public SimpleArrayClass(VirtualMachine vm, JavaClass componentType) {
+		this.vm = vm;
 		String internalName = '[' + componentType.getDescriptor();
 		this.internalName = internalName;
 		name = internalName.replace('/', '.');
 		this.componentType = componentType;
 		this.dimensions = (componentType instanceof ArrayClass ? ((ArrayClass) componentType).getDimensions() + 1 : 1);
+	}
+
+	@Override
+	public VirtualMachine getVM() {
+		return vm;
 	}
 
 	@Override
@@ -58,8 +66,27 @@ public final class SimpleArrayClass implements ArrayClass {
 	}
 
 	@Override
+	public int getId() {
+		return id;
+	}
+
+	@Override
+	public ObjectValue getClassLoader() {
+		return componentType.getClassLoader();
+	}
+
+	@Override
+	public InstanceClass getSuperClass() {
+		return vm.getSymbols().java_lang_Object();
+	}
+
+	@Override
 	public InstanceClass[] getInterfaces() {
-		return new InstanceClass[0];
+		Symbols symbols = vm.getSymbols();
+		return new InstanceClass[] {
+			symbols.java_lang_Cloneable(),
+			symbols.java_io_Serializable()
+		};
 	}
 
 	@Override
@@ -78,7 +105,7 @@ public final class SimpleArrayClass implements ArrayClass {
 			synchronized (this) {
 				arrayClass = this.arrayClass;
 				if (arrayClass == null) {
-					arrayClass = mirrorFactory.newArrayClass(this);
+					arrayClass = vm.getMirrorFactory().newArrayClass(this);
 					this.arrayClass = arrayClass;
 				}
 			}
@@ -144,5 +171,11 @@ public final class SimpleArrayClass implements ArrayClass {
 		Assertions.notNull(oop, "class oop");
 		Assertions.isNull(this.oop, "cannot re-assign class oop");
 		this.oop = oop;
+	}
+
+	@Override
+	public void setId(int id) {
+		Assertions.check(this.id == -1 , "id already set");
+		this.id = id;
 	}
 }

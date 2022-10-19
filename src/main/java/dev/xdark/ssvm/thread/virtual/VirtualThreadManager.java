@@ -1,7 +1,7 @@
 package dev.xdark.ssvm.thread.virtual;
 
 import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.fs.Handle;
+import dev.xdark.ssvm.filesystem.Handle;
 import dev.xdark.ssvm.jvmti.ThreadState;
 import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
 import dev.xdark.ssvm.operation.VMOperations;
@@ -272,6 +272,9 @@ public final class VirtualThreadManager implements ThreadManager {
 		if (th == null) {
 			th = currentThread;
 			Assertions.notNull(th, "not a Java thread");
+			if (th.attached) {
+				Assertions.check(th.foreign == Thread.currentThread(), "currentThread cache is poisoned");
+			}
 			return th;
 		}
 		return th;

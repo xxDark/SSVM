@@ -21,7 +21,7 @@ public final class PutFieldLongProcessor implements InstructionProcessor<VMField
 	public Result execute(VMFieldInsnNode insn, ExecutionContext<?> ctx) {
 		Stack stack = ctx.getStack();
 		long value = stack.popLong();
-		InstanceValue instance = ctx.getHelper().checkNotNull(stack.popReference());
+		InstanceValue instance = ctx.getOperations().checkNotNull(stack.popReference());
 		JavaField field = insn.getResolved();
 		if (field == null) {
 			InstanceClass klass = instance.getJavaClass();

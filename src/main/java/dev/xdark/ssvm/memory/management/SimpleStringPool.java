@@ -20,13 +20,12 @@ public class SimpleStringPool implements StringPool {
 
 	private final Map<String, InstanceValue> pool = new HashMap<>();
 	private final ReadWriteLock lock = new ReentrantReadWriteLock();
-	private final VMOperations ops;
+	private final VirtualMachine vm;
 	private final Function<? super String, ? extends InstanceValue> pooler;
 
 	public SimpleStringPool(VirtualMachine vm) {
-		VMOperations ops = vm.getOperations();
-		this.ops = ops;
-		pooler = ops::newUtf8;
+		this.vm = vm;
+		pooler = s -> vm.getOperations().newUtf8(s);
 	}
 
 	@Override
@@ -42,7 +41,7 @@ public class SimpleStringPool implements StringPool {
 
 	@Override
 	public InstanceValue intern(InstanceValue value) {
-		return (InstanceValue) intern(ops.readUtf8(value));
+		return (InstanceValue) intern(vm.getOperations().readUtf8(value));
 	}
 
 	@Override

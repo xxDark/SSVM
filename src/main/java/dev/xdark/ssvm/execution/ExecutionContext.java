@@ -3,6 +3,8 @@ package dev.xdark.ssvm.execution;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
+import dev.xdark.ssvm.operation.VMOperations;
+import dev.xdark.ssvm.util.VMFunctions;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.sink.ValueSink;
 
@@ -11,7 +13,7 @@ import dev.xdark.ssvm.value.sink.ValueSink;
  *
  * @author xDark
  */
-public interface ExecutionContext<R extends ValueSink> {
+public interface ExecutionContext<R extends ValueSink> extends VMFunctions {
 
 	/**
 	 * @return Method being executed.
@@ -106,8 +108,17 @@ public interface ExecutionContext<R extends ValueSink> {
 	}
 
 	/**
+	 * @return Owner's class loader.
+	 * @see ExecutionContext#getOwner()
+	 */
+	default ObjectValue getClassLoader() {
+		return getOwner().getClassLoader();
+	}
+
+	/**
 	 * @return VM instance in which method is being executed.
 	 */
+	@Override
 	default VirtualMachine getVM() {
 		return getOwner().getVM();
 	}

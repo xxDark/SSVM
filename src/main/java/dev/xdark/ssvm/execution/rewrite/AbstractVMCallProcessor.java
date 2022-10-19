@@ -25,14 +25,14 @@ abstract class AbstractVMCallProcessor implements InstructionProcessor<VMCallIns
 			// must replace resolved field, if needed
 			method = resolveMethod(insn, ctx);
 		}
-		method.getOwner().initialize();
+		ctx.getOperations().initialize(method.getOwner());
 		VirtualMachine vm = ctx.getVM();
 		Stack callerStack = ctx.getStack();
 		ThreadStorage storage = vm.getThreadStorage();
 		int maxArgs = method.getMaxArgs();
 		Locals locals = storage.newLocals(method);
 		callerStack.sinkInto(locals, maxArgs);
-		vm.getHelper().invoke(method, locals, callerStack);
+		vm.getOperations().invoke(method, locals, callerStack);
 		return Result.CONTINUE;
 	}
 

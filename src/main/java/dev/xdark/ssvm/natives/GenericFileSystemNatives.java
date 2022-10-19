@@ -5,7 +5,7 @@ import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.fs.FileDescriptorManager;
+import dev.xdark.ssvm.filesystem.FileDescriptorManager;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.member.JavaMethod;

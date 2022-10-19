@@ -43,7 +43,7 @@ public final class LdcProcessor implements InstructionProcessor<LdcInsnNode> {
 			} else if (cst instanceof String) {
 				list.set(insn, new ConstantReferenceInsnNode(insn, ctx.getVM().getStringPool().intern((String) cst)));
 			} else {
-				ObjectValue ref = ctx.getVM().getOperations().referenceValue(cst);
+				ObjectValue ref = ctx.getOperations().referenceValue(cst);
 				list.set(insn, new ConstantReferenceInsnNode(insn, ref));
 			}
 			ctx.setInsnPosition(ctx.getInsnPosition() - 1);

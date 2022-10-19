@@ -61,7 +61,8 @@ public class Interpreter {
 	}
 
 	private static void handleExceptionCaught(ExecutionContext<?> ctx, VMException ex) {
-		ctx.unwind();
+		Stack stack = ctx.getStack();
+		stack.clear();
 		InstanceValue oop = ex.getOop();
 		InstanceClass exceptionType = oop.getJavaClass();
 		List<VMTryCatchBlock> tryCatchBlocks = ctx.getMethod().getTryCatchBlocks();
@@ -87,9 +88,8 @@ public class Interpreter {
 					}
 				}
 				if (handle) {
-					ctx.getStack().pushReference(oop);
+					stack.pushReference(oop);
 					ctx.setInsnPosition(AsmUtil.getIndex(block.getHandler()));
-					ctx.pollSafePointAndSuspend();
 					return;
 				}
 			}

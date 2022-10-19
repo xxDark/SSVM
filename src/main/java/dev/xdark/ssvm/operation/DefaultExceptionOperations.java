@@ -7,9 +7,14 @@ import dev.xdark.ssvm.mirror.member.JavaField;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.symbol.Symbols;
+import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.stream.IntStream;
 
 /**
  * Default implementation.
@@ -56,7 +61,6 @@ public final class DefaultExceptionOperations implements ExceptionOperations {
 	@Override
 	public InstanceValue newException(InstanceClass javaClass, String message, ObjectValue cause) {
 		VMOperations ops = this.ops;
-		ops.initialize(javaClass);
 		InstanceValue instance = memoryManager.newInstance(javaClass);
 		if (message != null) {
 			ops.putReference(instance, "detailMessage", "Ljava/lang/String;", ops.newUtf8(message));
@@ -65,5 +69,46 @@ public final class DefaultExceptionOperations implements ExceptionOperations {
 			ops.putReference(instance, "cause", "Ljava/lang/Throwable;", cause);
 		}
 		return instance;
+	}
+
+	@Override
+	public Exception toJavaException(InstanceValue oop) {
+		VMOperations ops = this.ops;
+		String msg = ops.readUtf8(ops.getReference(oop, "detailMessage", "Ljava/lang/String;"));
+		Exception exception = new Exception(msg);
+		ObjectValue backtrace = ops.getReference(oop, "backtrace", "Ljava/lang/Object;");
+		if (!backtrace.isNull()) {
+			ArrayValue arrayValue = (ArrayValue) backtrace;
+			StackTraceElement[] stackTrace = IntStream.range(0, arrayValue.getLength())
+				.mapToObj(i -> {
+					InstanceValue value = (InstanceValue) arrayValue.getReference(i);
+					String declaringClass = ops.readUtf8(ops.getReference(value, "declaringClass", "Ljava/lang/String;"));
+					String methodName = ops.readUtf8(ops.getReference(value, "methodName", "Ljava/lang/String;"));
+					String fileName = ops.readUtf8(ops.getReference(value, "fileName", "Ljava/lang/String;"));
+					int line = ops.getInt(value, "lineNumber");
+					return new StackTraceElement(declaringClass, methodName, fileName, line);
+				})
+				.toArray(StackTraceElement[]::new);
+			Collections.reverse(Arrays.asList(stackTrace));
+			exception.setStackTrace(stackTrace);
+		}
+		ObjectValue cause = ops.getReference(oop, "cause", "Ljava/lang/Throwable;");
+		if (!cause.isNull() && cause != oop) {
+			exception.initCause(toJavaException((InstanceValue) cause));
+		}
+		ObjectValue suppressedExceptions = ops.getReference(oop, "suppressedExceptions", "Ljava/util/List;");
+		if (!suppressedExceptions.isNull()) {
+			InstanceClass cl = (InstanceClass) ops.findClass(memoryManager.nullValue(), "java/util/ArrayList", false);
+			if (cl == suppressedExceptions.getJavaClass()) {
+				InstanceValue value = (InstanceValue) suppressedExceptions;
+				int size = ops.getInt(value, "size");
+				ArrayValue array = (ArrayValue) ops.getReference(value, "elementData", "[Ljava/lang/Object;");
+				for (int i = 0; i < size; i++) {
+					InstanceValue ref = (InstanceValue) array.getReference(i);
+					exception.addSuppressed(ref == oop ? exception : toJavaException(ref));
+				}
+			}
+		}
+		return exception;
 	}
 }

@@ -3,7 +3,7 @@ package dev.xdark.ssvm.natives;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.fs.ZipFile;
+import dev.xdark.ssvm.filesystem.ZipFile;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.symbol.Symbols;

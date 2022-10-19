@@ -1,7 +1,7 @@
 package dev.xdark.ssvm.jvmti;
 
-import dev.xdark.ssvm.jvmti.event.ClassFileLoad;
-import dev.xdark.ssvm.jvmti.event.ClassFilePrepare;
+import dev.xdark.ssvm.jvmti.event.ClassLink;
+import dev.xdark.ssvm.jvmti.event.ClsasPrepare;
 
 /**
  * All VM events.
@@ -11,12 +11,12 @@ import dev.xdark.ssvm.jvmti.event.ClassFilePrepare;
 public interface VMEventCollection {
 
 	/**
-	 * @return Class file load hook.
+	 * @return Class prepare hook.
 	 */
-	ClassFileLoad getClassFileLoad();
+	ClsasPrepare getClassPrepare();
 
 	/**
-	 * @return Class file prepare hook.
+	 * @return Class link hook.
 	 */
-	ClassFilePrepare getClassFilePrepare();
+	ClassLink getClassLink();
 }

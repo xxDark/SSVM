@@ -64,6 +64,13 @@ public interface JavaMethod extends JavaMember {
 	JavaClass getReturnType();
 
 	/**
+	 * Returns array of exception types.
+	 *
+	 * @return array of exception types.
+	 */
+	JavaClass[] getExceptionTypes();
+
+	/**
 	 * @return {@code  true} if this method is polymorphic,
 	 * {@code false} otherwise.
 	 */

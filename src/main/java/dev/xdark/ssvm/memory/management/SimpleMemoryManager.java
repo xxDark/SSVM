@@ -12,7 +12,7 @@ import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.synchronizer.Mutex;
 import dev.xdark.ssvm.synchronizer.ObjectSynchronizer;
-import dev.xdark.ssvm.tlc.ThreadLocalStorage;
+import dev.xdark.ssvm.threadlocal.ThreadLocalStorage;
 import dev.xdark.ssvm.util.Assertions;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
@@ -113,13 +113,12 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public JavaValue<InstanceClass> newJavaLangClass(InstanceClass javaClass) {
+	public void newJavaLangClass(InstanceClass javaClass) {
 		MemoryBlock memory = allocateClassMemory(javaClass, javaClass);
 		SimpleJavaValue<InstanceClass> wrapper = new SimpleJavaValue<>(this, memory, javaClass);
 		javaClass.setOop(wrapper);
 		setClass(memory, javaClass);
 		objects.put(MemoryAddress.of(memory.getAddress()), wrapper);
-		return wrapper;
 	}
 
 	@Override
@@ -140,15 +139,11 @@ public class SimpleMemoryManager implements MemoryManager {
 
 	@Override
 	public JavaClass readClass(ObjectValue object) {
-		ObjectValue value = objects.get(tlcAddress(object.getMemory().getData().readLong(0L)));
-		if (!(value instanceof JavaValue)) {
-			throw new PanicException("Segfault");
+		if (object.isNull()) {
+			throw new PanicException("Null value");
 		}
-		Object wrapper = ((JavaValue<?>) value).getValue();
-		if (!(wrapper instanceof JavaClass)) {
-			throw new PanicException("Segfault");
-		}
-		return (JavaClass) wrapper;
+		ObjectValue classValue = getReference(object.getData().readLong(0L));
+		return vm.getClassStorage().lookup(classValue);
 	}
 
 	@Override

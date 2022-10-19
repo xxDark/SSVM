@@ -1,16 +1,16 @@
 package dev.xdark.ssvm.jvmti;
 
 import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.jvmti.event.ClassFileLoad;
-import dev.xdark.ssvm.jvmti.event.ClassFilePrepare;
-import dev.xdark.ssvm.util.Disposable;
+import dev.xdark.ssvm.jvmti.event.ClassLink;
+import dev.xdark.ssvm.jvmti.event.ClsasPrepare;
+import dev.xdark.ssvm.util.SafeCloseable;
 
 /**
  * JVMTI environment.
  *
  * @author xDark
  */
-public interface JVMTIEnv extends VMEventCollection, Disposable {
+public interface JVMTIEnv extends VMEventCollection, SafeCloseable {
 
 	/**
 	 * @return VM associated with this environment.
@@ -18,15 +18,15 @@ public interface JVMTIEnv extends VMEventCollection, Disposable {
 	VirtualMachine vm();
 
 	/**
-	 * @param cfl Class file load hook.
+	 * @param cfp Class prepare hook.
 	 */
-	void setClassFileLoad(ClassFileLoad cfl);
+	void setClassPrepare(ClsasPrepare cfp);
 
 	/**
-	 * @param cfp Class file prepare hook.
+	 * @param cl Class link hook.
 	 */
-	void setClassFilePrepare(ClassFilePrepare cfp);
+	void setClassLink(ClassLink cl);
 
 	@Override
-	void dispose();
+	void close();
 }

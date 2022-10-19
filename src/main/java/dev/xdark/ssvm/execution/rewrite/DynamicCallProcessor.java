@@ -18,7 +18,7 @@ public final class DynamicCallProcessor implements InstructionProcessor<LinkedDy
 	public Result execute(LinkedDynamicCallNode insn, ExecutionContext<?> ctx) {
 		InvokeDynamicInsnNode delegate = insn.getDelegate();
 		Stack stack = ctx.getStack();
-		ctx.getInvokeDynamicLinker().dynamicCall(stack, delegate.desc, insn.getMethodHandle(), stack);
+		ctx.getOperations().dynamicCall(stack, delegate.desc, insn.getMethodHandle(), stack);
 		return Result.CONTINUE;
 	}
 }

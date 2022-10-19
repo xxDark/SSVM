@@ -1,7 +1,7 @@
 package dev.xdark.ssvm.memory.allocation;
 
 import dev.xdark.ssvm.execution.PanicException;
-import dev.xdark.ssvm.tlc.ThreadLocalStorage;
+import dev.xdark.ssvm.threadlocal.ThreadLocalStorage;
 
 import java.nio.ByteBuffer;
 import java.util.Map;

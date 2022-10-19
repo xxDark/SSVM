@@ -3,6 +3,7 @@ package dev.xdark.ssvm;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.classloading.BootClassFinder;
 import dev.xdark.ssvm.classloading.ClassDefiner;
+import dev.xdark.ssvm.classloading.ClassLoaderData;
 import dev.xdark.ssvm.classloading.ClassLoaders;
 import dev.xdark.ssvm.classloading.ClassStorage;
 import dev.xdark.ssvm.classloading.ParsedClassData;
@@ -12,9 +13,14 @@ import dev.xdark.ssvm.classloading.SimpleClassLoaders;
 import dev.xdark.ssvm.classloading.SimpleClassStorage;
 import dev.xdark.ssvm.execution.ExecutionEngine;
 import dev.xdark.ssvm.execution.Locals;
+import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.SimpleExecutionEngine;
-import dev.xdark.ssvm.fs.FileDescriptorManager;
-import dev.xdark.ssvm.fs.SimpleFileDescriptorManager;
+import dev.xdark.ssvm.execution.VMException;
+import dev.xdark.ssvm.filesystem.FileDescriptorManager;
+import dev.xdark.ssvm.filesystem.SimpleFileDescriptorManager;
+import dev.xdark.ssvm.inject.InjectedClassLayout;
+import dev.xdark.ssvm.jni.NativeLibraryManager;
+import dev.xdark.ssvm.jni.SimpleNativeLibraryManager;
 import dev.xdark.ssvm.jvm.ManagementInterface;
 import dev.xdark.ssvm.jvm.SimpleManagementInterface;
 import dev.xdark.ssvm.jvmti.JVMTIEnv;
@@ -31,11 +37,7 @@ import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.natives.IntrinsicsNatives;
-import dev.xdark.ssvm.nt.NativeLibraryManager;
-import dev.xdark.ssvm.nt.SimpleNativeLibraryManager;
 import dev.xdark.ssvm.operation.VMOperations;
-import dev.xdark.ssvm.symbol.InitializedPrimitives;
-import dev.xdark.ssvm.symbol.InitializedSymbols;
 import dev.xdark.ssvm.symbol.Primitives;
 import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.synchronizer.ObjectSynchronizer;
@@ -45,10 +47,12 @@ import dev.xdark.ssvm.thread.OSThread;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.thread.virtual.VirtualThreadManager;
-import dev.xdark.ssvm.tz.SimpleTimeManager;
-import dev.xdark.ssvm.tz.TimeManager;
+import dev.xdark.ssvm.timezone.SimpleTimeManager;
+import dev.xdark.ssvm.timezone.TimeManager;
+import dev.xdark.ssvm.util.CloseableLock;
 import dev.xdark.ssvm.util.Reflection;
 import dev.xdark.ssvm.value.InstanceValue;
+import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.Delegate;
 
 import java.nio.ByteOrder;
@@ -90,6 +94,12 @@ public class VirtualMachine implements VMEventCollection {
 
 	public VirtualMachine() {
 		vmInterface = new VMInterface();
+		DelegatingSymbols delegatingSymbols = new DelegatingSymbols();
+		delegatingSymbols.setSymbols(new UninitializedSymbols(this));
+		symbols = delegatingSymbols;
+		DelegatingPrimitives delegatingPrimitives = new DelegatingPrimitives();
+		delegatingPrimitives.setPrimitives(new UninitializedPrimitives());
+		primitives = delegatingPrimitives;
 		memoryAllocator = createMemoryAllocator();
 		objectSynchronizer = createObjectSynchronizer();
 		memoryManager = createMemoryManager();
@@ -458,13 +468,19 @@ public class VirtualMachine implements VMEventCollection {
 
 	/**
 	 * Searches for bootstrap class.
+	 * This method should not be used by user code.
 	 *
 	 * @param name       Name of the class.
 	 * @param initialize True if class should be initialized if found.
 	 * @return bootstrap class or {@code null}, if not found.
+	 * @see dev.xdark.ssvm.operation.ClassOperations#findClass(ObjectValue, String, boolean)
 	 */
 	public JavaClass findBootstrapClass(String name, boolean initialize) {
-		return operations.findClass(memoryManager.nullValue(), name, initialize);
+		try {
+			return operations.findClass(memoryManager.nullValue(), name, initialize);
+		} catch (VMException ignored) {
+			return null;
+		}
 	}
 
 	/**
@@ -481,25 +497,48 @@ public class VirtualMachine implements VMEventCollection {
 		ThreadManager threadManager = this.threadManager;
 		try {
 			// Create temporary JVMTI environments here to hook into some bootstrap classes
-			NativeJava.setupJVMTI(this);
+			NativeJava.jvmtiPrepare(this);
 
 			ClassLoaders classLoaders = this.classLoaders;
 			VMOperations ops = this.operations;
 			// This is essentially the same hack HotSpot does when VM is starting up
 			// https://github.com/openjdk/jdk/blob/8ecdaa68111f2e060a3f46a5cf6f2ba95c9ebad1/src/hotspot/share/memory/universe.cpp#L480
-			// java/lang/Object & java/lang/Class must be loaded manually,
-			// otherwise some MemoryManager implementations will bottleneck.
-			InstanceClass klass = internalLink("java/lang/Class");
-			InstanceClass object = internalLink("java/lang/Object");
-			classLoaders.initializeBootOop(klass, klass);
-			classLoaders.initializeBootOop(object, klass);
+			MemoryManager memoryManager = this.memoryManager;
+			ClassLoaderData data = classLoaders.setClassLoaderData(memoryManager.nullValue());
+			InstanceClass jlc = internalLink("java/lang/Class");
+			internalLink("java/lang/Object");
+			// After we link both, we need to fix all classes who have no mirrors
+			// No classes from system class loader are loaded at this point
+			try (CloseableLock lock = data.lock()) {
+				long offset = jlc.getField(
+					InjectedClassLayout.java_lang_Class_id.name(),
+					"I"
+				).getOffset();
+				// Firstly fix java/lang/Class,
+				memoryManager.newJavaLangClass(jlc);
+				jlc.getOop().getData().writeInt(offset, jlc.getId());
+				// then the rest
+				for (InstanceClass klass : data.list()) {
+					InstanceValue oop = klass.getOop();
+					if (oop == null) {
+						oop = memoryManager.newClassOop(klass);
+						klass.setOop(oop);
+						oop.getData().writeInt(offset, klass.getId());
+					}
+				}
+			}
 			InitializedSymbols initializedVMSymbols = new InitializedSymbols(this);
 			((DelegatingSymbols) symbols).setSymbols(initializedVMSymbols);
 			symbols = initializedVMSymbols;
 			InitializedPrimitives initializedVMPrimitives = new InitializedPrimitives(mirrorFactory);
 			((DelegatingPrimitives) primitives).setPrimitives(initializedVMPrimitives);
 			primitives = initializedVMPrimitives;
-			NativeJava.init(this);
+			// Post-initialization for initializedVMSymbols
+			// There are some types that have different names on different
+			// JDKs, we need to be able to catch VM exceptions at this point.
+			initializedVMSymbols.postInit(this);
+			NativeJava.initialization(this);
+			NativeJava.postInitialization(this);
 			threadManager.attachCurrentThread();
 			InstanceClass groupClass = symbols.java_lang_ThreadGroup();
 			ops.initialize(groupClass);
@@ -622,9 +661,16 @@ public class VirtualMachine implements VMEventCollection {
 	}
 
 	private InstanceClass internalLink(String name) {
+		// Loading java/lang/Class may be enough
+		// to trigger code that will load other classes for us.
+		ClassLoaderData data = classLoaders.getClassLoaderData(memoryManager.nullValue());
+		InstanceClass klass = data.getClass(name);
+		if (klass != null) {
+			return klass;
+		}
 		ParsedClassData result = bootClassFinder.findBootClass(name);
 		if (result == null) {
-			throw new IllegalStateException("Bootstrap class not found: " + name);
+			throw new PanicException("Bootstrap class not found: " + name);
 		}
 		return operations.defineClass(memoryManager.nullValue(), result, memoryManager.nullValue(), "JVM_DefineClass", true);
 	}

@@ -27,10 +27,10 @@ public final class InterpretedInvoker implements MethodInvoker {
 	}
 
 	private static void throwLinkageError(ExecutionContext<?> ctx) {
-		ctx.getHelper().throwException(ctx.getSymbols().java_lang_UnsatisfiedLinkError(), ctx.getMethod().toString());
+		ctx.getOperations().throwException(ctx.getSymbols().java_lang_UnsatisfiedLinkError(), ctx.getMethod().toString());
 	}
 
 	private static void throwAbstractError(ExecutionContext<?> ctx) {
-		ctx.getHelper().throwException(ctx.getSymbols().java_lang_AbstractMethodError(), ctx.getMethod().toString());
+		ctx.getOperations().throwException(ctx.getSymbols().java_lang_AbstractMethodError(), ctx.getMethod().toString());
 	}
 }

@@ -4,6 +4,7 @@ package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.asm.Modifier;
+import dev.xdark.ssvm.classloading.ClassLoaderData;
 import dev.xdark.ssvm.execution.asm.ArrayLengthProcessor;
 import dev.xdark.ssvm.execution.asm.BiDoubleProcessor;
 import dev.xdark.ssvm.execution.asm.BiFloatProcessor;
@@ -163,6 +164,7 @@ import dev.xdark.ssvm.execution.rewrite.VMStaticCallProcessor;
 import dev.xdark.ssvm.execution.rewrite.VMVirtualCallProcessor;
 import dev.xdark.ssvm.inject.InjectedClassLayout;
 import dev.xdark.ssvm.jvmti.JVMTIEnv;
+import dev.xdark.ssvm.jvmti.event.ClassLink;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
@@ -212,8 +214,10 @@ import dev.xdark.ssvm.natives.UnsafeNatives;
 import dev.xdark.ssvm.natives.VMManagementNatives;
 import dev.xdark.ssvm.natives.VMNatives;
 import dev.xdark.ssvm.natives.ZipFileNatives;
-import dev.xdark.ssvm.symbol.Primitives;
+import dev.xdark.ssvm.symbol.Symbols;
+import dev.xdark.ssvm.util.CloseableLock;
 import dev.xdark.ssvm.value.ObjectValue;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -446,7 +450,7 @@ public final class NativeJava {
 	 *
 	 * @param vm VM to set up.
 	 */
-	static void init(VirtualMachine vm) {
+	static void initialization(VirtualMachine vm) {
 		//<editor-fold desc="Natives registration">
 		setInstructions(vm);
 		ClassNatives.init(vm);
@@ -504,8 +508,7 @@ public final class NativeJava {
 	 *
 	 * @param vm VM to set JVMTI hooks for.
 	 */
-	static void setupJVMTI(VirtualMachine vm) {
-		// Setup first JVMTI environment for injection
+	static void jvmtiPrepare(VirtualMachine vm) {
 		{
 			JVMTIEnv env = vm.newJvmtiEnv();
 			Map<String, Consumer<InstanceClass>> map = new HashMap<>();
@@ -544,39 +547,106 @@ public final class NativeJava {
 				fields.add(InjectedClassLayout.java_lang_invoke_ResolvedMethodName_vmtarget.newNode());
 				fields.add(InjectedClassLayout.java_lang_invoke_ResolvedMethodName_vmholder.newNode());
 			});
-			env.setClassFilePrepare(klass -> {
+			env.setClassPrepare(klass -> {
 				String name = klass.getInternalName();
 				Consumer<InstanceClass> c = map.remove(name);
 				if (c != null) {
 					c.accept(klass);
 					if (map.isEmpty()) {
-						env.dispose();
+						env.close();
 					}
 				}
 			});
 		}
-		// Setup second JVMTI environment for hidden frames in java/lang/Throwable
-		{
-			JVMTIEnv env = vm.newJvmtiEnv();
-			env.setClassFilePrepare(klass -> {
-				if (vm.getSymbols().java_lang_Throwable().isAssignableFrom(klass)) {
-					Primitives primitives = vm.getPrimitives();
-					for (JavaMethod jm : klass.methodArea().list()) {
-						String name = jm.getName();
-						if ("<init>".equals(name)) {
-							makeHiddenMethod(jm);
-							continue;
-						}
-						if ("fillInStackTrace".equals(name)) {
-							JavaClass[] args = jm.getArgumentTypes();
-							if (args.length == 0 || (args[0] == primitives.intPrimitive())) {
-								makeHiddenMethod(jm);
-							}
+	}
+
+	static void postInitialization(VirtualMachine vm) {
+		// Post initialization
+		Symbols symbols = vm.getSymbols();
+		InstanceClass throwable = symbols.java_lang_Throwable();
+		InstanceClass methodAccessorImpl = symbols.reflect_MethodAccessorImpl();
+		InstanceClass methodHandle = symbols.java_lang_invoke_MethodHandle();
+		ClassLoaderData data = vm.getClassLoaders().getClassLoaderData(vm.getMemoryManager().nullValue());
+		JVMTIEnv env = vm.newJvmtiEnv();
+		ClassLink link = klass -> {
+			if (throwable.isAssignableFrom(klass)) {
+				// Hide Throwable constructors:
+				hideThrowableMethods(klass);
+			} else if (klass.getClassLoader().isNull()) {
+				fixCallerSensitive(klass);
+				if (methodAccessorImpl.isAssignableFrom(klass)) {
+					// Fix MethodAccessorImpl:
+					hideMethodAccessorImpl(klass);
+				} else {
+					String name = klass.getInternalName();
+					if (name.startsWith("java/lang/invoke/")) {
+						// Fix MethodHandles API:
+						hideLambdaForm(klass);
+						if (methodHandle == klass) {
+							// Fix invokeXX:
+							hideInvokeXX(klass);
+							// Fix invokeWithArguments:
+							callerSensitive(klass.getMethod("invokeWithArguments", "(Ljava/util/List;)Ljava/lang/Object;"));
 						}
 					}
 				}
-			});
+			}
+		};
+		env.setClassLink(link);
+		try (CloseableLock lock = data.lock()) {
+			// Instead of copying code, we will just fire ClassLink
+			// for all classes for this JVMTI environment.
+			data.list().forEach(link::invoke);
 		}
+	}
+
+	private static void hideThrowableMethods(InstanceClass klass) {
+		for (JavaMethod method : klass.methodArea().list()) {
+			if (method.isConstructor()) {
+				hiddenFrame(method);
+			} else if ("fillInStackTrace".equals(method.getName())) {
+				JavaClass[] args = method.getArgumentTypes();
+				if (args.length == 0 || (args.length == 1 && args[0].getSort() == Type.INT)) {
+					hiddenFrame(method);
+				}
+			}
+		}
+	}
+
+	private static void hideLambdaForm(InstanceClass klass) {
+		for (JavaMethod method : klass.methodArea().list()) {
+			if (method.isHidden()) {
+				hiddenFrame(method);
+				callerSensitive(method);
+			}
+		}
+	}
+
+	private static void hideInvokeXX(InstanceClass klass) {
+		for (JavaMethod method : klass.methodArea().list()) {
+			if (method.isPolymorphic()) {
+				hiddenFrame(method);
+				callerSensitive(method);
+			}
+		}
+	}
+
+	private static void hideMethodAccessorImpl(InstanceClass klass) {
+		klass.methodArea().stream().forEach(NativeJava::callerSensitive);
+	}
+
+	private static void fixCallerSensitive(InstanceClass klass) {
+		klass.methodArea().stream().filter(JavaMethod::isCallerSensitive).forEach(NativeJava::callerSensitive);
+	}
+
+	private static void hiddenFrame(JavaMethod method) {
+		MethodNode node = method.getNode();
+		node.access |= Modifier.ACC_HIDDEN_FRAME;
+	}
+
+	private static void callerSensitive(JavaMethod method) {
+		MethodNode node = method.getNode();
+		node.access |= Modifier.ACC_CALLER_SENSITIVE;
 	}
 
 	/**

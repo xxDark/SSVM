@@ -13,6 +13,11 @@ import org.objectweb.asm.Type;
 public interface JavaClass {
 
 	/**
+	 * @return VM in which this class was created.
+	 */
+	VirtualMachine getVM();
+
+	/**
 	 * Returns class loader of this class.
 	 *
 	 * @return class loader.
@@ -60,6 +65,13 @@ public interface JavaClass {
 	 * @return oop.
 	 */
 	InstanceValue getOop();
+
+	/**
+	 * Returns VM class id.
+	 *
+	 * @return Class id.
+	 */
+	int getId();
 
 	/**
 	 * Returns interfaces of this class.
@@ -141,4 +153,11 @@ public interface JavaClass {
 	 * @param oop Class oop.
 	 */
 	void setOop(InstanceValue oop);
+
+	/**
+	 * Sets VM class id for this class.
+	 *
+	 * @param id Class id.
+	 */
+	void setId(int id);
 }

@@ -2,7 +2,7 @@ package dev.xdark.ssvm.thread.backtrace;
 
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.ExecutionRequest;
-import dev.xdark.ssvm.util.DisposeUtil;
+import dev.xdark.ssvm.util.CloseableUtil;
 import dev.xdark.ssvm.value.sink.ValueSink;
 
 import java.util.Arrays;
@@ -49,12 +49,12 @@ public final class SimpleBacktrace implements Backtrace {
 
 	@Override
 	public ExecutionContext<?> at(int index) {
-		return frames.get(frame - index);
+		return frames.get(frame - 1 - index);
 	}
 
 	@Override
 	public void pop() {
-		DisposeUtil.dispose(frames.get(--frame));
+		CloseableUtil.close(frames.get(--frame));
 	}
 
 	@Override

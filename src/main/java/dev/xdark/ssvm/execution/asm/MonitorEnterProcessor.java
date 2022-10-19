@@ -14,7 +14,7 @@ public final class MonitorEnterProcessor implements InstructionProcessor<Abstrac
 
 	@Override
 	public Result execute(AbstractInsnNode insn, ExecutionContext<?> ctx) {
-		ctx.monitorEnter(ctx.getStack().popReference());
+		ctx.getOperations().monitorEnter(ctx.getStack().popReference());
 		return Result.CONTINUE;
 	}
 }

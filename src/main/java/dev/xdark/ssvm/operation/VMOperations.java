@@ -76,7 +76,7 @@ public final class VMOperations implements
 		stringOperations = new DefaultStringOperations(memoryManager, threadManager, symbols, linkResolver, this);
 		synchronizationOperations = new DefaultSynchronizationOperations(symbols, memoryManager, this);
 		verificationOperations = new DefaultVerificationOperations(symbols, this);
-		classOperations = new DefaultClassOperations(vm.getMirrorFactory(), memoryManager, threadManager, vm.getBootClassFinder(), linkResolver, symbols, vm.getClassLoaders(), vm.getClassDefiner(), vm.getClassStorage(), this);
+		classOperations = new DefaultClassOperations(vm.getMirrorFactory(), memoryManager, threadManager, vm.getBootClassFinder(), linkResolver, symbols, vm.getPrimitives(), vm.getClassLoaders(), vm.getClassDefiner(), vm.getClassStorage(), vm, this);
 		methodHandleOperations = new DefaultMethodHandleOperations(symbols, threadManager, linkResolver, this);
 		invokeDynamicOperations = new DefaultInvokeDynamicOperations(symbols, threadManager, stringPool, linkResolver, vm.getClassStorage(), memoryManager, this);
 		constantOperations = new DefaultConstantOperations(memoryManager, threadManager, stringPool, this);

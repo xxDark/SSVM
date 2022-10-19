@@ -2,10 +2,9 @@ package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.jvmti.JVMTIEnv;
 import dev.xdark.ssvm.jvmti.VMEventCollection;
-import dev.xdark.ssvm.jvmti.event.ClassFileLoad;
-import dev.xdark.ssvm.jvmti.event.ClassFilePrepare;
+import dev.xdark.ssvm.jvmti.event.ClassLink;
+import dev.xdark.ssvm.jvmti.event.ClsasPrepare;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -19,45 +18,45 @@ final class JVMTI implements VMEventCollection {
 
 	private final VirtualMachine vm;
 	private final List<JVMTIEnv> environmentList;
-	private final ClassFileLoad classFileLoad;
-	private final ClassFilePrepare classFilePrepare;
+	private final ClsasPrepare clsasPrepare;
+	private final ClassLink classLink;
 
 	JVMTI(VirtualMachine vm) {
 		this.vm = vm;
 		List<JVMTIEnv> environmentList = new CopyOnWriteArrayList<>();
 		this.environmentList = environmentList;
-		classFileLoad = (classBeingRedefined, classLoader, protectionDomain, data) -> {
+		clsasPrepare = klass -> {
 			synchronized (environmentList) {
 				for (int i = 0; i < environmentList.size(); i++) {
 					JVMTIEnv env = environmentList.get(i);
-					ClassFileLoad cfl = env.getClassFileLoad();
-					if (cfl != null) {
-						cfl.invoke(classBeingRedefined, classLoader, protectionDomain, data);
-					}
-				}
-			}
-		};
-		classFilePrepare = klass -> {
-			synchronized (environmentList) {
-				for (int i = 0; i < environmentList.size(); i++) {
-					JVMTIEnv env = environmentList.get(i);
-					ClassFilePrepare cfp = env.getClassFilePrepare();
+					ClsasPrepare cfp = env.getClassPrepare();
 					if (cfp != null) {
 						cfp.invoke(klass);
 					}
 				}
 			}
 		};
+		classLink = klass -> {
+			synchronized (environmentList) {
+				for (int i = 0; i < environmentList.size(); i++) {
+					JVMTIEnv env = environmentList.get(i);
+					ClassLink cfl = env.getClassLink();
+					if (cfl != null) {
+						cfl.invoke(klass);
+					}
+				}
+			}
+		};
 	}
 
 	@Override
-	public ClassFileLoad getClassFileLoad() {
-		return classFileLoad;
+	public ClsasPrepare getClassPrepare() {
+		return clsasPrepare;
 	}
 
 	@Override
-	public ClassFilePrepare getClassFilePrepare() {
-		return classFilePrepare;
+	public ClassLink getClassLink() {
+		return classLink;
 	}
 
 	JVMTIEnv create() {
@@ -73,8 +72,8 @@ final class JVMTI implements VMEventCollection {
 		private final AtomicBoolean disposed = new AtomicBoolean();
 		private final VirtualMachine vm;
 		private final List<JVMTIEnv> environmentList;
-		private ClassFileLoad classFileLoad;
-		private ClassFilePrepare classFilePrepare;
+		private ClsasPrepare clsasPrepare;
+		private ClassLink classLink;
 
 		JVMTIEnvImpl(VirtualMachine vm, List<JVMTIEnv> environmentList) {
 			this.vm = vm;
@@ -87,27 +86,27 @@ final class JVMTI implements VMEventCollection {
 		}
 
 		@Override
-		public void setClassFileLoad(ClassFileLoad cfl) {
-			classFileLoad = cfl;
+		public void setClassPrepare(ClsasPrepare cfp) {
+			clsasPrepare = cfp;
 		}
 
 		@Override
-		public void setClassFilePrepare(ClassFilePrepare cfp) {
-			classFilePrepare = cfp;
+		public void setClassLink(ClassLink cl) {
+			classLink = cl;
 		}
 
 		@Override
-		public ClassFileLoad getClassFileLoad() {
-			return classFileLoad;
+		public ClsasPrepare getClassPrepare() {
+			return clsasPrepare;
 		}
 
 		@Override
-		public ClassFilePrepare getClassFilePrepare() {
-			return classFilePrepare;
+		public ClassLink getClassLink() {
+			return classLink;
 		}
 
 		@Override
-		public void dispose() {
+		public void close() {
 			if (disposed.compareAndSet(false, true)) {
 				synchronized (environmentList) {
 					environmentList.remove(this);

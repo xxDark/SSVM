@@ -18,7 +18,7 @@ public final class ObjectArrayProcessor implements InstructionProcessor<TypeInsn
 
 	@Override
 	public Result execute(TypeInsnNode insn, ExecutionContext<?> ctx) {
-		JavaClass type = ctx.getHelper().tryFindClass(ctx.getClassLoader(), insn.desc, false);
+		JavaClass type = ctx.getOperations().findClass(ctx.getClassLoader(), insn.desc, false);
 		VMTypeInsnNode wrapper = new VMTypeInsnNode(insn, VMOpcodes.VM_REFERENCE_NEW_ARRAY, type);
 		InsnList list = ctx.getMethod().getNode().instructions;
 		list.set(insn, wrapper);

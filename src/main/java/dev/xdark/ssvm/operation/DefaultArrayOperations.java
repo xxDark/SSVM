@@ -121,7 +121,7 @@ public final class DefaultArrayOperations implements ArrayOperations {
 	private ArrayValue verifyArrayAccess(ObjectValue value, int index) {
 		VMOperations ops = this.ops;
 		ArrayValue array = ops.checkNotNull(value);
-		ops.arrayRangeCheck(array.getLength(), index);
+		ops.arrayRangeCheck(index, array.getLength());
 		return array;
 	}
 }

@@ -140,6 +140,7 @@ public final class VirtualThreadManager implements ThreadManager {
 		Thread th = Thread.currentThread();
 		Map<Thread, VirtualJavaThread> foreignThreads = this.foreignThreads;
 		synchronized (threadLock) {
+			// TODO need to do counting here
 			if (foreignThreads.putIfAbsent(th, SENTINEL) == null) {
 				VirtualOSThread osThread = newOsThread(0L);
 				InstanceValue oop = vm.getMemoryManager().newInstance(vm.getSymbols().java_lang_Thread());
@@ -268,7 +269,10 @@ public final class VirtualThreadManager implements ThreadManager {
 	}
 
 	private VirtualJavaThread currentThread() {
-		VirtualJavaThread th = foreignThreads.get(Thread.currentThread());
+		VirtualJavaThread th;
+		synchronized (threadLock) {
+			th = foreignThreads.get(Thread.currentThread());
+		}
 		if (th == null) {
 			th = currentThread;
 			Assertions.notNull(th, "not a Java thread");

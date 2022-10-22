@@ -21,6 +21,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 
+import java.lang.ref.SoftReference;
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Deque;
@@ -567,6 +568,8 @@ public class SimpleInstanceClass implements InstanceClass {
 
 	private static ClassInfo<JavaClass> makeLinkerInfo(InstanceClass instanceClass) {
 		return new ClassInfo<JavaClass>() {
+			private SoftReference<List<ClassInfo<JavaClass>>> interfaces;
+
 			@Override
 			public JavaClass innerValue() {
 				return instanceClass;
@@ -585,7 +588,13 @@ public class SimpleInstanceClass implements InstanceClass {
 
 			@Override
 			public List<ClassInfo<JavaClass>> interfaces() {
-				return instanceClass.getInterfaces().stream().map(JavaClass::linkerInfo).collect(Collectors.toList());
+				SoftReference<List<ClassInfo<JavaClass>>> interfaces = this.interfaces;
+				List<ClassInfo<JavaClass>> list;
+				if (interfaces == null || (list = interfaces.get()) == null) {
+					list = instanceClass.getInterfaces().stream().map(JavaClass::linkerInfo).collect(Collectors.toList());;
+					this.interfaces = new SoftReference<>(list);
+				}
+				return list;
 			}
 
 			@Override

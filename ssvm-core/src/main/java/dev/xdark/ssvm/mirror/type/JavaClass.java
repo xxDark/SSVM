@@ -1,9 +1,12 @@
 package dev.xdark.ssvm.mirror.type;
 
+import dev.xdark.jlinker.ClassInfo;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.Type;
+
+import java.util.List;
 
 /**
  * VM representation of Java class.
@@ -78,7 +81,7 @@ public interface JavaClass {
 	 *
 	 * @return interfaces of this class.
 	 */
-	InstanceClass[] getInterfaces();
+	List<InstanceClass> getInterfaces();
 
 	/**
 	 * Creates new array class.
@@ -160,4 +163,9 @@ public interface JavaClass {
 	 * @param id Class id.
 	 */
 	void setId(int id);
+
+	/**
+	 * @return Information for the external linker.
+	 */
+	ClassInfo<JavaClass> linkerInfo();
 }

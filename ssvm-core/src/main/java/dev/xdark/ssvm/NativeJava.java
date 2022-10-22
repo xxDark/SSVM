@@ -221,6 +221,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -481,7 +482,6 @@ public final class NativeJava {
 		StringNatives.init(vm);
 		AtomicLongNatives.init(vm);
 		URLClassPathNatives.init(vm);
-		ZipFileNatives.init(vm);
 		VMManagementNatives.init(vm);
 		PackageNatives.init(vm);
 		PerfNatives.init(vm);
@@ -500,6 +500,7 @@ public final class NativeJava {
 		SystemPropsNatives.init(vm);
 		ScopedMemoryAccessNatives.init(vm);
 		ReferenceNatives.init(vm);
+		ZipFileNatives.init(vm);
 		//</editor-fold>
 	}
 
@@ -511,7 +512,7 @@ public final class NativeJava {
 	static void jvmtiPrepare(VirtualMachine vm) {
 		{
 			JVMTIEnv env = vm.newJvmtiEnv();
-			Map<String, Consumer<InstanceClass>> map = new HashMap<>();
+			Map<String, Consumer<InstanceClass>> map = Collections.synchronizedMap(new HashMap<>());
 			map.put("java/lang/Class", klass -> {
 				List<FieldNode> fields = klass.getNode().fields;
 				fields.add(InjectedClassLayout.java_lang_Class_id.newNode());
@@ -548,12 +549,14 @@ public final class NativeJava {
 				fields.add(InjectedClassLayout.java_lang_invoke_ResolvedMethodName_vmholder.newNode());
 			});
 			env.setClassPrepare(klass -> {
-				String name = klass.getInternalName();
-				Consumer<InstanceClass> c = map.remove(name);
-				if (c != null) {
-					c.accept(klass);
-					if (map.isEmpty()) {
-						env.close();
+				if (klass.getClassLoader().isNull()) {
+					String name = klass.getInternalName();
+					Consumer<InstanceClass> c = map.remove(name);
+					if (c != null) {
+						c.accept(klass);
+						if (map.isEmpty()) {
+							env.close();
+						}
 					}
 				}
 			});

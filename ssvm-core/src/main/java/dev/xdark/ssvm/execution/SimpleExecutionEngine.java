@@ -25,6 +25,7 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 
 	@Override
 	public <R extends ValueSink> ExecutionContext<R> execute(ExecutionRequest<R> request) {
+		VirtualMachine vm = this.vm;
 		ThreadManager threadManager = vm.getThreadManager();
 		Backtrace backtrace = threadManager.currentOsThread().getBacktrace();
 		ExecutionContext<R> ctx = backtrace.push(request);
@@ -45,6 +46,7 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 			}
 			vm.getOperations().monitorEnter(lock);
 		}
+		vm.getMethodEnter().invoke(ctx);
 		boolean doCleanup = true;
 		try {
 			Result result = vmi.getInvoker(jm).intercept(ctx);
@@ -67,7 +69,11 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 						vm.getOperations().monitorExit(lock);
 					}
 				} finally {
-					backtrace.pop();
+					try {
+						vm.getMethodExit().invoke(ctx);
+					} finally {
+						backtrace.pop();
+					}
 				}
 			}
 		}

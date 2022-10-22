@@ -1,11 +1,15 @@
 package dev.xdark.ssvm.mirror.type;
 
+import dev.xdark.jlinker.ClassInfo;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.util.Assertions;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Java class implementation for long, int, double, float, etc.
@@ -79,8 +83,8 @@ public final class SimplePrimitiveClass implements PrimitiveClass {
 	}
 
 	@Override
-	public InstanceClass[] getInterfaces() {
-		return new InstanceClass[0];
+	public List<InstanceClass> getInterfaces() {
+		return Collections.emptyList();
 	}
 
 	@Override
@@ -149,5 +153,10 @@ public final class SimplePrimitiveClass implements PrimitiveClass {
 	public void setId(int id) {
 		Assertions.check(this.id == -1 , "id already set");
 		this.id = id;
+	}
+
+	@Override
+	public ClassInfo<JavaClass> linkerInfo() {
+		throw new UnsupportedOperationException();
 	}
 }

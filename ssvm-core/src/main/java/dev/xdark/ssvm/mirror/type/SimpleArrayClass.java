@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.mirror.type;
 
+import dev.xdark.jlinker.ClassInfo;
 import dev.xdark.ssvm.LanguageSpecification;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.PanicException;
@@ -9,6 +10,9 @@ import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+
+import java.util.Arrays;
+import java.util.List;
 
 public final class SimpleArrayClass implements ArrayClass {
 
@@ -23,7 +27,7 @@ public final class SimpleArrayClass implements ArrayClass {
 	private Type type;
 
 	/**
-	 * @param vm VM instance.
+	 * @param vm            VM instance.
 	 * @param componentType Component of the array.
 	 */
 	public SimpleArrayClass(VirtualMachine vm, JavaClass componentType) {
@@ -81,12 +85,9 @@ public final class SimpleArrayClass implements ArrayClass {
 	}
 
 	@Override
-	public InstanceClass[] getInterfaces() {
+	public List<InstanceClass> getInterfaces() {
 		Symbols symbols = vm.getSymbols();
-		return new InstanceClass[] {
-			symbols.java_lang_Cloneable(),
-			symbols.java_io_Serializable()
-		};
+		return Arrays.asList(symbols.java_lang_Cloneable(), symbols.java_io_Serializable());
 	}
 
 	@Override
@@ -175,7 +176,12 @@ public final class SimpleArrayClass implements ArrayClass {
 
 	@Override
 	public void setId(int id) {
-		Assertions.check(this.id == -1 , "id already set");
+		Assertions.check(this.id == -1, "id already set");
 		this.id = id;
+	}
+
+	@Override
+	public ClassInfo<JavaClass> linkerInfo() {
+		return vm.getSymbols().java_lang_Object().linkerInfo();
 	}
 }

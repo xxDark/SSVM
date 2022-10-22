@@ -43,7 +43,7 @@ public final class DefaultStringOperations implements StringOperations {
 		if (charValue != null) {
 			memoryManager.writeValue(wrapper, charValue.getOffset(), value);
 		} else {
-			JavaMethod init = linkResolver.resolveSpecialMethod(jc, "<init>", "([C)V");
+			JavaMethod init = linkResolver.resolveVirtualMethod(jc, "<init>", "([C)V");
 			Locals locals = threadManager.currentThreadStorage().newLocals(init);
 			locals.setReference(0, wrapper);
 			locals.setReference(1, value);
@@ -66,7 +66,7 @@ public final class DefaultStringOperations implements StringOperations {
 		if (charValue != null) {
 			array = (ArrayValue) memoryManager.readReference(value, charValue.getOffset());
 		} else {
-			JavaMethod toCharArray = linkResolver.resolveVirtualMethod(jc, jc, "toCharArray", "()[C");
+			JavaMethod toCharArray = linkResolver.resolveVirtualMethod(jc, "toCharArray", "()[C");
 			Locals locals = threadManager.currentThreadStorage().newLocals(toCharArray);
 			locals.setReference(0, value);
 			array = (ArrayValue) ops.invokeReference(toCharArray, locals);

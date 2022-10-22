@@ -131,7 +131,7 @@ public class MethodHandleNatives {
 				// Construct MT
 				InstanceValue mt = ops.methodType(jc.getClassLoader(), callerMethod.getType());
 				// Invoke asType
-				JavaMethod asType = vm.getLinkResolver().resolveVirtualMethod(_this, "asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;");
+				JavaMethod asType = vm.getRuntimeResolver().resolveVirtualMethod(_this, "asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;");
 				Locals table = vm.getThreadStorage().newLocals(asType);
 				table.setReference(0, _this);
 				table.setReference(1, mt);
@@ -147,7 +147,7 @@ public class MethodHandleNatives {
 				int flags = ops.getInt(vmentry, "flags");
 				int refKind = (flags >> MN_REFERENCE_KIND_SHIFT) & MN_REFERENCE_KIND_MASK;
 				if (refKind != REF_invokeSpecial && refKind != REF_newInvokeSpecial) {
-					vmtarget = vm.getLinkResolver().resolveVirtualMethod(_this, name, vmtarget.getDesc());
+					vmtarget = vm.getRuntimeResolver().resolveVirtualMethod(_this, name, vmtarget.getDesc());
 				}
 			}
 			Locals table = vm.getThreadStorage().newLocals(vmtarget);
@@ -174,7 +174,7 @@ public class MethodHandleNatives {
 				if (refKind != REF_invokeSpecial) {
 					ObjectValue instance = locals.loadReference(0);
 					ops.checkNotNull(instance);
-					vmtarget = vm.getLinkResolver().resolveVirtualMethod(instance, vmtarget.getName(), vmtarget.getDesc());
+					vmtarget = vm.getRuntimeResolver().resolveVirtualMethod(instance, vmtarget.getName(), vmtarget.getDesc());
 				}
 			}
 			Locals newLocals = vm.getThreadStorage().newLocals(vmtarget.getMaxLocals());
@@ -280,7 +280,7 @@ public class MethodHandleNatives {
 		VMOperations ops = vm.getOperations();
 		Symbols symbols = vm.getSymbols();
 		LinkResolver linkResolver = vm.getLinkResolver();
-		JavaMethod method = linkResolver.resolveVirtualMethod(methodType, "toMethodDescriptorString", "()Ljava/lang/String;");
+		JavaMethod method = vm.getRuntimeResolver().resolveVirtualMethod(methodType, "toMethodDescriptorString", "()Ljava/lang/String;");
 		Locals locals = vm.getThreadStorage().newLocals(method);
 		locals.setReference(0, methodType);
 		String desc = ops.readUtf8(ops.invokeReference(method, locals));
@@ -294,11 +294,9 @@ public class MethodHandleNatives {
 						break lookup;
 					case REF_invokeSpecial:
 					case REF_newInvokeSpecial:
-						handle = linkResolver.resolveSpecialMethod(clazz, name, desc);
-						break lookup;
 					case REF_invokeVirtual:
 					case REF_invokeInterface:
-						handle = linkResolver.resolveVirtualMethod(clazz, clazz, name, desc);
+						handle = linkResolver.resolveVirtualMethod(clazz, name, desc);
 						break lookup;
 				}
 				ops.throwException(symbols.java_lang_InternalError(), "unrecognized MemberName format");

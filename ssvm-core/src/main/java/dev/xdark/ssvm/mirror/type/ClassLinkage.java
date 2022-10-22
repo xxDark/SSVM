@@ -4,6 +4,8 @@ import dev.xdark.ssvm.mirror.member.JavaField;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.mirror.member.area.ClassArea;
 
+import java.util.List;
+
 /**
  * Class linking bridge.
  *
@@ -19,7 +21,7 @@ public interface ClassLinkage {
 	/**
 	 * @param interfaces Interfaces to set.
 	 */
-	void setInterfaces(InstanceClass[] interfaces);
+	void setInterfaces(List<InstanceClass> interfaces);
 
 	/**
 	 * @param fieldArea Field area to set.

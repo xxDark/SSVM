@@ -11,7 +11,6 @@ import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.sink.ReflectionSink;
 import lombok.experimental.UtilityClass;
@@ -44,7 +43,7 @@ public class MethodAccessorNatives {
 			VMOperations ops = vm.getOperations();
 			InstanceValue m = locals.loadReference(0);
 			int slot = ops.getInt(m, "slot");
-			InstanceClass declaringClass = (InstanceClass) ((JavaValue<JavaClass>) ops.getReference(m, "clazz", "Ljava/lang/Class;")).getValue();
+			InstanceClass declaringClass = (InstanceClass) vm.getClassStorage().lookup(ops.checkNotNull(ops.getReference(m, "clazz", "Ljava/lang/Class;")));
 			JavaMethod mn = declaringClass.getMethodBySlot(slot);
 			if (mn == null) {
 				ops.throwException(vm.getSymbols().java_lang_IllegalArgumentException());
@@ -73,7 +72,7 @@ public class MethodAccessorNatives {
 				offset = 0;
 				args = vm.getThreadStorage().newLocals(mn);
 			} else {
-				mn = vm.getLinkResolver().resolveVirtualMethod(instance, name, desc);
+				mn = vm.getRuntimeResolver().resolveVirtualMethod(instance, name, desc);
 				offset = 1;
 				args = vm.getThreadStorage().newLocals(mn);
 				args.setReference(0, instance);

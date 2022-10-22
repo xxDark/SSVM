@@ -9,7 +9,7 @@ import dev.xdark.ssvm.mirror.type.InstanceClass;
  * @author xDark
  */
 @FunctionalInterface
-public interface ClsasPrepare {
+public interface ClassPrepare {
 
 	/**
 	 * @param klass Class being prepared.

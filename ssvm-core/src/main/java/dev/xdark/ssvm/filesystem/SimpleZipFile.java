@@ -14,7 +14,7 @@ import java.util.zip.ZipFile;
  */
 public class SimpleZipFile extends BasicZipFile {
 
-	private final java.util.zip.ZipFile handle;
+	private final ZipFile handle;
 	private List<ZipEntry> entries;
 
 	/**

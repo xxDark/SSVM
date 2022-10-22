@@ -1,7 +1,7 @@
 package dev.xdark.ssvm.operation;
 
 import dev.xdark.ssvm.LanguageSpecification;
-import dev.xdark.ssvm.LinkResolver;
+import dev.xdark.ssvm.RuntimeResolver;
 import dev.xdark.ssvm.classloading.BootClassFinder;
 import dev.xdark.ssvm.classloading.ClassDefiner;
 import dev.xdark.ssvm.classloading.ClassLoaderData;
@@ -42,6 +42,8 @@ import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -57,7 +59,7 @@ public final class DefaultClassOperations implements ClassOperations {
 	private final MemoryManager memoryManager;
 	private final ThreadManager threadManager;
 	private final BootClassFinder bootClassFinder;
-	private final LinkResolver linkResolver;
+	private final RuntimeResolver runtimeResolver;
 	private final Symbols symbols;
 	private final Primitives primitives;
 	private final ClassLoaders classLoaders;
@@ -171,9 +173,9 @@ public final class DefaultClassOperations implements ClassOperations {
 				for (int i1 = 0; i1 < interfaces.size(); i1++) {
 					classes[i1] = (InstanceClass) findClass(cl, interfaces.get(i1), false);
 				}
-				linkage.setInterfaces(classes);
+				linkage.setInterfaces(Arrays.asList(classes));
 			} else {
-				linkage.setInterfaces(new InstanceClass[0]);
+				linkage.setInterfaces(Collections.emptyList());
 			}
 			if (jlc.getOop() != null) {
 				// VM might be still starting up
@@ -266,7 +268,7 @@ public final class DefaultClassOperations implements ClassOperations {
 						}
 					} else {
 						// Ask Java world
-						JavaMethod method = linkResolver.resolveVirtualMethod(classLoader, "loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;");
+						JavaMethod method = runtimeResolver.resolveVirtualMethod(classLoader, "loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;");
 						Locals locals = threadManager.currentThreadStorage().newLocals(method);
 						locals.setReference(0, classLoader);
 						locals.setReference(1, ops.newUtf8(trueName.replace('/', '.')));

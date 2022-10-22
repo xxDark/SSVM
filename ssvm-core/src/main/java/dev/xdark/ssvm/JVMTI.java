@@ -3,7 +3,9 @@ package dev.xdark.ssvm;
 import dev.xdark.ssvm.jvmti.JVMTIEnv;
 import dev.xdark.ssvm.jvmti.VMEventCollection;
 import dev.xdark.ssvm.jvmti.event.ClassLink;
-import dev.xdark.ssvm.jvmti.event.ClsasPrepare;
+import dev.xdark.ssvm.jvmti.event.ClassPrepare;
+import dev.xdark.ssvm.jvmti.event.MethodEnter;
+import dev.xdark.ssvm.jvmti.event.MethodExit;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -18,45 +20,69 @@ final class JVMTI implements VMEventCollection {
 
 	private final VirtualMachine vm;
 	private final List<JVMTIEnv> environmentList;
-	private final ClsasPrepare clsasPrepare;
+	private final ClassPrepare classPrepare;
 	private final ClassLink classLink;
+	private final MethodEnter methodEnter;
+	private final MethodExit methodExit;
 
 	JVMTI(VirtualMachine vm) {
 		this.vm = vm;
 		List<JVMTIEnv> environmentList = new CopyOnWriteArrayList<>();
 		this.environmentList = environmentList;
-		clsasPrepare = klass -> {
-			synchronized (environmentList) {
-				for (int i = 0; i < environmentList.size(); i++) {
-					JVMTIEnv env = environmentList.get(i);
-					ClsasPrepare cfp = env.getClassPrepare();
-					if (cfp != null) {
-						cfp.invoke(klass);
-					}
+		// TODO: use method handles here
+		// and possibly split up each event into its own list
+		classPrepare = klass -> {
+			for (JVMTIEnv env : environmentList) {
+				ClassPrepare cfp = env.getClassPrepare();
+				if (cfp != null) {
+					cfp.invoke(klass);
 				}
 			}
 		};
 		classLink = klass -> {
-			synchronized (environmentList) {
-				for (int i = 0; i < environmentList.size(); i++) {
-					JVMTIEnv env = environmentList.get(i);
-					ClassLink cfl = env.getClassLink();
-					if (cfl != null) {
-						cfl.invoke(klass);
-					}
+			for (JVMTIEnv env : environmentList) {
+				ClassLink cfl = env.getClassLink();
+				if (cfl != null) {
+					cfl.invoke(klass);
+				}
+			}
+		};
+		methodEnter = ctx -> {
+			for (JVMTIEnv env : environmentList) {
+				MethodEnter me = env.getMethodEnter();
+				if (me != null) {
+					me.invoke(ctx);
+				}
+			}
+		};
+		methodExit = ctx -> {
+			for (JVMTIEnv env : environmentList) {
+				MethodExit mx = env.getMethodExit();
+				if (mx != null) {
+					mx.invoke(ctx);
 				}
 			}
 		};
 	}
 
 	@Override
-	public ClsasPrepare getClassPrepare() {
-		return clsasPrepare;
+	public ClassPrepare getClassPrepare() {
+		return classPrepare;
 	}
 
 	@Override
 	public ClassLink getClassLink() {
 		return classLink;
+	}
+
+	@Override
+	public MethodEnter getMethodEnter() {
+		return methodEnter;
+	}
+
+	@Override
+	public MethodExit getMethodExit() {
+		return methodExit;
 	}
 
 	JVMTIEnv create() {
@@ -72,8 +98,10 @@ final class JVMTI implements VMEventCollection {
 		private final AtomicBoolean disposed = new AtomicBoolean();
 		private final VirtualMachine vm;
 		private final List<JVMTIEnv> environmentList;
-		private ClsasPrepare clsasPrepare;
+		private ClassPrepare classPrepare;
 		private ClassLink classLink;
+		private MethodEnter methodEnter;
+		private MethodExit methodExit;
 
 		JVMTIEnvImpl(VirtualMachine vm, List<JVMTIEnv> environmentList) {
 			this.vm = vm;
@@ -86,8 +114,8 @@ final class JVMTI implements VMEventCollection {
 		}
 
 		@Override
-		public void setClassPrepare(ClsasPrepare cfp) {
-			clsasPrepare = cfp;
+		public void setClassPrepare(ClassPrepare cfp) {
+			classPrepare = cfp;
 		}
 
 		@Override
@@ -96,13 +124,33 @@ final class JVMTI implements VMEventCollection {
 		}
 
 		@Override
-		public ClsasPrepare getClassPrepare() {
-			return clsasPrepare;
+		public void setMethodEnter(MethodEnter methodEnter) {
+			this.methodEnter = methodEnter;
+		}
+
+		@Override
+		public void setMethodExit(MethodExit methodExit) {
+			this.methodExit = methodExit;
+		}
+
+		@Override
+		public ClassPrepare getClassPrepare() {
+			return classPrepare;
 		}
 
 		@Override
 		public ClassLink getClassLink() {
 			return classLink;
+		}
+
+		@Override
+		public MethodEnter getMethodEnter() {
+			return methodEnter;
+		}
+
+		@Override
+		public MethodExit getMethodExit() {
+			return methodExit;
 		}
 
 		@Override

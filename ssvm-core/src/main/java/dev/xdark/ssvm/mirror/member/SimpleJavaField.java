@@ -1,6 +1,8 @@
 package dev.xdark.ssvm.mirror.member;
 
+import dev.xdark.jlinker.MemberInfo;
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.util.TypeSafeMap;
@@ -19,6 +21,7 @@ public final class SimpleJavaField implements JavaField {
 
 	private final TypeSafeMap metadata = new TypeSafeMap();
 	private final BitSet extraModifiers = new BitSet();
+	private final MemberInfo<JavaField> linkerInfo;
 	private final InstanceClass owner;
 	private final FieldNode node;
 	private final int slot;
@@ -37,6 +40,7 @@ public final class SimpleJavaField implements JavaField {
 		this.node = node;
 		this.slot = slot;
 		this.offset = offset;
+		linkerInfo = makeLinkerInfo(this);
 	}
 
 	@Override
@@ -89,6 +93,11 @@ public final class SimpleJavaField implements JavaField {
 	}
 
 	@Override
+	public MemberInfo<? extends JavaMember> linkerInfo() {
+		return linkerInfo;
+	}
+
+	@Override
 	public int hashCode() {
 		return node.hashCode();
 	}
@@ -104,5 +113,24 @@ public final class SimpleJavaField implements JavaField {
 		VirtualMachine vm = owner.getVM();
 		ObjectValue cl = owner.getClassLoader();
 		type = vm.getOperations().findClass(cl, Type.getType(node.desc), false);
+	}
+
+	private static MemberInfo<JavaField> makeLinkerInfo(JavaField field) {
+		return new MemberInfo<JavaField>() {
+			@Override
+			public JavaField innerValue() {
+				return field;
+			}
+
+			@Override
+			public int accessFlags() {
+				return Modifier.eraseField(field.getModifiers());
+			}
+
+			@Override
+			public boolean isPolymorphic() {
+				return false;
+			}
+		};
 	}
 }

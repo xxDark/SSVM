@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.LinkResolver;
+import dev.xdark.ssvm.RuntimeResolver;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
@@ -618,7 +619,7 @@ public class IntrinsicsNatives {
 				ctx.setResult(0);
 			} else {
 				IntValueSink sink = new IntValueSink();
-				LinkResolver linkResolver = vm.getLinkResolver();
+				RuntimeResolver runtimeResolver = vm.getRuntimeResolver();
 				ArrayValue array = (ArrayValue) arr;
 				VMOperations ops = vm.getOperations();
 				int result = 1;
@@ -626,7 +627,7 @@ public class IntrinsicsNatives {
 					ObjectValue value = array.getReference(i);
 					result *= 31;
 					if (!value.isNull()) {
-						JavaMethod method = linkResolver.resolveVirtualMethod(value, "hashCode", "()I");
+						JavaMethod method = runtimeResolver.resolveVirtualMethod(value, "hashCode", "()I");
 						Locals locals = vm.getThreadStorage().newLocals(method);
 						locals.setReference(0, value);
 						result += ops.invoke(method, locals, sink).getValue();
@@ -836,7 +837,7 @@ public class IntrinsicsNatives {
 			return 0;
 		}
 		VMOperations ops = vm.getOperations();
-		LinkResolver linkResolver = vm.getLinkResolver();
+		RuntimeResolver runtimeResolver = vm.getRuntimeResolver();
 		ThreadStorage ts = vm.getThreadStorage();
 		IntValueSink sink = new IntValueSink();
 		while (length-- != 0) {
@@ -844,7 +845,7 @@ public class IntrinsicsNatives {
 			ObjectValue v2 = b.getReference(length);
 			if (v1 != v2) {
 				if (!v1.isNull()) {
-					JavaMethod method = linkResolver.resolveVirtualMethod(v1, "equals", "(Ljava/lang/Object;)Z");
+					JavaMethod method = runtimeResolver.resolveVirtualMethod(v1, "equals", "(Ljava/lang/Object;)Z");
 					Locals locals = ts.newLocals(method);
 					locals.setReference(0, v1);
 					locals.setReference(1, v2);

@@ -1,5 +1,7 @@
 package dev.xdark.ssvm.mirror.type;
 
+import dev.xdark.jlinker.ClassInfo;
+import dev.xdark.jlinker.MemberInfo;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.mirror.member.JavaField;
@@ -20,7 +22,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 
 import java.util.ArrayDeque;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -42,6 +44,7 @@ public class SimpleInstanceClass implements InstanceClass {
 	private final ObjectValue classLoader;
 	private final InitializationState state = new InitializationState();
 	private final AtomicBoolean linked = new AtomicBoolean();
+	private ClassInfo<JavaClass> linkerInfo;
 
 	private ClassReader classReader;
 	private ClassNode node;
@@ -51,7 +54,7 @@ public class SimpleInstanceClass implements InstanceClass {
 	private int id = -1;
 
 	private InstanceClass superClass;
-	private InstanceClass[] interfaces;
+	private List<InstanceClass> interfaces;
 	private volatile ArrayClass arrayClass;
 	private ClassArea<JavaMethod> methodArea;
 	private ClassArea<JavaField> virtualFieldArea;
@@ -152,13 +155,13 @@ public class SimpleInstanceClass implements InstanceClass {
 		}
 		if (other.isInterface()) {
 			if (isInterface()) {
-				Deque<InstanceClass> toCheck = new ArrayDeque<>(Arrays.asList(other.getInterfaces()));
+				Deque<InstanceClass> toCheck = new ArrayDeque<>(other.getInterfaces());
 				JavaClass popped;
 				while ((popped = toCheck.poll()) != null) {
 					if (popped == this) {
 						return true;
 					}
-					toCheck.addAll(Arrays.asList(popped.getInterfaces()));
+					toCheck.addAll(popped.getInterfaces());
 				}
 			}
 		} else {
@@ -168,7 +171,7 @@ public class SimpleInstanceClass implements InstanceClass {
 				toCheck.add(superClass);
 			}
 			if (isInterface()) {
-				toCheck.addAll(Arrays.asList(other.getInterfaces()));
+				toCheck.addAll(other.getInterfaces());
 				JavaClass popped;
 				while ((popped = toCheck.poll()) != null) {
 					if (popped == this) {
@@ -178,7 +181,7 @@ public class SimpleInstanceClass implements InstanceClass {
 					if (superClass != null) {
 						toCheck.add(superClass);
 					}
-					toCheck.addAll(Arrays.asList(popped.getInterfaces()));
+					toCheck.addAll(popped.getInterfaces());
 				}
 			} else {
 				JavaClass popped;
@@ -222,7 +225,7 @@ public class SimpleInstanceClass implements InstanceClass {
 	}
 
 	@Override
-	public InstanceClass[] getInterfaces() {
+	public List<InstanceClass> getInterfaces() {
 		return interfaces;
 	}
 
@@ -449,6 +452,17 @@ public class SimpleInstanceClass implements InstanceClass {
 	}
 
 	@Override
+	public ClassInfo<JavaClass> linkerInfo() {
+		Assertions.check(linked.get(), "class is not linked");
+		ClassInfo<JavaClass> linkerInfo = this.linkerInfo;
+		if (linkerInfo == null) {
+			linkerInfo = makeLinkerInfo(this);
+			this.linkerInfo = linkerInfo;
+		}
+		return linkerInfo;
+	}
+
+	@Override
 	public InitializationState state() {
 		return state;
 	}
@@ -463,8 +477,8 @@ public class SimpleInstanceClass implements InstanceClass {
 			}
 
 			@Override
-			public void setInterfaces(InstanceClass[] interfaces) {
-				SimpleInstanceClass.this.interfaces = interfaces;
+			public void setInterfaces(List<InstanceClass> interfaces) {
+				SimpleInstanceClass.this.interfaces = interfaces.isEmpty() ? interfaces : Collections.unmodifiableList(interfaces);
 			}
 
 			@Override
@@ -549,5 +563,42 @@ public class SimpleInstanceClass implements InstanceClass {
 				throw new IllegalStateException("Static access changed");
 			}
 		}
+	}
+
+	private static ClassInfo<JavaClass> makeLinkerInfo(InstanceClass instanceClass) {
+		return new ClassInfo<JavaClass>() {
+			@Override
+			public JavaClass innerValue() {
+				return instanceClass;
+			}
+
+			@Override
+			public int accessFlags() {
+				return Modifier.eraseClass(instanceClass.getModifiers());
+			}
+
+			@Override
+			public ClassInfo<JavaClass> superClass() {
+				InstanceClass superClass = instanceClass.getSuperClass();
+				return superClass == null ? null : superClass.linkerInfo();
+			}
+
+			@Override
+			public List<ClassInfo<JavaClass>> interfaces() {
+				return instanceClass.getInterfaces().stream().map(JavaClass::linkerInfo).collect(Collectors.toList());
+			}
+
+			@Override
+			public MemberInfo<?> getMethod(String name, String descriptor) {
+				JavaMethod method = instanceClass.getMethod(name, descriptor);
+				return method == null ? null : method.linkerInfo();
+			}
+
+			@Override
+			public MemberInfo<?> getField(String name, String descriptor) {
+				JavaField field = instanceClass.getField(name, descriptor);
+				return field == null ? null : field.linkerInfo();
+			}
+		};
 	}
 }

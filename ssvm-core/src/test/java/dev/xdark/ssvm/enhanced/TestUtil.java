@@ -73,7 +73,7 @@ public class TestUtil {
 				InstanceValue oop = ex.getOop();
 				System.err.println(oop);
 				try {
-					JavaMethod printStackTrace = vm.getLinkResolver().resolveVirtualMethod(oop, "printStackTrace", "()V");
+					JavaMethod printStackTrace = vm.getRuntimeResolver().resolveVirtualMethod(oop, "printStackTrace", "()V");
 					Locals locals = ts.newLocals(printStackTrace);
 					locals.setReference(0, oop);
 					ops.invokeVoid(printStackTrace, locals);

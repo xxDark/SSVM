@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.operation;
 
 import dev.xdark.ssvm.LinkResolver;
+import dev.xdark.ssvm.RuntimeResolver;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.symbol.Symbols;
@@ -24,6 +25,7 @@ public final class DefaultPrimitiveOperations implements PrimitiveOperations {
 	private final Symbols symbols;
 	private final ThreadManager threadManager;
 	private final LinkResolver linkResolver;
+	private final RuntimeResolver runtimeResolver;
 	private final VMOperations ops;
 
 	@Override
@@ -171,7 +173,7 @@ public final class DefaultPrimitiveOperations implements PrimitiveOperations {
 	}
 
 	private <R extends ValueSink> R invokeUnbox(ObjectValue value, String name, String desc, R sink) {
-		JavaMethod method = linkResolver.resolveVirtualMethod(value, name, desc);
+		JavaMethod method = runtimeResolver.resolveVirtualMethod(value, name, desc);
 		Locals locals = threadManager.currentThreadStorage().newLocals(method);
 		locals.setReference(0, value);
 		ops.invoke(method, locals, sink);

@@ -1,6 +1,6 @@
 package dev.xdark.ssvm.operation;
 
-import dev.xdark.ssvm.LinkResolver;
+import dev.xdark.ssvm.RuntimeResolver;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.classloading.ClassStorage;
 import dev.xdark.ssvm.execution.Locals;
@@ -37,7 +37,7 @@ public final class DefaultInvokeDynamicOperations implements InvokeDynamicOperat
 	private final Symbols symbols;
 	private final ThreadManager threadManager;
 	private final StringPool stringPool;
-	private final LinkResolver linkResolver;
+	private final RuntimeResolver runtimeResolver;
 	private final ClassStorage classStorage;
 	private final MemoryManager memoryManager;
 	private final VMOperations ops;
@@ -94,12 +94,12 @@ public final class DefaultInvokeDynamicOperations implements InvokeDynamicOperat
 		ThreadStorage ts = threadManager.currentOsThread().getStorage();
 		if (symbols.java_lang_invoke_CallSite().isAssignableFrom(handle.getJavaClass())) {
 			// See linkCallSiteImpl
-			JavaMethod getTarget = linkResolver.resolveVirtualMethod(handle, "getTarget", "()Ljava/lang/invoke/MethodHandle;");
+			JavaMethod getTarget = runtimeResolver.resolveVirtualMethod(handle, "getTarget", "()Ljava/lang/invoke/MethodHandle;");
 			Locals locals = ts.newLocals(getTarget);
 			locals.setReference(0, handle);
 			handle = ops.checkNotNull(ops.invokeReference(getTarget, locals));
 		}
-		JavaMethod invokeExact = linkResolver.resolveVirtualMethod(handle, "invokeExact", desc);
+		JavaMethod invokeExact = runtimeResolver.resolveVirtualMethod(handle, "invokeExact", desc);
 		Locals locals = ts.newLocals(invokeExact);
 		locals.setReference(0, handle);
 		stack.sinkInto(locals, 1, invokeExact.getMaxArgs() - 1);

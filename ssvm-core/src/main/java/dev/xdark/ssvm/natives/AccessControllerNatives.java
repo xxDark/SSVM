@@ -32,8 +32,7 @@ public class AccessControllerNatives {
 		vmi.setInvoker(accController, "doPrivileged", "(Ljava/security/PrivilegedAction;)Ljava/lang/Object;", ctx -> {
 			ObjectValue action = ctx.getLocals().loadReference(0);
 			VMOperations ops = vm.getOperations();
-			ops.checkNotNull(action);
-			JavaMethod method = vm.getLinkResolver().resolveVirtualMethod(action, "run", "()Ljava/lang/Object;");
+			JavaMethod method = vm.getRuntimeResolver().resolveInterfaceMethod(action, "run", "()Ljava/lang/Object;");
 			Locals locals = vm.getThreadStorage().newLocals(method);
 			locals.setReference(0, action);
 			ops.invoke(method, locals, ctx.returnSink());
@@ -42,8 +41,7 @@ public class AccessControllerNatives {
 		vmi.setInvoker(accController, "doPrivileged", "(Ljava/security/PrivilegedExceptionAction;)Ljava/lang/Object;", ctx -> {
 			ObjectValue action = ctx.getLocals().loadReference(0);
 			VMOperations ops = vm.getOperations();
-			ops.checkNotNull(action);
-			JavaMethod method = vm.getLinkResolver().resolveVirtualMethod(action, "run", "()Ljava/lang/Object;");
+			JavaMethod method = vm.getRuntimeResolver().resolveInterfaceMethod(action, "run", "()Ljava/lang/Object;");
 			Locals locals = vm.getThreadStorage().newLocals(method);
 			locals.setReference(0, action);
 			ops.invoke(method, locals, ctx.returnSink());
@@ -52,8 +50,7 @@ public class AccessControllerNatives {
 		vmi.setInvoker(accController, "doPrivileged", "(Ljava/security/PrivilegedExceptionAction;Ljava/security/AccessControlContext;)Ljava/lang/Object;", ctx -> {
 			ObjectValue action = ctx.getLocals().loadReference(0);
 			VMOperations ops = vm.getOperations();
-			ops.checkNotNull(action);
-			JavaMethod method = vm.getLinkResolver().resolveVirtualMethod(action, "run", "()Ljava/lang/Object;");
+			JavaMethod method = vm.getRuntimeResolver().resolveInterfaceMethod(action, "run", "()Ljava/lang/Object;");
 			Locals locals = vm.getThreadStorage().newLocals(method);
 			locals.setReference(0, action);
 			ops.invoke(method, locals, ctx.returnSink());
@@ -62,8 +59,7 @@ public class AccessControllerNatives {
 		vmi.setInvoker(accController, "doPrivileged", "(Ljava/security/PrivilegedAction;Ljava/security/AccessControlContext;)Ljava/lang/Object;", ctx -> {
 			ObjectValue action = ctx.getLocals().loadReference(0);
 			VMOperations ops = vm.getOperations();
-			ops.checkNotNull(action);
-			JavaMethod method = vm.getLinkResolver().resolveVirtualMethod(action, "run", "()Ljava/lang/Object;");
+			JavaMethod method = vm.getRuntimeResolver().resolveVirtualMethod(action, "run", "()Ljava/lang/Object;");
 			Locals locals = vm.getThreadStorage().newLocals(method);
 			locals.setReference(0, action);
 			ops.invoke(method, locals, ctx.returnSink());

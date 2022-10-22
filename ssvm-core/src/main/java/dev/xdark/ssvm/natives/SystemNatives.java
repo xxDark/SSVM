@@ -74,8 +74,7 @@ public class SystemNatives {
 		});
 		vmi.setInvoker(sys, "initProperties", "(Ljava/util/Properties;)Ljava/util/Properties;", ctx -> {
 			InstanceValue value = ctx.getLocals().loadReference(0);
-			InstanceClass jc = value.getJavaClass();
-			JavaMethod mn = vm.getLinkResolver().resolveVirtualMethod(jc, value.getJavaClass(), "setProperty", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;");
+			JavaMethod mn = vm.getRuntimeResolver().resolveVirtualMethod(value, "setProperty", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;");
 			Map<String, String> properties = vm.getProperties();
 			VMOperations ops = vm.getOperations();
 

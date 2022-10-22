@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.mirror.member;
 
+import dev.xdark.jlinker.MemberInfo;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.VMTryCatchBlock;
@@ -45,6 +46,7 @@ public final class SimpleJavaMethod implements JavaMethod {
 	private Boolean isConstructor;
 	private List<VMTryCatchBlock> tryCatchBlocks;
 	private MemberIdentifier identifier;
+	private MemberInfo<JavaMethod> linkerInfo; // Delayed allocation until linker is capable of linking polymorphic methods.
 
 	/**
 	 * @param owner Method owner.
@@ -248,6 +250,16 @@ public final class SimpleJavaMethod implements JavaMethod {
 	}
 
 	@Override
+	public MemberInfo<? extends JavaMember> linkerInfo() {
+		MemberInfo<JavaMethod> linkerInfo = this.linkerInfo;
+		if (linkerInfo == null) {
+			linkerInfo = makeLinkerInfo(this);
+			this.linkerInfo = linkerInfo;
+		}
+		return linkerInfo;
+	}
+
+	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
 			return true;
@@ -322,5 +334,24 @@ public final class SimpleJavaMethod implements JavaMethod {
 			}
 			exceptionTypes = arr;
 		}
+	}
+
+	private static MemberInfo<JavaMethod> makeLinkerInfo(JavaMethod method) {
+		return new MemberInfo<JavaMethod>() {
+			@Override
+			public JavaMethod innerValue() {
+				return method;
+			}
+
+			@Override
+			public int accessFlags() {
+				return Modifier.eraseMethod(method.getModifiers());
+			}
+
+			@Override
+			public boolean isPolymorphic() {
+				return method.isPolymorphic();
+			}
+		};
 	}
 }

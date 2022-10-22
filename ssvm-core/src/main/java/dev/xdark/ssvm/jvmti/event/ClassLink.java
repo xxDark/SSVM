@@ -9,6 +9,7 @@ import dev.xdark.ssvm.mirror.type.InstanceClass;
  *
  * @apiNote xDark
  */
+@FunctionalInterface
 public interface ClassLink {
 
 	/**

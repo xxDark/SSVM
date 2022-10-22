@@ -260,7 +260,7 @@ public class GenericFileSystemNatives {
 	}
 
 	private static long getFileStreamHandle(VirtualMachine vm, InstanceValue fs) {
-		JavaMethod getFD = vm.getLinkResolver().resolveVirtualMethod(fs, "getFD", "()Ljava/io/FileDescriptor;");
+		JavaMethod getFD = vm.getRuntimeResolver().resolveVirtualMethod(fs, "getFD", "()Ljava/io/FileDescriptor;");
 		Locals locals = vm.getThreadStorage().newLocals(getFD);
 		locals.setReference(0, fs);
 		VMOperations ops = vm.getOperations();

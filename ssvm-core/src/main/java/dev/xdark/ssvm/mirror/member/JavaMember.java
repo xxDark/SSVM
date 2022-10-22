@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.mirror.member;
 
+import dev.xdark.jlinker.MemberInfo;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.util.MetadataHolder;
 
@@ -61,4 +62,9 @@ public interface JavaMember extends MetadataHolder {
 	 * @return Member slot.
 	 */
 	int getSlot();
+
+	/**
+	 * @return Information for the external linker.
+	 */
+	MemberInfo<? extends JavaMember> linkerInfo();
 }

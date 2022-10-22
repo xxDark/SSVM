@@ -81,6 +81,7 @@ public class VirtualMachine implements VMEventCollection {
 	private final BootClassFinder bootClassFinder;
 	private final ClassStorage classStorage;
 	private final LinkResolver linkResolver;
+	private final RuntimeResolver runtimeResolver;
 	private final Map<String, String> properties;
 	private final Map<String, String> env;
 	private final Reflection reflection;
@@ -116,6 +117,7 @@ public class VirtualMachine implements VMEventCollection {
 		bootClassFinder = createBootClassFinder();
 		classStorage = createClassStorage();
 		linkResolver = new LinkResolver(this);
+		runtimeResolver = new RuntimeResolver(this, linkResolver);
 		// After this point all components are created, only utilities are left.
 		properties = createSystemProperties();
 		env = createEnvironmentVariables();
@@ -306,6 +308,13 @@ public class VirtualMachine implements VMEventCollection {
 	 */
 	public LinkResolver getLinkResolver() {
 		return linkResolver;
+	}
+
+	/**
+	 * @return Runtime resolver.
+	 */
+	public RuntimeResolver getRuntimeResolver() {
+		return runtimeResolver;
 	}
 
 	/**
@@ -546,7 +555,7 @@ public class VirtualMachine implements VMEventCollection {
 			// Initialize system group
 			InstanceValue sysGroup = memoryManager.newInstance(groupClass);
 			{
-				JavaMethod init = linkResolver.resolveSpecialMethod(groupClass, "<init>", "()V");
+				JavaMethod init = linkResolver.resolveVirtualMethod(groupClass, "<init>", "()V");
 				Locals locals = ts.newLocals(init);
 				locals.setReference(0, sysGroup);
 				ops.invokeVoid(init, locals);
@@ -555,7 +564,7 @@ public class VirtualMachine implements VMEventCollection {
 			// Initialize main group
 			InstanceValue mainGroup = memoryManager.newInstance(groupClass);
 			{
-				JavaMethod init = linkResolver.resolveSpecialMethod(groupClass, "<init>", "(Ljava/lang/ThreadGroup;Ljava/lang/String;)V");
+				JavaMethod init = linkResolver.resolveVirtualMethod(groupClass, "<init>", "(Ljava/lang/ThreadGroup;Ljava/lang/String;)V");
 				Locals locals = ts.newLocals(init);
 				locals.setReference(0, mainGroup);
 				locals.setReference(1, sysGroup);
@@ -607,7 +616,7 @@ public class VirtualMachine implements VMEventCollection {
 				InstanceValue threadGroup = mainThreadGroup;
 				InstanceValue oop = currentJavaThread().getOop();
 				ops.putReference(oop, "group", "Ljava/lang/ThreadGroup;", threadGroup);
-				JavaMethod add = linkResolver.resolveVirtualMethod(threadGroup, "add", "(Ljava/lang/Thread;)V");
+				JavaMethod add = linkResolver.resolveVirtualMethod(threadGroup.getJavaClass(), "add", "(Ljava/lang/Thread;)V");
 				Locals locals = ts.newLocals(add);
 				locals.setReference(0, threadGroup);
 				locals.setReference(1, oop);

@@ -34,6 +34,10 @@ public class ReflectionNatives {
 
 	private static MethodInvoker getCallerClass(VirtualMachine vm, boolean useDepth) {
 		return ctx -> {
+			if (!ctx.getMethod().isCallerSensitive()) {
+				vm.getOperations().throwException(vm.getSymbols().java_lang_InternalError(), "CallerSensitive annotation expected at frame 1");
+				return Result.ABORT;
+			}
 			int callerOffset = useDepth ? ctx.getLocals().loadInt(0) + 1 : 1;
 			ctx.setResult(vm.getReflection().getCallerFrame(callerOffset).getMethod().getOwner().getOop());
 			return Result.ABORT;

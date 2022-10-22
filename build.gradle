@@ -27,7 +27,6 @@ subprojects {
     }
 
     dependencies {
-
         def junitVersion = '5.8.2'
         testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
         testImplementation "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
@@ -65,5 +64,6 @@ subprojects {
         asm_tree = 'org.ow2.asm:asm-tree:9.3'
         cafedude = 'com.github.Col-E:CAFED00D:1.10.2'
         slf4j_api = 'org.slf4j:slf4j-api:1.7.36'
+        jlinker = 'com.github.xxDark:jlinker:1.0.3'
     }
 }

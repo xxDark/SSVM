@@ -295,8 +295,8 @@ public class ClassNatives {
 		});
 		vmi.setInvoker(jlc, "getInterfaces0", "()[Ljava/lang/Class;", ctx -> {
 			JavaClass _this = ctx.getClassStorage().lookup(ctx.getLocals().loadReference(0));
-			InstanceClass[] interfaces = _this.getInterfaces();
-			ArrayValue types = convertClassArray(vm, interfaces);
+			List<InstanceClass> interfaces = _this.getInterfaces();
+			ArrayValue types = convertClassList(vm, interfaces);
 			ctx.setResult(types);
 			return Result.ABORT;
 		});
@@ -516,6 +516,19 @@ public class ClassNatives {
 		ArrayValue array = ops.allocateArray(jlc, classes.length);
 		for (int i = 0; i < classes.length; i++) {
 			array.setReference(i, classes[i].getOop());
+		}
+		return array;
+	}
+
+	private ArrayValue convertClassList(VirtualMachine vm, List<? extends JavaClass> classes) {
+		InstanceClass jlc = vm.getSymbols().java_lang_Class();
+		VMOperations ops = vm.getOperations();
+		if (classes.size() == 0) {
+			return ops.allocateArray(jlc, 0);
+		}
+		ArrayValue array = ops.allocateArray(jlc, classes.size());
+		for (int i = 0; i < classes.size(); i++) {
+			array.setReference(i, classes.get(i).getOop());
 		}
 		return array;
 	}

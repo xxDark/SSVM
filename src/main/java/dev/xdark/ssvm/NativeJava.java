@@ -185,6 +185,7 @@ public final class NativeJava {
 		ProxyNatives.init(vm);
 		InflaterNatives.init(vm);
 		ProcessEnvironmentNatives.init(vm);
+		ProcessImplNatives.init(vm);
 		FileSystemNativeDispatcherNatives.init(vm);
 		CDSNatives.init(vm);
 		SystemPropsNatives.init(vm);

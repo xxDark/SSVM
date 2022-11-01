@@ -136,65 +136,46 @@ public class SimpleInstanceClass implements InstanceClass {
 	}
 
 	@Override
-	public boolean isAssignableFrom(JavaClass other) {
-		if (other == this) {
+	public boolean isAssignableFrom(JavaClass S) {
+		InstanceClass T = this;
+		if (S == T) {
 			return true;
 		}
-		if (other.isPrimitive()) {
+		if (S.isPrimitive()) {
 			return false;
 		}
 		Symbols symbols = vm.getSymbols();
-		if (other.isArray()) {
+		if (S.isArray()) {
 			if (isInterface()) {
-				return this == symbols.java_io_Serializable() || this == symbols.java_lang_Cloneable();
+				return T == symbols.java_io_Serializable() || T == symbols.java_lang_Cloneable();
 			} else {
-				return this == symbols.java_lang_Object();
+				return T == symbols.java_lang_Object();
 			}
 		}
-		if (this == symbols.java_lang_Object()) {
+		if (T == symbols.java_lang_Object()) {
 			return true;
 		}
-		if (other.isInterface()) {
-			if (isInterface()) {
-				Deque<InstanceClass> toCheck = new ArrayDeque<>(other.getInterfaces());
-				JavaClass popped;
-				while ((popped = toCheck.poll()) != null) {
-					if (popped == this) {
-						return true;
-					}
-					toCheck.addAll(popped.getInterfaces());
+		if (isInterface()) {
+			Deque<JavaClass> classes = new ArrayDeque<>();
+			classes.push(S);
+			JavaClass klass;
+			while ((klass = classes.poll()) != null) {
+				if (klass.isInterface() && klass == this) {
+					return true;
+				}
+				classes.addAll(klass.getInterfaces());
+				InstanceClass superClass = klass.getSuperClass();
+				if (superClass != null) {
+					classes.push(superClass);
 				}
 			}
 		} else {
-			Deque<JavaClass> toCheck = new ArrayDeque<>();
-			JavaClass superClass = other.getSuperClass();
-			if (superClass != null) {
-				toCheck.add(superClass);
-			}
-			if (isInterface()) {
-				toCheck.addAll(other.getInterfaces());
-				JavaClass popped;
-				while ((popped = toCheck.poll()) != null) {
-					if (popped == this) {
-						return true;
-					}
-					superClass = popped.getSuperClass();
-					if (superClass != null) {
-						toCheck.add(superClass);
-					}
-					toCheck.addAll(popped.getInterfaces());
+			S = S.getSuperClass();
+			while (S != null) {
+				if (this == S) {
+					return true;
 				}
-			} else {
-				JavaClass popped;
-				while ((popped = toCheck.poll()) != null) {
-					if (popped == this) {
-						return true;
-					}
-					superClass = popped.getSuperClass();
-					if (superClass != null) {
-						toCheck.add(superClass);
-					}
-				}
+				S = S.getSuperClass();
 			}
 		}
 		return false;
@@ -259,9 +240,10 @@ public class SimpleInstanceClass implements InstanceClass {
 
 	@Override
 	public void setId(int id) {
-		Assertions.check(this.id == -1 , "id already set");
+		Assertions.check(this.id == -1, "id already set");
 		this.id = id;
 	}
+
 	@Override
 	public VirtualMachine getVM() {
 		return vm;
@@ -591,7 +573,8 @@ public class SimpleInstanceClass implements InstanceClass {
 				SoftReference<List<ClassInfo<JavaClass>>> interfaces = this.interfaces;
 				List<ClassInfo<JavaClass>> list;
 				if (interfaces == null || (list = interfaces.get()) == null) {
-					list = instanceClass.getInterfaces().stream().map(JavaClass::linkerInfo).collect(Collectors.toList());;
+					list = instanceClass.getInterfaces().stream().map(JavaClass::linkerInfo).collect(Collectors.toList());
+					;
 					this.interfaces = new SoftReference<>(list);
 				}
 				return list;

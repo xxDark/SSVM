@@ -65,7 +65,7 @@ public class ClassLoaderNatives {
 				Locals locals = ctx.getLocals();
 				int flags = locals.loadInt(8);
 				boolean hidden = (flags & 0x2) != 0;
-				InstanceClass jc = defineClass0New.apply(ctx, !hidden);
+				InstanceClass jc = defineClass0New.apply(ctx, hidden);
 				ObjectValue classData = locals.loadReference(9);
 				if (hidden) {
 					jc.getNode().access |= Modifier.ACC_VM_HIDDEN;
@@ -135,6 +135,6 @@ public class ClassLoaderNatives {
 
 	private static Function<ExecutionContext<?>, InstanceClass> makeClassDefiner(VirtualMachine vm, boolean withSource) {
 		BiFunction<ExecutionContext<?>, Boolean, InstanceClass> definer = makeClassDefiner(vm, 0, withSource);
-		return ctx -> definer.apply(ctx, Boolean.TRUE);
+		return ctx -> definer.apply(ctx, Boolean.FALSE);
 	}
 }

@@ -77,7 +77,6 @@ public final class DefaultClassOperations implements ClassOperations {
 		state.set(InstanceClass.State.IN_PROGRESS);
 		try {
 			eventCollection.getClassPrepare().invoke(instanceClass);
-			ObjectValue cl = instanceClass.getClassLoader();
 			ClassLinkage linkage = instanceClass.linkage();
 			ClassNode node = instanceClass.getNode();
 			String superName = node.superName;
@@ -254,25 +253,31 @@ public final class DefaultClassOperations implements ClassOperations {
 	public InstanceClass defineClass(ObjectValue classLoader, ParsedClassData data, ObjectValue protectionDomain, String source, int options) {
 		ClassReader reader = data.getClassReader();
 		InstanceClass jc = mirrorFactory.newInstanceClass(classLoader, reader, data.getNode());
-		if ((options & ClassDefinitionOption.ANONYMOUS) == 0) {
-			ClassLoaderData classLoaderData = classLoaders.getClassLoaderData(classLoader);
-			if (!classLoaderData.linkClass(jc)) {
-				ops.throwException(symbols.java_lang_NoClassDefFoundError(), "Duplicate class: " + reader.getClassName());
+		InitializationState state = jc.state();
+		state.lock();
+		try {
+			if ((options & ClassDefinitionOption.ANONYMOUS) == 0) {
+				ClassLoaderData classLoaderData = classLoaders.getClassLoaderData(classLoader);
+				if (!classLoaderData.linkClass(jc)) {
+					ops.throwException(symbols.java_lang_NoClassDefFoundError(), "Duplicate class: " + reader.getClassName());
+				}
 			}
-		}
-		link(jc);
-		if ((options & ClassDefinitionOption.ANONYMOUS) != 0) {
-			if (!classLoaders.createAnonymousClassLoaderData(jc).linkClass(jc)) {
-				ops.throwException(symbols.java_lang_NoClassDefFoundError(), "Failed to link to anonymous data: " + reader.getClassName());
+			link(jc);
+			if ((options & ClassDefinitionOption.ANONYMOUS) != 0) {
+				if (!classLoaders.createAnonymousClassLoaderData(jc).linkClass(jc)) {
+					ops.throwException(symbols.java_lang_NoClassDefFoundError(), "Failed to link to anonymous data: " + reader.getClassName());
+				}
 			}
+			if (!classLoader.isNull()) {
+				ops.putReference(jc.getOop(), "classLoader", "Ljava/lang/ClassLoader;", classLoader);
+			}
+			if (!protectionDomain.isNull()) {
+				ops.putReference(jc.getOop(), InjectedClassLayout.java_lang_Class_protectionDomain.name(), InjectedClassLayout.java_lang_Class_protectionDomain.descriptor(), protectionDomain);
+			}
+			classStorage.register(jc);
+		} finally {
+			state.unlock();
 		}
-		if (!classLoader.isNull()) {
-			ops.putReference(jc.getOop(), "classLoader", "Ljava/lang/ClassLoader;", classLoader);
-		}
-		if (!protectionDomain.isNull()) {
-			ops.putReference(jc.getOop(), InjectedClassLayout.java_lang_Class_protectionDomain.name(), InjectedClassLayout.java_lang_Class_protectionDomain.descriptor(), protectionDomain);
-		}
-		classStorage.register(jc);
 		return jc;
 	}
 

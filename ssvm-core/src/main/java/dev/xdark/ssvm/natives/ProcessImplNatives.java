@@ -20,7 +20,7 @@ public class ProcessImplNatives {
         // JDK 8
         // windows has the implementation in ProcessImpl
         JavaMethod createWindowsProcess = genericProcessImpl.getMethod("create",
-                "(Ljava/lang/String;Ljava/lang/String;[JZ)J");
+                "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[JZ)J");
         if(createWindowsProcess != null) { // windows jdk 8
             vm.getInterface().setInvoker(createWindowsProcess, (ctx) -> {
                 // optimally we would want to point to the direct win32 api call, but we cannot do that. So either

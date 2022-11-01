@@ -47,6 +47,18 @@ public final class DefaultMethodHandleOperations implements MethodHandleOperatio
 	}
 
 	@Override
+	public InstanceValue methodType(JavaClass klass, Type returnType, Type[] parameterTypes) {
+		VMOperations ops = this.ops;
+		JavaClass rt = ops.findClass(klass, returnType, false);
+		ArrayValue array = ops.allocateArray(symbols.java_lang_Class(), parameterTypes.length);
+		for (int i = 0, j = parameterTypes.length;  i< j; i++) {
+			JavaClass argument = ops.findClass(klass, parameterTypes[i], false);
+			array.setReference(i, argument.getOop());
+		}
+		return methodType(rt, array);
+	}
+
+	@Override
 	public InstanceValue methodType(ObjectValue classLoader, Type returnType, Type[] parameterTypes) {
 		VMOperations ops = this.ops;
 		JavaClass rt = ops.findClass(classLoader, returnType, false);
@@ -59,6 +71,12 @@ public final class DefaultMethodHandleOperations implements MethodHandleOperatio
 	}
 
 	@Override
+	public InstanceValue methodType(JavaClass klass, Type methodType) {
+		Assertions.check(methodType.getSort() == Type.METHOD, "not a method type");
+		return methodType(klass, methodType.getReturnType(), methodType.getArgumentTypes());
+	}
+
+	@Override
 	public InstanceValue methodType(ObjectValue classLoader, Type methodType) {
 		Assertions.check(methodType.getSort() == Type.METHOD, "not a method type");
 		return methodType(classLoader, methodType.getReturnType(), methodType.getArgumentTypes());
@@ -67,10 +85,9 @@ public final class DefaultMethodHandleOperations implements MethodHandleOperatio
 	@Override
 	public InstanceValue methodType(JavaClass returnType, Type[] parameterTypes) {
 		VMOperations ops = this.ops;
-		ObjectValue classLoader = returnType.getClassLoader();
 		ArrayValue array = ops.allocateArray(symbols.java_lang_Class(), parameterTypes.length);
 		for (int i = 0, j = parameterTypes.length;  i< j; i++) {
-			JavaClass argument = ops.findClass(classLoader, parameterTypes[i], false);
+			JavaClass argument = ops.findClass(returnType, parameterTypes[i], false);
 			array.setReference(i, argument.getOop());
 		}
 		return methodType(returnType, array);
@@ -84,10 +101,9 @@ public final class DefaultMethodHandleOperations implements MethodHandleOperatio
 		Locals locals = threadManager.currentThreadStorage().newLocals(link);
 		locals.setReference(0, caller.getOop());
 		locals.setInt(1, handle.getTag());
-		ObjectValue cl = caller.getClassLoader();
-		locals.setReference(2, ops.findClass(cl, handle.getOwner(), false).getOop());
+		locals.setReference(2, ops.findClass(caller, handle.getOwner(), false).getOop());
 		locals.setReference(3, ops.newUtf8(handle.getName()));
-		locals.setReference(4, methodType(cl, Type.getMethodType(handle.getDesc())));
+		locals.setReference(4, methodType(caller, Type.getMethodType(handle.getDesc())));
 		return (InstanceValue) ops.invokeReference(link, locals);
 	}
 }

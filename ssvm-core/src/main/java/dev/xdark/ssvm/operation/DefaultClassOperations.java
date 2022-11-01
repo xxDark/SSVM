@@ -4,6 +4,7 @@ import dev.xdark.ssvm.LanguageSpecification;
 import dev.xdark.ssvm.RuntimeResolver;
 import dev.xdark.ssvm.classloading.BootClassFinder;
 import dev.xdark.ssvm.classloading.ClassDefiner;
+import dev.xdark.ssvm.classloading.ClassDefinitionOption;
 import dev.xdark.ssvm.classloading.ClassLoaderData;
 import dev.xdark.ssvm.classloading.ClassLoaders;
 import dev.xdark.ssvm.classloading.ClassStorage;
@@ -11,6 +12,7 @@ import dev.xdark.ssvm.classloading.ParsedClassData;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.VMException;
+import dev.xdark.ssvm.inject.InjectedClassLayout;
 import dev.xdark.ssvm.jvmti.VMEventCollection;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.MemoryManager;
@@ -81,7 +83,7 @@ public final class DefaultClassOperations implements ClassOperations {
 			String superName = node.superName;
 			List<String> interfaces = node.interfaces;
 			if (superName != null) {
-				linkage.setSuperClass((InstanceClass) findClass(cl, superName, false));
+				linkage.setSuperClass((InstanceClass) findClass(instanceClass, superName, false));
 			}
 			// Create method and field area
 			MirrorFactory mf = this.mirrorFactory;
@@ -171,7 +173,7 @@ public final class DefaultClassOperations implements ClassOperations {
 			if (!interfaces.isEmpty()) {
 				InstanceClass[] classes = new InstanceClass[interfaces.size()];
 				for (int i1 = 0; i1 < interfaces.size(); i1++) {
-					classes[i1] = (InstanceClass) findClass(cl, interfaces.get(i1), false);
+					classes[i1] = (InstanceClass) findClass(instanceClass, interfaces.get(i1), false);
 				}
 				linkage.setInterfaces(Arrays.asList(classes));
 			} else {
@@ -239,77 +241,43 @@ public final class DefaultClassOperations implements ClassOperations {
 	}
 
 	@Override
-	public JavaClass findClass(ObjectValue classLoader, String internalName, boolean initialize) {
-		int dimensions = 0;
-		while (internalName.charAt(dimensions) == '[') {
-			dimensions++;
-		}
-		VMOperations ops = this.ops;
-		if (dimensions >= LanguageSpecification.ARRAY_DIMENSION_LIMIT) {
-			ops.throwException(symbols.java_lang_ClassNotFoundException(), internalName);
-		}
-		JavaClass klass;
-		if (internalName.length() - dimensions == 1) {
-			// Primitive array?
-			klass = lookupPrimitiveOrNull(internalName.charAt(1));
-			if (klass == null) {
-				ops.throwException(symbols.java_lang_ClassNotFoundException(), internalName);
-			}
-		} else {
-			String trueName = dimensions == 0 ? internalName : internalName.substring(dimensions + 1, internalName.length() - 1);
-			ClassLoaderData data = classLoaders.getClassLoaderData(classLoader);
-			try (CloseableLock lock = data.lock()) {
-				klass = data.getClass(trueName);
-				if (klass == null) {
-					if (classLoader.isNull()) {
-						ParsedClassData cdata = bootClassFinder.findBootClass(trueName);
-						if (cdata != null) {
-							klass = defineClass(classLoader, cdata, null, "JVM_DefineClass", true);
-						}
-					} else {
-						// Ask Java world
-						JavaMethod method = runtimeResolver.resolveVirtualMethod(classLoader, "loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;");
-						Locals locals = threadManager.currentThreadStorage().newLocals(method);
-						locals.setReference(0, classLoader);
-						locals.setReference(1, ops.newUtf8(trueName.replace('/', '.')));
-						locals.setInt(2, initialize ? 1 : 0);
-						InstanceValue result = ops.checkNotNull(ops.invokeReference(method, locals));
-						klass = classStorage.lookup(result);
-					}
-					if (klass == null) {
-						ops.throwException(symbols.java_lang_ClassNotFoundException(), internalName.replace('/', '.'));
-					}
-				}
-				if (initialize) {
-					if (klass instanceof InstanceClass) {
-						initialize((InstanceClass) klass);
-					}
-				}
-			}
-		}
-		while (dimensions-- != 0) {
-			klass = klass.newArrayClass();
-		}
-		return klass;
+	public JavaClass findClass(JavaClass klass, String internalName, boolean initialize) {
+		return findClass0(classLoaders.getClassLoaderData(klass), klass.getClassLoader(), internalName, initialize);
 	}
 
 	@Override
-	public InstanceClass defineClass(ObjectValue classLoader, ParsedClassData data, ObjectValue protectionDomain, String source, boolean shouldBeLinked) {
+	public JavaClass findClass(ObjectValue classLoader, String internalName, boolean initialize) {
+		return findClass0(classLoaders.getClassLoaderData(classLoader), classLoader, internalName, initialize);
+	}
+
+	@Override
+	public InstanceClass defineClass(ObjectValue classLoader, ParsedClassData data, ObjectValue protectionDomain, String source, int options) {
 		ClassReader reader = data.getClassReader();
 		InstanceClass jc = mirrorFactory.newInstanceClass(classLoader, reader, data.getNode());
-		if (shouldBeLinked) {
+		if ((options & ClassDefinitionOption.ANONYMOUS) == 0) {
 			ClassLoaderData classLoaderData = classLoaders.getClassLoaderData(classLoader);
 			if (!classLoaderData.linkClass(jc)) {
 				ops.throwException(symbols.java_lang_NoClassDefFoundError(), "Duplicate class: " + reader.getClassName());
 			}
 		}
 		link(jc);
+		if ((options & ClassDefinitionOption.ANONYMOUS) != 0) {
+			if (!classLoaders.createAnonymousClassLoaderData(jc).linkClass(jc)) {
+				ops.throwException(symbols.java_lang_NoClassDefFoundError(), "Failed to link to anonymous data: " + reader.getClassName());
+			}
+		}
+		if (!classLoader.isNull()) {
+			ops.putReference(jc.getOop(), "classLoader", "Ljava/lang/ClassLoader;", classLoader);
+		}
+		if (!protectionDomain.isNull()) {
+			ops.putReference(jc.getOop(), InjectedClassLayout.java_lang_Class_protectionDomain.name(), InjectedClassLayout.java_lang_Class_protectionDomain.descriptor(), protectionDomain);
+		}
 		classStorage.register(jc);
 		return jc;
 	}
 
 	@Override
-	public InstanceClass defineClass(ObjectValue classLoader, String name, byte[] b, int off, int len, ObjectValue protectionDomain, String source, boolean shouldBeLinked) {
+	public InstanceClass defineClass(ObjectValue classLoader, String name, byte[] b, int off, int len, ObjectValue protectionDomain, String source, int options) {
 		VMOperations ops = this.ops;
 		if ((off | len | (off + len) | (b.length - (off + len))) < 0) {
 			ops.throwException(symbols.java_lang_ArrayIndexOutOfBoundsException());
@@ -327,7 +295,16 @@ public final class DefaultClassOperations implements ClassOperations {
 		if (name.contains("[") || name.contains("(") || name.contains(")") || name.contains(";")) {
 			ops.throwException(symbols.java_lang_NoClassDefFoundError(), "Bad class name: " + classReaderName);
 		}
-		return defineClass(classLoader, data, protectionDomain, source, shouldBeLinked);
+		return defineClass(classLoader, data, protectionDomain, source, options);
+	}
+
+	@Override
+	public JavaClass findClass(JavaClass klass, Type type, boolean initialize) {
+		int sort = type.getSort();
+		if (sort < Type.ARRAY) {
+			return lookupPrimitive(sort);
+		}
+		return findClass(klass, type.getInternalName(), initialize);
 	}
 
 	@Override
@@ -457,5 +434,58 @@ public final class DefaultClassOperations implements ClassOperations {
 			throw new VMException(oop);
 		}
 		throw ex;
+	}
+
+	private JavaClass findClass0(ClassLoaderData data, ObjectValue classLoader, String internalName, boolean initialize) {
+		int dimensions = 0;
+		while (internalName.charAt(dimensions) == '[') {
+			dimensions++;
+		}
+		VMOperations ops = this.ops;
+		if (dimensions >= LanguageSpecification.ARRAY_DIMENSION_LIMIT) {
+			ops.throwException(symbols.java_lang_ClassNotFoundException(), internalName);
+		}
+		JavaClass klass;
+		if (internalName.length() - dimensions == 1) {
+			// Primitive array?
+			klass = lookupPrimitiveOrNull(internalName.charAt(dimensions));
+			if (klass == null) {
+				ops.throwException(symbols.java_lang_ClassNotFoundException(), internalName);
+			}
+		} else {
+			String trueName = dimensions == 0 ? internalName : internalName.substring(dimensions + 1, internalName.length() - 1);
+			try (CloseableLock lock = data.lock()) {
+				klass = data.getClass(trueName);
+				if (klass == null) {
+					if (classLoader.isNull()) {
+						ParsedClassData cdata = bootClassFinder.findBootClass(trueName);
+						if (cdata != null) {
+							klass = defineClass(classLoader, cdata, memoryManager.nullValue(), "JVM_DefineClass");
+						}
+					} else {
+						// Ask Java world
+						JavaMethod method = runtimeResolver.resolveVirtualMethod(classLoader, "loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;");
+						Locals locals = threadManager.currentThreadStorage().newLocals(method);
+						locals.setReference(0, classLoader);
+						locals.setReference(1, ops.newUtf8(trueName.replace('/', '.')));
+						locals.setInt(2, initialize ? 1 : 0);
+						InstanceValue result = ops.checkNotNull(ops.invokeReference(method, locals));
+						klass = classStorage.lookup(result);
+					}
+					if (klass == null) {
+						ops.throwException(symbols.java_lang_ClassNotFoundException(), internalName.replace('/', '.'));
+					}
+				}
+				if (initialize) {
+					if (klass instanceof InstanceClass) {
+						initialize((InstanceClass) klass);
+					}
+				}
+			}
+		}
+		while (dimensions-- != 0) {
+			klass = klass.newArrayClass();
+		}
+		return klass;
 	}
 }

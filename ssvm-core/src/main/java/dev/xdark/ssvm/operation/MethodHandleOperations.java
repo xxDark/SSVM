@@ -36,12 +36,31 @@ public interface MethodHandleOperations {
 	/**
 	 * Makes new method type.
 	 *
+	 * @param klass          Host class.
+	 * @param returnType     Return type.
+	 * @param parameterTypes Parameter types.
+	 * @return New method type.
+	 */
+	InstanceValue methodType(JavaClass klass, Type returnType, Type[] parameterTypes);
+
+	/**
+	 * Makes new method type.
+	 *
 	 * @param classLoader    Class loader.
 	 * @param returnType     Return type.
 	 * @param parameterTypes Parameter types.
 	 * @return New method type.
 	 */
 	InstanceValue methodType(ObjectValue classLoader, Type returnType, Type[] parameterTypes);
+
+	/**
+	 * Makes new method type.
+	 *
+	 * @param klass Host klass.
+	 * @param methodType  ASM method type.
+	 * @return New method type.
+	 */
+	InstanceValue methodType(JavaClass klass, Type methodType);
 
 	/**
 	 * Makes new method type.

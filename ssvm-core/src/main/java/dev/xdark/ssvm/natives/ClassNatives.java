@@ -314,7 +314,7 @@ public class ClassNatives {
 				} else {
 					VMOperations ops = vm.getOperations();
 					StringPool pool = vm.getStringPool();
-					JavaClass outerHost = ops.findClass(ctx.getMethod().getOwner().getClassLoader(), enclosingClass, false);
+					JavaClass outerHost = ops.findClass(ctx.getOwner(), enclosingClass, false);
 					ctx.setResult(ops.toVMReferences(new ObjectValue[]{
 						outerHost.getOop(),
 						pool.intern(enclosingMethod),
@@ -335,7 +335,7 @@ public class ClassNatives {
 					ctx.setResult(vm.getMemoryManager().nullValue());
 				} else {
 					VMOperations ops = vm.getOperations();
-					JavaClass oop = ops.findClass(ctx.getMethod().getOwner().getClassLoader(), nestHostClass, false);
+					JavaClass oop = ops.findClass(ctx.getOwner(), nestHostClass, false);
 					ctx.setResult(oop.getOop());
 				}
 			}
@@ -401,10 +401,9 @@ public class ClassNatives {
 				ctx.setResult(ops.allocateArray(jlc, 0));
 			} else {
 				List<InnerClassNode> declaredClasses = ((InstanceClass) _this).getNode().innerClasses;
-				ObjectValue loader = _this.getClassLoader();
 				ArrayValue array = ops.allocateArray(jlc, declaredClasses.size());
 				for (int i = 0; i < declaredClasses.size(); i++) {
-					array.setReference(i, ops.findClass(loader, declaredClasses.get(i).name, false).getOop());
+					array.setReference(i, ops.findClass(_this, declaredClasses.get(i).name, false).getOop());
 				}
 				ctx.setResult(array);
 			}

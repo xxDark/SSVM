@@ -4,6 +4,7 @@ import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.memory.management.StringPool;
+import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.util.Assertions;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -34,20 +35,28 @@ public final class DefaultConstantOperations implements ConstantOperations {
 			if (value instanceof Type) {
 				Type type = (Type) value;
 				ExecutionContext<?> ctx = threadManager.currentOsThread().getBacktrace().peek();
-				ObjectValue loader;
 				if (ctx == null) {
-					loader = memoryManager.nullValue();
+					ObjectValue loader = memoryManager.nullValue();
+					switch (type.getSort()) {
+						case Type.OBJECT:
+						case Type.ARRAY:
+							return ops.findClass(loader, type.getInternalName(), false).getOop();
+						case Type.METHOD:
+							return ops.methodType(loader, type);
+						default:
+							break convert;
+					}
 				} else {
-					loader = ctx.getMethod().getOwner().getClassLoader();
-				}
-				switch (type.getSort()) {
-					case Type.OBJECT:
-					case Type.ARRAY:
-						return ops.findClass(loader, type.getInternalName(), false).getOop();
-					case Type.METHOD:
-						return ops.methodType(loader, type);
-					default:
-						break convert;
+					InstanceClass owner = ctx.getOwner();
+					switch (type.getSort()) {
+						case Type.OBJECT:
+						case Type.ARRAY:
+							return ops.findClass(owner, type.getInternalName(), false).getOop();
+						case Type.METHOD:
+							return ops.methodType(owner, type);
+						default:
+							break convert;
+					}
 				}
 			}
 			if (value instanceof Handle) {

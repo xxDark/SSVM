@@ -115,7 +115,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	@Override
 	public void newJavaLangClass(InstanceClass javaClass) {
 		MemoryBlock memory = allocateClassMemory(javaClass, javaClass);
-		SimpleJavaValue<InstanceClass> wrapper = new SimpleJavaValue<>(this, memory, javaClass);
+		InstanceValue wrapper = new SimpleInstanceValue(this, memory);
 		javaClass.setOop(wrapper);
 		setClass(memory, javaClass);
 		objects.put(MemoryAddress.of(memory.getAddress()), wrapper);

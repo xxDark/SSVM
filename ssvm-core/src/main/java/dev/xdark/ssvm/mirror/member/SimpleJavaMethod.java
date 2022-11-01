@@ -291,10 +291,9 @@ public final class SimpleJavaMethod implements JavaMethod {
 			tryCatchBlocks = Collections.emptyList();
 		} else {
 			InstanceClass owner = this.owner;
-			ObjectValue loader = owner.getClassLoader();
 			VirtualMachine vm = owner.getVM();
 			tryCatchBlocks = blocks.stream()
-				.map(x -> new VMTryCatchBlock(x.start, x.end, x.handler, x.type, vm, loader))
+				.map(x -> new VMTryCatchBlock(x.start, x.end, x.handler, x.type, vm, owner))
 				.collect(Collectors.toList());
 		}
 		this.tryCatchBlocks = tryCatchBlocks;
@@ -304,18 +303,16 @@ public final class SimpleJavaMethod implements JavaMethod {
 	private void resolveReturnType() {
 		InstanceClass owner = this.owner;
 		VirtualMachine vm = owner.getVM();
-		ObjectValue cl = owner.getClassLoader();
-		returnType = vm.getOperations().findClass(cl, getType().getReturnType(), false);
+		returnType = vm.getOperations().findClass(owner, getType().getReturnType(), false);
 	}
 
 	private void resolveArgumentTypes() {
 		InstanceClass owner = this.owner;
 		VirtualMachine vm = owner.getVM();
-		ObjectValue cl = owner.getClassLoader();
 		Type[] types = getType().getArgumentTypes();
 		JavaClass[] arr = new JavaClass[types.length];
 		for (int i = 0; i < types.length; i++) {
-			arr[i] = vm.getOperations().findClass(cl, types[i], false);
+			arr[i] = vm.getOperations().findClass(owner, types[i], false);
 		}
 		argumentTypes = arr;
 	}
@@ -327,10 +324,9 @@ public final class SimpleJavaMethod implements JavaMethod {
 		if (exceptions == null || exceptions.isEmpty()) {
 			exceptionTypes = new JavaClass[0];
 		} else {
-			ObjectValue cl = owner.getClassLoader();
 			JavaClass[] arr = new JavaClass[exceptions.size()];
 			for (int i = 0; i < exceptions.size(); i++) {
-				arr[i] = vm.getOperations().findClass(cl, exceptions.get(i), false);
+				arr[i] = vm.getOperations().findClass(owner, exceptions.get(i), false);
 			}
 			exceptionTypes = arr;
 		}

@@ -20,7 +20,7 @@ public final class CastProcessor implements InstructionProcessor<TypeInsnNode> {
 	@Override
 	public Result execute(TypeInsnNode insn, ExecutionContext<?> ctx) {
 		String desc = AsmUtil.normalizeDescriptor(insn.desc);
-		JavaClass type = ctx.getOperations().findClass(ctx.getOwner().getClassLoader(), desc, true);
+		JavaClass type = ctx.getOperations().findClass(ctx.getOwner(), desc, true);
 		InsnList list = ctx.getMethod().getNode().instructions;
 		list.set(insn, new VMTypeInsnNode(insn, VMOpcodes.VM_CHECKCAST, type));
 		ctx.setInsnPosition(ctx.getInsnPosition() - 1);

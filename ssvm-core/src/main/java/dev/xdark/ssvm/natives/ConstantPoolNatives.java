@@ -45,7 +45,7 @@ public class ConstantPoolNatives {
 			ConstPoolEntry item = cf.getCp(index);
 			String className = ((CpUtf8) cf.getCp(((CpClass) item).getIndex())).getText();
 			VMOperations ops = vm.getOperations();
-			JavaClass result = ops.findClass(ctx.getMethod().getOwner().getClassLoader(), className, false);
+			JavaClass result = ops.findClass(ctx.getOwner(), className, false);
 			ctx.setResult(result.getOop());
 			return Result.ABORT;
 		});
@@ -55,7 +55,7 @@ public class ConstantPoolNatives {
 			int index = cpRangeCheck(vm, ctx, cf);
 			ConstPoolEntry item = cf.getCp(index);
 			String className = ((CpUtf8) cf.getCp(((CpClass) item).getIndex())).getText();
-			JavaClass result = vm.getClassLoaders().getClassLoaderData(ctx.getMethod().getOwner().getClassLoader()).getClass(className);
+			JavaClass result = vm.getClassLoaders().getClassLoaderData(ctx.getOwner()).getClass(className);
 			if (result == null) {
 				ctx.setResult(vm.getMemoryManager().nullValue());
 			} else {

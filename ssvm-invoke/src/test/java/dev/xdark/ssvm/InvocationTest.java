@@ -27,7 +27,7 @@ public class InvocationTest {
 			java_lang_long.getMethod("valueOf", "(J)Ljava/lang/Long;"),
 			Argument.int64(value)
 		);
-		primitive = (int) util.invokeInt(
+		primitive = util.invokeInt(
 			java_lang_long.getMethod("intValue", "()I"),
 			Argument.reference(wrapper)
 		);

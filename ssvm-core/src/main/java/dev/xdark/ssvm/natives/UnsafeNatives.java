@@ -3,6 +3,7 @@ package dev.xdark.ssvm.natives;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
+import dev.xdark.ssvm.classloading.ClassDefinitionOption;
 import dev.xdark.ssvm.classloading.ParsedClassData;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.PanicException;
@@ -23,11 +24,13 @@ import me.coley.cafedude.classfile.ConstPool;
 import me.coley.cafedude.classfile.constant.ConstPoolEntry;
 import me.coley.cafedude.classfile.constant.CpString;
 import me.coley.cafedude.classfile.constant.CpUtf8;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -342,7 +345,7 @@ public class UnsafeNatives {
 			int length = locals.loadInt(4);
 			ObjectValue pd = locals.loadReference(6);
 			byte[] bytes = ops.toJavaBytes(b);
-			InstanceClass defined = ops.defineClass(loader, ops.readUtf8(name), bytes, off, length, pd, "JVM_DefineClass", true);
+			InstanceClass defined = ops.defineClass(loader, ops.readUtf8(name), bytes, off, length, pd, "JVM_DefineClass");
 			ctx.setResult(defined.getOop());
 			return Result.ABORT;
 		});
@@ -382,12 +385,13 @@ public class UnsafeNatives {
 			byte[] array = ops.toJavaBytes(bytes);
 			ParsedClassData result = vm.getClassDefiner().parseClass(null, array, 0, array.length, "JVM_DefineClass");
 			if (result == null) {
-				ops.throwException(vm.getSymbols().java_lang_ClassNotFoundException(), "Invalid class");
+				ops.throwException(vm.getSymbols().java_lang_NoClassDefFoundError(), "Invalid class");
+				return Result.ABORT;
 			}
+			// Patch bytecode with new name
 			ObjectValue loader = klass.getClassLoader();
-			InstanceClass generated = ops.defineClass(loader, result, vm.getMemoryManager().nullValue(), "JVM_DefineClass", true);
+			InstanceClass generated = ops.defineClass(loader, result, vm.getMemoryManager().nullValue(), "JVM_DefineClass", ClassDefinitionOption.ANONYMOUS);
 
-			// force link
 			ClassNode node = generated.getNode();
 			node.access |= ACC_VM_HIDDEN;
 
@@ -768,5 +772,12 @@ public class UnsafeNatives {
 		public String copyMemory() {
 			return "copyMemory0";
 		}
+	}
+
+	static Type rewrite(Type type, String oldName, Type newType) {
+		if (oldName.equals(type.getInternalName())) {
+			return newType;
+		}
+		return type;
 	}
 }

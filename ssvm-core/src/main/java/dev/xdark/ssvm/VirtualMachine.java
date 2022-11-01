@@ -131,7 +131,7 @@ public class VirtualMachine implements VMEventCollection {
 	}
 
 	protected ObjectSynchronizer createObjectSynchronizer() {
-		return new LockObjectSynchronizer(1024);
+		return new LockObjectSynchronizer();
 	}
 
 	protected MemoryManager createMemoryManager() {
@@ -513,7 +513,7 @@ public class VirtualMachine implements VMEventCollection {
 			// This is essentially the same hack HotSpot does when VM is starting up
 			// https://github.com/openjdk/jdk/blob/8ecdaa68111f2e060a3f46a5cf6f2ba95c9ebad1/src/hotspot/share/memory/universe.cpp#L480
 			MemoryManager memoryManager = this.memoryManager;
-			ClassLoaderData data = classLoaders.setClassLoaderData(memoryManager.nullValue());
+			ClassLoaderData data = classLoaders.createClassLoaderData(memoryManager.nullValue());
 			InstanceClass jlc = internalLink("java/lang/Class");
 			internalLink("java/lang/Object");
 			// After we link both, we need to fix all classes who have no mirrors
@@ -681,6 +681,6 @@ public class VirtualMachine implements VMEventCollection {
 		if (result == null) {
 			throw new PanicException("Bootstrap class not found: " + name);
 		}
-		return operations.defineClass(memoryManager.nullValue(), result, memoryManager.nullValue(), "JVM_DefineClass", true);
+		return operations.defineClass(memoryManager.nullValue(), result, memoryManager.nullValue(), "JVM_DefineClass");
 	}
 }

@@ -1,7 +1,6 @@
 package dev.xdark.ssvm.util;
 
 import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.thread.backtrace.Backtrace;

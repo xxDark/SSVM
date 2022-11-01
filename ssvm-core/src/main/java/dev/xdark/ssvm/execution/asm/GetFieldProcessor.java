@@ -26,7 +26,7 @@ public final class GetFieldProcessor implements InstructionProcessor<FieldInsnNo
 	@Override
 	public Result execute(FieldInsnNode insn, ExecutionContext<?> ctx) {
 		if (AsmUtil.isValid(insn)) {
-			InstanceClass klass = (InstanceClass) ctx.getOperations().findClass(ctx.getClassLoader(), insn.owner, true);
+			InstanceClass klass = (InstanceClass) ctx.getOperations().findClass(ctx.getOwner(), insn.owner, true);
 			JavaField field;
 			int sort;
 			try {

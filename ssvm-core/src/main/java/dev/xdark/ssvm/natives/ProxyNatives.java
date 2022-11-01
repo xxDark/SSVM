@@ -2,6 +2,7 @@ package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.VMInterface;
+import dev.xdark.ssvm.classloading.ClassDefinitionOption;
 import dev.xdark.ssvm.classloading.ParsedClassData;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
@@ -42,7 +43,7 @@ public class ProxyNatives {
 				ops.throwException(symbols.java_lang_InternalError(), "Invalid bytecode");
 			}
 			ObjectValue nullValue = vm.getMemoryManager().nullValue();
-			InstanceClass result = ops.defineClass(loader, parsed, nullValue, "JVM_DefineClass", false);
+			InstanceClass result = ops.defineClass(loader, parsed, nullValue, "JVM_DefineClass", ClassDefinitionOption.ANONYMOUS);
 			ctx.setResult(result.getOop());
 			return Result.ABORT;
 		});

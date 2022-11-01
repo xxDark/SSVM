@@ -31,9 +31,12 @@ import java.util.stream.Collectors;
 @UtilityClass
 public class TestUtil {
 
-	public void test(Class<?> klass, boolean bootstrap, Consumer<InstanceClass> init) {
+	public final int BOOTSTRAP = 1;
+	public final int SYSTEM = 2;
+
+	public void test(Class<?> klass, int flag, Consumer<InstanceClass> init) {
 		VirtualMachine vm = newVirtualMachine();
-		if (bootstrap) {
+		if ((flag & BOOTSTRAP) != 0) {
 			vm.bootstrap();
 		} else {
 			vm.initialize();
@@ -52,9 +55,20 @@ public class TestUtil {
 			throw new RuntimeException(ex);
 		}
 		VMOperations ops = vm.getOperations();
+		ObjectValue classLoader;
+		if ((flag & SYSTEM) != 0) {
+			JavaMethod m = vm.getSymbols().java_lang_ClassLoader().getMethod("getSystemClassLoader", "()Ljava/lang/ClassLoader;");
+			classLoader = vm.getOperations().invokeReference(m, vm.getThreadStorage().newLocals(m));
+		} else {
+			classLoader = vm.getMemoryManager().nullValue();
+		}
 		ObjectValue nullValue = vm.getMemoryManager().nullValue();
-		InstanceClass res = ops.defineClass(nullValue, null, result, 0, result.length, nullValue, "JVM_DefineClass", true);
-		ops.initialize(res);
+		InstanceClass res = ops.defineClass(classLoader, null, result, 0, result.length, nullValue, "JVM_DefineClass");
+		try {
+			ops.initialize(res);
+		} catch (VMException ex) {
+			handleException(vm, ex);
+		}
 		if (init != null) {
 			init.accept(res);
 		}
@@ -70,27 +84,37 @@ public class TestUtil {
 			try {
 				ops.invokeVoid(m, ts.newLocals(m));
 			} catch (VMException ex) {
-				InstanceValue oop = ex.getOop();
-				System.err.println(oop);
-				try {
-					JavaMethod printStackTrace = vm.getRuntimeResolver().resolveVirtualMethod(oop, "printStackTrace", "()V");
-					Locals locals = ts.newLocals(printStackTrace);
-					locals.setReference(0, oop);
-					ops.invokeVoid(printStackTrace, locals);
-				} catch (VMException ex1) {
-					System.err.println(ex1.getOop());
-				}
-				throw new TestAbortedException();
+				handleException(vm, ex);
 			}
 		}
 	}
 
+	private static void handleException(VirtualMachine vm, VMException ex) {
+		InstanceValue oop = ex.getOop();
+		System.err.println(oop);
+		try {
+			JavaMethod printStackTrace = vm.getRuntimeResolver().resolveVirtualMethod(oop, "printStackTrace", "()V");
+			Locals locals = vm.getThreadStorage().newLocals(printStackTrace);
+			locals.setReference(0, oop);
+			vm.getOperations().invokeVoid(printStackTrace, locals);
+		} catch (VMException ex1) {
+			System.err.println(ex1.getOop());
+		}
+		TestAbortedException t = new TestAbortedException();
+		t.initCause(ex);
+		throw t;
+	}
+
+	public void test(Class<?> klass, int flag) {
+		test(klass, flag, null);
+	}
+
 	public void test(Class<?> klass, boolean bootstrap) {
-		test(klass, bootstrap, null);
+		test(klass, bootstrap ? BOOTSTRAP : 0);
 	}
 
 	public void test(Class<?> klass) {
-		test(klass, false, null);
+		test(klass, 0, null);
 	}
 
 	private VirtualMachine newVirtualMachine() {

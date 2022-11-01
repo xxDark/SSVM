@@ -129,7 +129,7 @@ public class MethodHandleNatives {
 				// Ask VM about caller
 				JavaClass jc = vm.getReflection().getCallerFrame(2).getMethod().getOwner();
 				// Construct MT
-				InstanceValue mt = ops.methodType(jc.getClassLoader(), callerMethod.getType());
+				InstanceValue mt = ops.methodType(jc, callerMethod.getType());
 				// Invoke asType
 				JavaMethod asType = vm.getRuntimeResolver().resolveVirtualMethod(_this, "asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;");
 				Locals table = vm.getThreadStorage().newLocals(asType);
@@ -232,7 +232,7 @@ public class MethodHandleNatives {
 
 		ops.putReference(memberName, "clazz", "Ljava/lang/Class;", clazz.getOop());
 		ops.putReference(memberName, "name", "Ljava/lang/String;", vm.getStringPool().intern(method.getName()));
-		InstanceValue mt = ops.methodType(clazz.getClassLoader(), method.getType());
+		InstanceValue mt = ops.methodType(clazz, method.getType());
 		ops.putReference(memberName, "type", "Ljava/lang/Object;", mt);
 		int refKind;
 		if ((method.getModifiers() & ACC_STATIC) == 0) {
@@ -252,7 +252,7 @@ public class MethodHandleNatives {
 
 		ops.putReference(memberName, "clazz", "Ljava/lang/Class;", clazz.getOop());
 		ops.putReference(memberName, "name", "Ljava/lang/String;", vm.getStringPool().intern(method.getName()));
-		InstanceValue mt = ops.methodType(clazz.getClassLoader(), method.getType());
+		InstanceValue mt = ops.methodType(clazz, method.getType());
 		ops.putReference(memberName, "type", "Ljava/lang/Object;", mt);
 		ops.initMethodMember(REF_newInvokeSpecial, memberName, method, IS_CONSTRUCTOR);
 	}

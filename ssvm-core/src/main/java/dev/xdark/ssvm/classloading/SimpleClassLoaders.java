@@ -2,11 +2,12 @@ package dev.xdark.ssvm.classloading;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.inject.InjectedClassLayout;
-import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.metadata.MetadataStorage;
 import dev.xdark.ssvm.metadata.SimpleMetadataStorage;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.operation.VMOperations;
+import dev.xdark.ssvm.util.Assertions;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 
@@ -33,7 +34,7 @@ public class SimpleClassLoaders implements ClassLoaders {
 	}
 
 	@Override
-	public synchronized ClassLoaderData setClassLoaderData(ObjectValue classLoader) {
+	public synchronized ClassLoaderData createClassLoaderData(ObjectValue classLoader) {
 		if (classLoader.isNull()) {
 			if (bootClassLoaderData != null) {
 				throw new IllegalStateException("Class loader data for boot loader is already set");
@@ -47,6 +48,27 @@ public class SimpleClassLoaders implements ClassLoaders {
 			classLoaders.add(instance);
 			return data;
 		}
+	}
+
+	@Override
+	public ClassLoaderData createAnonymousClassLoaderData(InstanceClass klass) {
+		ClassLoaderData original = getClassLoaderData(klass.getClassLoader());
+		Assertions.notNull(original, "class loader data must be set");
+		ClassLoaderData delegate = new AnonymousClassLoaderData(createClassLoaderData(), original);
+		vm.getOperations().putInt(klass.getOop(), InjectedClassLayout.java_lang_Class_anonymousClassLoader.name(), classLoaderMap.register(delegate));
+		return delegate;
+	}
+
+	@Override
+	public ClassLoaderData getClassLoaderData(JavaClass klass) {
+		InstanceValue oop = klass.getOop();
+		if (oop != null) {
+			int id = vm.getOperations().getInt(oop, InjectedClassLayout.java_lang_Class_anonymousClassLoader.name());
+			if (id > 0) {
+				return classLoaderMap.lookup(id);
+			}
+		}
+		return getClassLoaderData(klass.getClassLoader());
 	}
 
 	@Override

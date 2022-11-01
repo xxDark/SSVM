@@ -16,7 +16,7 @@ public final class InstanceofProcessor implements InstructionProcessor<TypeInsnN
 	@Override
 	public Result execute(TypeInsnNode insn, ExecutionContext<?> ctx) {
 		VMOperations ops = ctx.getOperations();
-		JavaClass klass = ops.findClass(ctx.getClassLoader(), insn.desc, false);
+		JavaClass klass = ops.findClass(ctx.getOwner(), insn.desc, false);
 		Stack stack = ctx.getStack();
 		boolean result = ops.isInstanceOf(stack.popReference(), klass);
 		stack.pushInt(result ? 1 : 0);

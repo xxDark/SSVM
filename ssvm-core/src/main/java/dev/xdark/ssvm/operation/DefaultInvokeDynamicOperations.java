@@ -72,7 +72,7 @@ public final class DefaultInvokeDynamicOperations implements InvokeDynamicOperat
 			linkArgs.setInt(1, 0);
 			linkArgs.setReference(2, linker);
 			linkArgs.setReference(3, stringPool.intern(insn.name));
-			linkArgs.setReference(4, ops.methodType(caller.getClassLoader(), Type.getMethodType(insn.desc)));
+			linkArgs.setReference(4, ops.methodType(caller, Type.getMethodType(insn.desc)));
 			linkArgs.setReference(5, bsmArgs);
 			linkArgs.setReference(6, appendix);
 		} else {
@@ -80,7 +80,7 @@ public final class DefaultInvokeDynamicOperations implements InvokeDynamicOperat
 			linkArgs.setReference(0, caller.getOop());
 			linkArgs.setReference(1, linker);
 			linkArgs.setReference(2, stringPool.intern(insn.name));
-			linkArgs.setReference(3, ops.methodType(caller.getClassLoader(), Type.getMethodType(insn.desc)));
+			linkArgs.setReference(3, ops.methodType(caller, Type.getMethodType(insn.desc)));
 			linkArgs.setReference(4, bsmArgs);
 			linkArgs.setReference(5, appendix);
 		}
@@ -194,9 +194,10 @@ public final class DefaultInvokeDynamicOperations implements InvokeDynamicOperat
 			Type type = (Type) arg;
 			ObjectValue classLoader = caller.getClassLoader();
 			if (type.getSort() == Type.METHOD) {
+				// TODO fix me
 				return ops.methodType(classLoader, type);
 			} else {
-				return ops.findClass(classLoader, type, false).getOop();
+				return ops.findClass(caller, type, false).getOop();
 			}
 		}
 		if (arg instanceof Handle) {

@@ -2,7 +2,6 @@ package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.PanicException;
-import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.symbol.Symbols;
@@ -649,7 +648,7 @@ final class InitializedSymbols implements Symbols {
 			writer.visit(Opcodes.V1_8, Modifier.ACC_VM_HIDDEN, "java/lang/invoke/ResolvedMethodName", null, "java/lang/Object", null);
 			byte[] b = writer.toByteArray();
 			ObjectValue nullValue = vm.getMemoryManager().nullValue();
-			jc = vm.getOperations().defineClass(nullValue, "java/lang/invoke/ResolvedMethodName", b, 0, b.length, nullValue, "JVM_DefineClass", true);
+			jc = vm.getOperations().defineClass(nullValue, "java/lang/invoke/ResolvedMethodName", b, 0, b.length, nullValue, "JVM_DefineClass");
 		}
 		return jc;
 	}

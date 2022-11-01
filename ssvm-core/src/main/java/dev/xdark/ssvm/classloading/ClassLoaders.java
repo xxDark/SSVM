@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.classloading;
 
 import dev.xdark.ssvm.mirror.type.InstanceClass;
+import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 
@@ -17,14 +18,28 @@ public interface ClassLoaders {
 	 * Sets class loader data.
 	 *
 	 * @param classLoader Class loader to set data for.
-	 * @return set data.
+	 * @return Set data.
 	 * @throws IllegalStateException If data is already set.
 	 */
-	ClassLoaderData setClassLoaderData(ObjectValue classLoader);
+	ClassLoaderData createClassLoaderData(ObjectValue classLoader);
+
+	/**
+	 * Creates anonymous class loader data.
+	 *
+	 * @param klass Class to create anonymous data for.
+	 * @return Set data.
+	 */
+	ClassLoaderData createAnonymousClassLoaderData(InstanceClass klass);
+
+	/**
+	 * @param klass  to get data for.
+	 * @return class loader data or {@code null}, if unset.
+	 */
+	ClassLoaderData getClassLoaderData(JavaClass klass);
 
 	/**
 	 * @param classLoader Class loader to get data for.
-	 * @return class sotrage or {@code null}, if unset.
+	 * @return class loader data or {@code null}, if unset.
 	 */
 	ClassLoaderData getClassLoaderData(ObjectValue classLoader);
 

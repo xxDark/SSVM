@@ -111,8 +111,7 @@ public final class SimpleJavaField implements JavaField {
 	private void resolveFieldType() {
 		InstanceClass owner = this.owner;
 		VirtualMachine vm = owner.getVM();
-		ObjectValue cl = owner.getClassLoader();
-		type = vm.getOperations().findClass(cl, Type.getType(node.desc), false);
+		type = vm.getOperations().findClass(owner, Type.getType(node.desc), false);
 	}
 
 	private static MemberInfo<JavaField> makeLinkerInfo(JavaField field) {

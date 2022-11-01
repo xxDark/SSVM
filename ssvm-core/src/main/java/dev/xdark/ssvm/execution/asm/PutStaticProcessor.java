@@ -25,18 +25,21 @@ public final class PutStaticProcessor implements InstructionProcessor<FieldInsnN
 	public Result execute(FieldInsnNode insn, ExecutionContext<?> ctx) {
 		if (AsmUtil.isValid(insn)) {
 			VMOperations ops = ctx.getOperations();
-			InstanceClass klass = (InstanceClass) ops.findClass(ctx.getClassLoader(), insn.owner, true);
+			InstanceClass klass = (InstanceClass) ops.findClass(ctx.getOwner(), insn.owner, true);
 			JavaField field = ctx.getLinkResolver().resolveStaticField(klass, insn.name, insn.desc);
-			int sort = field.getType().getSort();
-			int opcode;
-			if (sort >= ARRAY) {
-				opcode = VM_PUTSTATIC_REFERENCE;
-			} else {
-				opcode = VM_PUTSTATIC_BOOLEAN + (sort - 1);
+			if (AsmUtil.isValid(insn)) {
+				// We double-check because the method may be called on class initialization.
+				int sort = field.getType().getSort();
+				int opcode;
+				if (sort >= ARRAY) {
+					opcode = VM_PUTSTATIC_REFERENCE;
+				} else {
+					opcode = VM_PUTSTATIC_BOOLEAN + (sort - 1);
+				}
+				InsnList list = ctx.getMethod().getNode().instructions;
+				list.set(insn, new VMFieldInsnNode(insn, opcode, field));
+				ops.initialize(field.getOwner());
 			}
-			InsnList list = ctx.getMethod().getNode().instructions;
-			list.set(insn, new VMFieldInsnNode(insn, opcode, field));
-			ops.initialize(field.getOwner());
 		}
 		ctx.setInsnPosition(ctx.getInsnPosition() - 1);
 		return Result.CONTINUE;

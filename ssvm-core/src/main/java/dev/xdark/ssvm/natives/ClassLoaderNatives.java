@@ -4,6 +4,7 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.asm.Modifier;
+import dev.xdark.ssvm.classloading.ClassDefinitionOption;
 import dev.xdark.ssvm.classloading.ClassLoaderData;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
@@ -36,7 +37,7 @@ public class ClassLoaderNatives {
 		InstanceClass classLoader = symbols.java_lang_ClassLoader();
 		vmi.setInvoker(classLoader, "registerNatives", "()V", MethodInvoker.noop());
 		MethodInvoker initHook = MethodInvoker.interpreted(ctx -> {
-			vm.getClassLoaders().setClassLoaderData(ctx.getLocals().loadReference(0));
+			vm.getClassLoaders().createClassLoaderData(ctx.getLocals().loadReference(0));
 			return Result.CONTINUE;
 		});
 		if (!vmi.setInvoker(classLoader, "<init>", "(Ljava/lang/Void;Ljava/lang/String;Ljava/lang/ClassLoader;)V", initHook)) {
@@ -71,9 +72,7 @@ public class ClassLoaderNatives {
 				}
 				vm.getClassLoaders().setClassData(jc, classData);
 				if (locals.loadInt(7) != 0) {
-					if (jc instanceof InstanceClass) {
-						vm.getOperations().initialize((InstanceClass) jc);
-					}
+					vm.getOperations().initialize(jc);
 				}
 				ctx.setResult(jc.getOop());
 				return Result.ABORT;
@@ -119,7 +118,7 @@ public class ClassLoaderNatives {
 	}
 
 	private static BiFunction<ExecutionContext<?>, Boolean, InstanceClass> makeClassDefiner(VirtualMachine vm, int argOffset, boolean withSource) {
-		return (ctx, link) -> {
+		return (ctx, hidden) -> {
 			VMOperations ops = vm.getOperations();
 			Locals locals = ctx.getLocals();
 			ObjectValue loader = locals.loadReference(0);
@@ -130,7 +129,7 @@ public class ClassLoaderNatives {
 			ObjectValue pd = locals.loadReference(argOffset + 5);
 			ObjectValue source = withSource ? locals.loadReference(argOffset + 6) : vm.getMemoryManager().nullValue();
 			byte[] bytes = ops.toJavaBytes(b);
-			return ops.defineClass(loader, ops.readUtf8(name), bytes, off, length, pd, ops.readUtf8(source), link);
+			return ops.defineClass(loader, ops.readUtf8(name), bytes, off, length, pd, ops.readUtf8(source), hidden ? ClassDefinitionOption.ANONYMOUS : 0);
 		};
 	}
 

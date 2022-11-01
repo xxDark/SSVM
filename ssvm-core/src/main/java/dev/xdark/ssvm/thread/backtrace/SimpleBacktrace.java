@@ -49,7 +49,10 @@ public final class SimpleBacktrace implements Backtrace {
 
 	@Override
 	public ExecutionContext<?> at(int index) {
-		return frames.get(frame - 1 - index);
+		if (index <= 0) {
+			throw new IllegalArgumentException("Out of bounds");
+		}
+		return frames.get(frame - index);
 	}
 
 	@Override

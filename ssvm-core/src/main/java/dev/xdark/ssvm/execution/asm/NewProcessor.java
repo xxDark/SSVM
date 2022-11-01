@@ -19,7 +19,7 @@ public final class NewProcessor implements InstructionProcessor<TypeInsnNode> {
 	@Override
 	public Result execute(TypeInsnNode insn, ExecutionContext<?> ctx) {
 		String desc = insn.desc;
-		InstanceClass klass = (InstanceClass) ctx.getOperations().findClass(ctx.getClassLoader(), desc, true);
+		InstanceClass klass = (InstanceClass) ctx.getOperations().findClass(ctx.getOwner(), desc, true);
 		InsnList list = ctx.getMethod().getNode().instructions;
 		list.set(insn, new VMTypeInsnNode(insn, VMOpcodes.VM_NEW, klass));
 		ctx.setInsnPosition(ctx.getInsnPosition() - 1);

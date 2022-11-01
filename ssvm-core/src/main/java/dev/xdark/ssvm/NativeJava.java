@@ -516,6 +516,7 @@ public final class NativeJava {
 			map.put("java/lang/Class", klass -> {
 				List<FieldNode> fields = klass.getNode().fields;
 				fields.add(InjectedClassLayout.java_lang_Class_id.newNode());
+				fields.add(InjectedClassLayout.java_lang_Class_anonymousClassLoader.newNode());
 				fields.add(InjectedClassLayout.java_lang_Class_protectionDomain.newNode());
 			});
 			map.put("java/lang/ClassLoader", klass -> {
@@ -912,10 +913,5 @@ public final class NativeJava {
 		vmi.setProcessor(VM_GETFIELD_DOUBLE, new GetFieldDoubleProcessor());
 		vmi.setProcessor(VM_GETFIELD_REFERENCE, new GetFieldReferenceProcessor());
 		//</editor-fold>
-	}
-
-	private static void makeHiddenMethod(JavaMethod method) {
-		MethodNode node = method.getNode();
-		node.access |= Modifier.ACC_HIDDEN_FRAME;
 	}
 }

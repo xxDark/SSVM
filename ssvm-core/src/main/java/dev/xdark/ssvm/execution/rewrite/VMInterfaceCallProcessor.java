@@ -23,7 +23,7 @@ public final class VMInterfaceCallProcessor extends AbstractVMCallProcessor {
 		VMOperations helper = vm.getOperations();
 		JavaClass javaClass = insn.getJavaClass();
 		if (javaClass == null) {
-			javaClass = helper.findClass(ctx.getOwner().getClassLoader(), callInfo.owner, true);
+			javaClass = helper.findClass(ctx.getOwner(), callInfo.owner, true);
 			insn.setJavaClass(javaClass);
 		}
 		int args = insn.getArgCount();

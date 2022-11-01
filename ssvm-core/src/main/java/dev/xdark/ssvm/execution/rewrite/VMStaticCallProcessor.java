@@ -15,7 +15,7 @@ public class VMStaticCallProcessor extends AbstractVMCallProcessor {
 	@Override
 	protected JavaMethod resolveMethod(VMCallInsnNode insn, ExecutionContext<?> ctx) {
 		MethodInsnNode callInfo = insn.getDelegate();
-		InstanceClass klass = (InstanceClass) ctx.getOperations().findClass(ctx.getClassLoader(), callInfo.owner, true);
+		InstanceClass klass = (InstanceClass) ctx.getOperations().findClass(ctx.getOwner(), callInfo.owner, true);
 		JavaMethod method = ctx.getLinkResolver().resolveStaticMethod(klass, callInfo.name, callInfo.desc);
 		insn.setResolved(method);
 		return method;

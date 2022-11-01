@@ -2,7 +2,6 @@ package dev.xdark.ssvm.execution;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
-import dev.xdark.ssvm.value.ObjectValue;
 import lombok.RequiredArgsConstructor;
 import org.objectweb.asm.tree.LabelNode;
 
@@ -16,7 +15,7 @@ public final class VMTryCatchBlock {
 	private final LabelNode start, end, handler;
 	private final String type;
 	private final VirtualMachine vm;
-	private final ObjectValue loader;
+	private final InstanceClass host;
 	private InstanceClass jc;
 
 	/**
@@ -50,7 +49,7 @@ public final class VMTryCatchBlock {
 		}
 		InstanceClass jc = this.jc;
 		if (jc == null) {
-			return this.jc = (InstanceClass) vm.getOperations().findClass(loader, type, false);
+			return this.jc = (InstanceClass) vm.getOperations().findClass(host, type, false);
 		}
 		return jc;
 	}

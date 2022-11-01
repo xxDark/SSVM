@@ -8,12 +8,11 @@ import java.util.concurrent.locks.ReentrantLock;
 
 final class LockMutex implements Mutex {
 
-	private final int id;
+	int id;
 	private final ReentrantLock lock;
 	private final Condition condition;
 
-	LockMutex(int id) {
-		this.id = id;
+	LockMutex() {
 		condition = (lock = new ReentrantLock()).newCondition();
 	}
 

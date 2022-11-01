@@ -28,7 +28,7 @@ public final class PutFieldProcessor implements InstructionProcessor<FieldInsnNo
 	public Result execute(FieldInsnNode insn, ExecutionContext<?> ctx) {
 		if (AsmUtil.isValid(insn)) {
 			VMOperations ops = ctx.getOperations();
-			InstanceClass klass = (InstanceClass) ops.findClass(ctx.getClassLoader(), insn.owner, true);
+			InstanceClass klass = (InstanceClass) ops.findClass(ctx.getOwner(), insn.owner, true);
 			JavaField field;
 			int sort;
 			try {

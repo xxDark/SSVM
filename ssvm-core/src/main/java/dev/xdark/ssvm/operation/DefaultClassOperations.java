@@ -36,6 +36,7 @@ import dev.xdark.ssvm.util.CloseableLock;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -71,7 +72,7 @@ public final class DefaultClassOperations implements ClassOperations {
 	private final VMOperations ops;
 
 	@Override
-	public void link(InstanceClass instanceClass) {
+	public void link(@NotNull InstanceClass instanceClass) {
 		InitializationState state = instanceClass.state();
 		state.lock();
 		state.set(InstanceClass.State.IN_PROGRESS);
@@ -197,7 +198,7 @@ public final class DefaultClassOperations implements ClassOperations {
 	}
 
 	@Override
-	public void initialize(InstanceClass instanceClass) {
+	public void initialize(@NotNull InstanceClass instanceClass) {
 		InitializationState state = instanceClass.state();
 		state.lock();
 		if (state.is(InstanceClass.State.COMPLETE) || state.is(InstanceClass.State.IN_PROGRESS)) {
@@ -232,7 +233,7 @@ public final class DefaultClassOperations implements ClassOperations {
 	}
 
 	@Override
-	public boolean isInstanceOf(ObjectValue value, JavaClass type) {
+	public boolean isInstanceOf(@NotNull ObjectValue value, @NotNull JavaClass type) {
 		if (value.isNull()) {
 			return false;
 		}
@@ -240,12 +241,12 @@ public final class DefaultClassOperations implements ClassOperations {
 	}
 
 	@Override
-	public JavaClass findClass(JavaClass klass, String internalName, boolean initialize) {
+	public @NotNull JavaClass findClass(JavaClass klass, String internalName, boolean initialize) {
 		return findClass0(classLoaders.getClassLoaderData(klass), klass.getClassLoader(), internalName, initialize, true);
 	}
 
 	@Override
-	public JavaClass findClass(ObjectValue classLoader, String internalName, boolean initialize) {
+	public @NotNull JavaClass findClass(ObjectValue classLoader, String internalName, boolean initialize) {
 		return findClass0(classLoaders.getClassLoaderData(classLoader), classLoader, internalName, initialize, true);
 	}
 
@@ -256,7 +257,7 @@ public final class DefaultClassOperations implements ClassOperations {
 	}
 
 	@Override
-	public InstanceClass defineClass(ObjectValue classLoader, ParsedClassData data, ObjectValue protectionDomain, String source, int options) {
+	public @NotNull InstanceClass defineClass(ObjectValue classLoader, ParsedClassData data, ObjectValue protectionDomain, String source, int options) {
 		ClassReader reader = data.getClassReader();
 		InstanceClass jc = mirrorFactory.newInstanceClass(classLoader, reader, data.getNode());
 		InitializationState state = jc.state();
@@ -288,7 +289,7 @@ public final class DefaultClassOperations implements ClassOperations {
 	}
 
 	@Override
-	public InstanceClass defineClass(ObjectValue classLoader, String name, byte[] b, int off, int len, ObjectValue protectionDomain, String source, int options) {
+	public @NotNull InstanceClass defineClass(ObjectValue classLoader, String name, byte[] b, int off, int len, ObjectValue protectionDomain, String source, int options) {
 		VMOperations ops = this.ops;
 		if ((off | len | (off + len) | (b.length - (off + len))) < 0) {
 			ops.throwException(symbols.java_lang_ArrayIndexOutOfBoundsException());
@@ -310,7 +311,7 @@ public final class DefaultClassOperations implements ClassOperations {
 	}
 
 	@Override
-	public JavaClass findClass(JavaClass klass, Type type, boolean initialize) {
+	public @NotNull JavaClass findClass(JavaClass klass, Type type, boolean initialize) {
 		int sort = type.getSort();
 		if (sort < Type.ARRAY) {
 			return lookupPrimitive(sort);
@@ -319,7 +320,7 @@ public final class DefaultClassOperations implements ClassOperations {
 	}
 
 	@Override
-	public JavaClass findClass(ObjectValue classLoader, Type type, boolean initialize) {
+	public @NotNull JavaClass findClass(ObjectValue classLoader, Type type, boolean initialize) {
 		int sort = type.getSort();
 		if (sort < Type.ARRAY) {
 			return lookupPrimitive(sort);

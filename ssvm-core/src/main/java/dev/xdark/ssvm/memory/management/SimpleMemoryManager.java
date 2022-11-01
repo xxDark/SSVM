@@ -82,7 +82,7 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public InstanceValue tryNewInstance(InstanceClass javaClass) {
+	public InstanceValue newInstance(InstanceClass javaClass) {
 		MemoryBlock memory = allocateInstanceMemory(javaClass);
 		if (memory == null) {
 			return null;
@@ -94,22 +94,12 @@ public class SimpleMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public InstanceValue newInstance(InstanceClass javaClass) {
-		return tryNewInstance(javaClass);
-	}
-
-	@Override
-	public <V> JavaValue<V> tryNewJavaInstance(InstanceClass javaClass, V value) {
+	public <V> JavaValue<V> newJavaInstance(InstanceClass javaClass, V value) {
 		MemoryBlock memory = allocateInstanceMemory(javaClass);
 		setClass(memory, javaClass);
 		SimpleJavaValue<V> wrapper = new SimpleJavaValue<>(this, memory, value);
 		objects.put(MemoryAddress.of(memory.getAddress()), wrapper);
 		return wrapper;
-	}
-
-	@Override
-	public <V> JavaValue<V> newJavaInstance(InstanceClass javaClass, V value) {
-		return tryNewJavaInstance(javaClass, value);
 	}
 
 	@Override

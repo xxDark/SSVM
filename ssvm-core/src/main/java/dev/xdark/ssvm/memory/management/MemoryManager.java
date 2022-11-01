@@ -33,30 +33,13 @@ public interface MemoryManager extends ReferenceMap {
 
 	/**
 	 * Allocates new object.
-	 *
-	 * @param javaClass Class of the object.
-	 * @return allocated object.
-	 */
-	InstanceValue tryNewInstance(InstanceClass javaClass);
-
-	/**
-	 * Allocates new object.
 	 * Throws VM exception if allocation fails.
 	 *
 	 * @param javaClass Class of the object.
 	 * @return allocated object.
 	 */
+	// TODO fix me, this can be null in case of OOM
 	InstanceValue newInstance(InstanceClass javaClass);
-
-	/**
-	 * Allocates new Java wrapper.
-	 *
-	 * @param javaClass Class of the object.
-	 * @param value     Java value.
-	 * @param <V>       Type of Java value.
-	 * @return allocated Java wrapper.
-	 */
-	<V> JavaValue<V> tryNewJavaInstance(InstanceClass javaClass, V value);
 
 	/**
 	 * Allocates new Java wrapper.

@@ -54,6 +54,7 @@ import dev.xdark.ssvm.util.Reflection;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.Delegate;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteOrder;
 import java.util.LinkedHashMap;
@@ -483,6 +484,7 @@ public class VirtualMachine implements VMEventCollection {
 	 * @param initialize True if class should be initialized if found.
 	 * @return bootstrap class or {@code null}, if not found.
 	 */
+	@Nullable
 	public JavaClass findBootstrapClass(String name, boolean initialize) {
 		return operations.findBootstrapClassOrNull(name, initialize);
 	}
@@ -493,6 +495,7 @@ public class VirtualMachine implements VMEventCollection {
 	 * @param name Name of the class.
 	 * @return bootstrap class or {@code null}, if not found.
 	 */
+	@Nullable
 	public JavaClass findBootstrapClass(String name) {
 		return findBootstrapClass(name, false);
 	}

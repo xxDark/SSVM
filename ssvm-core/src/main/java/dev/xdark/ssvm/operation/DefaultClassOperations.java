@@ -241,12 +241,18 @@ public final class DefaultClassOperations implements ClassOperations {
 
 	@Override
 	public JavaClass findClass(JavaClass klass, String internalName, boolean initialize) {
-		return findClass0(classLoaders.getClassLoaderData(klass), klass.getClassLoader(), internalName, initialize);
+		return findClass0(classLoaders.getClassLoaderData(klass), klass.getClassLoader(), internalName, initialize, true);
 	}
 
 	@Override
 	public JavaClass findClass(ObjectValue classLoader, String internalName, boolean initialize) {
-		return findClass0(classLoaders.getClassLoaderData(classLoader), classLoader, internalName, initialize);
+		return findClass0(classLoaders.getClassLoaderData(classLoader), classLoader, internalName, initialize, true);
+	}
+
+	@Override
+	public JavaClass findBootstrapClassOrNull(String internalName, boolean initialize) {
+		ObjectValue cl = memoryManager.nullValue();
+		return findClass0(classLoaders.getClassLoaderData(cl), cl, internalName, initialize, false);
 	}
 
 	@Override
@@ -441,7 +447,7 @@ public final class DefaultClassOperations implements ClassOperations {
 		throw ex;
 	}
 
-	private JavaClass findClass0(ClassLoaderData data, ObjectValue classLoader, String internalName, boolean initialize) {
+	private JavaClass findClass0(ClassLoaderData data, ObjectValue classLoader, String internalName, boolean initialize, boolean _throw) {
 		int dimensions = 0;
 		while (internalName.charAt(dimensions) == '[') {
 			dimensions++;
@@ -478,7 +484,11 @@ public final class DefaultClassOperations implements ClassOperations {
 						klass = classStorage.lookup(result);
 					}
 					if (klass == null) {
-						ops.throwException(symbols.java_lang_ClassNotFoundException(), internalName.replace('/', '.'));
+						if (_throw) {
+							ops.throwException(symbols.java_lang_ClassNotFoundException(), internalName.replace('/', '.'));
+						}
+						dimensions = 0;
+						initialize = false;
 					}
 				}
 				if (initialize) {

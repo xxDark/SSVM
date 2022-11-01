@@ -1,12 +1,14 @@
 package dev.xdark.ssvm.operation;
 
 import dev.xdark.ssvm.execution.ExecutionContext;
+import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.VMException;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.member.JavaField;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.symbol.Symbols;
+import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -24,6 +26,7 @@ import java.util.stream.IntStream;
 @RequiredArgsConstructor
 public final class DefaultExceptionOperations implements ExceptionOperations {
 	private final MemoryManager memoryManager;
+	private final ThreadManager threadManager;
 	private final Symbols symbols;
 	private final VMOperations ops;
 
@@ -61,7 +64,12 @@ public final class DefaultExceptionOperations implements ExceptionOperations {
 	@Override
 	public InstanceValue newException(InstanceClass javaClass, String message, ObjectValue cause) {
 		VMOperations ops = this.ops;
+		ops.initialize(javaClass);
 		InstanceValue instance = memoryManager.newInstance(javaClass);
+		JavaMethod m = javaClass.getMethod("<init>", "()V");
+		Locals locals = threadManager.currentThreadStorage().newLocals(m);
+		locals.setReference(0, instance);
+		ops.invokeVoid(m, locals);
 		if (message != null) {
 			ops.putReference(instance, "detailMessage", "Ljava/lang/String;", ops.newUtf8(message));
 		}

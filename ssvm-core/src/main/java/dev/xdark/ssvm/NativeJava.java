@@ -408,7 +408,6 @@ public final class NativeJava {
 	 */
 	static void initialization(VirtualMachine vm) {
 		//<editor-fold desc="Natives registration">
-		setInstructions(vm);
 		ClassNatives.init(vm);
 		ObjectNatives.init(vm);
 		SystemNatives.init(vm);
@@ -614,7 +613,7 @@ public final class NativeJava {
 	 *
 	 * @param vm VM instance.
 	 */
-	private static void setInstructions(VirtualMachine vm) {
+	static void setInstructions(VirtualMachine vm) {
 		//<editor-fold desc="VM instructions">
 		VMInterface vmi = vm.getInterface();
 		vmi.setProcessor(NOP, new NopProcessor());

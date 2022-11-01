@@ -125,6 +125,16 @@ public interface ClassOperations {
 	JavaClass findClass(ObjectValue classLoader, String internalName, boolean initialize);
 
 	/**
+	 * Attempts to find a bootstrap class in the VM.
+	 *
+	 * @param internalName Class internal name.
+	 * @param initialize   Whether the class should be initialized.
+	 * @return Class instance or {@code null},
+	 * if not found.
+	 */
+	JavaClass findBootstrapClassOrNull(String internalName, boolean initialize);
+
+	/**
 	 * Attempts to find a class in the VM.
 	 * Throws VM exception if class was not found,
 	 * or failed to initialize.

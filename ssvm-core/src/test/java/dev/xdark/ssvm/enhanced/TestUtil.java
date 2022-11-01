@@ -37,11 +37,7 @@ public class TestUtil {
 	public void test(Class<?> klass, int flag, Consumer<InstanceClass> init) {
 		VirtualMachine vm = newVirtualMachine();
 		if ((flag & BOOTSTRAP) != 0) {
-			try {
-				vm.bootstrap();
-			} catch (IllegalStateException ex) {
-				handleException(vm, (VMException) ex.getCause());
-			}
+			vm.bootstrap();
 		} else {
 			vm.initialize();
 			vm.getThreadManager().attachCurrentThread();

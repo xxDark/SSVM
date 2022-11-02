@@ -167,7 +167,9 @@ public class ProcessImplNatives {
                 return Result.ABORT;
             });
             vmi.setInvoker(unixProcessImpl, "destroyProcess", "(IZ)V", (ctx) -> {
-                manager.terminateProcess(ctx.getLocals().loadInt(0));
+                int handle = ctx.getLocals().loadInt(0);
+                manager.terminateProcess(handle);
+                manager.closeProcessHandle(handle);
                 return Result.ABORT;
             });
         }

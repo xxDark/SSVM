@@ -71,7 +71,7 @@ public final class VMOperations implements
 		allocationOperations = new DefaultAllocationOperations(memoryManager, symbols, vm.getPrimitives(), this);
 		conversionOperations = new DefaultConversionOperations(symbols, memoryManager, this);
 		arrayOperations = new DefaultArrayOperations(symbols, this);
-		exceptionOperations = new DefaultExceptionOperations(memoryManager, symbols, this);
+		exceptionOperations = new DefaultExceptionOperations(memoryManager, threadManager, symbols, this);
 		fieldOperations = new DefaultFieldOperations(memoryManager, linkResolver, this);
 		invocationOperations = new DefaultInvocationOperations(vm.getExecutionEngine(), threadManager);
 		primitiveOperations = new DefaultPrimitiveOperations(symbols, threadManager, linkResolver, runtimeResolver, this);

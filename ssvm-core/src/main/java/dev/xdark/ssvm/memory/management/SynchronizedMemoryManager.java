@@ -57,23 +57,9 @@ public class SynchronizedMemoryManager implements MemoryManager {
 	}
 
 	@Override
-	public InstanceValue tryNewInstance(InstanceClass javaClass) {
-		synchronized (mutex) {
-			return memoryManager.tryNewInstance(javaClass);
-		}
-	}
-
-	@Override
 	public InstanceValue newInstance(InstanceClass javaClass) {
 		synchronized (mutex) {
 			return memoryManager.newInstance(javaClass);
-		}
-	}
-
-	@Override
-	public <V> JavaValue<V> tryNewJavaInstance(InstanceClass javaClass, V value) {
-		synchronized (mutex) {
-			return memoryManager.tryNewJavaInstance(javaClass, value);
 		}
 	}
 

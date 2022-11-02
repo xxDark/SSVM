@@ -61,7 +61,7 @@ public class ConstructorAccessorNatives {
 			Locals args = vm.getThreadStorage().newLocals(mn);
 			args.setReference(0, instance);
 			if (passedArgs != null) {
-				Util.copyReflectionArguments(vm, types, passedArgs, args, 0);
+				Util.copyReflectionArguments(vm, types, passedArgs, args, 1);
 			}
 			ops.invokeVoid(mn, args);
 			ctx.setResult(instance);

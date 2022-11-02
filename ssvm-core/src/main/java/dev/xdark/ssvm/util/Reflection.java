@@ -26,19 +26,17 @@ public final class Reflection {
 	 */
 	public ExecutionContext<?> getCallerFrame(int offset) {
 		Backtrace backtrace = vm.getThreadManager().currentOsThread().getBacktrace();
-		ExecutionContext<?> frame = backtrace.at(offset++);
-		JavaMethod caller = frame.getMethod();
-		if (caller.isCallerSensitive()) {
-			while (true) {
-				frame = backtrace.at(offset);
-				JavaMethod method = frame.getMethod();
-				if (method.isCallerSensitive()) {
-					offset++;
-				} else {
-					break;
-				}
+		while (true) {
+			ExecutionContext<?> frame = backtrace.at(offset);
+			if (frame == null) {
+				return null;
+			}
+			JavaMethod method = frame.getMethod();
+			if (method.isHidden()) {
+				offset++;
+			} else {
+				return frame;
 			}
 		}
-		return frame;
 	}
 }

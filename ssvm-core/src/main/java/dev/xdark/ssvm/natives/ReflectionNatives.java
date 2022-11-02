@@ -4,6 +4,7 @@ import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.asm.Modifier;
+import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
@@ -34,12 +35,13 @@ public class ReflectionNatives {
 
 	private static MethodInvoker getCallerClass(VirtualMachine vm, boolean useDepth) {
 		return ctx -> {
-			if (!ctx.getMethod().isCallerSensitive()) {
+			if (!vm.currentOSThread().getBacktrace().at(2).getMethod().isCallerSensitive()) {
 				vm.getOperations().throwException(vm.getSymbols().java_lang_InternalError(), "CallerSensitive annotation expected at frame 1");
 				return Result.ABORT;
 			}
-			int callerOffset = useDepth ? ctx.getLocals().loadInt(0) + 1 : 1;
-			ctx.setResult(vm.getReflection().getCallerFrame(callerOffset).getMethod().getOwner().getOop());
+			int callerOffset = useDepth ? ctx.getLocals().loadInt(0) + 1 : 3;
+			ExecutionContext<?> caller = vm.getReflection().getCallerFrame(callerOffset);
+			ctx.setResult(caller == null ? vm.getMemoryManager().nullValue() : caller.getOwner().getOop());
 			return Result.ABORT;
 		};
 	}

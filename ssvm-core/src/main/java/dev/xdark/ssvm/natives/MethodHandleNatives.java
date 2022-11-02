@@ -295,8 +295,10 @@ public class MethodHandleNatives {
 					case REF_invokeSpecial:
 					case REF_newInvokeSpecial:
 					case REF_invokeVirtual:
-					case REF_invokeInterface:
 						handle = linkResolver.resolveVirtualMethod(clazz, name, desc);
+						break lookup;
+					case REF_invokeInterface:
+						handle = linkResolver.resolveInterfaceMethod(clazz, name, desc);
 						break lookup;
 				}
 				ops.throwException(symbols.java_lang_InternalError(), "unrecognized MemberName format");

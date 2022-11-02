@@ -38,8 +38,11 @@ subprojects {
 
         testCompileOnly lombok
         testAnnotationProcessor lombok
-    }
 
+        compileOnly 'org.jetbrains:annotations:23.0.0'
+        testCompileOnly 'org.jetbrains:annotations:23.0.0'
+
+    }
     test {
         useJUnitPlatform()
     }

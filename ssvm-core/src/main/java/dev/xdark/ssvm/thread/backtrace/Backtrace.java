@@ -27,7 +27,8 @@ public interface Backtrace extends Iterable<ExecutionContext<?>> {
 
 	/**
 	 * @param index Frame index.
-	 * @return Stack frame.
+	 * @return Stack frame or {@code null},
+	 * if accessed stack frame out of bounds.
 	 */
 	ExecutionContext<?> at(int index);
 

@@ -56,6 +56,7 @@ import dev.xdark.ssvm.util.Reflection;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.Delegate;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteOrder;
 import java.util.LinkedHashMap;
@@ -497,14 +498,10 @@ public class VirtualMachine implements VMEventCollection {
 	 * @param name       Name of the class.
 	 * @param initialize True if class should be initialized if found.
 	 * @return bootstrap class or {@code null}, if not found.
-	 * @see dev.xdark.ssvm.operation.ClassOperations#findClass(ObjectValue, String, boolean)
 	 */
+	@Nullable
 	public JavaClass findBootstrapClass(String name, boolean initialize) {
-		try {
-			return operations.findClass(memoryManager.nullValue(), name, initialize);
-		} catch (VMException ignored) {
-			return null;
-		}
+		return operations.findBootstrapClassOrNull(name, initialize);
 	}
 
 	/**
@@ -513,6 +510,7 @@ public class VirtualMachine implements VMEventCollection {
 	 * @param name Name of the class.
 	 * @return bootstrap class or {@code null}, if not found.
 	 */
+	@Nullable
 	public JavaClass findBootstrapClass(String name) {
 		return findBootstrapClass(name, false);
 	}
@@ -560,10 +558,11 @@ public class VirtualMachine implements VMEventCollection {
 			// Post-initialization for initializedVMSymbols
 			// There are some types that have different names on different
 			// JDKs, we need to be able to catch VM exceptions at this point.
+			NativeJava.setInstructions(this);
+			threadManager.attachCurrentThread();
 			initializedVMSymbols.postInit(this);
 			NativeJava.initialization(this);
 			NativeJava.postInitialization(this);
-			threadManager.attachCurrentThread();
 			InstanceClass groupClass = symbols.java_lang_ThreadGroup();
 			ops.initialize(groupClass);
 			ThreadStorage ts = currentOSThread().getStorage();

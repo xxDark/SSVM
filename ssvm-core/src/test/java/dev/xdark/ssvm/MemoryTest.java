@@ -8,11 +8,14 @@ import dev.xdark.ssvm.thread.ThreadStorage;
 import dev.xdark.ssvm.thread.heap.HeapThreadStorage;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Execution(ExecutionMode.SAME_THREAD)
 public class MemoryTest {
 	private static ThreadStorage storage;
 

@@ -42,6 +42,12 @@ public final class LinkResolver {
 		return result.value().member().innerValue();
 	}
 
+	public JavaMethod resolveInterfaceMethod(JavaClass type, String name, String desc) {
+		Result<Resolution<JavaClass, JavaMethod>> result = delegate.resolveInterfaceMethod(type.linkerInfo(), name, desc);
+		linkHelper.checkMethod(type, name, desc, result);
+		return result.value().member().innerValue();
+	}
+
 	public JavaField resolveStaticField(JavaClass type, String name, String desc) {
 		Result<Resolution<JavaClass, JavaField>> result = delegate.resolveStaticField(type.linkerInfo(), name, desc);
 		linkHelper.checkField(type, name, desc, result);

@@ -1,13 +1,12 @@
 package dev.xdark.ssvm.operation;
 
-import dev.xdark.ssvm.classloading.ClassDefinitionOption;
 import dev.xdark.ssvm.classloading.ParsedClassData;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.value.ObjectValue;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Type;
-
-import java.util.Set;
 
 /**
  * VM class operations.
@@ -21,14 +20,14 @@ public interface ClassOperations {
 	 *
 	 * @param instanceClass Class to link.
 	 */
-	void link(InstanceClass instanceClass);
+	void link(@NotNull InstanceClass instanceClass);
 
 	/**
 	 * Initializes instance class.
 	 *
 	 * @param instanceClass Class to initialize.
 	 */
-	void initialize(InstanceClass instanceClass);
+	void initialize(@NotNull InstanceClass instanceClass);
 
 	/**
 	 * Performs an instanceof check.
@@ -37,7 +36,7 @@ public interface ClassOperations {
 	 * @param type  Class to check against.
 	 * @return {@code true} if instance type check succeeds.
 	 */
-	boolean isInstanceOf(ObjectValue value, JavaClass type);
+	boolean isInstanceOf(@NotNull ObjectValue value, @NotNull JavaClass type);
 
 	/**
 	 * Defines new class in the VM.
@@ -50,6 +49,7 @@ public interface ClassOperations {
 	 * @param options          Class definition options.
 	 * @return Defined class.
 	 */
+	@NotNull
 	InstanceClass defineClass(ObjectValue classLoader, ParsedClassData data, ObjectValue protectionDomain, String source, int options);
 
 	/**
@@ -60,7 +60,6 @@ public interface ClassOperations {
 	 * @param data             Parsed class data.
 	 * @param protectionDomain Protection domain.
 	 * @param source           Class source.
-	 * @param options          Class definition options.
 	 * @return Defined class.
 	 */
 	default InstanceClass defineClass(ObjectValue classLoader, ParsedClassData data, ObjectValue protectionDomain, String source) {
@@ -81,6 +80,7 @@ public interface ClassOperations {
 	 * @param options          Class definition options.
 	 * @return Defined class.
 	 */
+	@NotNull
 	InstanceClass defineClass(ObjectValue classLoader, String name, byte[] b, int off, int len, ObjectValue protectionDomain, String source, int options);
 
 	/**
@@ -96,6 +96,7 @@ public interface ClassOperations {
 	 * @param source           Class source.
 	 * @return Defined class.
 	 */
+	@NotNull
 	default InstanceClass defineClass(ObjectValue classLoader, String name, byte[] b, int off, int len, ObjectValue protectionDomain, String source) {
 		return defineClass(classLoader, name, b, off, len, protectionDomain, source, 0);
 	}
@@ -105,11 +106,12 @@ public interface ClassOperations {
 	 * Throws VM exception if class was not found,
 	 * or failed to initialize.
 	 *
-	 * @param klass Host class.
+	 * @param klass        Host class.
 	 * @param internalName Class internal name.
 	 * @param initialize   Whether the class should be initialized.
 	 * @return Class instance.
 	 */
+	@NotNull
 	JavaClass findClass(JavaClass klass, String internalName, boolean initialize);
 
 	/**
@@ -122,18 +124,31 @@ public interface ClassOperations {
 	 * @param initialize   Whether the class should be initialized.
 	 * @return Class instance.
 	 */
+	@NotNull
 	JavaClass findClass(ObjectValue classLoader, String internalName, boolean initialize);
+
+	/**
+	 * Attempts to find a bootstrap class in the VM.
+	 *
+	 * @param internalName Class internal name.
+	 * @param initialize   Whether the class should be initialized.
+	 * @return Class instance or {@code null},
+	 * if not found.
+	 */
+	@Nullable
+	JavaClass findBootstrapClassOrNull(String internalName, boolean initialize);
 
 	/**
 	 * Attempts to find a class in the VM.
 	 * Throws VM exception if class was not found,
 	 * or failed to initialize.
 	 *
-	 * @param klass Host class.
-	 * @param type Class type.
-	 * @param initialize   Whether the class should be initialized.
+	 * @param klass      Host class.
+	 * @param type       Class type.
+	 * @param initialize Whether the class should be initialized.
 	 * @return Class instance.
 	 */
+	@NotNull
 	JavaClass findClass(JavaClass klass, Type type, boolean initialize);
 
 	/**
@@ -146,5 +161,6 @@ public interface ClassOperations {
 	 * @param initialize  Whether the class should be initialized.
 	 * @return Class instance.
 	 */
+	@NotNull
 	JavaClass findClass(ObjectValue classLoader, Type type, boolean initialize);
 }

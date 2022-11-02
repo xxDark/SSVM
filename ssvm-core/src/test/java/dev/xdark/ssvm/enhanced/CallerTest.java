@@ -3,6 +3,7 @@ package dev.xdark.ssvm.enhanced;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
+import sun.reflect.CallerSensitive;
 import sun.reflect.Reflection;
 
 @EnabledOnJre(JRE.JAVA_8)
@@ -13,6 +14,7 @@ public class CallerTest {
 		TestUtil.test(CallerTest.class, true);
 	}
 
+	@CallerSensitive
 	@VMTest
 	private static void callerTest() {
 		if (Reflection.getCallerClass(0) != Reflection.class) {
@@ -24,6 +26,7 @@ public class CallerTest {
 		callerTestInner();
 	}
 
+	@CallerSensitive
 	private static void callerTestInner() {
 		if (Reflection.getCallerClass() != CallerTest.class) {
 			throw new IllegalStateException();

@@ -91,6 +91,9 @@ public class TestUtil {
 
 	private static void handleException(VirtualMachine vm, VMException ex) {
 		InstanceValue oop = ex.getOop();
+		if (oop.getJavaClass() == vm.getSymbols().java_lang_ExceptionInInitializerError()) {
+			oop = (InstanceValue) vm.getOperations().getReference(oop, "exception", "Ljava/lang/Throwable;");
+		}
 		System.err.println(oop);
 		try {
 			JavaMethod printStackTrace = vm.getRuntimeResolver().resolveVirtualMethod(oop, "printStackTrace", "()V");

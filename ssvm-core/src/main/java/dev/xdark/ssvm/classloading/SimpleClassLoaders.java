@@ -28,6 +28,7 @@ public class SimpleClassLoaders implements ClassLoaders {
 	private final MetadataStorage<ClassLoaderData> classLoaderMap = new SimpleMetadataStorage<>();
 	private final VirtualMachine vm;
 	private ClassLoaderData bootClassLoaderData;
+	private long anonymousClassLoaderOffset = -1L;
 
 	public SimpleClassLoaders(VirtualMachine vm) {
 		this.vm = vm;
@@ -55,7 +56,7 @@ public class SimpleClassLoaders implements ClassLoaders {
 		ClassLoaderData original = getClassLoaderData(klass.getClassLoader());
 		Assertions.notNull(original, "class loader data must be set");
 		ClassLoaderData delegate = new AnonymousClassLoaderData(createClassLoaderData(), original);
-		vm.getOperations().putInt(klass.getOop(), InjectedClassLayout.java_lang_Class_anonymousClassLoader.name(), classLoaderMap.register(delegate));
+		klass.getOop().getData().writeInt(anonymousClassLoaderOffset(), classLoaderMap.register(delegate));
 		return delegate;
 	}
 
@@ -63,7 +64,7 @@ public class SimpleClassLoaders implements ClassLoaders {
 	public ClassLoaderData getClassLoaderData(JavaClass klass) {
 		InstanceValue oop = klass.getOop();
 		if (oop != null) {
-			int id = vm.getOperations().getInt(oop, InjectedClassLayout.java_lang_Class_anonymousClassLoader.name());
+			int id = oop.getData().readInt(anonymousClassLoaderOffset());
 			if (id > 0) {
 				return classLoaderMap.lookup(id);
 			}
@@ -101,5 +102,14 @@ public class SimpleClassLoaders implements ClassLoaders {
 	 */
 	protected ClassLoaderData createClassLoaderData() {
 		return new SimpleClassLoaderData();
+	}
+
+	private long anonymousClassLoaderOffset() {
+		long anonymousClassLoaderOffset = this.anonymousClassLoaderOffset;
+		if (anonymousClassLoaderOffset == -1L) {
+			anonymousClassLoaderOffset = vm.getSymbols().java_lang_Class().getField(InjectedClassLayout.java_lang_Class_anonymousClassLoader.name(), "I").getOffset();
+			this.anonymousClassLoaderOffset = anonymousClassLoaderOffset;
+		}
+		return anonymousClassLoaderOffset;
 	}
 }

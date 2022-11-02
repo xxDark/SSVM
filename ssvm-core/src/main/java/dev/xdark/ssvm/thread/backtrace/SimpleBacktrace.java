@@ -52,7 +52,8 @@ public final class SimpleBacktrace implements Backtrace {
 		if (index <= 0) {
 			throw new IllegalArgumentException("Out of bounds");
 		}
-		return frames.get(frame - index);
+		index = frame - index;
+		return index < 0 ? null : frames.get(index);
 	}
 
 	@Override

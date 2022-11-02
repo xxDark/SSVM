@@ -17,6 +17,7 @@ import dev.xdark.ssvm.value.ObjectValue;
 public final class SimpleClassStorage extends SimpleMetadataStorage<JavaClass> implements ClassStorage {
 
 	private final VirtualMachine vm;
+	private long offset = -1L;
 
 	public SimpleClassStorage(VirtualMachine vm) {
 		this.vm = vm;
@@ -24,11 +25,7 @@ public final class SimpleClassStorage extends SimpleMetadataStorage<JavaClass> i
 
 	@Override
 	public JavaClass lookup(ObjectValue oop) {
-		JavaField field = vm.getSymbols().java_lang_Class().getField(
-			InjectedClassLayout.java_lang_Class_id.name(),
-			"I"
-		);
-		int id = oop.getData().readInt(field.getOffset());
+		int id = oop.getData().readInt(offset());
 		JavaClass mirror = lookup(id);
 		Assertions.notNull(mirror, "no mirror");
 		return mirror;
@@ -42,11 +39,20 @@ public final class SimpleClassStorage extends SimpleMetadataStorage<JavaClass> i
 			// Fixed by the VM
 			return id;
 		}
-		JavaField field = vm.getSymbols().java_lang_Class().getField(
-			InjectedClassLayout.java_lang_Class_id.name(),
-			"I"
-		);
-		oop.getData().writeInt(field.getOffset(), id);
+		oop.getData().writeInt(offset(), id);
 		return id;
+	}
+
+	private long offset() {
+		long offset = this.offset;
+		if (offset == -1L) {
+			JavaField field = vm.getSymbols().java_lang_Class().getField(
+				InjectedClassLayout.java_lang_Class_id.name(),
+				"I"
+			);
+			offset = field.getOffset();
+			this.offset = offset;
+		}
+		return offset;
 	}
 }

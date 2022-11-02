@@ -49,7 +49,7 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 		vm.getMethodEnter().invoke(ctx);
 		boolean doCleanup = true;
 		try {
-				Result result = vmi.getInvoker(jm).intercept(ctx);
+			Result result = vmi.getInvoker(jm).intercept(ctx);
 			if (result == Result.ABORT) {
 				return ctx;
 			}

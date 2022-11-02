@@ -1,6 +1,5 @@
 package dev.xdark.ssvm.mirror.member;
 
-import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.execution.VMTryCatchBlock;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import org.objectweb.asm.Type;

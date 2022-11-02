@@ -8,7 +8,6 @@ import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.util.TypeSafeMap;
-import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
@@ -134,8 +133,8 @@ public final class SimpleJavaMethod implements JavaMethod {
 			if ((node.access & Opcodes.ACC_STATIC) == 0) {
 				x++;
 			}
-			for (JavaClass arg : getArgumentTypes()) {
-				x += arg.getType().getSize();
+			for (Type arg : Type.getArgumentTypes(desc)) {
+				x += arg.getSize();
 			}
 			return this.maxArgs = x;
 		}

@@ -1,5 +1,7 @@
 package dev.xdark.ssvm.filesystem;
 
+import dev.xdark.ssvm.io.Handle;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;

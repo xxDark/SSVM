@@ -1,4 +1,4 @@
-package dev.xdark.ssvm.filesystem;
+package dev.xdark.ssvm.io;
 
 import dev.xdark.ssvm.threadlocal.ThreadLocalStorage;
 

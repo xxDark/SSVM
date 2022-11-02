@@ -1,5 +1,7 @@
 package dev.xdark.ssvm.enhanced;
 
+import dev.xdark.ssvm.TestUtil;
+import dev.xdark.ssvm.VMTest;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
@@ -11,7 +13,7 @@ public class MathTest {
 		TestUtil.test(MathTest.class, true);
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testMin() {
 		int a = ThreadLocalRandom.current().nextInt(0, Integer.MAX_VALUE - 1);
 		int b = a + 1;
@@ -20,7 +22,7 @@ public class MathTest {
 		}
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testMax() {
 		int a = ThreadLocalRandom.current().nextInt(0, Integer.MAX_VALUE - 1);
 		int b = a - 1;

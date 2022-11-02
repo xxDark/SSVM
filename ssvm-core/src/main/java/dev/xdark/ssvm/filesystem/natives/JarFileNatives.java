@@ -1,8 +1,9 @@
-package dev.xdark.ssvm.natives;
+package dev.xdark.ssvm.filesystem.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.filesystem.FileManager;
 import dev.xdark.ssvm.filesystem.ZipFile;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.operation.VMOperations;
@@ -23,8 +24,9 @@ public class JarFileNatives {
 
 	/**
 	 * @param vm VM instance.
+	 * @param fileManager File manager.
 	 */
-	public void init(VirtualMachine vm) {
+	public void init(VirtualMachine vm, FileManager fileManager) {
 		VMInterface vmi = vm.getInterface();
 		Symbols symbols = vm.getSymbols();
 		InstanceClass zf = symbols.java_util_zip_ZipFile();
@@ -32,7 +34,7 @@ public class JarFileNatives {
 		vmi.setInvoker(jf, "getMetaInfEntryNames", "()[Ljava/lang/String;", ctx -> {
 			VMOperations ops = vm.getOperations();
 			long handle = ops.getLong(ctx.getLocals().loadReference(0), zf, "jzfile");
-			ZipFile zip = vm.getFileDescriptorManager().getZipFile(handle);
+			ZipFile zip = fileManager.getZipFile(handle);
 			if (zip == null) {
 				ops.throwException(symbols.java_lang_IllegalStateException(), "zip closed");
 			}

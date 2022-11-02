@@ -1,5 +1,7 @@
 package dev.xdark.ssvm.enhanced;
 
+import dev.xdark.ssvm.TestUtil;
+import dev.xdark.ssvm.VMTest;
 import org.junit.jupiter.api.Test;
 
 public class CharacterTest {
@@ -9,7 +11,7 @@ public class CharacterTest {
 		TestUtil.test(CharacterTest.class, true);
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testLowerCase() {
 		for (char c = 'A'; c <= 'Z'; c++) {
 			char lowerCase = (char) ('a' + (c - 'A'));

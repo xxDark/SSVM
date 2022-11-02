@@ -1,9 +1,10 @@
-package dev.xdark.ssvm.natives;
+package dev.xdark.ssvm.filesystem.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.filesystem.FileManager;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.value.ArrayValue;
@@ -24,9 +25,10 @@ public class OldFileSystemNatives {
 	/**
 	 * Initializes win32/unix file system class.
 	 *
-	 * @param vm VM instance.
+	 * @param vm          VM instance.
+	 * @param fileManager File manager.
 	 */
-	public void init(VirtualMachine vm) {
+	public void init(VirtualMachine vm, FileManager fileManager) {
 		InstanceClass fs = (InstanceClass) vm.findBootstrapClass("java/io/WinNTFileSystem");
 		boolean unix = false;
 		if (fs == null) {
@@ -42,7 +44,7 @@ public class OldFileSystemNatives {
 			VMOperations ops = vm.getOperations();
 			String path = ops.readUtf8(ctx.getLocals().loadReference(1));
 			try {
-				ctx.setResult(ops.newUtf8(vm.getFileDescriptorManager().canonicalize(path)));
+				ctx.setResult(ops.newUtf8(fileManager.canonicalize(path)));
 			} catch (IOException ex) {
 				ops.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 			}
@@ -54,7 +56,7 @@ public class OldFileSystemNatives {
 			ops.checkNotNull(value);
 			try {
 				String path = ops.readUtf8(ops.getReference(value, "path", "Ljava/lang/String;"));
-				BasicFileAttributes attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
+				BasicFileAttributes attributes = fileManager.getAttributes(path, BasicFileAttributes.class);
 				if (attributes == null) {
 					ctx.setResult(0);
 				} else {
@@ -76,7 +78,7 @@ public class OldFileSystemNatives {
 			ObjectValue value = ctx.getLocals().loadReference(1);
 			ops.checkNotNull(value);
 			String path = ops.readUtf8(vm.getOperations().getReference(value, "path", "Ljava/lang/String;"));
-			String[] list = vm.getFileDescriptorManager().list(path);
+			String[] list = fileManager.list(path);
 			if (list == null) {
 				ctx.setResult(vm.getMemoryManager().nullValue());
 			} else {
@@ -98,7 +100,7 @@ public class OldFileSystemNatives {
 			ops.checkNotNull(value);
 			try {
 				String path = ops.readUtf8(ops.getReference(value, "path", "Ljava/lang/String;"));
-				BasicFileAttributes attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
+				BasicFileAttributes attributes = fileManager.getAttributes(path, BasicFileAttributes.class);
 				if (attributes == null) {
 					ctx.setResult(0L);
 				} else {
@@ -115,7 +117,7 @@ public class OldFileSystemNatives {
 			ops.checkNotNull(value);
 			try {
 				String path = ops.readUtf8(ops.getReference(value, "path", "Ljava/lang/String;"));
-				BasicFileAttributes attributes = vm.getFileDescriptorManager().getAttributes(path, BasicFileAttributes.class);
+				BasicFileAttributes attributes = fileManager.getAttributes(path, BasicFileAttributes.class);
 				if (attributes == null) {
 					ctx.setResult(0L);
 				} else {

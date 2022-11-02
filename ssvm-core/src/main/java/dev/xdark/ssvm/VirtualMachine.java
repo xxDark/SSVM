@@ -15,9 +15,8 @@ import dev.xdark.ssvm.execution.ExecutionEngine;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.SimpleExecutionEngine;
-import dev.xdark.ssvm.execution.VMException;
-import dev.xdark.ssvm.filesystem.FileDescriptorManager;
-import dev.xdark.ssvm.filesystem.SimpleFileDescriptorManager;
+import dev.xdark.ssvm.filesystem.FileManager;
+import dev.xdark.ssvm.filesystem.SimpleFileManager;
 import dev.xdark.ssvm.inject.InjectedClassLayout;
 import dev.xdark.ssvm.jni.NativeLibraryManager;
 import dev.xdark.ssvm.jni.SimpleNativeLibraryManager;
@@ -38,8 +37,6 @@ import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.natives.IntrinsicsNatives;
 import dev.xdark.ssvm.operation.VMOperations;
-import dev.xdark.ssvm.process.ProcessHandleManager;
-import dev.xdark.ssvm.process.SimpleProcessHandleManager;
 import dev.xdark.ssvm.symbol.Primitives;
 import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.synchronizer.ObjectSynchronizer;
@@ -54,7 +51,6 @@ import dev.xdark.ssvm.timezone.TimeManager;
 import dev.xdark.ssvm.util.CloseableLock;
 import dev.xdark.ssvm.util.Reflection;
 import dev.xdark.ssvm.value.InstanceValue;
-import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.Delegate;
 import org.jetbrains.annotations.Nullable;
 
@@ -73,8 +69,7 @@ public class VirtualMachine implements VMEventCollection {
 	private final MemoryManager memoryManager;
 	private final ClassDefiner classDefiner;
 	private final ThreadManager threadManager;
-	private final FileDescriptorManager fileDescriptorManager;
-	private final ProcessHandleManager processHandleManager;
+	private final FileManager fileManager;
 	private final NativeLibraryManager nativeLibraryManager;
 	private final TimeManager timeManager;
 	private final ManagementInterface managementInterface;
@@ -110,8 +105,7 @@ public class VirtualMachine implements VMEventCollection {
 		memoryManager = createMemoryManager();
 		classDefiner = createClassDefiner();
 		threadManager = createThreadManager();
-		fileDescriptorManager = createFileDescriptorManager();
-		processHandleManager = createProcessHandleManager();
+		fileManager = createFileManager();
 		nativeLibraryManager = createNativeLibraryManager();
 		timeManager = createTimeManager();
 		managementInterface = createManagementInterface();
@@ -151,12 +145,8 @@ public class VirtualMachine implements VMEventCollection {
 		return new VirtualThreadManager(this);
 	}
 
-	protected FileDescriptorManager createFileDescriptorManager() {
-		return new SimpleFileDescriptorManager();
-	}
-
-	protected ProcessHandleManager createProcessHandleManager() {
-		return new SimpleProcessHandleManager();
+	protected FileManager createFileManager() {
+		return new SimpleFileManager();
 	}
 
 	protected NativeLibraryManager createNativeLibraryManager() {
@@ -348,17 +338,10 @@ public class VirtualMachine implements VMEventCollection {
 	}
 
 	/**
-	 * @return File descriptor manager.
+	 * @return File manager.
 	 */
-	public FileDescriptorManager getFileDescriptorManager() {
-		return fileDescriptorManager;
-	}
-
-	/**
-	 * @return Process handle manager.
-	 */
-	public ProcessHandleManager getProcessHandleManager() {
-		return processHandleManager;
+	public FileManager getFileManager() {
+		return fileManager;
 	}
 
 	/**

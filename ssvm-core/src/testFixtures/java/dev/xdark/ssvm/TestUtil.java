@@ -1,10 +1,9 @@
-package dev.xdark.ssvm.enhanced;
+package dev.xdark.ssvm;
 
-import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.VMException;
-import dev.xdark.ssvm.filesystem.FileDescriptorManager;
-import dev.xdark.ssvm.filesystem.HostFileDescriptorManager;
+import dev.xdark.ssvm.filesystem.FileManager;
+import dev.xdark.ssvm.filesystem.HostFileManager;
 import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
 import dev.xdark.ssvm.memory.allocation.SynchronizedMemoryAllocator;
 import dev.xdark.ssvm.memory.management.MemoryManager;
@@ -78,7 +77,7 @@ public class TestUtil {
 			.collect(Collectors.toList())) {
 			MethodNode node = m.getNode();
 			List<AnnotationNode> annotations = node.visibleAnnotations;
-			if (annotations == null || annotations.stream().noneMatch(x -> "Ldev/xdark/ssvm/enhanced/VMTest;".equals(x.desc))) {
+			if (annotations == null || annotations.stream().noneMatch(x -> "Ldev/xdark/ssvm/VMTest;".equals(x.desc))) {
 				continue;
 			}
 			try {
@@ -123,8 +122,8 @@ public class TestUtil {
 	private VirtualMachine newVirtualMachine() {
 		return new VirtualMachine() {
 			@Override
-			protected FileDescriptorManager createFileDescriptorManager() {
-				return new HostFileDescriptorManager();
+			protected FileManager createFileManager() {
+				return new HostFileManager();
 			}
 
 			@Override

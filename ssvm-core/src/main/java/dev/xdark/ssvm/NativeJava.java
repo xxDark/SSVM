@@ -162,6 +162,7 @@ import dev.xdark.ssvm.execution.rewrite.VMNewProcessor;
 import dev.xdark.ssvm.execution.rewrite.method.VMSpecialCallProcessor;
 import dev.xdark.ssvm.execution.rewrite.method.VMStaticCallProcessor;
 import dev.xdark.ssvm.execution.rewrite.method.VMVirtualCallProcessor;
+import dev.xdark.ssvm.filesystem.FileApiInstaller;
 import dev.xdark.ssvm.inject.InjectedClassLayout;
 import dev.xdark.ssvm.jvmti.JVMTIEnv;
 import dev.xdark.ssvm.jvmti.event.ClassLink;
@@ -423,8 +424,6 @@ public final class NativeJava {
 		FloatNatives.init(vm);
 		ArrayNatives.init(vm);
 		ConstantPoolNatives.init(vm);
-		GenericFileSystemNatives.init(vm);
-		OldFileSystemNatives.init(vm);
 		StackTraceElementNatives.init(vm);
 		ReflectionNatives.init(vm);
 		ConstructorAccessorNatives.init(vm);
@@ -439,7 +438,6 @@ public final class NativeJava {
 		VMManagementNatives.init(vm);
 		PackageNatives.init(vm);
 		PerfNatives.init(vm);
-		JarFileNatives.init(vm);
 		MathNatives.init(vm);
 		TimeZoneNatives.init(vm);
 		CRC32Natives.init(vm);
@@ -449,13 +447,11 @@ public final class NativeJava {
 		ProxyNatives.init(vm);
 		InflaterNatives.init(vm);
 		ProcessEnvironmentNatives.init(vm);
-		ProcessImplNatives.init(vm);
-		FileSystemNativeDispatcherNatives.init(vm);
 		CDSNatives.init(vm);
 		SystemPropsNatives.init(vm);
 		ScopedMemoryAccessNatives.init(vm);
 		ReferenceNatives.init(vm);
-		ZipFileNatives.init(vm);
+		FileApiInstaller.create(vm).fileManager(vm.getFileManager()).install();
 		//</editor-fold>
 	}
 

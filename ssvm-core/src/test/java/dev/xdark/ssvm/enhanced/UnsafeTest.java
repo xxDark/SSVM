@@ -1,5 +1,7 @@
 package dev.xdark.ssvm.enhanced;
 
+import dev.xdark.ssvm.TestUtil;
+import dev.xdark.ssvm.VMTest;
 import dev.xdark.ssvm.VirtualMachine;
 import org.junit.jupiter.api.Test;
 import sun.misc.Unsafe;
@@ -10,7 +12,7 @@ public class UnsafeTest {
 
 	@Test
 	public void doTest() {
-		TestUtil.test(InnerUnsafeTest.class, TestUtil.BOOTSTRAP, c -> {
+		dev.xdark.ssvm.TestUtil.test(InnerUnsafeTest.class, TestUtil.BOOTSTRAP, c -> {
 			VirtualMachine vm = c.getVM();
 			vm.getOperations().putInt(c, "addressSize", vm.getMemoryAllocator().addressSize());
 		});
@@ -28,7 +30,7 @@ public class UnsafeTest {
 			}
 		}
 
-		@VMTest
+		@dev.xdark.ssvm.VMTest
 		private static void testLong() {
 			testAddressSize();
 			long address = U.allocateMemory(8L);
@@ -39,7 +41,7 @@ public class UnsafeTest {
 			}
 		}
 
-		@VMTest
+		@dev.xdark.ssvm.VMTest
 		private static void testLong2() {
 			testAddressSize();
 			long address = U.allocateMemory(8L);
@@ -50,7 +52,7 @@ public class UnsafeTest {
 			}
 		}
 
-		@VMTest
+		@dev.xdark.ssvm.VMTest
 		private static void testLongWithByte() {
 			testAddressSize();
 			long address = U.allocateMemory(8L);
@@ -76,7 +78,7 @@ public class UnsafeTest {
 			}
 		}
 
-		@VMTest
+		@dev.xdark.ssvm.VMTest
 		private static void testArray() {
 			testAddressSize();
 			Unsafe unsafe = U;
@@ -94,7 +96,7 @@ public class UnsafeTest {
 			}
 		}
 
-		@VMTest
+		@dev.xdark.ssvm.VMTest
 		private static void testMemorySet() {
 			testAddressSize();
 			Unsafe unsafe = U;
@@ -108,7 +110,7 @@ public class UnsafeTest {
 			}
 		}
 
-		@VMTest
+		@dev.xdark.ssvm.VMTest
 		private static void testMemorySet2() {
 			testAddressSize();
 			Unsafe unsafe = U;
@@ -122,7 +124,7 @@ public class UnsafeTest {
 			}
 		}
 
-		@VMTest
+		@dev.xdark.ssvm.VMTest
 		private static void testMemoryCopy() {
 			testAddressSize();
 			byte v = (byte) ThreadLocalRandom.current().nextInt(Byte.MIN_VALUE, Byte.MAX_VALUE);
@@ -138,7 +140,7 @@ public class UnsafeTest {
 			}
 		}
 
-		@VMTest
+		@dev.xdark.ssvm.VMTest
 		private static void testRandomAccess() {
 			testAddressSize();
 			ThreadLocalRandom r = ThreadLocalRandom.current();

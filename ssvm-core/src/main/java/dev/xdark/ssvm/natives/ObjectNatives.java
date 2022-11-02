@@ -8,7 +8,6 @@ import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.type.ArrayClass;
-import dev.xdark.ssvm.mirror.type.SimpleArrayClass;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.operation.VMOperations;

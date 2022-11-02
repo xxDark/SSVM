@@ -5,6 +5,7 @@ allprojects {
 
 subprojects {
     apply plugin: 'java-library'
+    apply plugin: 'java-test-fixtures'
     apply plugin: 'maven-publish'
 
     repositories {
@@ -24,6 +25,12 @@ subprojects {
     task sourcesJar(type: Jar) {
         from sourceSets.main.java
         classifier = 'sources'
+    }
+
+    configurations {
+        testFixturesImplementation.extendsFrom testImplementation
+        testFixturesAnnotationProcessor.extendsFrom testAnnotationProcessor
+        testFixturesCompileOnly.extendsFrom testCompileOnly
     }
 
     dependencies {

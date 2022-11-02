@@ -1,5 +1,7 @@
 package dev.xdark.ssvm.enhanced;
 
+import dev.xdark.ssvm.TestUtil;
+import dev.xdark.ssvm.VMTest;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
@@ -19,7 +21,7 @@ public class ReflectionTest {
 		private static long value;
 		private static String str;
 
-		@VMTest
+		@dev.xdark.ssvm.VMTest
 		private static void testLong() throws NoSuchFieldException, IllegalAccessException {
 			Field field = InnerReflectionTest.class.getDeclaredField("value");
 			if (field.getLong(null) != value) {

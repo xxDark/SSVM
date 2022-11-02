@@ -1,5 +1,7 @@
 package dev.xdark.ssvm.enhanced;
 
+import dev.xdark.ssvm.TestUtil;
+import dev.xdark.ssvm.VMTest;
 import org.junit.jupiter.api.Test;
 
 public class SynchronizationTest {
@@ -9,7 +11,7 @@ public class SynchronizationTest {
 		TestUtil.test(SynchronizationTest.class, true);
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testLock1() {
 		Object o = new Object();
 		synchronized (o) {
@@ -19,14 +21,14 @@ public class SynchronizationTest {
 		}
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static synchronized void testLock2() {
 		if (!Thread.holdsLock(SynchronizationTest.class)) {
 			throw new IllegalStateException();
 		}
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testNestedLocking() {
 		Object lock = new Object();
 		synchronized (lock) {
@@ -34,7 +36,7 @@ public class SynchronizationTest {
 		}
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testLockWithException() {
 		Object o = new Object();
 		try {

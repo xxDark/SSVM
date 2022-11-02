@@ -6,7 +6,7 @@ import org.jetbrains.annotations.Nullable;
  * Manager for process handles
  * @author Justus Garbe
  */
-public interface ProcessHandleManager {
+public interface ProcessManager {
 
     /**
      * Windows still active exit code.

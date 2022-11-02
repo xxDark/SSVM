@@ -1,5 +1,7 @@
 package dev.xdark.ssvm.enhanced;
 
+import dev.xdark.ssvm.TestUtil;
+import dev.xdark.ssvm.VMTest;
 import org.junit.jupiter.api.Test;
 
 public class StringTest {
@@ -9,14 +11,14 @@ public class StringTest {
 		TestUtil.test(StringTest.class, true);
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testContains() {
 		if (!"Hello World".contains("World")) {
 			throw new IllegalStateException();
 		}
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testIndexOf() {
 		String str = "A B C D E F";
 		int idx = 0;
@@ -28,7 +30,7 @@ public class StringTest {
 		}
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testIndexOf2() {
 		String str = "Random text";
 		if (str.indexOf("text") != 7) {
@@ -39,7 +41,7 @@ public class StringTest {
 		}
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testLastIndexOf() {
 		String str = "part1 part2 part3 part1";
 		if (str.lastIndexOf("part1") != 18) {

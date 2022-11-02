@@ -13,7 +13,7 @@ import java.util.zip.ZipEntry;
  *
  * @author xDark
  */
-public class SimpleFileDescriptorManager implements FileDescriptorManager {
+public class SimpleFileManager implements FileManager {
 
 	@Override
 	public InputStream getFdIn(long handle) {

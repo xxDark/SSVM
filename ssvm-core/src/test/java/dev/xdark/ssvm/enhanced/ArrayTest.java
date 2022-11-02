@@ -1,5 +1,7 @@
 package dev.xdark.ssvm.enhanced;
 
+import dev.xdark.ssvm.TestUtil;
+import dev.xdark.ssvm.VMTest;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -11,7 +13,7 @@ public class ArrayTest {
 		TestUtil.test(ArrayTest.class, true);
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testArrays() {
 		long[] array = new long[8];
 		for (int i = 0; i < 8; i++) {
@@ -23,7 +25,7 @@ public class ArrayTest {
 		}
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testCopy() {
 		long[] src = new long[8];
 		for (int i = 0; i < 8; src[i] = i++) ;
@@ -35,7 +37,7 @@ public class ArrayTest {
 	}
 
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testCopyOf() {
 		String[] array = new String[]{"1", "2", "3"};
 		String[] copy = Arrays.copyOf(array, 1);
@@ -44,7 +46,7 @@ public class ArrayTest {
 		}
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testClone() {
 		long[] array = new long[32];
 		for (int i = 0; i < 32; array[i++] = System.currentTimeMillis()) ;
@@ -54,7 +56,7 @@ public class ArrayTest {
 		}
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testStoreException() {
 		try {
 			((Object[]) new String[1])[0] = 1;

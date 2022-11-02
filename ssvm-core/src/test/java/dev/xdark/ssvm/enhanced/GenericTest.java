@@ -1,5 +1,7 @@
 package dev.xdark.ssvm.enhanced;
 
+import dev.xdark.ssvm.TestUtil;
+import dev.xdark.ssvm.VMTest;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
@@ -14,7 +16,7 @@ public class GenericTest {
 		TestUtil.test(GenericTest.class, true);
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testClone() throws CloneNotSupportedException {
 		ThreadLocalRandom r = ThreadLocalRandom.current();
 		GenericTest obj = new GenericTest();

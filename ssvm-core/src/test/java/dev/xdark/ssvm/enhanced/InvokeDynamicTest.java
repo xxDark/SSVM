@@ -1,5 +1,7 @@
 package dev.xdark.ssvm.enhanced;
 
+import dev.xdark.ssvm.TestUtil;
+import dev.xdark.ssvm.VMTest;
 import org.junit.jupiter.api.Test;
 
 import java.io.Serializable;
@@ -25,7 +27,7 @@ public class InvokeDynamicTest {
 		TestUtil.test(InvokeDynamicTest.class, true);
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testVariableCapture() {
 		int[] box = {0};
 		int v = ThreadLocalRandom.current().nextInt();
@@ -36,7 +38,7 @@ public class InvokeDynamicTest {
 		}
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testStream() {
 		List<Integer> list = IntStream.range(0, 6)
 			.filter(x -> true)
@@ -47,7 +49,7 @@ public class InvokeDynamicTest {
 		}
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testMethodRef() {
 		int v = ThreadLocalRandom.current().nextInt(64) + 100;
 		AtomicInteger counter = new AtomicInteger();
@@ -60,7 +62,7 @@ public class InvokeDynamicTest {
 		}
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testMethodRef2() {
 		int v = ThreadLocalRandom.current().nextInt(8) + 8;
 		ArrayList<String> list = IntStream.range(0, v)
@@ -75,7 +77,7 @@ public class InvokeDynamicTest {
 		}
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testMethodRef3() {
 		int v = ThreadLocalRandom.current().nextInt(8) + 8;
 		String[] array = IntStream.range(0, v)
@@ -90,7 +92,7 @@ public class InvokeDynamicTest {
 		}
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testInnerLambda() {
 		int v = ThreadLocalRandom.current().nextInt(20) + 8;
 		int[] box = {0};
@@ -112,7 +114,7 @@ public class InvokeDynamicTest {
 		}
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testInnerLambda2() {
 		int v = ThreadLocalRandom.current().nextInt(20) + 8;
 		int[] box = {0};
@@ -134,7 +136,7 @@ public class InvokeDynamicTest {
 
 	private static long tmp1, tmp2;
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testLongCapture() {
 		ThreadLocalRandom rng = ThreadLocalRandom.current();
 		long v1 = rng.nextLong();
@@ -151,7 +153,7 @@ public class InvokeDynamicTest {
 
 	private static long result = -1L;
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testBox() {
 		ThreadLocalRandom r = ThreadLocalRandom.current();
 		long v = r.nextLong(0L, Long.MAX_VALUE);
@@ -166,7 +168,7 @@ public class InvokeDynamicTest {
 		}
 	}
 
-	@VMTest
+	@dev.xdark.ssvm.VMTest
 	private static void testArray() {
 		IntStream.range(1, 100).mapToObj(Integer::valueOf).toArray(Integer[]::new);
 	}

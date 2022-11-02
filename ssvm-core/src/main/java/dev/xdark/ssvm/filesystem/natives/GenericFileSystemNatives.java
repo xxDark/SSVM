@@ -1,11 +1,11 @@
-package dev.xdark.ssvm.natives;
+package dev.xdark.ssvm.filesystem.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
-import dev.xdark.ssvm.filesystem.FileDescriptorManager;
+import dev.xdark.ssvm.filesystem.FileManager;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
@@ -36,14 +36,15 @@ import java.io.OutputStream;
 public class GenericFileSystemNatives {
 
 	/**
-	 * @param vm VM instance.
+	 * @param vm          VM instance.
+	 * @param fileManager File manager.
 	 */
-	public void init(VirtualMachine vm) {
+	public void init(VirtualMachine vm, FileManager fileManager) {
 		VMInterface vmi = vm.getInterface();
 		InstanceClass fd = vm.getSymbols().java_io_FileDescriptor();
 
 		MethodInvoker set = ctx -> {
-			ctx.setResult(mapVMStream(vm, ctx.getLocals().loadInt(0)));
+			ctx.setResult(mapVMStream(vm, fileManager, ctx.getLocals().loadInt(0)));
 			return Result.ABORT;
 		};
 		boolean lateinit = false;
@@ -54,11 +55,11 @@ public class GenericFileSystemNatives {
 			vmi.setInvoker(fd, "initIDs", "()V", ctx -> {
 				VMOperations ops = vm.getOperations();
 				InstanceValue in = (InstanceValue) ops.getReference(fd, "in", "Ljava/io/FileDescriptor;");
-				ops.putLong(in, fd, "handle", mapVMStream(vm, 0));
+				ops.putLong(in, fd, "handle", mapVMStream(vm, fileManager, 0));
 				InstanceValue out = (InstanceValue) ops.getReference(fd, "out", "Ljava/io/FileDescriptor;");
-				ops.putLong(out, fd, "handle", mapVMStream(vm, 1));
+				ops.putLong(out, fd, "handle", mapVMStream(vm, fileManager, 1));
 				InstanceValue err = (InstanceValue) ops.getReference(fd, "err", "Ljava/io/FileDescriptor;");
-				ops.putLong(err, fd, "handle", mapVMStream(vm, 2));
+				ops.putLong(err, fd, "handle", mapVMStream(vm, fileManager, 2));
 				return Result.ABORT;
 			});
 		} else {
@@ -66,13 +67,13 @@ public class GenericFileSystemNatives {
 		}
 
 		vmi.setInvoker(fd, "getAppend", "(I)Z", ctx -> {
-			ctx.setResult(vm.getFileDescriptorManager().isAppend(ctx.getLocals().loadInt(0)) ? 1 : 0);
+			ctx.setResult(fileManager.isAppend(ctx.getLocals().loadInt(0)) ? 1 : 0);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(fd, "close0", "()V", ctx -> {
 			long handle = vm.getOperations().getLong(ctx.getLocals().loadReference(0), fd, "handle");
 			try {
-				vm.getFileDescriptorManager().close(handle);
+				fileManager.close(handle);
 			} catch (IOException ex) {
 				vm.getOperations().throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 			}
@@ -84,7 +85,7 @@ public class GenericFileSystemNatives {
 			Locals locals = ctx.getLocals();
 			InstanceValue _this = locals.loadReference(0);
 			long handle = getFileStreamHandle(vm, _this);
-			OutputStream out = vm.getFileDescriptorManager().getFdOut(handle);
+			OutputStream out = fileManager.getFdOut(handle);
 			if (out == null) {
 				return Result.ABORT;
 			}
@@ -103,7 +104,7 @@ public class GenericFileSystemNatives {
 			Locals locals = ctx.getLocals();
 			InstanceValue _this = locals.loadReference(0);
 			long handle = getFileStreamHandle(vm, _this);
-			OutputStream out = vm.getFileDescriptorManager().getFdOut(handle);
+			OutputStream out = fileManager.getFdOut(handle);
 			if (out == null) {
 				return Result.ABORT;
 			}
@@ -121,7 +122,7 @@ public class GenericFileSystemNatives {
 			String path = ops.readUtf8(locals.loadReference(1));
 			boolean append = locals.loadInt(2) != 0;
 			try {
-				long handle = vm.getFileDescriptorManager().open(path, append ? FileDescriptorManager.APPEND : FileDescriptorManager.WRITE);
+				long handle = fileManager.open(path, append ? FileManager.APPEND : FileManager.WRITE);
 				ObjectValue _fd = ops.getReference(_this, fos, "fd", "Ljava/io/FileDescriptor;");
 				ops.putLong(_fd, fd, "handle", handle);
 			} catch (FileNotFoundException ex) {
@@ -136,7 +137,7 @@ public class GenericFileSystemNatives {
 			InstanceValue _this = locals.loadReference(0);
 			long handle = getFileStreamHandle(vm, _this);
 			try {
-				vm.getFileDescriptorManager().close(handle);
+				fileManager.close(handle);
 			} catch (IOException ex) {
 				vm.getOperations().throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 			}
@@ -148,7 +149,7 @@ public class GenericFileSystemNatives {
 			Locals locals = ctx.getLocals();
 			InstanceValue _this = locals.loadReference(0);
 			long handle = getFileStreamHandle(vm, _this);
-			InputStream in = vm.getFileDescriptorManager().getFdIn(handle);
+			InputStream in = fileManager.getFdIn(handle);
 			if (in == null) {
 				ctx.setResult(-1);
 			} else {
@@ -176,7 +177,7 @@ public class GenericFileSystemNatives {
 			InstanceValue _this = locals.loadReference(0);
 			VMOperations ops = vm.getOperations();
 			long handle = getFileStreamHandle(vm, _this);
-			InputStream in = vm.getFileDescriptorManager().getFdIn(handle);
+			InputStream in = fileManager.getFdIn(handle);
 			if (in == null) {
 				ctx.setResult(-1);
 			} else {
@@ -193,7 +194,7 @@ public class GenericFileSystemNatives {
 			InstanceValue _this = locals.loadReference(0);
 			VMOperations ops = vm.getOperations();
 			long handle = getFileStreamHandle(vm, _this);
-			InputStream in = vm.getFileDescriptorManager().getFdIn(handle);
+			InputStream in = fileManager.getFdIn(handle);
 			if (in == null) {
 				ctx.setResult(0L);
 			} else {
@@ -211,7 +212,7 @@ public class GenericFileSystemNatives {
 			VMOperations ops = vm.getOperations();
 			String path = ops.readUtf8(locals.loadReference(1));
 			try {
-				long handle = vm.getFileDescriptorManager().open(path, FileDescriptorManager.READ);
+				long handle = fileManager.open(path, FileManager.READ);
 				ObjectValue _fd = ops.getReference(_this, fos, "fd", "Ljava/io/FileDescriptor;");
 				ops.putLong(_fd, fd, "handle", handle);
 			} catch (FileNotFoundException ex) {
@@ -225,7 +226,7 @@ public class GenericFileSystemNatives {
 			Locals locals = ctx.getLocals();
 			InstanceValue _this = locals.loadReference(0);
 			long handle = getFileStreamHandle(vm, _this);
-			InputStream in = vm.getFileDescriptorManager().getFdIn(handle);
+			InputStream in = fileManager.getFdIn(handle);
 			if (in == null) {
 				ctx.setResult(0);
 			} else {
@@ -242,7 +243,7 @@ public class GenericFileSystemNatives {
 			InstanceValue _this = locals.loadReference(0);
 			long handle = getFileStreamHandle(vm, _this);
 			try {
-				vm.getFileDescriptorManager().close(handle);
+				fileManager.close(handle);
 			} catch (IOException ex) {
 				vm.getOperations().throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 			}
@@ -250,9 +251,9 @@ public class GenericFileSystemNatives {
 		});
 	}
 
-	private static long mapVMStream(VirtualMachine vm, int d) {
+	private static long mapVMStream(VirtualMachine vm, FileManager fileManager, int d) {
 		try {
-			return vm.getFileDescriptorManager().newFD(d);
+			return fileManager.newFD(d);
 		} catch (IllegalStateException ex) {
 			vm.getOperations().throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 		}

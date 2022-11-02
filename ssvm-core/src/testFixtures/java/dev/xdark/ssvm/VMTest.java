@@ -1,4 +1,4 @@
-package dev.xdark.ssvm.enhanced;
+package dev.xdark.ssvm;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

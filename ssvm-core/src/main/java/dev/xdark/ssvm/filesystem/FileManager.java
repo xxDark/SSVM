@@ -1,6 +1,5 @@
 package dev.xdark.ssvm.filesystem;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -13,7 +12,7 @@ import java.util.zip.ZipEntry;
  *
  * @author xDark
  */
-public interface FileDescriptorManager {
+public interface FileManager {
 
 	int READ = 0;
 	int WRITE = 1;
@@ -35,6 +34,13 @@ public interface FileDescriptorManager {
 	 */
 	OutputStream getFdOut(long handle);
 
+	/**
+	 * Reveals the real file descriptor handle.
+	 *
+	 * @param handle
+	 *      VM file descriptor handle.
+	 * @return Host file descriptor handle or {@code -1L}.
+	 */
 	long getRealHandle(long handle);
 
 	/**
@@ -86,9 +92,9 @@ public interface FileDescriptorManager {
 	 * @param mode Open mode.
 	 * @return file handle.
 	 * @throws IOException If any I/O error occurs.
-	 * @see FileDescriptorManager#READ
-	 * @see FileDescriptorManager#WRITE
-	 * @see FileDescriptorManager#APPEND
+	 * @see FileManager#READ
+	 * @see FileManager#WRITE
+	 * @see FileManager#APPEND
 	 */
 	long open(String path, int mode) throws IOException;
 

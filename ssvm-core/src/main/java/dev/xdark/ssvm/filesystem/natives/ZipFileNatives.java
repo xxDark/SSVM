@@ -1,4 +1,4 @@
-package dev.xdark.ssvm.natives;
+package dev.xdark.ssvm.filesystem.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
@@ -6,6 +6,7 @@ import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.filesystem.FileManager;
 import dev.xdark.ssvm.filesystem.ZipFile;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.operation.VMOperations;
@@ -27,9 +28,10 @@ import java.util.zip.ZipEntry;
 public class ZipFileNatives {
 
 	/**
-	 * @param vm VM instance.
+	 * @param vm          VM instance.
+	 * @param fileManager File manager.
 	 */
-	public void init(VirtualMachine vm) {
+	public void init(VirtualMachine vm, FileManager fileManager) {
 		VMInterface vmi = vm.getInterface();
 		Symbols symbols = vm.getSymbols();
 		InstanceClass zf = symbols.java_util_zip_ZipFile();
@@ -44,7 +46,7 @@ public class ZipFileNatives {
 			int mode = locals.loadInt(1);
 			// last file modification & usemmap are ignored.
 			try {
-				long handle = vm.getFileDescriptorManager().openZipFile(zipPath, mode);
+				long handle = fileManager.openZipFile(zipPath, mode);
 				if (handle == 0L) {
 					ops.throwException(symbols.java_io_IOException(), zipPath);
 				}
@@ -55,7 +57,7 @@ public class ZipFileNatives {
 			return Result.ABORT;
 		})) {
 			vmi.setInvoker(zf, "getTotal", "(J)I", ctx -> {
-				ZipFile zip = vm.getFileDescriptorManager().getZipFile(ctx.getLocals().loadLong(0));
+				ZipFile zip = fileManager.getZipFile(ctx.getLocals().loadLong(0));
 				if (zip == null) {
 					vm.getOperations().throwException(symbols.java_lang_IllegalStateException(), "zip closed");
 					return Result.ABORT;
@@ -64,7 +66,7 @@ public class ZipFileNatives {
 				return Result.ABORT;
 			});
 			vmi.setInvoker(zf, "startsWithLOC", "(J)Z", ctx -> {
-				ZipFile zip = vm.getFileDescriptorManager().getZipFile(ctx.getLocals().loadLong(0));
+				ZipFile zip = fileManager.getZipFile(ctx.getLocals().loadLong(0));
 				if (zip == null) {
 					throw new PanicException("Segfault");
 				}
@@ -74,7 +76,7 @@ public class ZipFileNatives {
 			vmi.setInvoker(zf, "getEntry", "(J[BZ)J", ctx -> {
 				Locals locals = ctx.getLocals();
 				long handle = locals.loadLong(0);
-				ZipFile zip = vm.getFileDescriptorManager().getZipFile(handle);
+				ZipFile zip = fileManager.getZipFile(handle);
 				if (zip == null) {
 					throw new PanicException("Segfault");
 				}
@@ -96,7 +98,7 @@ public class ZipFileNatives {
 			vmi.setInvoker(zf, "getEntryBytes", "(JI)[B", ctx -> {
 				Locals locals = ctx.getLocals();
 				long address = locals.loadLong(0);
-				ZipEntry value = vm.getFileDescriptorManager().getZipEntry(address);
+				ZipEntry value = fileManager.getZipEntry(address);
 				if (value == null) {
 					throw new PanicException("Segfault");
 				}
@@ -121,7 +123,7 @@ public class ZipFileNatives {
 			});
 			vmi.setInvoker(zf, "getEntryTime", "(J)J", ctx -> {
 				Locals locals = ctx.getLocals();
-				ZipEntry value = vm.getFileDescriptorManager().getZipEntry(locals.loadLong(0));
+				ZipEntry value = fileManager.getZipEntry(locals.loadLong(0));
 				if (value == null) {
 					throw new PanicException("Segfault");
 				}
@@ -130,7 +132,7 @@ public class ZipFileNatives {
 			});
 			vmi.setInvoker(zf, "getEntryCrc", "(J)J", ctx -> {
 				Locals locals = ctx.getLocals();
-				ZipEntry value = vm.getFileDescriptorManager().getZipEntry(locals.loadLong(0));
+				ZipEntry value = fileManager.getZipEntry(locals.loadLong(0));
 				if (value == null) {
 					throw new PanicException("Segfault");
 				}
@@ -139,7 +141,7 @@ public class ZipFileNatives {
 			});
 			vmi.setInvoker(zf, "getEntrySize", "(J)J", ctx -> {
 				Locals locals = ctx.getLocals();
-				ZipEntry value = vm.getFileDescriptorManager().getZipEntry(locals.loadLong(0));
+				ZipEntry value = fileManager.getZipEntry(locals.loadLong(0));
 				if (value == null) {
 					throw new PanicException("Segfault");
 				}
@@ -148,7 +150,7 @@ public class ZipFileNatives {
 			});
 			vmi.setInvoker(zf, "getEntryCSize", "(J)J", ctx -> {
 				Locals locals = ctx.getLocals();
-				ZipEntry value = vm.getFileDescriptorManager().getZipEntry(locals.loadLong(0));
+				ZipEntry value = fileManager.getZipEntry(locals.loadLong(0));
 				if (value == null) {
 					throw new PanicException("Segfault");
 				}
@@ -157,7 +159,7 @@ public class ZipFileNatives {
 			});
 			vmi.setInvoker(zf, "getEntryMethod", "(J)I", ctx -> {
 				Locals locals = ctx.getLocals();
-				ZipEntry value = vm.getFileDescriptorManager().getZipEntry(locals.loadLong(0));
+				ZipEntry value = fileManager.getZipEntry(locals.loadLong(0));
 				if (value == null) {
 					throw new PanicException("Segfault");
 				}
@@ -172,7 +174,7 @@ public class ZipFileNatives {
 			vmi.setInvoker(zf, "freeEntry", "(JJ)V", ctx -> {
 				Locals locals = ctx.getLocals();
 				long jzfile = locals.loadLong(0);
-				ZipFile zipFile = vm.getFileDescriptorManager().getZipFile(jzfile);
+				ZipFile zipFile = fileManager.getZipFile(jzfile);
 				if (zipFile == null || !zipFile.freeHandle(locals.loadLong(2))) {
 					throw new PanicException("Segfault");
 				}
@@ -180,7 +182,7 @@ public class ZipFileNatives {
 			});
 			vmi.setInvoker(zf, "read", "(JJJ[BII)I", ctx -> {
 				Locals locals = ctx.getLocals();
-				ZipFile zipFile = vm.getFileDescriptorManager().getZipFile(locals.loadLong(0));
+				ZipFile zipFile = fileManager.getZipFile(locals.loadLong(0));
 				if (zipFile == null) {
 					throw new PanicException("Segfault");
 				}
@@ -224,7 +226,7 @@ public class ZipFileNatives {
 			vmi.setInvoker(zf, "getNextEntry", "(JI)J", ctx -> {
 				Locals locals = ctx.getLocals();
 				long handle = locals.loadLong(0);
-				ZipFile zip = vm.getFileDescriptorManager().getZipFile(handle);
+				ZipFile zip = fileManager.getZipFile(handle);
 				if (zip == null) {
 					throw new PanicException("Segfault");
 				}
@@ -239,7 +241,7 @@ public class ZipFileNatives {
 			vmi.setInvoker(zf, "getManifestNum", "(J)I", ctx -> {
 				Locals locals = ctx.getLocals();
 				long handle = locals.loadLong(0);
-				ZipFile zip = vm.getFileDescriptorManager().getZipFile(handle);
+				ZipFile zip = fileManager.getZipFile(handle);
 				if (zip == null) {
 					throw new PanicException("Segfault");
 				}
@@ -251,7 +253,7 @@ public class ZipFileNatives {
 			});
 			vmi.setInvoker(zf, "close", "(J)V", ctx -> {
 				try {
-					if (!vm.getFileDescriptorManager().close(ctx.getLocals().loadLong(0))) {
+					if (!fileManager.close(ctx.getLocals().loadLong(0))) {
 						throw new PanicException("Segfault");
 					}
 				} catch (IOException ex) {

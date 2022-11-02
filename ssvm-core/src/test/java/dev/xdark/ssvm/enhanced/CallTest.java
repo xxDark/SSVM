@@ -1,5 +1,7 @@
 package dev.xdark.ssvm.enhanced;
 
+import dev.xdark.ssvm.TestUtil;
+import dev.xdark.ssvm.VMTest;
 import org.junit.jupiter.api.Test;
 
 import java.util.Objects;
@@ -21,7 +23,7 @@ public class CallTest {
 		private static long field6;
 		private static Object _this;
 
-		@VMTest
+		@dev.xdark.ssvm.VMTest
 		private static void doStaticCall() {
 			setFields();
 			doStaticCallImpl(field1, field2, field3, field4, field5, field6);

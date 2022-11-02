@@ -1,10 +1,11 @@
-package dev.xdark.ssvm.natives;
+package dev.xdark.ssvm.filesystem.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.filesystem.FileManager;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.value.ArrayValue;
@@ -21,15 +22,16 @@ import java.nio.charset.StandardCharsets;
 public class FileSystemNativeDispatcherNatives {
 
 	/**
-	 * @param vm VM instance.
+	 * @param vm          VM instance.
+	 * @param fileManager File manager.
 	 */
-	public void init(VirtualMachine vm) {
+	public void init(VirtualMachine vm, FileManager fileManager) {
 		VMInterface vmi = vm.getInterface();
 		InstanceClass windowsDispatcher = (InstanceClass) vm.findBootstrapClass("sun/nio/fs/WindowsNativeDispatcher");
 		if (windowsDispatcher == null) {
 			InstanceClass unixDispatcher = (InstanceClass) vm.findBootstrapClass("sun/nio/fs/UnixNativeDispatcher");
 			vmi.setInvoker(unixDispatcher, "getcwd", "()[B", ctx -> {
-				byte[] cwd = vm.getFileDescriptorManager().getCurrentWorkingDirectory().getBytes(StandardCharsets.UTF_8);
+				byte[] cwd = fileManager.getCurrentWorkingDirectory().getBytes(StandardCharsets.UTF_8);
 				ctx.setResult(vm.getOperations().toVMBytes(cwd));
 				return Result.ABORT;
 			});

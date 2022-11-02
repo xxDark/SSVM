@@ -6,8 +6,8 @@ Shows how to boot VM & run an application.
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.VMException;
-import dev.xdark.ssvm.filesystem.FileDescriptorManager;
-import dev.xdark.ssvm.filesystem.HostFileDescriptorManager;
+import dev.xdark.ssvm.filesystem.FileManager;
+import dev.xdark.ssvm.filesystem.HostFileManager;
 import dev.xdark.ssvm.jit.JitClass;
 import dev.xdark.ssvm.jit.JitCompiler;
 import dev.xdark.ssvm.jit.CodeInstaller;

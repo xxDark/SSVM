@@ -3,7 +3,13 @@ package dev.xdark.ssvm.filesystem;
 import dev.xdark.ssvm.io.Handle;
 import dev.xdark.ssvm.util.IOHacks;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -20,7 +26,7 @@ import java.util.zip.ZipEntry;
  *
  * @author xDark
  */
-public class HostFileDescriptorManager implements FileDescriptorManager {
+public class HostFileManager implements FileManager {
 
 	protected final Map<Handle, InputStream> inputs = new HashMap<>();
 	protected final Map<Handle, OutputStream> outputs = new HashMap<>();
@@ -35,13 +41,13 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 	 * @param stdout System output stream.
 	 * @param stderr System error stream.
 	 */
-	public HostFileDescriptorManager(InputStream stdin, OutputStream stdout, OutputStream stderr) {
+	public HostFileManager(InputStream stdin, OutputStream stdout, OutputStream stderr) {
 		this.stdin = stdin;
 		this.stdout = stdout;
 		this.stderr = stderr;
 	}
 
-	public HostFileDescriptorManager() {
+	public HostFileManager() {
 		this(System.in, System.out, System.err);
 	}
 
@@ -62,28 +68,30 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 			FileDescriptor fd = null;
 			InputStream in = inputs.get(h);
 			if (in != null) {
-				if(in == stdin) fd = FileDescriptor.in;
-				else {
-					if (in instanceof FileInputStream) {
-						fd = ((FileInputStream) in).getFD();
-					}
+				if (in instanceof FileInputStream) {
+					fd = ((FileInputStream) in).getFD();
+				} else if (in == stdin) {
+					fd = FileDescriptor.in;
 				}
 			}
-			OutputStream out = outputs.get(h);
-			if (out != null) {
-				if(out == stdout) fd = FileDescriptor.out;
-				else if(out == stderr) fd = FileDescriptor.err;
-				else {
+			if (fd == null) {
+				OutputStream out = outputs.get(h);
+				if (out != null) {
 					if (out instanceof FileOutputStream) {
 						fd = ((FileOutputStream) out).getFD();
+					} else if (out == stdout) {
+						fd = FileDescriptor.out;
+					} else if (out == stderr) {
+						fd = FileDescriptor.err;
 					}
 				}
 			}
-			if(fd != null) return IOHacks.getHandleOrFd(fd);
-			else return 0L;
-		} catch (IOException e) {
-			return 0L;
+			if (fd != null) {
+				return IOHacks.getHandleOrFd(fd);
+			}
+		} catch (IOException ex) {
 		}
+		return -1L;
 	}
 
 	@Override

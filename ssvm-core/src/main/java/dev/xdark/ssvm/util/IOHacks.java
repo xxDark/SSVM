@@ -6,6 +6,10 @@ import java.io.FileDescriptor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
+/**
+ * Hacks for io java classes
+ * @author Justus Garbe
+ */
 @UtilityClass
 public class IOHacks {
 

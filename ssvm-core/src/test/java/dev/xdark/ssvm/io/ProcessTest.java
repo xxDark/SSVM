@@ -11,6 +11,10 @@ import dev.xdark.ssvm.process.ProcessHandleManager;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Tests for Process API.
+ * @author Justus Garbe
+ */
 public class ProcessTest {
 
     @Test

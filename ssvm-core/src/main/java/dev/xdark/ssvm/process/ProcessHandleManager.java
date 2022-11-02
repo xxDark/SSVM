@@ -2,6 +2,10 @@ package dev.xdark.ssvm.process;
 
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Manager for process handles
+ * @author Justus Garbe
+ */
 public interface ProcessHandleManager {
 
     /**

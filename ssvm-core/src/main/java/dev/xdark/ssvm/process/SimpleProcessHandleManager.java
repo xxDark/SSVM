@@ -1,5 +1,9 @@
 package dev.xdark.ssvm.process;
 
+/**
+ * Simple stub version of {@link ProcessHandleManager} that does not support any process management.
+ * @author Justus Garbe
+ */
 public class SimpleProcessHandleManager implements ProcessHandleManager {
     @Override
     public long createProcessHandle(String cmdLine, String[] env, String dir, long[] fds, boolean errorRedirect) {

@@ -10,6 +10,10 @@ import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.concurrent.ThreadLocalRandom;
 
+/**
+ * Host implementation for {@link ProcessHandleManager}.
+ * @author Justus Garbe
+ */
 public class HostProcessHandleManager implements ProcessHandleManager {
 
     private final Map<Handle, Process> processes = new HashMap<>();

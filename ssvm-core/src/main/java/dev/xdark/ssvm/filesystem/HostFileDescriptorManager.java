@@ -1,11 +1,9 @@
 package dev.xdark.ssvm.filesystem;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import dev.xdark.ssvm.io.Handle;
+import dev.xdark.ssvm.util.IOHacks;
+
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -55,6 +53,37 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 	@Override
 	public synchronized OutputStream getFdOut(long handle) {
 		return outputs.get(Handle.threadLocal(handle));
+	}
+
+	@Override
+	public synchronized long getRealHandle(long handle) {
+		Handle h = Handle.threadLocal(handle);
+		try {
+			FileDescriptor fd = null;
+			InputStream in = inputs.get(h);
+			if (in != null) {
+				if(in == stdin) fd = FileDescriptor.in;
+				else {
+					if (in instanceof FileInputStream) {
+						fd = ((FileInputStream) in).getFD();
+					}
+				}
+			}
+			OutputStream out = outputs.get(h);
+			if (out != null) {
+				if(out == stdout) fd = FileDescriptor.out;
+				else if(out == stderr) fd = FileDescriptor.err;
+				else {
+					if (out instanceof FileOutputStream) {
+						fd = ((FileOutputStream) out).getFD();
+					}
+				}
+			}
+			if(fd != null) return IOHacks.getHandleOrFd(fd);
+			else return 0L;
+		} catch (IOException e) {
+			return 0L;
+		}
 	}
 
 	@Override
@@ -122,19 +151,22 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 			case READ: {
 				long fd = newFD();
 				FileInputStream in = new FileInputStream(path);
-				inputs.put(Handle.of(fd), in);
+				Handle h = Handle.of(fd);
+				inputs.put(h, in);
 				return fd;
 			}
 			case WRITE: {
 				long fd = newFD();
 				FileOutputStream out = new FileOutputStream(path);
-				outputs.put(Handle.of(fd), out);
+				Handle h = Handle.of(fd);
+				outputs.put(h, out);
 				return fd;
 			}
 			case APPEND: {
 				long fd = newFD();
 				FileOutputStream out = new FileOutputStream(path, true);
-				outputs.put(Handle.of(fd), out);
+				Handle h = Handle.of(fd);
+				outputs.put(h, out);
 				return fd;
 			}
 			default:

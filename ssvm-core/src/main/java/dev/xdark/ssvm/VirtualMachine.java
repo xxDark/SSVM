@@ -38,6 +38,8 @@ import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.natives.IntrinsicsNatives;
 import dev.xdark.ssvm.operation.VMOperations;
+import dev.xdark.ssvm.process.ProcessHandleManager;
+import dev.xdark.ssvm.process.SimpleProcessHandleManager;
 import dev.xdark.ssvm.symbol.Primitives;
 import dev.xdark.ssvm.symbol.Symbols;
 import dev.xdark.ssvm.synchronizer.ObjectSynchronizer;
@@ -72,6 +74,7 @@ public class VirtualMachine implements VMEventCollection {
 	private final ClassDefiner classDefiner;
 	private final ThreadManager threadManager;
 	private final FileDescriptorManager fileDescriptorManager;
+	private final ProcessHandleManager processHandleManager;
 	private final NativeLibraryManager nativeLibraryManager;
 	private final TimeManager timeManager;
 	private final ManagementInterface managementInterface;
@@ -108,6 +111,7 @@ public class VirtualMachine implements VMEventCollection {
 		classDefiner = createClassDefiner();
 		threadManager = createThreadManager();
 		fileDescriptorManager = createFileDescriptorManager();
+		processHandleManager = createProcessHandleManager();
 		nativeLibraryManager = createNativeLibraryManager();
 		timeManager = createTimeManager();
 		managementInterface = createManagementInterface();
@@ -149,6 +153,10 @@ public class VirtualMachine implements VMEventCollection {
 
 	protected FileDescriptorManager createFileDescriptorManager() {
 		return new SimpleFileDescriptorManager();
+	}
+
+	protected ProcessHandleManager createProcessHandleManager() {
+		return new SimpleProcessHandleManager();
 	}
 
 	protected NativeLibraryManager createNativeLibraryManager() {
@@ -344,6 +352,13 @@ public class VirtualMachine implements VMEventCollection {
 	 */
 	public FileDescriptorManager getFileDescriptorManager() {
 		return fileDescriptorManager;
+	}
+
+	/**
+	 * @return Process handle manager.
+	 */
+	public ProcessHandleManager getProcessHandleManager() {
+		return processHandleManager;
 	}
 
 	/**

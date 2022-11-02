@@ -26,6 +26,11 @@ public class SimpleFileDescriptorManager implements FileDescriptorManager {
 	}
 
 	@Override
+	public long getRealHandle(long handle) {
+		return 0;
+	}
+
+	@Override
 	public boolean close(long handle) {
 		return false;
 	}

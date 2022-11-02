@@ -1,6 +1,6 @@
 package dev.xdark.ssvm.threadlocal;
 
-import dev.xdark.ssvm.filesystem.Handle;
+import dev.xdark.ssvm.io.Handle;
 import dev.xdark.ssvm.memory.allocation.MemoryAddress;
 import me.coley.cafedude.io.ClassFileReader;
 

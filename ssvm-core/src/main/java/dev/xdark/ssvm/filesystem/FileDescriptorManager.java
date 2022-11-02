@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.filesystem;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,6 +34,8 @@ public interface FileDescriptorManager {
 	 * @return mapped stream.
 	 */
 	OutputStream getFdOut(long handle);
+
+	long getRealHandle(long handle);
 
 	/**
 	 * Called when VM closes file descriptor.

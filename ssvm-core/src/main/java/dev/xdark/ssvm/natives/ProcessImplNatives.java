@@ -17,6 +17,10 @@ import lombok.experimental.UtilityClass;
 import java.io.IOException;
 import java.util.StringTokenizer;
 
+/**
+ * ProcessImpl classes natives
+ * @author Justus Garbe
+ */
 @UtilityClass
 public class ProcessImplNatives {
 

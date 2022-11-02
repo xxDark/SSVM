@@ -60,8 +60,8 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 		Handle h = Handle.threadLocal(handle);
 		try {
 			FileDescriptor fd = null;
-			if (inputs.containsKey(h)) {
-				InputStream in = inputs.get(h);
+			InputStream in = inputs.get(h);
+			if (in != null) {
 				if(in == stdin) fd = FileDescriptor.in;
 				else {
 					if (in instanceof FileInputStream) {
@@ -69,8 +69,8 @@ public class HostFileDescriptorManager implements FileDescriptorManager {
 					}
 				}
 			}
-			if (outputs.containsKey(h)) {
-				OutputStream out = outputs.get(h);
+			OutputStream out = outputs.get(h);
+			if (out != null) {
 				if(out == stdout) fd = FileDescriptor.out;
 				else if(out == stderr) fd = FileDescriptor.err;
 				else {

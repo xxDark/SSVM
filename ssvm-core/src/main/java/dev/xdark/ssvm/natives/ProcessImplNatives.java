@@ -2,6 +2,7 @@ package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
+import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.filesystem.FileDescriptorManager;
@@ -27,13 +28,14 @@ public class ProcessImplNatives {
         ProcessHandleManager manager = vm.getProcessHandleManager();
 
         VMOperations ops = vm.getOperations();
+        VMInterface vmi = vm.getInterface();
 
         // JDK 8
         // windows has the implementation in ProcessImpl
         JavaMethod createWindowsProcess = genericProcessImpl.getMethod("create",
                 "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[JZ)J");
         if(createWindowsProcess != null) { // windows jdk 8
-            vm.getInterface().setInvoker(createWindowsProcess, (ctx) -> {
+            vmi.setInvoker(createWindowsProcess, (ctx) -> {
                 Locals locals = ctx.getLocals();
                 String cmd = ops.readUtf8(locals.loadReference(0));
                 String env = ops.readUtf8(locals.loadReference(1));
@@ -47,32 +49,32 @@ public class ProcessImplNatives {
                 return Result.ABORT;
             });
             // same goes for all other handle related methods
-            vm.getInterface().setInvoker(genericProcessImpl, "getStillActive", "()J", (ctx) -> {
+            vmi.setInvoker(genericProcessImpl, "getStillActive", "()J", (ctx) -> {
                 ctx.setResult(ProcessHandleManager.STILL_ACTIVE); // needs to be -1 because it needs to be different from getExitCodeProcess
                 return Result.ABORT;
             });
-            vm.getInterface().setInvoker(genericProcessImpl, "getExitCodeProcess", "(J)I", (ctx) -> {
+            vmi.setInvoker(genericProcessImpl, "getExitCodeProcess", "(J)I", (ctx) -> {
                 ctx.setResult(manager.getExitCode(ctx.getLocals().loadLong(0)));
                 return Result.ABORT;
             });
-            vm.getInterface().setInvoker(genericProcessImpl, "waitForInterruptibly", "(J)V", (ctx) -> {
+            vmi.setInvoker(genericProcessImpl, "waitForInterruptibly", "(J)V", (ctx) -> {
                 manager.waitForProcess(ctx.getLocals().loadLong(0), 0);
                 return Result.ABORT;
             });
-            vm.getInterface().setInvoker(genericProcessImpl, "waitForTimeoutInterruptibly", "(JJ)V", (ctx) -> {
+            vmi.setInvoker(genericProcessImpl, "waitForTimeoutInterruptibly", "(JJ)V", (ctx) -> {
                 Locals locals = ctx.getLocals();
                 manager.waitForProcess(locals.loadLong(0), locals.loadLong(1));
                 return Result.ABORT;
             });
-            vm.getInterface().setInvoker(genericProcessImpl, "terminateProcess", "(J)V", (ctx) -> {
+            vmi.setInvoker(genericProcessImpl, "terminateProcess", "(J)V", (ctx) -> {
                 manager.terminateProcess(ctx.getLocals().loadLong(0));
                 return Result.ABORT;
             });
-            vm.getInterface().setInvoker(genericProcessImpl, "isProcessAlive", "(J)Z", (ctx) -> {
+            vmi.setInvoker(genericProcessImpl, "isProcessAlive", "(J)Z", (ctx) -> {
                 ctx.setResult(manager.processAlive(ctx.getLocals().loadLong(0)) ? 1 : 0);
                 return Result.ABORT;
             });
-            vm.getInterface().setInvoker(genericProcessImpl, "openForAtomicAppend", "(Ljava/lang/String;)J", (ctx) -> {
+            vmi.setInvoker(genericProcessImpl, "openForAtomicAppend", "(Ljava/lang/String;)J", (ctx) -> {
                 try {
                     vm.getFileDescriptorManager().open(ops.readUtf8(ctx.getLocals().loadReference(0)),
                             FileDescriptorManager.APPEND);
@@ -81,7 +83,7 @@ public class ProcessImplNatives {
                 }
                 return Result.ABORT;
             });
-            vm.getInterface().setInvoker(genericProcessImpl, "closeHandle", "(J)V", (ctx) -> {
+            vmi.setInvoker(genericProcessImpl, "closeHandle", "(J)V", (ctx) -> {
                 manager.closeProcessHandle(ctx.getLocals().loadLong(0));
                 return Result.ABORT;
             });
@@ -114,7 +116,7 @@ public class ProcessImplNatives {
             //		waitForProcessExit;
             //		forkAndExec;
             //		destroyProcess;
-            vm.getInterface().setInvoker(forkAndExec, (ctx) -> {
+            vmi.setInvoker(forkAndExec, (ctx) -> {
                 Locals locals = ctx.getLocals();
                 // 1 - mode (int) - ignored
                 // 2 - helperpath (byte[]) - ignored
@@ -157,14 +159,14 @@ public class ProcessImplNatives {
                 }
             });
             // same goes for all other handle related methods
-            vm.getInterface().setInvoker(unixProcessImpl, "init", "()V", MethodInvoker.noop());
-            vm.getInterface().setInvoker(unixProcessImpl, "waitForProcessExit", "(I)I", (ctx) -> {
+            vmi.setInvoker(unixProcessImpl, "init", "()V", MethodInvoker.noop());
+            vmi.setInvoker(unixProcessImpl, "waitForProcessExit", "(I)I", (ctx) -> {
                 int handle = ctx.getLocals().loadInt(1);
                 manager.waitForProcess(handle, 0);
                 ctx.setResult(manager.getExitCode(handle));
                 return Result.ABORT;
             });
-            vm.getInterface().setInvoker(unixProcessImpl, "destroyProcess", "(IZ)V", (ctx) -> {
+            vmi.setInvoker(unixProcessImpl, "destroyProcess", "(IZ)V", (ctx) -> {
                 manager.terminateProcess(ctx.getLocals().loadInt(0));
                 return Result.ABORT;
             });

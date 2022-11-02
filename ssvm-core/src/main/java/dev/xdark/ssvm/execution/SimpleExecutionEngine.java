@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.execution;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.thread.ThreadManager;
@@ -16,7 +17,7 @@ import org.objectweb.asm.Opcodes;
  */
 public class SimpleExecutionEngine implements ExecutionEngine {
 
-	private static final ExecutionOptions DEFAULT_OPTIONS = ExecutionOptions.builder().build();
+	private static final MethodInvoker FALLBACK = new InterpretedInvoker();
 	private final VirtualMachine vm;
 
 	public SimpleExecutionEngine(VirtualMachine vm) {
@@ -49,7 +50,11 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 		vm.getMethodEnter().invoke(ctx);
 		boolean doCleanup = true;
 		try {
-			Result result = vmi.getInvoker(jm).intercept(ctx);
+			MethodInvoker invoker = vmi.getInvoker(jm);
+			if (invoker == null) {
+				invoker = FALLBACK;
+			}
+			Result result = invoker.intercept(ctx);
 			if (result == Result.ABORT) {
 				return ctx;
 			}
@@ -78,10 +83,5 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 			}
 		}
 		throw new PanicException("unreachable code");
-	}
-
-	@Override
-	public ExecutionOptions defaultOptions() {
-		return DEFAULT_OPTIONS;
 	}
 }

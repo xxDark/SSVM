@@ -22,9 +22,4 @@ public class DelegatingExecutionEngine implements ExecutionEngine {
 	public <R extends ValueSink> ExecutionContext<R> execute(ExecutionRequest<R> ctx) {
 		return delegate.execute(ctx);
 	}
-
-	@Override
-	public ExecutionOptions defaultOptions() {
-		return delegate.defaultOptions();
-	}
 }

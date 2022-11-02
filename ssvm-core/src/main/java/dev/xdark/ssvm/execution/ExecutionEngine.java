@@ -15,9 +15,4 @@ public interface ExecutionEngine {
 	 * @param ctx     Context to execute.
 	 */
 	<R extends ValueSink> ExecutionContext<R> execute(ExecutionRequest<R> ctx);
-
-	/**
-	 * @return Default execution options.
-	 */
-	ExecutionOptions defaultOptions();
 }

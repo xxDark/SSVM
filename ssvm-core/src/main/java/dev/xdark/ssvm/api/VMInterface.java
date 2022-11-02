@@ -71,16 +71,6 @@ public final class VMInterface {
 	 * @return method invoker.
 	 */
 	public MethodInvoker getInvoker(JavaMethod method) {
-		return invokerMap.getOrDefault(method, FALLBACK_INVOKER);
-	}
-
-	/**
-	 * Returns method invoker based off a method.
-	 *
-	 * @param method method to search invoker for.
-	 * @return method invoker.
-	 */
-	public MethodInvoker getInvokerIfPresent(JavaMethod method) {
 		return invokerMap.get(method);
 	}
 

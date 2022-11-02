@@ -49,7 +49,7 @@ public class SimpleMemoryManager implements MemoryManager {
 		objects.put(MemoryAddress.of(emptyHeapBlock.getAddress()), value);
 		nullValue = value;
 		// TODO rework object headers.
-		int addressSize = allocator.addressSize() + 4; // 4 bytes for lock
+		int addressSize = 4 + 4; // 4 bytes for lock, 4 bytes for class id
 		objectHeaderSize = addressSize;
 		arrayHeaderSize = addressSize + 4;
 		arrayLengthOffset = addressSize;
@@ -66,10 +66,10 @@ public class SimpleMemoryManager implements MemoryManager {
 		MemoryData data = reference.getMemory().getData();
 		ObjectSynchronizer synchronizer = vm.getObjectSynchronizer();
 		Mutex mutex;
-		int id = data.readInt(8L);
+		int id = data.readInt(4L);
 		if (id == -1) {
 			mutex = synchronizer.acquire();
-			data.writeInt(8L, mutex.id());
+			data.writeInt(4L, mutex.id());
 		} else {
 			mutex = synchronizer.get(id);
 		}
@@ -132,8 +132,7 @@ public class SimpleMemoryManager implements MemoryManager {
 		if (object.isNull()) {
 			throw new PanicException("Null value");
 		}
-		ObjectValue classValue = getReference(object.getData().readLong(0L));
-		return vm.getClassStorage().lookup(classValue);
+		return vm.getClassStorage().lookup(object.getData().readInt(0L));
 	}
 
 	@Override
@@ -245,13 +244,12 @@ public class SimpleMemoryManager implements MemoryManager {
 		if (block == null) {
 			return null; // out of memory
 		}
-		block.getData().writeInt(8L, -1);
+		block.getData().writeInt(4L, -1);
 		return block;
 	}
 
 	private void setClass(MemoryBlock memory, JavaClass jc) {
-		long address = jc.getOop().getMemory().getAddress();
-		memory.getData().writeLong(0L, address);
+		memory.getData().writeInt(0L, jc.getId());
 	}
 
 	private static MemoryAddress tlcAddress(long addr) {

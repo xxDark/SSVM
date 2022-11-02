@@ -9,6 +9,11 @@ import java.lang.reflect.Method;
 @UtilityClass
 public class IOHacks {
 
+    /**
+     * Returns either the file descriptor of a {@link FileDescriptor} object or a handle depending on the platform.
+     * @param fd the file descriptor
+     * @return the file descriptor or handle
+     */
     public long getHandleOrFd(FileDescriptor fd) {
         try {
             return fdHandle == null ? fdField.getInt(fd) : fdHandle.getLong(fd);

@@ -1,7 +1,7 @@
 package dev.xdark.ssvm.thread.virtual;
 
 import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.filesystem.Handle;
+import dev.xdark.ssvm.io.Handle;
 import dev.xdark.ssvm.jvmti.ThreadState;
 import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
 import dev.xdark.ssvm.operation.VMOperations;

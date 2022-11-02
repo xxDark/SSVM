@@ -147,13 +147,18 @@ public class HostProcessHandleManager implements ProcessHandleManager {
 
     @Override
     public synchronized long getExitCode(long handle) {
-        return processes.get(Handle.threadLocal(handle)).exitValue();
+        Process process = processes.get(Handle.threadLocal(handle));
+        if(process != null) {
+            return process.exitValue();
+        }
+        return -1;
     }
 
     @Override
     public void waitForProcess(long handle, long timeout) {
         try {
             Process process = processes.get(Handle.threadLocal(handle));
+            if(process == null) return;
             if(timeout == 0) {
                 process.waitFor();
             } else {
@@ -165,17 +170,24 @@ public class HostProcessHandleManager implements ProcessHandleManager {
     }
 
     @Override
-    public void terminateProcess(long handle) {
-        processes.get(Handle.threadLocal(handle)).destroy();
+    public synchronized void terminateProcess(long handle) {
+        Process process = processes.get(Handle.threadLocal(handle));
+        if(process != null) {
+            process.destroy();
+        }
     }
 
     @Override
-    public boolean processAlive(long handle) {
-        return processes.get(Handle.threadLocal(handle)).isAlive();
+    public synchronized boolean processAlive(long handle) {
+        Process process = processes.get(Handle.threadLocal(handle));
+        if(process != null) {
+            return process.isAlive();
+        }
+        return false;
     }
 
     @Override
-    public void closeProcessHandle(long handle) {
+    public synchronized void closeProcessHandle(long handle) {
         processes.remove(Handle.threadLocal(handle));
     }
 

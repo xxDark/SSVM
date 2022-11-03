@@ -38,7 +38,7 @@ class LinkHelper {
 	void checkField(JavaClass type, String name, String desc, Result<Resolution<JavaClass, JavaField>> result) {
 		if (!result.isSuccess()) {
 			if (result.error() == ResolutionError.NO_SUCH_FIELD) {
-				vm.getOperations().throwException(vm.getSymbols().java_lang_NoSuchMethodError(), format(type, name, desc));
+				vm.getOperations().throwException(vm.getSymbols().java_lang_NoSuchFieldError(), format(type, name, desc));
 			} else {
 				vm.getOperations().throwException(vm.getSymbols().java_lang_IncompatibleClassChangeError());
 			}

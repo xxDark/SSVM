@@ -13,7 +13,6 @@ import dev.xdark.ssvm.mirror.type.JavaClass;
  */
 public final class LinkResolver {
 
-	private final VirtualMachine vm;
 	private final LinkHelper linkHelper;
 	final dev.xdark.jlinker.LinkResolver<JavaClass, JavaMethod, JavaField> delegate;
 
@@ -21,7 +20,6 @@ public final class LinkResolver {
 	 * @param vm VM instance.
 	 */
 	public LinkResolver(VirtualMachine vm) {
-		this.vm = vm;
 		linkHelper = new LinkHelper(vm);
 		delegate = dev.xdark.jlinker.LinkResolver.jvm(new ImmediateArenaAllocator<>());
 	}

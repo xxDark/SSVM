@@ -4,6 +4,7 @@ import dev.xdark.ssvm.TestUtil;
 import dev.xdark.ssvm.VMTest;
 import dev.xdark.ssvm.socket.SimpleSocketManager;
 import dev.xdark.ssvm.socket.SocketApiInstaller;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -11,6 +12,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+@Disabled("Socket implementation is not ready yet")
 public class SocketTest {
 
 	@Test

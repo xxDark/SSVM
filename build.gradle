@@ -28,7 +28,6 @@ subprojects {
     }
 
     configurations {
-        testFixturesImplementation.extendsFrom testImplementation
         testFixturesAnnotationProcessor.extendsFrom testAnnotationProcessor
         testFixturesCompileOnly.extendsFrom testCompileOnly
     }
@@ -48,8 +47,8 @@ subprojects {
 
         compileOnly 'org.jetbrains:annotations:23.0.0'
         testCompileOnly 'org.jetbrains:annotations:23.0.0'
-
     }
+
     test {
         useJUnitPlatform()
     }

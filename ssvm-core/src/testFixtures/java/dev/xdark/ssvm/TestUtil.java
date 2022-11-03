@@ -17,7 +17,6 @@ import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.opentest4j.TestAbortedException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -102,9 +101,7 @@ public class TestUtil {
 		} catch (VMException ex1) {
 			System.err.println(ex1.getOop());
 		}
-		TestAbortedException t = new TestAbortedException();
-		t.initCause(ex);
-		throw t;
+		throw ex;
 	}
 
 	public void test(Class<?> klass, int flag) {

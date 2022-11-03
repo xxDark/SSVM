@@ -17,6 +17,9 @@ public interface FileManager {
 	int READ = 0;
 	int WRITE = 1;
 	int APPEND = 2;
+	int ACCESS_READ    = 0x04;
+	int ACCESS_WRITE   = 0x02;
+	int ACCESS_EXECUTE = 0x01;
 
 	/**
 	 * Maps VM file descriptor to {@link InputStream}.

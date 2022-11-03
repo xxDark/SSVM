@@ -128,5 +128,31 @@ public class OldFileSystemNatives {
 			}
 			return Result.ABORT;
 		});
+		vmi.setInvoker(fs, "checkAccess", "(Ljava/io/File;I)Z", ctx -> {
+			VMOperations ops = vm.getOperations();
+			ObjectValue value = ctx.getLocals().loadReference(1);
+			ops.checkNotNull(value);
+			try {
+				String path = ops.readUtf8(ops.getReference(value, "path", "Ljava/lang/String;"));
+				BasicFileAttributes attributes = fileManager.getAttributes(path, BasicFileAttributes.class);
+				if (attributes == null) {
+					ctx.setResult(0);
+				} else {
+					int access = ctx.getLocals().loadInt(2);
+					switch (access) {
+						case FileManager.ACCESS_READ:
+						case FileManager.ACCESS_EXECUTE:
+							ctx.setResult(1);
+							break;
+						case FileManager.ACCESS_WRITE:
+							ctx.setResult(attributes.isDirectory() ? 0 : 1);
+							break;
+					}
+				}
+			} catch (IOException ex) {
+				ops.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
+			}
+			return Result.ABORT;
+		});
 	}
 }

@@ -3,6 +3,7 @@ package dev.xdark.ssvm.filesystem;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.annotation.Native;
 import java.nio.file.LinkOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.zip.ZipEntry;
@@ -100,6 +101,22 @@ public interface FileManager {
 	 * @see FileManager#APPEND
 	 */
 	long open(String path, int mode) throws IOException;
+
+	// File ops
+
+	boolean rename(String oldPath, String newPath);
+
+	boolean delete(String path);
+
+	boolean checkAccess(String path, int access);
+
+	boolean setPermission(String path, int flag, boolean value, boolean ownerOnly);
+
+	boolean setLastModifiedTime(String path, long time);
+
+	boolean setReadOnly(String path);
+
+	boolean createFileExclusively(String path) throws IOException;
 
 	/**
 	 * Returns attributes of a file.

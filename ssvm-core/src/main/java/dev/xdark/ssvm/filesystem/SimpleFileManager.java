@@ -91,6 +91,11 @@ public class SimpleFileManager implements FileManager {
 	}
 
 	@Override
+	public long getSpace(String path, int id) {
+		return 0;
+	}
+
+	@Override
 	public boolean createFileExclusively(String path) throws IOException {
 		return false;
 	}

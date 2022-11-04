@@ -225,6 +225,17 @@ public class HostFileManager implements FileManager {
 	}
 
 	@Override
+	public long getSpace(String path, int id) {
+		File file = new File(path);
+		switch (id) {
+			case FileManager.SPACE_TOTAL: return file.getTotalSpace();
+			case FileManager.SPACE_FREE: return file.getFreeSpace();
+			case FileManager.SPACE_USABLE: return file.getUsableSpace();
+			default: return 0L;
+		}
+	}
+
+	@Override
 	public boolean createFileExclusively(String path) throws IOException {
 		return new File(path).createNewFile();
 	}

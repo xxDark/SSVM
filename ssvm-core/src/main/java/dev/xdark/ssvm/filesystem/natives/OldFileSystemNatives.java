@@ -195,5 +195,14 @@ public class OldFileSystemNatives {
 			ctx.setResult(fileManager.setPermission(path, access, enable, ownerOnly) ? 1 : 0);
 			return Result.ABORT;
 		});
+		vmi.setInvoker(fs, "getSpace", "(Ljava/io/File;I)J", ctx -> {
+			VMOperations ops = vm.getOperations();
+			ObjectValue value = ctx.getLocals().loadReference(1);
+			ops.checkNotNull(value);
+			String path = ops.readUtf8(ops.getReference(value, "path", "Ljava/lang/String;"));
+			int id = ctx.getLocals().loadInt(2);
+			ctx.setResult(fileManager.getSpace(path, id));
+			return Result.ABORT;
+		});
 	}
 }

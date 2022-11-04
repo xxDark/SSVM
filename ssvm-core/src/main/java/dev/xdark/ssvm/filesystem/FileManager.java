@@ -21,6 +21,9 @@ public interface FileManager {
 	int ACCESS_READ    = 0x04;
 	int ACCESS_WRITE   = 0x02;
 	int ACCESS_EXECUTE = 0x01;
+	int SPACE_TOTAL  = 0;
+	int SPACE_FREE   = 1;
+	int SPACE_USABLE = 2;
 
 	/**
 	 * Maps VM file descriptor to {@link InputStream}.
@@ -162,6 +165,17 @@ public interface FileManager {
 	 * @return {@code true} if file was set to read-only, {@code false} otherwise.
 	 */
 	boolean setReadOnly(String path);
+
+	/**
+	 * Get the space that a file occupies.
+	 * @param path Path to get space.
+	 * @param id Space id.
+	 * @return Space that a file occupies.
+	 * @see FileManager#SPACE_TOTAL
+	 * @see FileManager#SPACE_FREE
+	 * @see FileManager#SPACE_USABLE
+	 */
+	long getSpace(String path, int id);
 
 	/**
 	 * Create a file exclusively

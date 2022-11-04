@@ -13,6 +13,7 @@ import lombok.experimental.UtilityClass;
 
 import java.io.IOException;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 
 /**
  * Initializes file system in java.io package.
@@ -126,6 +127,81 @@ public class OldFileSystemNatives {
 			} catch (IOException ex) {
 				ctx.setResult(0L);
 			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(fs, "checkAccess", "(Ljava/io/File;I)Z", ctx -> {
+			VMOperations ops = vm.getOperations();
+			ObjectValue value = ctx.getLocals().loadReference(1);
+			ops.checkNotNull(value);
+			String path = ops.readUtf8(ops.getReference(value, "path", "Ljava/lang/String;"));
+			int access = ctx.getLocals().loadInt(2);
+			ctx.setResult(fileManager.checkAccess(path, access) ? 1 : 0);
+			return Result.ABORT;
+		});
+		vmi.setInvoker(fs, "rename0", "(Ljava/io/File;Ljava/io/File;)Z", ctx -> {
+			VMOperations ops = vm.getOperations();
+			ObjectValue value = ctx.getLocals().loadReference(1);
+			ops.checkNotNull(value);
+			String path = ops.readUtf8(ops.getReference(value, "path", "Ljava/lang/String;"));
+			value = ctx.getLocals().loadReference(2);
+			ops.checkNotNull(value);
+			String newPath = ops.readUtf8(ops.getReference(value, "path", "Ljava/lang/String;"));
+			ctx.setResult(fileManager.rename(path, newPath) ? 1 : 0);
+			return Result.ABORT;
+		});
+		vmi.setInvoker(fs, "delete0", "(Ljava/io/File;)Z", ctx -> {
+			VMOperations ops = vm.getOperations();
+			ObjectValue value = ctx.getLocals().loadReference(1);
+			ops.checkNotNull(value);
+			String path = ops.readUtf8(ops.getReference(value, "path", "Ljava/lang/String;"));
+			ctx.setResult(fileManager.delete(path) ? 1 : 0);
+			return Result.ABORT;
+		});
+		vmi.setInvoker(fs, "setLastModifiedTime", "(Ljava/io/File;J)Z", ctx -> {
+			VMOperations ops = vm.getOperations();
+			ObjectValue value = ctx.getLocals().loadReference(1);
+			ops.checkNotNull(value);
+			String path = ops.readUtf8(ops.getReference(value, "path", "Ljava/lang/String;"));
+			long time = ctx.getLocals().loadLong(2);
+			ctx.setResult(fileManager.setLastModifiedTime(path, time) ? 1 : 0);
+			return Result.ABORT;
+		});
+		vmi.setInvoker(fs, "setReadOnly", "(Ljava/io/File;)Z", ctx -> {
+			VMOperations ops = vm.getOperations();
+			ObjectValue value = ctx.getLocals().loadReference(1);
+			ops.checkNotNull(value);
+			String path = ops.readUtf8(ops.getReference(value, "path", "Ljava/lang/String;"));
+			ctx.setResult(fileManager.setReadOnly(path) ? 1 : 0);
+			return Result.ABORT;
+		});
+		vmi.setInvoker(fs, "createFileExclusively", "(Ljava/lang/String;)Z", ctx -> {
+			VMOperations ops = vm.getOperations();
+			String path = ops.readUtf8(ctx.getLocals().loadReference(1));
+			try {
+				ctx.setResult(fileManager.createFileExclusively(path) ? 1 : 0);
+			} catch (IOException ex) {
+				ops.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
+			}
+			return Result.ABORT;
+		});
+		vmi.setInvoker(fs, "setPermission", "(Ljava/io/File;IZZ)Z", ctx -> {
+			VMOperations ops = vm.getOperations();
+			ObjectValue value = ctx.getLocals().loadReference(1);
+			ops.checkNotNull(value);
+			String path = ops.readUtf8(ops.getReference(value, "path", "Ljava/lang/String;"));
+			int access = ctx.getLocals().loadInt(2);
+			boolean enable = ctx.getLocals().loadInt(3) != 0;
+			boolean ownerOnly = ctx.getLocals().loadInt(4) != 0;
+			ctx.setResult(fileManager.setPermission(path, access, enable, ownerOnly) ? 1 : 0);
+			return Result.ABORT;
+		});
+		vmi.setInvoker(fs, "getSpace", "(Ljava/io/File;I)J", ctx -> {
+			VMOperations ops = vm.getOperations();
+			ObjectValue value = ctx.getLocals().loadReference(1);
+			ops.checkNotNull(value);
+			String path = ops.readUtf8(ops.getReference(value, "path", "Ljava/lang/String;"));
+			int id = ctx.getLocals().loadInt(2);
+			ctx.setResult(fileManager.getSpace(path, id));
 			return Result.ABORT;
 		});
 	}

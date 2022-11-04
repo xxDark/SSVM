@@ -3,6 +3,7 @@ package dev.xdark.ssvm.filesystem;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.annotation.Native;
 import java.nio.file.LinkOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.zip.ZipEntry;
@@ -17,6 +18,12 @@ public interface FileManager {
 	int READ = 0;
 	int WRITE = 1;
 	int APPEND = 2;
+	int ACCESS_READ    = 0x04;
+	int ACCESS_WRITE   = 0x02;
+	int ACCESS_EXECUTE = 0x01;
+	int SPACE_TOTAL  = 0;
+	int SPACE_FREE   = 1;
+	int SPACE_USABLE = 2;
 
 	/**
 	 * Maps VM file descriptor to {@link InputStream}.
@@ -97,6 +104,87 @@ public interface FileManager {
 	 * @see FileManager#APPEND
 	 */
 	long open(String path, int mode) throws IOException;
+
+	// File ops
+
+	/**
+	 * Renames a file path to another path.
+	 *
+	 * @param oldPath Old path.
+	 * @param newPath New path.
+	 * @return {@code true} if file was renamed, {@code false} otherwise.
+	 */
+	boolean rename(String oldPath, String newPath);
+
+	/**
+	 * Deletes a file path.
+	 *
+	 * @param path Path to delete.
+	 * @return {@code true} if file was deleted, {@code false} otherwise.
+	 */
+	boolean delete(String path);
+
+	/**
+	 * Returns if the path has specific access.
+	 * @param path Path to check.
+	 * @param access Access to check.
+	 * @return {@code true} if path has access, {@code false} otherwise.
+	 * @see FileManager#ACCESS_READ
+	 * @see FileManager#ACCESS_WRITE
+	 * @see FileManager#ACCESS_EXECUTE
+	 */
+	boolean checkAccess(String path, int access);
+
+	/**
+	 * Sets a file permission on the path.
+	 *
+	 * @param path Path to set permission.
+	 * @param flag Permission flag.
+	 * @param value Permission value.
+	 * @param ownerOnly If permission should be set only for owner.
+	 * @return {@code true} if permission was set, {@code false} otherwise.
+	 * @see FileManager#ACCESS_READ
+	 * @see FileManager#ACCESS_WRITE
+	 * @see FileManager#ACCESS_EXECUTE
+	 */
+	boolean setPermission(String path, int flag, boolean value, boolean ownerOnly);
+
+	/**
+	 * Sets the last modified time of the file.
+	 *
+	 * @param path Path to set time.
+	 * @param time Time to set.
+	 * @return {@code true} if time was set, {@code false} otherwise.
+	 */
+	boolean setLastModifiedTime(String path, long time);
+
+	/**
+	 * Sets the file to be read-only.
+	 *
+	 * @param path Path to set.
+	 * @return {@code true} if file was set to read-only, {@code false} otherwise.
+	 */
+	boolean setReadOnly(String path);
+
+	/**
+	 * Get the space that a file occupies.
+	 * @param path Path to get space.
+	 * @param id Space id.
+	 * @return Space that a file occupies.
+	 * @see FileManager#SPACE_TOTAL
+	 * @see FileManager#SPACE_FREE
+	 * @see FileManager#SPACE_USABLE
+	 */
+	long getSpace(String path, int id);
+
+	/**
+	 * Create a file exclusively
+	 *
+	 * @param path Path to create.
+	 * @return {@code true} if file was created, {@code false} otherwise.
+	 * @throws IOException if the path is invalid.
+	 */
+	boolean createFileExclusively(String path) throws IOException;
 
 	/**
 	 * Returns attributes of a file.

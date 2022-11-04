@@ -61,6 +61,46 @@ public class SimpleFileManager implements FileManager {
 	}
 
 	@Override
+	public boolean rename(String oldPath, String newPath) {
+		return false;
+	}
+
+	@Override
+	public boolean delete(String path) {
+		return false;
+	}
+
+	@Override
+	public boolean checkAccess(String path, int access) {
+		return false;
+	}
+
+	@Override
+	public boolean setPermission(String path, int flag, boolean value, boolean ownerOnly) {
+		return false;
+	}
+
+	@Override
+	public boolean setLastModifiedTime(String path, long time) {
+		return false;
+	}
+
+	@Override
+	public boolean setReadOnly(String path) {
+		return false;
+	}
+
+	@Override
+	public long getSpace(String path, int id) {
+		return 0;
+	}
+
+	@Override
+	public boolean createFileExclusively(String path) throws IOException {
+		return false;
+	}
+
+	@Override
 	public <A extends BasicFileAttributes> A getAttributes(String path, Class<A> attrType, LinkOption... options) throws IOException {
 		return null;
 	}

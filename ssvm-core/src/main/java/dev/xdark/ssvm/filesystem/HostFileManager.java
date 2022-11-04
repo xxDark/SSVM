@@ -183,6 +183,64 @@ public class HostFileManager implements FileManager {
 	}
 
 	@Override
+	public boolean rename(String oldPath, String newPath) {
+		return new File(oldPath).renameTo(new File(newPath));
+	}
+
+	@Override
+	public boolean delete(String path) {
+		return new File(path).delete();
+	}
+
+	@Override
+	public boolean checkAccess(String path, int access) {
+		File file = new File(path);
+		switch (access) {
+			case FileManager.ACCESS_READ: return file.canRead();
+			case FileManager.ACCESS_WRITE: return file.canWrite();
+			case FileManager.ACCESS_EXECUTE: return file.canExecute();
+			default: return false;
+		}
+	}
+
+	@Override
+	public boolean setPermission(String path, int flag, boolean value, boolean ownerOnly) {
+		File file = new File(path);
+		switch (flag) {
+			case ACCESS_READ: return file.setReadable(value);
+			case ACCESS_WRITE: return file.setWritable(value);
+			case ACCESS_EXECUTE: return file.setExecutable(value);
+			default: return false;
+		}
+	}
+
+	@Override
+	public boolean setLastModifiedTime(String path, long time) {
+		return new File(path).setLastModified(time);
+	}
+
+	@Override
+	public boolean setReadOnly(String path) {
+		return new File(path).setReadOnly();
+	}
+
+	@Override
+	public long getSpace(String path, int id) {
+		File file = new File(path);
+		switch (id) {
+			case FileManager.SPACE_TOTAL: return file.getTotalSpace();
+			case FileManager.SPACE_FREE: return file.getFreeSpace();
+			case FileManager.SPACE_USABLE: return file.getUsableSpace();
+			default: return 0L;
+		}
+	}
+
+	@Override
+	public boolean createFileExclusively(String path) throws IOException {
+		return new File(path).createNewFile();
+	}
+
+	@Override
 	public <A extends BasicFileAttributes> A getAttributes(String path, Class<A> attrType, LinkOption... options) throws IOException {
 		Path p = Paths.get(path);
 		if (!p.toFile().exists()) {

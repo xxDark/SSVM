@@ -104,18 +104,72 @@ public interface FileManager {
 
 	// File ops
 
+	/**
+	 * Renames a file path to another path.
+	 *
+	 * @param oldPath Old path.
+	 * @param newPath New path.
+	 * @return {@code true} if file was renamed, {@code false} otherwise.
+	 */
 	boolean rename(String oldPath, String newPath);
 
+	/**
+	 * Deletes a file path.
+	 *
+	 * @param path Path to delete.
+	 * @return {@code true} if file was deleted, {@code false} otherwise.
+	 */
 	boolean delete(String path);
 
+	/**
+	 * Returns if the path has specific access.
+	 * @param path Path to check.
+	 * @param access Access to check.
+	 * @return {@code true} if path has access, {@code false} otherwise.
+	 * @see FileManager#ACCESS_READ
+	 * @see FileManager#ACCESS_WRITE
+	 * @see FileManager#ACCESS_EXECUTE
+	 */
 	boolean checkAccess(String path, int access);
 
+	/**
+	 * Sets a file permission on the path.
+	 *
+	 * @param path Path to set permission.
+	 * @param flag Permission flag.
+	 * @param value Permission value.
+	 * @param ownerOnly If permission should be set only for owner.
+	 * @return {@code true} if permission was set, {@code false} otherwise.
+	 * @see FileManager#ACCESS_READ
+	 * @see FileManager#ACCESS_WRITE
+	 * @see FileManager#ACCESS_EXECUTE
+	 */
 	boolean setPermission(String path, int flag, boolean value, boolean ownerOnly);
 
+	/**
+	 * Sets the last modified time of the file.
+	 *
+	 * @param path Path to set time.
+	 * @param time Time to set.
+	 * @return {@code true} if time was set, {@code false} otherwise.
+	 */
 	boolean setLastModifiedTime(String path, long time);
 
+	/**
+	 * Sets the file to be read-only.
+	 *
+	 * @param path Path to set.
+	 * @return {@code true} if file was set to read-only, {@code false} otherwise.
+	 */
 	boolean setReadOnly(String path);
 
+	/**
+	 * Create a file exclusively
+	 *
+	 * @param path Path to create.
+	 * @return {@code true} if file was created, {@code false} otherwise.
+	 * @throws IOException if the path is invalid.
+	 */
 	boolean createFileExclusively(String path) throws IOException;
 
 	/**

@@ -33,7 +33,7 @@ public interface OSThread {
 	 *
 	 * @param state New thread state.
 	 */
-	void setState(ThreadState state);
+	void setThreadState(ThreadState state);
 
 	/**
 	 * @return Thread name.
@@ -48,7 +48,7 @@ public interface OSThread {
 	/**
 	 * @return Thread state.
 	 */
-	ThreadState getState();
+	ThreadState getThreadState();
 
 	/**
 	 * @return Backtrace or {@code null},

@@ -31,6 +31,7 @@ import me.coley.cafedude.classfile.attribute.AnnotationDefaultAttribute;
 import me.coley.cafedude.classfile.attribute.AnnotationsAttribute;
 import me.coley.cafedude.classfile.attribute.Attribute;
 import me.coley.cafedude.classfile.attribute.ParameterAnnotationsAttribute;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InnerClassNode;
 
@@ -103,7 +104,14 @@ public class ClassNatives {
 			String name = ops.readUtf8(ops.checkNotNull(locals.loadReference(0)));
 			boolean initialize = locals.loadInt(1) != 0;
 			ObjectValue loader = locals.loadReference(2);
-			JavaClass klass = ops.findClass(loader, name.replace('.', '/'), initialize);
+			name = name.replace('.', '/');
+			Type t;
+			if (!name.isEmpty() && name.charAt(0) == '[') {
+				t = Type.getType(name);
+			} else {
+				t = Type.getObjectType(name);
+			}
+			JavaClass klass = ops.findClass(loader, t, initialize);
 			if (Modifier.isHiddenMember(klass.getModifiers())) {
 				ops.throwException(symbols.java_lang_ClassNotFoundException(), name);
 			}

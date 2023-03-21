@@ -312,16 +312,23 @@ public final class DefaultClassOperations implements ClassOperations {
 
 	@Override
 	public @NotNull JavaClass findClass(JavaClass klass, Type type, boolean initialize) {
-		int sort = type.getSort();
-		if (sort < Type.ARRAY) {
-			return lookupPrimitive(sort);
-		}
-		return findClass(klass, type.getInternalName(), initialize);
+		return findClass(klass.getClassLoader(), type, initialize);
 	}
 
 	@Override
 	public @NotNull JavaClass findClass(ObjectValue classLoader, Type type, boolean initialize) {
 		int sort = type.getSort();
+		if (sort == Type.ARRAY) {
+			Type primitive = type.getElementType();
+			int psort = primitive.getSort();
+			if (psort < Type.ARRAY) {
+				JavaClass cls = lookupPrimitive(psort);
+				for (int i = 0, j = type.getDimensions(); i < j;i++) {
+					cls = cls.newArrayClass();
+				}
+				return cls;
+			}
+		}
 		if (sort < Type.ARRAY) {
 			return lookupPrimitive(sort);
 		}
@@ -458,45 +465,37 @@ public final class DefaultClassOperations implements ClassOperations {
 			ops.throwException(symbols.java_lang_ClassNotFoundException(), internalName);
 		}
 		JavaClass klass;
-		if (internalName.length() - dimensions == 1) {
-			// Primitive array?
-			klass = lookupPrimitiveOrNull(internalName.charAt(dimensions));
+		String trueName = dimensions == 0 ? internalName : internalName.substring(dimensions + 1, internalName.length() - 1);
+		try (CloseableLock lock = data.lock()) {
+			klass = data.getClass(trueName);
 			if (klass == null) {
-				ops.throwException(symbols.java_lang_ClassNotFoundException(), internalName);
-			}
-		} else {
-			String trueName = dimensions == 0 ? internalName : internalName.substring(dimensions + 1, internalName.length() - 1);
-			try (CloseableLock lock = data.lock()) {
-				klass = data.getClass(trueName);
+				if (classLoader.isNull()) {
+					ParsedClassData cdata = bootClassFinder.findBootClass(trueName);
+					if (cdata != null) {
+						klass = defineClass(classLoader, cdata, memoryManager.nullValue(), "JVM_DefineClass");
+					}
+				} else {
+					// Ask Java world
+					JavaMethod method = runtimeResolver.resolveVirtualMethod(classLoader, "loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;");
+					Locals locals = threadManager.currentThreadStorage().newLocals(method);
+					locals.setReference(0, classLoader);
+					locals.setReference(1, ops.newUtf8(trueName.replace('/', '.')));
+					locals.setInt(2, initialize ? 1 : 0);
+					InstanceValue result = ops.checkNotNull(ops.invokeReference(method, locals));
+					klass = classStorage.lookup(result);
+				}
 				if (klass == null) {
-					if (classLoader.isNull()) {
-						ParsedClassData cdata = bootClassFinder.findBootClass(trueName);
-						if (cdata != null) {
-							klass = defineClass(classLoader, cdata, memoryManager.nullValue(), "JVM_DefineClass");
-						}
-					} else {
-						// Ask Java world
-						JavaMethod method = runtimeResolver.resolveVirtualMethod(classLoader, "loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;");
-						Locals locals = threadManager.currentThreadStorage().newLocals(method);
-						locals.setReference(0, classLoader);
-						locals.setReference(1, ops.newUtf8(trueName.replace('/', '.')));
-						locals.setInt(2, initialize ? 1 : 0);
-						InstanceValue result = ops.checkNotNull(ops.invokeReference(method, locals));
-						klass = classStorage.lookup(result);
+					if (_throw) {
+						ops.throwException(symbols.java_lang_ClassNotFoundException(), internalName.replace('/', '.'));
 					}
-					if (klass == null) {
-						if (_throw) {
-							ops.throwException(symbols.java_lang_ClassNotFoundException(), internalName.replace('/', '.'));
-						}
-						dimensions = 0;
-						initialize = false;
-					}
+					dimensions = 0;
+					initialize = false;
 				}
-				if (initialize) {
-					if (klass instanceof InstanceClass) {
-						initialize((InstanceClass) klass);
-					}
-				}
+			}
+		}
+		if (initialize) {
+			if (klass instanceof InstanceClass) {
+				initialize((InstanceClass) klass);
 			}
 		}
 		while (dimensions-- != 0) {

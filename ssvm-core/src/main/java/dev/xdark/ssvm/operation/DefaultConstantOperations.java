@@ -51,7 +51,7 @@ public final class DefaultConstantOperations implements ConstantOperations {
 					switch (type.getSort()) {
 						case Type.OBJECT:
 						case Type.ARRAY:
-							return ops.findClass(owner, type.getInternalName(), false).getOop();
+							return ops.findClass(owner, type, false).getOop();
 						case Type.METHOD:
 							return ops.methodType(owner, type);
 						default:

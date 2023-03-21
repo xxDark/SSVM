@@ -22,9 +22,8 @@ subprojects {
         options.compilerArgs.addAll(['-parameters', '-g:lines,source,vars'])
     }
 
-    task sourcesJar(type: Jar) {
-        from sourceSets.main.java
-        classifier = 'sources'
+    java {
+        withSourcesJar()
     }
 
     configurations {
@@ -55,6 +54,7 @@ subprojects {
 
     publishing {
         repositories {
+            mavenLocal()
             maven {
                 name = 'sources-repo'
                 url = 'file:///tmp/sources-repo'
@@ -63,7 +63,6 @@ subprojects {
         publications {
             maven(MavenPublication) {
                 from components.java
-                artifact sourcesJar
             }
         }
     }

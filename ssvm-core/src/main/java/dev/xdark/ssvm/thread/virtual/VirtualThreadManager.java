@@ -197,7 +197,7 @@ public final class VirtualThreadManager implements ThreadManager {
 		Assertions.check(!dead(th), "thread is not alive");
 		OSThread osThread = th.getOsThread();
 		if (th.attached) {
-			osThread.setState(ThreadState.JVMTI_JAVA_LANG_THREAD_STATE_BLOCKED);
+			osThread.setThreadState(ThreadState.JVMTI_JAVA_LANG_THREAD_STATE_BLOCKED);
 			// Call to native Thread.sleep
 			th.timeout = millis;
 			try {
@@ -208,7 +208,7 @@ public final class VirtualThreadManager implements ThreadManager {
 				th.interrupted = true;
 				vm.getOperations().throwException(vm.getSymbols().java_lang_InterruptedException(), "sleep interrupted");
 			} finally {
-				osThread.setState(ThreadState.JVMTI_JAVA_LANG_THREAD_STATE_RUNNABLE);
+				osThread.setThreadState(ThreadState.JVMTI_JAVA_LANG_THREAD_STATE_RUNNABLE);
 			}
 		} else {
 			Assertions.check(th.timeout == 0L, "already sleeping");
@@ -216,7 +216,7 @@ public final class VirtualThreadManager implements ThreadManager {
 				th.interrupted = false;
 				vm.getOperations().throwException(vm.getSymbols().java_lang_InterruptedException(), "sleep interrupted");
 			} else {
-				osThread.setState(ThreadState.JVMTI_JAVA_LANG_THREAD_STATE_BLOCKED);
+				osThread.setThreadState(ThreadState.JVMTI_JAVA_LANG_THREAD_STATE_BLOCKED);
 				th.timeout = millis;
 				// Remove form scheduled threads and put to asleep
 				scheduled.remove(th);
@@ -252,7 +252,7 @@ public final class VirtualThreadManager implements ThreadManager {
 		ops.putInt(oop, "priority", priority);
 		OSThread osThread = javaThread.getOsThread();
 		syncThread(osThread, oop);
-		osThread.setState(ThreadState.JVMTI_JAVA_LANG_THREAD_STATE_RUNNABLE);
+		osThread.setThreadState(ThreadState.JVMTI_JAVA_LANG_THREAD_STATE_RUNNABLE);
 		setThreadEeetop(javaThread);
 		schedule(javaThread);
 		return javaThread;
@@ -302,7 +302,7 @@ public final class VirtualThreadManager implements ThreadManager {
 		VirtualOSThread thread = newOsThread(stackSize);
 		// Do sync between OS thread and Java thread
 		syncThread(thread, oop);
-		thread.setState(ThreadState.JVMTI_JAVA_LANG_THREAD_STATE_RUNNABLE);
+		thread.setThreadState(ThreadState.JVMTI_JAVA_LANG_THREAD_STATE_RUNNABLE);
 		VirtualJavaThread javaThread = new VirtualJavaThread(oop, thread);
 		javaThread.attached = attached;
 		setThreadEeetop(javaThread);
@@ -333,7 +333,7 @@ public final class VirtualThreadManager implements ThreadManager {
 		VMOperations ops = vm.getOperations();
 		thread.setName(ops.readUtf8(ops.getReference(oop, "name", "Ljava/lang/String;")));
 		thread.setPriority(ops.getInt(oop, "priority"));
-		thread.setState(ThreadState.JVMTI_JAVA_LANG_THREAD_STATE_RUNNABLE);
+		thread.setThreadState(ThreadState.JVMTI_JAVA_LANG_THREAD_STATE_RUNNABLE);
 	}
 
 	private VirtualJavaThread forThread(InstanceValue oop) {
@@ -344,6 +344,6 @@ public final class VirtualThreadManager implements ThreadManager {
 	}
 
 	private static boolean dead(JavaThread th) {
-		return th == null || th.getOsThread().getState() == ThreadState.JVMTI_THREAD_STATE_TERMINATED;
+		return th == null || th.getOsThread().getThreadState() == ThreadState.JVMTI_THREAD_STATE_TERMINATED;
 	}
 }

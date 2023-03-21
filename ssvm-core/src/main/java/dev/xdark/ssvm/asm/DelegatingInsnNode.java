@@ -30,5 +30,9 @@ public class DelegatingInsnNode<I extends AbstractInsnNode> extends AbstractInsn
 
 	private interface Exclude {
 		int getOpcode();
+
+		AbstractInsnNode getPrevious();
+
+		AbstractInsnNode getNext();
 	}
 }

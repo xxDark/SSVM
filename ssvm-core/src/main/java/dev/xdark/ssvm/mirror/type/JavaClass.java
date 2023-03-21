@@ -4,6 +4,7 @@ import dev.xdark.jlinker.ClassInfo;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Type;
 
 import java.util.List;
@@ -138,6 +139,7 @@ public interface JavaClass {
 	 * @return component type of array or {@code null},
 	 * if class is not an array.
 	 */
+	@Nullable
 	JavaClass getComponentType();
 
 	/**

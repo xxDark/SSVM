@@ -7,6 +7,7 @@ import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.mirror.type.SimpleArrayClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.operation.VMOperations;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MultiANewArrayInsnNode;
 
 /**
@@ -20,7 +21,7 @@ public final class MultiNewArrayProcessor implements InstructionProcessor<MultiA
 	public Result execute(MultiANewArrayInsnNode insn, ExecutionContext<?> ctx) {
 		int dimensions = insn.dims;
 		VMOperations ops = ctx.getOperations();
-		JavaClass type = ops.findClass(ctx.getOwner(), insn.desc, false);
+		JavaClass type = ops.findClass(ctx.getOwner(), Type.getType(insn.desc), false);
 		Stack stack = ctx.getStack();
 		int[] lengths = new int[dimensions];
 		while (dimensions-- != 0) {

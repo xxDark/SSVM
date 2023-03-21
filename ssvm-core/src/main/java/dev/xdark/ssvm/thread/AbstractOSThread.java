@@ -24,7 +24,7 @@ public abstract class AbstractOSThread implements OSThread {
 	}
 
 	@Override
-	public void setState(ThreadState state) {
+	public void setThreadState(ThreadState state) {
 		this.state = state;
 	}
 
@@ -39,7 +39,7 @@ public abstract class AbstractOSThread implements OSThread {
 	}
 
 	@Override
-	public ThreadState getState() {
+	public ThreadState getThreadState() {
 		return state;
 	}
 }

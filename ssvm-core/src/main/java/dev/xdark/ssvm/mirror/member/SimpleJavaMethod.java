@@ -6,6 +6,7 @@ import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.VMTryCatchBlock;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
+import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.util.TypeSafeMap;
 import org.objectweb.asm.Opcodes;
@@ -323,9 +324,10 @@ public final class SimpleJavaMethod implements JavaMethod {
 		if (exceptions == null || exceptions.isEmpty()) {
 			exceptionTypes = new JavaClass[0];
 		} else {
+			VMOperations ops = vm.getOperations();
 			JavaClass[] arr = new JavaClass[exceptions.size()];
 			for (int i = 0; i < exceptions.size(); i++) {
-				arr[i] = vm.getOperations().findClass(owner, exceptions.get(i), false);
+				arr[i] = ops.findClass(owner, exceptions.get(i), false);
 			}
 			exceptionTypes = arr;
 		}

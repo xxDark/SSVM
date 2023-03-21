@@ -16,6 +16,7 @@ import dev.xdark.ssvm.value.ObjectValue;
 import me.coley.cafedude.InvalidClassException;
 import me.coley.cafedude.classfile.ClassFile;
 import me.coley.cafedude.io.ClassFileReader;
+import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -160,7 +161,7 @@ public class SimpleInstanceClass implements InstanceClass {
 			classes.push(S);
 			JavaClass klass;
 			while ((klass = classes.poll()) != null) {
-				if (klass.isInterface() && klass == this) {
+				if (klass == this) {
 					return true;
 				}
 				classes.addAll(klass.getInterfaces());
@@ -264,7 +265,6 @@ public class SimpleInstanceClass implements InstanceClass {
 		ClassArea<JavaMethod> methodArea = this.methodArea;
 		JavaMethod method = methodArea.get(name, desc);
 		if (method == null) {
-			// Polymorphic?
 			method = methodArea.get(name, POLYMORPHIC_DESC);
 			if (method != null) {
 				if (method.isPolymorphic()) {
@@ -569,12 +569,11 @@ public class SimpleInstanceClass implements InstanceClass {
 			}
 
 			@Override
-			public List<ClassInfo<JavaClass>> interfaces() {
+			public @NotNull List<ClassInfo<JavaClass>> interfaces() {
 				SoftReference<List<ClassInfo<JavaClass>>> interfaces = this.interfaces;
 				List<ClassInfo<JavaClass>> list;
 				if (interfaces == null || (list = interfaces.get()) == null) {
 					list = instanceClass.getInterfaces().stream().map(JavaClass::linkerInfo).collect(Collectors.toList());
-					;
 					this.interfaces = new SoftReference<>(list);
 				}
 				return list;

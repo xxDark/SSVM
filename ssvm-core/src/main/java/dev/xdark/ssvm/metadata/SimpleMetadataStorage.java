@@ -22,7 +22,7 @@ public class SimpleMetadataStorage<V> implements MetadataStorage<V> {
 	private final CloseableLock unlocker;
 
 	public SimpleMetadataStorage() {
-		Lock lock = this.lock.readLock();
+		Lock lock = this.lock.writeLock();
 		unlocker = lock::unlock;
 	}
 

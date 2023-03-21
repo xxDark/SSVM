@@ -50,7 +50,7 @@ public class ThreadNatives {
 		});
 		vmi.setInvoker(thread, "isAlive", "()Z", ctx -> {
 			JavaThread th = vm.getThreadManager().getThread(ctx.getLocals().loadReference(0));
-			ctx.setResult(th != null && th.getOsThread().getState().has(ThreadState.JVMTI_THREAD_STATE_ALIVE) ? 1 : 0);
+			ctx.setResult(th != null && th.getOsThread().getThreadState().has(ThreadState.JVMTI_THREAD_STATE_ALIVE) ? 1 : 0);
 			return Result.ABORT;
 		});
 		vmi.setInvoker(thread, "isInterrupted", "(Z)Z", ctx -> {

@@ -1,0 +1,4 @@
+dependencies {
+    compileOnly project(':ssvm-core')
+    testImplementation project(':ssvm-core')
+}

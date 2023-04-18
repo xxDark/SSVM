@@ -11,8 +11,13 @@
   - Multi-threading (see ThreadManager)
   - Interface to modify VM behaviour, similar to JVM TI
   - Instruction rewriting: rewrite parts of methods as the VM executes
-  - Somewhat *JIT* compiler
-  - Garbage Collector
+  - ~~Somewhat *JIT* compiler~~
+  - ~~Garbage Collector~~
+
+# TODO:
+  - Return back *JIT*
+  - Return back GC
+  - Fix example usage
 
 For some basic example, see: [EXAMPLE.md](EXAMPLE.md)
 

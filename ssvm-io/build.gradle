@@ -1,4 +1,0 @@
-dependencies {
-    compileOnly project(':ssvm-core')
-    testImplementation(testFixtures(project(':ssvm-core')))
-}

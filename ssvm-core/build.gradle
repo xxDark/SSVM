@@ -1,7 +1,0 @@
-dependencies {
-    api asm
-    api asm_tree
-    api slf4j_api
-    api cafedude
-    api jlinker
-}

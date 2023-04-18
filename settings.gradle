@@ -1,5 +1,2 @@
 rootProject.name = 'ssvm'
-include 'ssvm-core'
-include 'ssvm-invoke'
-include 'ssvm-io'
 

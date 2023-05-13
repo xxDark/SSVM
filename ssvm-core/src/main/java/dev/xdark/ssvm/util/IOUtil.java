@@ -2,16 +2,18 @@ package dev.xdark.ssvm.util;
 
 import lombok.experimental.UtilityClass;
 
+import java.io.ByteArrayOutputStream;
 import java.io.FileDescriptor;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 
 /**
- * Hacks for io java classes
+ * Hacks and utils for io java classes
  * @author Justus Garbe
  */
 @UtilityClass
-public class IOHacks {
+public class IOUtil {
 
     /**
      * Returns either the file descriptor of a {@link FileDescriptor} object or a handle depending on the platform.
@@ -48,4 +50,23 @@ public class IOHacks {
         fdHandle = handle;
     }
 
+    public static byte[] readAll(InputStream inputStream) throws IOException {
+        int bufferSize = 2048;
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            byte[] data = new byte[bufferSize];
+            int bytesRead;
+            int readCount = 0;
+            while ((bytesRead = inputStream.read(data, 0, bufferSize)) != -1) {
+                outputStream.write(data, 0, bytesRead);
+                readCount++;
+            }
+            outputStream.flush();
+            if (readCount == 1) {
+                return data;
+            }
+            return outputStream.toByteArray();
+        } finally {
+            inputStream.close();
+        }
+    }
 }

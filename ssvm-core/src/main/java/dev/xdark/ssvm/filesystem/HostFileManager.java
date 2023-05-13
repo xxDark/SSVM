@@ -1,7 +1,7 @@
 package dev.xdark.ssvm.filesystem;
 
 import dev.xdark.ssvm.io.Handle;
-import dev.xdark.ssvm.util.IOHacks;
+import dev.xdark.ssvm.util.IOUtil;
 
 import java.io.File;
 import java.io.FileDescriptor;
@@ -87,7 +87,7 @@ public class HostFileManager implements FileManager {
 				}
 			}
 			if (fd != null) {
-				return IOHacks.getHandleOrFd(fd);
+				return IOUtil.getHandleOrFd(fd);
 			}
 		} catch (IOException ex) {
 		}

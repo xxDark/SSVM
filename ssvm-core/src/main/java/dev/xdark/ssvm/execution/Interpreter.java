@@ -7,10 +7,7 @@ import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.value.InstanceValue;
 import lombok.experimental.UtilityClass;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.LineNumberNode;
-import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.*;
 
 import java.util.List;
 
@@ -47,7 +44,7 @@ public class Interpreter {
 						break exec;
 					}
 				}
-				if (insn.getOpcode() == -1) {
+				if (insn.getOpcode() == -1 || !AsmUtil.isValid(insn)) {
 					continue;
 				}
 				InstructionProcessor<AbstractInsnNode> processor = vmi.getProcessor(insn);

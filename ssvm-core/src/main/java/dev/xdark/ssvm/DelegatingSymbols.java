@@ -318,6 +318,11 @@ final class DelegatingSymbols implements Symbols {
 	}
 
 	@Override
+	public InstanceClass java_nio_charset_StandardCharsets() {
+		return symbols.java_nio_charset_StandardCharsets();
+	}
+
+	@Override
 	public InstanceClass java_util_jar_JarFile() {
 		return symbols.java_util_jar_JarFile();
 	}

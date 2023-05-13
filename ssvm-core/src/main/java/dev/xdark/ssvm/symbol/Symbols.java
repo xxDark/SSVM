@@ -131,6 +131,8 @@ public interface Symbols {
 
 	InstanceClass java_nio_ByteBuffer();
 
+	InstanceClass java_nio_charset_StandardCharsets();
+
 	InstanceClass java_util_jar_JarFile();
 
 	InstanceClass java_lang_StrictMath();

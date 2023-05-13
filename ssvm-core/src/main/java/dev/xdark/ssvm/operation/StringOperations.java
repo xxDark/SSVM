@@ -18,6 +18,12 @@ public interface StringOperations {
 	InstanceValue newUtf8(String value);
 
 	/**
+	 * @param value Byte array to convert to VM utf-8 oop.
+	 * @return String value.
+	 */
+	InstanceValue newUtf8FromBytes(ArrayValue value);
+
+	/**
 	 * @param value Character array to convert to VM utf-8 oop.
 	 * @return String value.
 	 */
@@ -34,4 +40,10 @@ public interface StringOperations {
 	 * @return String value as an array of VM chars.
 	 */
 	ArrayValue toChars(String value);
+
+	/**
+	 * @param value String value.
+	 * @return String value as an array of VM bytes.
+	 */
+	ArrayValue toBytes(String value);
 }

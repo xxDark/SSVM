@@ -15,6 +15,8 @@ import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.RequiredArgsConstructor;
 
+import java.nio.charset.StandardCharsets;
+
 /**
  * Default implementation.
  *
@@ -29,10 +31,34 @@ public final class DefaultStringOperations implements StringOperations {
 	private final Symbols symbols;
 	private final LinkResolver linkResolver;
 	private final VMOperations ops;
+	private final boolean isJava11;
 
 	@Override
 	public InstanceValue newUtf8(String value) {
+		if (isJava11)
+			return newUtf8FromBytes(toBytes(value));
 		return newUtf8FromChars(toChars(value));
+	}
+
+	@Override
+	public InstanceValue newUtf8FromBytes(ArrayValue value) {
+		InstanceClass jc = symbols.java_lang_String();
+		InstanceValue wrapper = memoryManager.newInstance(jc);
+		JavaField charValue = jc.getField("value", "[B");
+		if (charValue != null) {
+			memoryManager.writeValue(wrapper, charValue.getOffset(), value);
+		} else {
+			InstanceClass cs = symbols.java_nio_charset_StandardCharsets();
+			ObjectValue utf8 = ops.getReference(cs, "UTF_8", "Ljava/nio/charset/Charset;");
+
+			JavaMethod init = linkResolver.resolveVirtualMethod(jc, "<init>", "([BLjava/nio/charset/Charset;)V");
+			Locals locals = threadManager.currentThreadStorage().newLocals(init);
+			locals.setReference(0, wrapper);
+			locals.setReference(1, value);
+			locals.setReference(2, utf8);
+			ops.invokeVoid(init, locals);
+		}
+		return wrapper;
 	}
 
 	@Override
@@ -66,10 +92,9 @@ public final class DefaultStringOperations implements StringOperations {
 		if (charValue != null) {
 			array = (ArrayValue) memoryManager.readReference(value, charValue.getOffset());
 		} else {
-			JavaMethod toCharArray = linkResolver.resolveVirtualMethod(jc, "toCharArray", "()[C");
-			Locals locals = threadManager.currentThreadStorage().newLocals(toCharArray);
-			locals.setReference(0, value);
-			array = (ArrayValue) ops.invokeReference(toCharArray, locals);
+			JavaField byteValue = jc.getField("value", "[B");
+			ArrayValue arrayRef = (ArrayValue) memoryManager.readReference(value, byteValue.getOffset());
+			return new String(ops.toJavaBytes(arrayRef), StandardCharsets.UTF_8);
 		}
 		return UnsafeUtil.newString(ops.toJavaChars(array));
 	}
@@ -88,5 +113,11 @@ public final class DefaultStringOperations implements StringOperations {
 			}
 		}
 		return wrapper;
+	}
+
+	@Override
+	public ArrayValue toBytes(String value) {
+		byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+		return ops.toVMBytes(bytes);
 	}
 }

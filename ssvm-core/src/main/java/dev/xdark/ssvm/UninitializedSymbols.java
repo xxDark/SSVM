@@ -326,6 +326,11 @@ final class UninitializedSymbols implements Symbols {
 	}
 
 	@Override
+	public InstanceClass java_nio_charset_StandardCharsets() {
+		return uninitialized();
+	}
+
+	@Override
 	public InstanceClass java_util_jar_JarFile() {
 		return uninitialized();
 	}

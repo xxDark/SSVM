@@ -76,6 +76,7 @@ final class InitializedSymbols implements Symbols {
 	private final InstanceClass java_lang_Package;
 	private final InstanceClass java_lang_invoke_MethodHandle;
 	private final InstanceClass java_nio_ByteBuffer;
+	private final InstanceClass java_nio_charset_StandardCharsets;
 	private final InstanceClass java_util_jar_JarFile;
 	private final InstanceClass java_lang_StrictMath;
 	private final InstanceClass java_util_TimeZone;
@@ -170,6 +171,7 @@ final class InitializedSymbols implements Symbols {
 		java_lang_invoke_MethodHandle = (InstanceClass) vm.findBootstrapClass("java/lang/invoke/MethodHandle");
 
 		java_nio_ByteBuffer = (InstanceClass) vm.findBootstrapClass("java/nio/ByteBuffer");
+		java_nio_charset_StandardCharsets = (InstanceClass) vm.findBootstrapClass("java/nio/charset/StandardCharsets");
 		java_util_jar_JarFile = (InstanceClass) vm.findBootstrapClass("java/util/jar/JarFile");
 		java_lang_StrictMath = (InstanceClass) vm.findBootstrapClass("java/lang/StrictMath");
 		java_util_TimeZone = (InstanceClass) vm.findBootstrapClass("java/util/TimeZone");
@@ -508,6 +510,11 @@ final class InitializedSymbols implements Symbols {
 	@Override
 	public InstanceClass java_nio_ByteBuffer() {
 		return java_nio_ByteBuffer;
+	}
+
+	@Override
+	public InstanceClass java_nio_charset_StandardCharsets() {
+		return java_nio_charset_StandardCharsets;
 	}
 
 	@Override

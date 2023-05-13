@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @UtilityClass
@@ -116,7 +117,19 @@ public class TestUtil {
 		test(klass, 0, null);
 	}
 
-	private VirtualMachine newVirtualMachine() {
+	public <T> T unchecked(UncheckedSupplier<T> supplier) {
+		try {
+			return supplier.get();
+		} catch (Throwable e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
+	interface UncheckedSupplier<T> {
+		T get() throws Throwable;
+	}
+
+	public VirtualMachine newVirtualMachine() {
 		return new VirtualMachine() {
 			@Override
 			protected FileManager createFileManager() {

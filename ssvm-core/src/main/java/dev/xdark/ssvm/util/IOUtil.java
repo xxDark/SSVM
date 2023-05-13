@@ -50,7 +50,13 @@ public class IOUtil {
         fdHandle = handle;
     }
 
+    /**
+     * @param inputStream Input stream, may be {@code null}.
+     * @return Bytes of stream, or {@code null} if the stream was {@code null}
+     * @throws IOException When the stream cannot be read from.
+     */
     public static byte[] readAll(InputStream inputStream) throws IOException {
+        if (inputStream == null) return null;
         int bufferSize = 2048;
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             byte[] data = new byte[bufferSize];

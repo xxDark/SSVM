@@ -2,120 +2,61 @@
 
 Shows how to boot VM & run an application.
 
-```Java
-import dev.xdark.ssvm.VirtualMachine;
-import dev.xdark.ssvm.asm.Modifier;
-import dev.xdark.ssvm.execution.VMException;
-import dev.xdark.ssvm.filesystem.FileManager;
-import dev.xdark.ssvm.filesystem.HostFileManager;
-import dev.xdark.ssvm.jit.JitClass;
-import dev.xdark.ssvm.jit.JitCompiler;
-import dev.xdark.ssvm.jit.CodeInstaller;
+```java
+import dev.xdark.ssvm.classloading.SupplyingClassLoader;
+import dev.xdark.ssvm.invoke.Argument;
+import dev.xdark.ssvm.invoke.InvocationUtil;
+import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
-import dev.xdark.ssvm.value.Value;
-import lombok.val;
-import org.objectweb.asm.MethodTooLargeException;
+import dev.xdark.ssvm.value.ArrayValue;
+import dev.xdark.ssvm.value.InstanceValue;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import static dev.xdark.ssvm.classloading.SupplyingClassLoaderInstaller.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
-public class MyApplication {
-
+public class SsvmRunner {
 	public static void main(String[] args) {
-		val vm =
-			new VirtualMachine() {
-				@Override
-				public FileDescriptorManager createFileDescriptorManager() {
-					// Allow any files from host OS
-					return new HostFileDescriptorManager() {
-						@Override
-						public long open(String path, int mode) throws IOException {
-							// Only enable read mode
-							if (mode != READ)
-								throw new FileNotFoundException(path);
-							return super.open(path, mode);
-						}
-					};
-				}
-			};
-		val helper = vm.getHelper();
-		try {
-			val vmi = vm.getInterface();
-			// Enable JIT, if needed
-			val definer = new JitClassLoader();
-			vmi.registerMethodEnter(
-				ctx -> {
-					val jm = ctx.getMethod();
-					int count = jm.getInvocationCount();
-					if (count == 256 && !Modifier.isCompiledMethod(jm.getAccess())) {
-						if (JitCompiler.isCompilable(jm)) {
-							try {
-								val jit = JitCompiler.compile(jm, 3);
-								JitInstaller.install(jm, definer, jit);
-							} catch (MethodTooLargeException ex) {
-								val node = jm.getNode();
-								node.access |= Modifier.ACC_JIT;
-							} catch (Throwable ex) {
-								throw new IllegalStateException("Could not install JIT class for " + jm, ex);
-							}
-						}
-					}
-				});
-			// Bootstrap VM
-			vm.bootstrap();
-			val symbols = vm.getSymbols();
+		VirtualMachine vm = new VirtualMachine() {
+			// Provide any overriding behaviors here
+		};
+		vm.bootstrap();
+		MemoryManager memoryManager = vm.getMemoryManager();
 
-			// Add jar to system class loader
-			val cl =
-				helper
-					.invokeStatic(
-						symbols.java_lang_ClassLoader,
-						"getSystemClassLoader",
-						"()Ljava/lang/ClassLoader;",
-						new Value[0])
-					.getResult();
-			addURL(vm, cl, "c:\\Users\\User\\obf.jar");
+		// Create a loader pulling classes and files from a root directory
+		Helper helper = install(vm, supplyFromDirectory(directory));
 
-			// Invoke main, setup hooks to do stuff, etc
-			val klass = (InstanceJavaClass) helper.findClass(cl, "sample/string/StringsLong", true);
-			val method = klass.getStaticMethod("main", "([Ljava/lang/String;)V");
+		// Create a loader pulling classes and files from a zip/jar file
+		Helper helper = install(vm, supplyFromZip(jarFile));
 
-			helper.invokeStatic(
-				klass, method, new Value[]{helper.emptyArray(symbols.java_lang_String)});
-		} catch (VMException ex) {
-			helper.invokeVirtual("printStackTrace", "()V", new Value[]{ex.getOop()});
-		}
-	}
+		// Create a loader pulling from multiple paths to directories and zip/jar files
+		//  - Items appearing first are preferred in loading order over others
+		Helper helper = install(vm, supplyFromPaths(jarFile, directory));
 
-	private static final class JitClassLoader extends ClassLoader
-		implements JitInstaller.ClassDefiner {
+		// Create a loader pulling from multiple suppliers appended together
+		//  - The first supplier is preferred and appended items are then used in reverse order
+		Helper helper = install(vm, supplyFromZip(jarFile)
+				.append(supplyFromZip(library1))
+				.append(supplyFromZip(library2))
+        );
 
-		@Override
-		public Class<?> define(JitClass jitClass) {
-			val code = jitClass.getCode();
-			return defineClass(jitClass.getClassName().replace('/', '.'), code, 0, code.length);
-		}
-	}
+		// Invoke the 'main' method
+		InstanceClass mainClassInstance = assertDoesNotThrow(() -> helper.loadClass("com/example/ProgramName"));
+		ArrayValue argsValue = memoryManager
+				.newArray(vm.getSymbols().java_lang_String().getArrayClass(), 0);
 
-	private static void addURL(VirtualMachine vm, Value loader, String path) {
-		// ((URLClassLoader)loader).addURL(new File(path).toURI().toURL());
-		val helper = vm.getHelper();
-		val fileClass = (InstanceJavaClass) vm.findBootstrapClass("java/io/File", true);
-		val file = vm.getMemoryManager().newInstance(fileClass);
-		helper.invokeExact(
-			fileClass,
-			"<init>",
-			"(Ljava/lang/String;)V",
-			new Value[]{file, helper.newUtf8(path)});
-		val uri =
-			helper
-				.invokeVirtual("toURI", "()Ljava/net/URI;", new Value[]{file})
-				.getResult();
-		val url =
-			helper
-				.invokeVirtual("toURL", "()Ljava/net/URL;", new Value[]{uri})
-				.getResult();
-		helper.invokeVirtual("addURL", "(Ljava/net/URL;)V", new Value[]{loader, url});
+		// If you did want to specify arguments (instead of setting length to 0) you can do so like this:
+		//   VMOperations ops = vm.getOperations();
+		//   ops.arrayStoreReference(argsValue, 0, ops.newUtf8("--file"));
+		//   ops.arrayStoreReference(argsValue, 1, ops.newUtf8("hello.txt"));
+
+		// Call main
+		InvocationUtil util = InvocationUtil.create(vm);
+		util.invokeVoid(mainClassInstance.getMethod("main", "([Ljava/lang/String;)V"), Argument.reference(argsValue));
+
+		// Or, call an instance method, like Runnable.run()
+		InstanceValue mainInstance = memoryManager.newInstance(mainClassInstance);
+		util.invokeVoid(mainClassInstance.getMethod("<init>", "()V"), Argument.reference(mainInstance));
+		util.invokeVoid(mainClassInstance.getMethod("run", "()V"), Argument.reference(mainInstance));
 	}
 }
 ```

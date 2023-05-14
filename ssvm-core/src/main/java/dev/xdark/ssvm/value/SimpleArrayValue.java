@@ -36,7 +36,6 @@ public final class SimpleArrayValue extends SimpleObjectValue implements ArrayVa
 
 	@Override
 	public float getFloat(int index) {
-		MemoryManager memoryManager = getMemoryManager();
 		return Float.intBitsToFloat(getData().readInt(dataOffset(validate(index) * LanguageSpecification.FLOAT_SIZE)));
 	}
 

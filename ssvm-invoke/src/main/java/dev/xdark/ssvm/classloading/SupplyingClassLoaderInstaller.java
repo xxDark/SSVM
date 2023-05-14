@@ -20,8 +20,14 @@ import org.jetbrains.annotations.NotNull;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import static dev.xdark.ssvm.util.Unchecked.supplier;
 
@@ -33,47 +39,124 @@ import static dev.xdark.ssvm.util.Unchecked.supplier;
  */
 public class SupplyingClassLoaderInstaller {
 	/**
-	 * Creates a {@link SupplyingClassLoader} with class and resource loading definitions
-	 * that pull from the current runtime.
-	 * <p>
-	 * Not to be confused with {@link RuntimeBootClassFinder} which only pulls classes from the boot class path.
+	 * @param path
+	 * 		Root directory to pull data from.
 	 *
-	 * @param vm
-	 * 		Virtual machine to install into.
-	 *
-	 * @return Helper for interacting with the {@link SupplyingClassLoader} loaded into the VM.
+	 * @return Supplier that pulls classes and files from the given directory.
 	 *
 	 * @throws IOException
-	 * 		When the {@link SupplyingClassLoader} class cannot be streamed.
+	 * 		When the path was not a directory.
 	 */
-	public static Helper installCurrentRuntime(VirtualMachine vm) throws IOException {
-		return install(vm,
+	public static DataSupplier supplyFromDirectory(Path path) throws IOException {
+		if (Files.isDirectory(path)) {
+			Function<String, byte[]> classProvider = n -> {
+				Path classPath = path.resolve(n.replace('.', '/') + ".class");
+				if (Files.isRegularFile(classPath))
+					return supplier(() -> Files.readAllBytes(classPath));
+				return null;
+			};
+			Function<String, byte[]> resourceProvider = n -> {
+				if (n.startsWith("/"))
+					n = n.substring(1);
+				Path resourcePath = path.resolve(n);
+				if (Files.isRegularFile(resourcePath))
+					return supplier(() -> Files.readAllBytes(resourcePath));
+				return null;
+			};
+			return supplyFromFunctions(classProvider, resourceProvider);
+		}
+
+		// Not a directory
+		throw new IOException("Path was not a directory: " + path);
+	}
+
+	/**
+	 * @param path
+	 * 		Path to ZIP/JAR file.
+	 *
+	 * @return Supplier that pulls classes and files from the given archive.
+	 *
+	 * @throws IOException
+	 * 		When the ZIP file could not be read.
+	 */
+	public static DataSupplier supplyFromZip(Path path) throws IOException {
+		Map<String, byte[]> contents = new HashMap<>();
+		try (ZipFile zipFile = new ZipFile(path.toFile())) {
+			Enumeration<? extends ZipEntry> entries = zipFile.entries();
+			while (entries.hasMoreElements()) {
+				ZipEntry entry = entries.nextElement();
+				if (entry.getSize() > 0) {
+					InputStream stream = zipFile.getInputStream(entry);
+					contents.put(entry.getName(), IOUtil.readAll(stream));
+				}
+			}
+		}
+
+		Function<String, byte[]> classProvider = n -> contents.get(n.replace('.', '/') + ".class");
+		Function<String, byte[]> resourceProvider = n -> {
+			if (n.startsWith("/"))
+				n = n.substring(1);
+			return contents.get(n);
+		};
+
+		return supplyFromFunctions(classProvider, resourceProvider);
+	}
+
+	/**
+	 * @param paths
+	 * 		Paths to pull data from, in order where the first items are used first for look-ups.
+	 *
+	 * @return Supplier that pulls classes and files from the given paths <i>(ZIP/JAR or directory)</i>.
+	 *
+	 * @throws IOException
+	 * 		When one or more paths could not be read from.
+	 * @see #supplyFromDirectory(Path)
+	 * @see #supplyFromZip(Path)
+	 */
+	public static DataSupplier supplyFromPaths(Path... paths) throws IOException {
+		DataSupplier supplier = null;
+
+		// Go in reverse order, using supplier prefixing so that the first paths in the array have preference
+		// over data in following paths.
+		for (int i = paths.length - 1; i >= 0; i--) {
+			Path path = paths[i];
+
+			// Treat as root directory
+			if (Files.isDirectory(path)) {
+				DataSupplier fromDirectory = supplyFromDirectory(path);
+				supplier = (supplier == null) ? fromDirectory : supplier.prefix(fromDirectory);
+			} else if (Files.isRegularFile(path)) {
+				DataSupplier fromDirectory = supplyFromZip(path);
+				supplier = (supplier == null) ? fromDirectory : supplier.prefix(fromDirectory);
+			}
+		}
+
+		// Fallback if no paths were provided
+		if (supplier == null)
+			supplier = supplyNothing();
+
+		return supplier;
+	}
+
+	/**
+	 * @return Supplier that pulls classes and files from the current classpath. Mostly useful for testing.
+	 */
+	public static DataSupplier supplyFromRuntime() {
+		return supplyFromFunctions(
 				className -> supplier(() -> IOUtil.readAll(ClassLoader.getSystemResourceAsStream(className.replace('.', '/') + ".class"))),
 				resourceName -> supplier(() -> IOUtil.readAll(ClassLoader.getSystemResourceAsStream(resourceName))));
 	}
 
 	/**
-	 * Creates a {@link SupplyingClassLoader} with class and resource loading definitions
-	 * that pull from the current runtime.
-	 *
-	 * @param vm
-	 * 		Virtual machine to install into.
 	 * @param classes
-	 * 		Map of internal class names, to their bytecode.
-	 * 		An example key would be {@code com/example/Foo} or
-	 * 		{@code com/example/Foo$Bar} for an inner class {@code Bar}.
+	 * 		Map of internal class names to class bytecode.
 	 * @param resources
-	 * 		Map of file paths to their raw contents.
-	 * 		The prefix '/' for runtime resource look-ups should NOT be included in these map entries.
+	 * 		Map of file paths to file contents.
 	 *
-	 * @return Helper for interacting with the {@link SupplyingClassLoader} loaded into the VM.
-	 *
-	 * @throws IOException
-	 * 		When the {@link SupplyingClassLoader} class cannot be streamed.
+	 * @return Supplier that pulls classes and files from the given maps.
 	 */
-	public static Helper installMaps(VirtualMachine vm, Map<String, byte[]> classes, Map<String, byte[]> resources) throws IOException {
-		return install(vm,
-				className -> classes.get(className.replace('.', '/')),
+	public static DataSupplier supplyFromMaps(Map<String, byte[]> classes, Map<String, byte[]> resources) {
+		return supplyFromFunctions(className -> classes.get(className.replace('.', '/')),
 				resourceName -> {
 					if (resourceName.startsWith("/"))
 						resourceName = resourceName.substring(1);
@@ -81,13 +164,54 @@ public class SupplyingClassLoaderInstaller {
 				});
 	}
 
+	/**
+	 * @param classProvider
+	 * 		Function to lookup class bytecode by its internal name.
+	 * @param resourceProvider
+	 * 		Function to lookup a file's content by its path name.
+	 *
+	 * @return Supplier that pulls classes and files from the given functions.
+	 */
+	public static DataSupplier supplyFromFunctions(Function<String, byte[]> classProvider,
+												   Function<String, byte[]> resourceProvider) {
+		return new DataSupplier() {
+			@Override
+			public byte[] getClass(String internalName) {
+				return classProvider.apply(internalName);
+			}
+
+			@Override
+			public byte[] getResource(String resourcePath) {
+				return resourceProvider.apply(resourcePath);
+			}
+		};
+	}
+
+	/**
+	 * @return Supplier of nothing.
+	 */
+	public static DataSupplier supplyNothing() {
+		return new DataSupplier() {
+			@Override
+			public byte[] getClass(String internalName) {
+				return null;
+			}
+
+			@Override
+			public byte[] getResource(String resourcePath) {
+				return null;
+			}
+		};
+	}
 
 	/**
 	 * Creates a {@link SupplyingClassLoader} with class and resource loading definitions
-	 * based on the given functions.
+	 * based on the given data supplier.
 	 *
 	 * @param vm
 	 * 		Virtual machine to install into.
+	 * @param supplier
+	 * 		Supplier to provide {@code byte[]} of classes and resources.
 	 *
 	 * @return Helper for interacting with the {@link SupplyingClassLoader} loaded into the VM.
 	 *
@@ -95,35 +219,34 @@ public class SupplyingClassLoaderInstaller {
 	 * 		When the {@link SupplyingClassLoader} class cannot be streamed.
 	 */
 	public static Helper install(VirtualMachine vm,
-								 Function<String, byte[]> classProvider,
-								 Function<String, byte[]> resourceProvider) throws IOException {
-		String className = SupplyingClassLoader.class.getName();
-		InputStream classStream = ClassLoader.getSystemResourceAsStream(className.replace('.', '/') + ".class");
-		if (classStream == null)
-			throw new FileNotFoundException(className);
-
+								 DataSupplier supplier) throws IOException {
+		String loaderName = SupplyingClassLoader.class.getName();
+		InputStream loaderStream = ClassLoader.getSystemResourceAsStream(loaderName.replace('.', '/') + ".class");
+		if (loaderStream == null)
+			throw new FileNotFoundException(loaderName);
 
 		// Define the class in the VM
-		byte[] bytes = IOUtil.readAll(classStream);
+		byte[] bytes = IOUtil.readAll(loaderStream);
 		ObjectValue nullV = vm.getMemoryManager().nullValue();
 		String sourceName = SupplyingClassLoader.class.getSimpleName() + ".java";
 		InstanceValue loader = ClassLoaderUtils.systemClassLoader(vm);
 		VMOperations operations = vm.getOperations();
-		InstanceClass loaderClass = operations.defineClass(loader, className, bytes, 0, bytes.length, nullV, sourceName, 0);
+		InstanceClass loaderClass = operations.defineClass(loader, loaderName, bytes, 0, bytes.length, nullV, sourceName, 0);
 
 		// Register invoker for the class's native provide methods to use the provided functions.
 		VMInterface vmi = vm.getInterface();
 		vmi.setInvoker(loaderClass, "provideClass", "(Ljava/lang/String;)[B",
-				getMethodInvoker(classProvider, operations, vm.getMemoryManager()));
+				getMethodInvoker(supplier::getClass, operations, vm.getMemoryManager()));
 		vmi.setInvoker(loaderClass, "provideResource", "(Ljava/lang/String;)[B",
-				getMethodInvoker(resourceProvider, operations, vm.getMemoryManager()));
+				getMethodInvoker(supplier::getResource, operations, vm.getMemoryManager()));
 
 		// Yield the loader type.
 		return new Helper(vm, loaderClass);
 	}
 
 	@NotNull
-	private static MethodInvoker getMethodInvoker(Function<String, byte[]> supplier, VMOperations operations,
+	private static MethodInvoker getMethodInvoker(Function<String, byte[]> supplier,
+												  VMOperations operations,
 												  MemoryManager memoryManager) {
 		return ctx -> {
 			// Read the parameter name from the VM.
@@ -139,6 +262,84 @@ public class SupplyingClassLoaderInstaller {
 			// Used for native method implementations.
 			return Result.ABORT;
 		};
+	}
+
+	/**
+	 * Model to represent the implementation the native functions of {@link SupplyingClassLoader}.
+	 */
+	public interface DataSupplier {
+		/**
+		 * @param internalName
+		 * 		Internal class name, such as {@code com/example/Foo}
+		 * 		or {@code com/example/Foo$Bar} for an inner class.
+		 *
+		 * @return Raw bytes of class, or {@code null} if not found.
+		 */
+		byte[] getClass(String internalName);
+
+		/**
+		 * @param resourcePath
+		 * 		File path name such as {@code subdir/Filename.txt}
+		 *
+		 * @return Raw bytes of file, or {@code null} if not found.
+		 */
+		byte[] getResource(String resourcePath);
+
+		/**
+		 * @param other
+		 * 		Other {@link DataSupplier} to append to the chain.
+		 *
+		 * @return New data supplier which checks for results in {@code this} supplier first,
+		 * but then uses the given {@code other} as a fallback.
+		 */
+		default DataSupplier append(DataSupplier other) {
+			DataSupplier current = this;
+			return new DataSupplier() {
+				@Override
+				public byte[] getClass(String internalName) {
+					byte[] classFile = current.getClass(internalName);
+					if (classFile == null)
+						classFile = other.getClass(internalName);
+					return classFile;
+				}
+
+				@Override
+				public byte[] getResource(String resourcePath) {
+					byte[] resource = current.getResource(resourcePath);
+					if (resource == null)
+						resource = other.getResource(resourcePath);
+					return resource;
+				}
+			};
+		}
+
+		/**
+		 * @param other
+		 * 		Other {@link DataSupplier} to append to the chain.
+		 *
+		 * @return New data supplier which checks for results in the {@code other} supplier first,
+		 * but then uses the current {@code 'this'} supplier as a fallback.
+		 */
+		default DataSupplier prefix(DataSupplier other) {
+			DataSupplier current = this;
+			return new DataSupplier() {
+				@Override
+				public byte[] getClass(String internalName) {
+					byte[] classFile = other.getClass(internalName);
+					if (classFile == null)
+						classFile = current.getClass(internalName);
+					return classFile;
+				}
+
+				@Override
+				public byte[] getResource(String resourcePath) {
+					byte[] resource = other.getResource(resourcePath);
+					if (resource == null)
+						resource = current.getResource(resourcePath);
+					return resource;
+				}
+			};
+		}
 	}
 
 	/**

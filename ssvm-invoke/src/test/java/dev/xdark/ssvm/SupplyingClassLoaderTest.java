@@ -1,7 +1,6 @@
 package dev.xdark.ssvm;
 
 import dev.xdark.ssvm.classloading.SupplyingClassLoader;
-import dev.xdark.ssvm.classloading.SupplyingClassLoaderInstaller;
 import dev.xdark.ssvm.dummy.RandomProvider;
 import dev.xdark.ssvm.invoke.Argument;
 import dev.xdark.ssvm.invoke.InvocationUtil;
@@ -12,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.UUID;
 
+import static dev.xdark.ssvm.classloading.SupplyingClassLoaderInstaller.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -25,8 +25,8 @@ public class SupplyingClassLoaderTest {
 		vm.bootstrap();
 		InvocationUtil util = InvocationUtil.create(vm);
 
-		// Install loader into VM that can pull classes from the current classpath
-		SupplyingClassLoaderInstaller.Helper helper = SupplyingClassLoaderInstaller.installCurrentRuntime(vm);
+		// Create a loader pulling classes and files from the current runtime
+		Helper helper = install(vm, supplyFromRuntime());
 
 		// The dummy class should be loadable, and we should be able to call its methods
 		InstanceClass dummyClassInstance = assertDoesNotThrow(() -> helper.loadClass(RandomProvider.class.getName()));

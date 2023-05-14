@@ -20,7 +20,10 @@ import org.jetbrains.annotations.NotNull;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 import java.util.function.Function;
+
+import static dev.xdark.ssvm.util.Unchecked.supplier;
 
 /**
  * Installs a {@link SupplyingClassLoader} into the target {@link VirtualMachine}.
@@ -30,10 +33,63 @@ import java.util.function.Function;
  */
 public class SupplyingClassLoaderInstaller {
 	/**
+	 * Creates a {@link SupplyingClassLoader} with class and resource loading definitions
+	 * that pull from the current runtime.
+	 * <p>
+	 * Not to be confused with {@link RuntimeBootClassFinder} which only pulls classes from the boot class path.
+	 *
 	 * @param vm
 	 * 		Virtual machine to install into.
 	 *
-	 * @return Class reference to {@link SupplyingClassLoader} in the VM.
+	 * @return Helper for interacting with the {@link SupplyingClassLoader} loaded into the VM.
+	 *
+	 * @throws IOException
+	 * 		When the {@link SupplyingClassLoader} class cannot be streamed.
+	 */
+	public static Helper installCurrentRuntime(VirtualMachine vm) throws IOException {
+		return install(vm,
+				className -> supplier(() -> IOUtil.readAll(ClassLoader.getSystemResourceAsStream(className.replace('.', '/') + ".class"))),
+				resourceName -> supplier(() -> IOUtil.readAll(ClassLoader.getSystemResourceAsStream(resourceName))));
+	}
+
+	/**
+	 * Creates a {@link SupplyingClassLoader} with class and resource loading definitions
+	 * that pull from the current runtime.
+	 *
+	 * @param vm
+	 * 		Virtual machine to install into.
+	 * @param classes
+	 * 		Map of internal class names, to their bytecode.
+	 * 		An example key would be {@code com/example/Foo} or
+	 * 		{@code com/example/Foo$Bar} for an inner class {@code Bar}.
+	 * @param resources
+	 * 		Map of file paths to their raw contents.
+	 * 		The prefix '/' for runtime resource look-ups should NOT be included in these map entries.
+	 *
+	 * @return Helper for interacting with the {@link SupplyingClassLoader} loaded into the VM.
+	 *
+	 * @throws IOException
+	 * 		When the {@link SupplyingClassLoader} class cannot be streamed.
+	 */
+	public static Helper installMaps(VirtualMachine vm, Map<String, byte[]> classes, Map<String, byte[]> resources) throws IOException {
+		return install(vm,
+				className -> classes.get(className.replace('.', '/')),
+				resourceName -> {
+					if (resourceName.startsWith("/"))
+						resourceName = resourceName.substring(1);
+					return resources.get(resourceName);
+				});
+	}
+
+
+	/**
+	 * Creates a {@link SupplyingClassLoader} with class and resource loading definitions
+	 * based on the given functions.
+	 *
+	 * @param vm
+	 * 		Virtual machine to install into.
+	 *
+	 * @return Helper for interacting with the {@link SupplyingClassLoader} loaded into the VM.
 	 *
 	 * @throws IOException
 	 * 		When the {@link SupplyingClassLoader} class cannot be streamed.

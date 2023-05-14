@@ -117,18 +117,6 @@ public class TestUtil {
 		test(klass, 0, null);
 	}
 
-	public <T> T unchecked(UncheckedSupplier<T> supplier) {
-		try {
-			return supplier.get();
-		} catch (Throwable e) {
-			throw new IllegalStateException(e);
-		}
-	}
-
-	interface UncheckedSupplier<T> {
-		T get() throws Throwable;
-	}
-
 	public VirtualMachine newVirtualMachine() {
 		return new VirtualMachine() {
 			@Override

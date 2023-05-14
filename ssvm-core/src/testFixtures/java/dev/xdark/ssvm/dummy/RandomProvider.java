@@ -1,6 +1,6 @@
-package dev.xdark.ssvm;
+package dev.xdark.ssvm.dummy;
 
-public class DummyClass {
+public class RandomProvider {
 	public static int random() {
 		return (int) (Math.random() * 100000);
 	}

@@ -8,10 +8,12 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+/**
+ * Tests for {@link InvocationUtil}
+ */
 public class InvocationTest {
-
 	@Test
-	public void doTest() {
+	public void testIntClassMethods() {
 		VirtualMachine vm = new VirtualMachine();
 		vm.bootstrap();
 		InvocationUtil util = InvocationUtil.create(vm);

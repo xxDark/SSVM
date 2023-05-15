@@ -5,6 +5,8 @@ import dev.xdark.ssvm.VMTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
+
+// Java 8 imports
 import sun.reflect.CallerSensitive;
 import sun.reflect.Reflection;
 

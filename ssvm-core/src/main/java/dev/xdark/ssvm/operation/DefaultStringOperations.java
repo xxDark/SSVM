@@ -31,11 +31,11 @@ public final class DefaultStringOperations implements StringOperations {
 	private final Symbols symbols;
 	private final LinkResolver linkResolver;
 	private final VMOperations ops;
-	private final boolean isJava11;
+	private final int jvmVersion;
 
 	@Override
 	public InstanceValue newUtf8(String value) {
-		if (isJava11)
+		if (jvmVersion >= 9)
 			return newUtf8FromBytes(toBytes(value));
 		return newUtf8FromChars(toChars(value));
 	}

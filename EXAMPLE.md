@@ -12,10 +12,10 @@ import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 
 import static dev.xdark.ssvm.classloading.SupplyingClassLoaderInstaller.*;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 public class SsvmRunner {
-    public static void main(String[] args) {
+    // ClassNotFoundException is thrown by helper.loadClass(String)
+    public static void main(String[] args) throws ClassNotFoundException {
         VirtualMachine vm = new VirtualMachine() {
             // Provide any overriding behaviors here
         };
@@ -40,7 +40,7 @@ public class SsvmRunner {
         );
 
         // Invoke the 'main' method
-        InstanceClass mainClassInstance = assertDoesNotThrow(() -> helper.loadClass("com/example/ProgramName"));
+        InstanceClass mainClassInstance = helper.loadClass("com/example/ProgramName");
         ArrayValue argsValue = memoryManager
                 .newArray(vm.getSymbols().java_lang_String().getArrayClass(), 0);
 

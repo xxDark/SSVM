@@ -14,9 +14,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class InvocationTest {
 	@Test
 	public void testIntClassMethods() {
+		// Create VM and invocation util
 		VirtualMachine vm = new VirtualMachine();
 		vm.bootstrap();
 		InvocationUtil util = InvocationUtil.create(vm);
+
+		// Invocation call on an int returning method
 		InstanceClass java_lang_integer = vm.getSymbols().java_lang_Integer();
 		int value = Long.hashCode(System.currentTimeMillis());
 		int primitive = util.invokeInt(
@@ -24,6 +27,8 @@ public class InvocationTest {
 			Argument.reference(vm.getOperations().newUtf8(Integer.toString(value)))
 		);
 		assertEquals(value, primitive);
+
+		// Invocation call on a reference returning method
 		InstanceClass java_lang_long = vm.getSymbols().java_lang_Long();
 		ObjectValue wrapper = util.invokeReference(
 			java_lang_long.getMethod("valueOf", "(J)Ljava/lang/Long;"),

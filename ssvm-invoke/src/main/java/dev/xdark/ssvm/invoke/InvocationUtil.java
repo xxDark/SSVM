@@ -62,6 +62,18 @@ public final class InvocationUtil {
 	 * @param arguments Method arguments.
 	 * @return Invocation result.
 	 */
+	public String invokeStringReference(JavaMethod method, Argument... arguments) {
+		if (!method.getDesc().endsWith("Ljava/lang/String;"))
+			throw new IllegalArgumentException("Method does not return 'java.lang.String'");
+		ObjectValue value = invoke(method, new ReferenceValueSink(), arguments).getValue();
+		return vm.getOperations().readUtf8(value);
+	}
+
+	/**
+	 * @param method    Method to invoke.
+	 * @param arguments Method arguments.
+	 * @return Invocation result.
+	 */
 	public long invokeLong(JavaMethod method, Argument... arguments) {
 		return invoke(method, new LongValueSink(), arguments).getValue();
 	}

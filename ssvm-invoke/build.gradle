@@ -1,5 +1,4 @@
 dependencies {
-    compileOnly project(':ssvm-core')
-    testImplementation project(':ssvm-core')
+    implementation project(':ssvm-core')
     testImplementation(testFixtures(project(":ssvm-core")))
 }

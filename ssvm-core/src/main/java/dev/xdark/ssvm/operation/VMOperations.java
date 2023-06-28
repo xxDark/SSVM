@@ -71,10 +71,6 @@ public final class VMOperations implements
 		LinkResolver linkResolver = vm.getLinkResolver();
 		RuntimeResolver runtimeResolver = vm.getRuntimeResolver();
 		StringPool stringPool = vm.getStringPool();
-		String classFileVersionProperty = vm.getProperties().get("java.class.version");
-		if (classFileVersionProperty.contains("."))
-			classFileVersionProperty = classFileVersionProperty.substring(0, classFileVersionProperty.indexOf('.'));
-		int jvmVersion = Integer.parseInt(classFileVersionProperty) - 44;
 		allocationOperations = new DefaultAllocationOperations(memoryManager, symbols, vm.getPrimitives(), this);
 		conversionOperations = new DefaultConversionOperations(symbols, memoryManager, this);
 		arrayOperations = new DefaultArrayOperations(symbols, this);
@@ -82,7 +78,7 @@ public final class VMOperations implements
 		fieldOperations = new DefaultFieldOperations(memoryManager, linkResolver, this);
 		invocationOperations = new DefaultInvocationOperations(vm.getExecutionEngine(), threadManager);
 		primitiveOperations = new DefaultPrimitiveOperations(symbols, threadManager, linkResolver, runtimeResolver, this);
-		stringOperations = new DefaultStringOperations(memoryManager, threadManager, symbols, linkResolver, this, jvmVersion);
+		stringOperations = new DefaultStringOperations(memoryManager, threadManager, symbols, linkResolver, this, vm.getJvmVersion());
 		synchronizationOperations = new DefaultSynchronizationOperations(symbols, memoryManager, this);
 		verificationOperations = new DefaultVerificationOperations(symbols, this);
 		classOperations = new DefaultClassOperations(vm.getMirrorFactory(), memoryManager, threadManager, vm.getBootClassFinder(), runtimeResolver, symbols, vm.getPrimitives(), vm.getClassLoaders(), vm.getClassDefiner(), vm.getClassStorage(), vm, this);

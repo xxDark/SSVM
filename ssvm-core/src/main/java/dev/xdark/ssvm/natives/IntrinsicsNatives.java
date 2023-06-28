@@ -121,140 +121,198 @@ public class IntrinsicsNatives {
 	private static void stringIntrinsics(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
 		InstanceClass jc = vm.getSymbols().java_lang_String();
-		// This will only work on JDK 8, sadly.
 		ClassArea<JavaField> area = jc.virtualFieldArea();
-		JavaField charValue = area.get("value", "[C");
-		if (charValue != null) {
-			MemoryManager memoryManager = vm.getMemoryManager();
-			long valueOffset = charValue.getOffset();
-			vmi.setInvoker(jc, "length", "()I", ctx -> {
-				ArrayValue chars = vm.getOperations().checkNotNull(memoryManager.readReference(ctx.getLocals().loadReference(0), valueOffset));
-				ctx.setResult(chars.getLength());
-				return Result.ABORT;
-			});
-			long hashOffset = area.get("hash", "I").getOffset();
-			vmi.setInvoker(jc, "hashCode", "()I", ctx -> {
-				InstanceValue _this = ctx.getLocals().loadReference(0);
-				MemoryData data = _this.getData();
-				int hc = data.readInt(hashOffset);
-				if (hc == 0) {
-					ArrayValue value = vm.getOperations().checkNotNull(memoryManager.readReference(_this, valueOffset));
-					for (int i = 0, j = value.getLength(); i < j; i++) {
-						hc = 31 * hc + value.getChar(i);
+		if (vm.getJvmVersion() > 8) {
+			// TODO: intrinsics for indexOf/lastIndexOf/etc operations for JDK 9+
+			JavaField coderValue = area.get("coder", "B");
+			JavaField bytesValue = area.get("value", "[B");
+			if (bytesValue != null) {
+				MemoryManager memoryManager = vm.getMemoryManager();
+				long valueOffset = bytesValue.getOffset();
+				vmi.setInvoker(jc, "length", "()I", ctx -> {
+					ObjectValue _this = ctx.getLocals().loadReference(0);
+					byte coder = _this.getData().readByte(coderValue.getOffset());
+					ArrayValue bytes = vm.getOperations().checkNotNull(memoryManager.readReference(_this, valueOffset));
+					ctx.setResult(bytes.getLength() >> coder);
+					return Result.ABORT;
+				});
+				long hashOffset = area.get("hash", "I").getOffset();
+				vmi.setInvoker(jc, "hashCode", "()I", ctx -> {
+					InstanceValue _this = ctx.getLocals().loadReference(0);
+					MemoryData data = _this.getData();
+					int hc = data.readInt(hashOffset);
+					if (hc == 0) {
+						ArrayValue value = vm.getOperations().checkNotNull(memoryManager.readReference(_this, valueOffset));
+						for (int i = 0, j = value.getLength(); i < j; i++) {
+							hc = 31 * hc + value.getByte(i);
+						}
+						data.writeInt(hashOffset, hc);
 					}
-					data.writeInt(hashOffset, hc);
-				}
-				ctx.setResult(hc);
-				return Result.ABORT;
-			});
-			vmi.setInvoker(jc, "lastIndexOf", "(II)I", ctx -> {
-				Locals locals = ctx.getLocals();
-				InstanceValue _this = locals.loadReference(0);
-				ArrayValue chars = vm.getOperations().checkNotNull(memoryManager.readReference(_this, valueOffset));
-				int ch = locals.loadInt(1);
-				int fromIndex = locals.loadInt(2);
-				ctx.setResult(lastIndexOf(chars, ch, fromIndex));
-				return Result.ABORT;
-			});
-			vmi.setInvoker(jc, "indexOf", "([CII[CIII)I", ctx -> {
-				Locals locals = ctx.getLocals();
-				ArrayValue source = locals.loadReference(0);
-				int sourceOffset = locals.loadInt(1);
-				int sourceCount = locals.loadInt(2);
-				ArrayValue target = locals.loadReference(3);
-				int targetOffset = locals.loadInt(4);
-				int targetCount = locals.loadInt(5);
-				int fromIndex = locals.loadInt(6);
-				ctx.setResult(indexOf(source, sourceOffset, sourceCount, target, targetOffset, targetCount, fromIndex));
-				return Result.ABORT;
-			});
-			vmi.setInvoker(jc, "indexOf", "(II)I", ctx -> {
-				Locals locals = ctx.getLocals();
-				InstanceValue _this = locals.loadReference(0);
-				ArrayValue chars = vm.getOperations().checkNotNull(memoryManager.readReference(_this, valueOffset));
-				int ch = locals.loadInt(1);
-				int fromIndex = locals.loadInt(2);
-				ctx.setResult(indexOf(chars, ch, fromIndex));
-				return Result.ABORT;
-			});
-			vmi.setInvoker(jc, "indexOf", "(I)I", ctx -> {
-				Locals locals = ctx.getLocals();
-				InstanceValue _this = locals.loadReference(0);
-				ArrayValue chars = vm.getOperations().checkNotNull(memoryManager.readReference(_this, valueOffset));
-				int ch = locals.loadInt(1);
-				ctx.setResult(indexOf(chars, ch, 0));
-				return Result.ABORT;
-			});
-			vmi.setInvoker(jc, "equals", "(Ljava/lang/Object;)Z", ctx -> {
-				ret:
-				{
-					Locals locals = ctx.getLocals();
-					ObjectValue other = locals.loadReference(1);
-					if (other.isNull() || other.getJavaClass() != jc) {
-						ctx.setResult(0);
-					} else {
-						InstanceValue _this = locals.loadReference(0);
-						ArrayValue chars = vm.getOperations().checkNotNull(memoryManager.readReference(_this, valueOffset));
-						ArrayValue chars2 = vm.getOperations().checkNotNull(memoryManager.readReference(other, valueOffset));
-						int len = chars.getLength();
-						if (len != chars2.getLength()) {
+					ctx.setResult(hc);
+					return Result.ABORT;
+				});
+				vmi.setInvoker(jc, "equals", "(Ljava/lang/Object;)Z", ctx -> {
+					ret:
+					{
+						Locals locals = ctx.getLocals();
+						ObjectValue other = locals.loadReference(1);
+						if (other.isNull() || other.getJavaClass() != jc) {
 							ctx.setResult(0);
 						} else {
-							while (len-- != 0) {
-								if (chars.getChar(len) != chars2.getChar(len)) {
-									ctx.setResult(0);
-									break ret;
+							InstanceValue _this = locals.loadReference(0);
+							ArrayValue bytes = vm.getOperations().checkNotNull(memoryManager.readReference(_this, valueOffset));
+							ArrayValue bytes2 = vm.getOperations().checkNotNull(memoryManager.readReference(other, valueOffset));
+							int len = bytes.getLength();
+							if (len != bytes2.getLength()) {
+								ctx.setResult(0);
+							} else {
+								while (len-- != 0) {
+									if (bytes.getByte(len) != bytes2.getByte(len)) {
+										ctx.setResult(0);
+										break ret;
+									}
 								}
+								ctx.setResult(1);
 							}
-							ctx.setResult(1);
 						}
 					}
-				}
-				return Result.ABORT;
-			});
-			vmi.setInvoker(jc, "startsWith", "(Ljava/lang/String;I)Z", ctx -> {
-				Locals locals = ctx.getLocals();
-				VMOperations ops = vm.getOperations();
-				ArrayValue prefix = (ArrayValue) memoryManager.readReference(ops.<InstanceValue>checkNotNull(locals.loadReference(1)), valueOffset);
-				ArrayValue _this = (ArrayValue) memoryManager.readReference(locals.<InstanceValue>loadReference(0), valueOffset);
-				int toOffset = locals.loadInt(2);
-				ctx.setResult(startsWith(_this, prefix, toOffset) ? 1 : 0);
-				return Result.ABORT;
-			});
-			PrimitiveClass charPrimitive = vm.getPrimitives().charPrimitive();
-			vmi.setInvoker(jc, "replace", "(CC)Ljava/lang/String;", ctx -> {
-				Locals locals = ctx.getLocals();
-				char oldChar = (char) locals.loadInt(1);
-				char newChar = (char) locals.loadInt(2);
-				InstanceValue _this = locals.loadReference(0);
-				if (oldChar == newChar) {
-					ctx.setResult(_this);
-				} else {
+					return Result.ABORT;
+				});
+			}
+		} else {
+			JavaField charValue = area.get("value", "[C");
+			if (charValue != null) {
+				MemoryManager memoryManager = vm.getMemoryManager();
+				long valueOffset = charValue.getOffset();
+				vmi.setInvoker(jc, "length", "()I", ctx -> {
+					ArrayValue chars = vm.getOperations().checkNotNull(memoryManager.readReference(ctx.getLocals().loadReference(0), valueOffset));
+					ctx.setResult(chars.getLength());
+					return Result.ABORT;
+				});
+				long hashOffset = area.get("hash", "I").getOffset();
+				vmi.setInvoker(jc, "hashCode", "()I", ctx -> {
+					InstanceValue _this = ctx.getLocals().loadReference(0);
+					MemoryData data = _this.getData();
+					int hc = data.readInt(hashOffset);
+					if (hc == 0) {
+						ArrayValue value = vm.getOperations().checkNotNull(memoryManager.readReference(_this, valueOffset));
+						for (int i = 0, j = value.getLength(); i < j; i++) {
+							hc = 31 * hc + value.getChar(i);
+						}
+						data.writeInt(hashOffset, hc);
+					}
+					ctx.setResult(hc);
+					return Result.ABORT;
+				});
+				vmi.setInvoker(jc, "lastIndexOf", "(II)I", ctx -> {
+					Locals locals = ctx.getLocals();
+					InstanceValue _this = locals.loadReference(0);
+					ArrayValue chars = vm.getOperations().checkNotNull(memoryManager.readReference(_this, valueOffset));
+					int ch = locals.loadInt(1);
+					int fromIndex = locals.loadInt(2);
+					ctx.setResult(lastIndexOf(chars, ch, fromIndex));
+					return Result.ABORT;
+				});
+				vmi.setInvoker(jc, "indexOf", "([CII[CIII)I", ctx -> {
+					Locals locals = ctx.getLocals();
+					ArrayValue source = locals.loadReference(0);
+					int sourceOffset = locals.loadInt(1);
+					int sourceCount = locals.loadInt(2);
+					ArrayValue target = locals.loadReference(3);
+					int targetOffset = locals.loadInt(4);
+					int targetCount = locals.loadInt(5);
+					int fromIndex = locals.loadInt(6);
+					ctx.setResult(indexOf(source, sourceOffset, sourceCount, target, targetOffset, targetCount, fromIndex));
+					return Result.ABORT;
+				});
+				vmi.setInvoker(jc, "indexOf", "(II)I", ctx -> {
+					Locals locals = ctx.getLocals();
+					InstanceValue _this = locals.loadReference(0);
+					ArrayValue chars = vm.getOperations().checkNotNull(memoryManager.readReference(_this, valueOffset));
+					int ch = locals.loadInt(1);
+					int fromIndex = locals.loadInt(2);
+					ctx.setResult(indexOf(chars, ch, fromIndex));
+					return Result.ABORT;
+				});
+				vmi.setInvoker(jc, "indexOf", "(I)I", ctx -> {
+					Locals locals = ctx.getLocals();
+					InstanceValue _this = locals.loadReference(0);
+					ArrayValue chars = vm.getOperations().checkNotNull(memoryManager.readReference(_this, valueOffset));
+					int ch = locals.loadInt(1);
+					ctx.setResult(indexOf(chars, ch, 0));
+					return Result.ABORT;
+				});
+				vmi.setInvoker(jc, "equals", "(Ljava/lang/Object;)Z", ctx -> {
+					ret:
+					{
+						Locals locals = ctx.getLocals();
+						ObjectValue other = locals.loadReference(1);
+						if (other.isNull() || other.getJavaClass() != jc) {
+							ctx.setResult(0);
+						} else {
+							InstanceValue _this = locals.loadReference(0);
+							ArrayValue chars = vm.getOperations().checkNotNull(memoryManager.readReference(_this, valueOffset));
+							ArrayValue chars2 = vm.getOperations().checkNotNull(memoryManager.readReference(other, valueOffset));
+							int len = chars.getLength();
+							if (len != chars2.getLength()) {
+								ctx.setResult(0);
+							} else {
+								while (len-- != 0) {
+									if (chars.getChar(len) != chars2.getChar(len)) {
+										ctx.setResult(0);
+										break ret;
+									}
+								}
+								ctx.setResult(1);
+							}
+						}
+					}
+					return Result.ABORT;
+				});
+				vmi.setInvoker(jc, "startsWith", "(Ljava/lang/String;I)Z", ctx -> {
+					Locals locals = ctx.getLocals();
 					VMOperations ops = vm.getOperations();
-					ArrayValue value = (ArrayValue) memoryManager.readReference(_this, valueOffset);
-					int len = value.getLength();
-					int i = -1;
-					while (++i < len) {
-						if (value.getChar(i) == oldChar) {
-							break;
-						}
-					}
-					if (i < len) {
-						ArrayValue buf = ops.allocateArray(charPrimitive, len);
-						for (int j = 0; j < i; j++) {
-							buf.setChar(j, value.getChar(j));
-						}
-						while (i < len) {
-							char c = value.getChar(i);
-							buf.setChar(i++, (c == oldChar) ? newChar : c);
-						}
-						ctx.setResult(ops.newUtf8FromChars(buf));
-					} else {
+					ArrayValue prefix = (ArrayValue) memoryManager.readReference(ops.<InstanceValue>checkNotNull(locals.loadReference(1)), valueOffset);
+					ArrayValue _this = (ArrayValue) memoryManager.readReference(locals.<InstanceValue>loadReference(0), valueOffset);
+					int toOffset = locals.loadInt(2);
+					ctx.setResult(startsWith(_this, prefix, toOffset) ? 1 : 0);
+					return Result.ABORT;
+				});
+				PrimitiveClass charPrimitive = vm.getPrimitives().charPrimitive();
+				vmi.setInvoker(jc, "replace", "(CC)Ljava/lang/String;", ctx -> {
+					Locals locals = ctx.getLocals();
+					char oldChar = (char) locals.loadInt(1);
+					char newChar = (char) locals.loadInt(2);
+					InstanceValue _this = locals.loadReference(0);
+					if (oldChar == newChar) {
 						ctx.setResult(_this);
+					} else {
+						VMOperations ops = vm.getOperations();
+						ArrayValue value = (ArrayValue) memoryManager.readReference(_this, valueOffset);
+						int len = value.getLength();
+						int i = -1;
+						while (++i < len) {
+							if (value.getChar(i) == oldChar) {
+								break;
+							}
+						}
+						if (i < len) {
+							ArrayValue buf = ops.allocateArray(charPrimitive, len);
+							for (int j = 0; j < i; j++) {
+								buf.setChar(j, value.getChar(j));
+							}
+							while (i < len) {
+								char c = value.getChar(i);
+								buf.setChar(i++, (c == oldChar) ? newChar : c);
+							}
+							ctx.setResult(ops.newUtf8FromChars(buf));
+						} else {
+							ctx.setResult(_this);
+						}
 					}
-				}
-				return Result.ABORT;
-			});
+					return Result.ABORT;
+				});
+			}
 		}
 	}
 

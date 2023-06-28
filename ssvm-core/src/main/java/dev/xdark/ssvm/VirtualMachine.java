@@ -498,6 +498,16 @@ public class VirtualMachine implements VMEventCollection {
 		return findBootstrapClass(name, false);
 	}
 
+	/**
+	 * @return JVM version.
+	 */
+	public int getJvmVersion() {
+		String classFileVersionProperty = getProperties().get("java.class.version");
+		if (classFileVersionProperty.contains("."))
+			classFileVersionProperty = classFileVersionProperty.substring(0, classFileVersionProperty.indexOf('.'));
+		return Integer.parseInt(classFileVersionProperty) - 44;
+	}
+
 	private void init() {
 		ThreadManager threadManager = this.threadManager;
 		try {

@@ -4,4 +4,6 @@ dependencies {
     api slf4j_api
     api cafedude
     api jlinker
+
+    testImplementation(testFixtures(project(":mirrors")))
 }

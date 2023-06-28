@@ -29,7 +29,7 @@ public final class VMOperations implements
 	MethodHandleOperations,
 	InvokeDynamicOperations,
 	ConstantOperations,
-	ValueOperations {
+	ObjectOperations {
 
 	// This class is a hack to not
 	// copy code in one place.
@@ -62,7 +62,7 @@ public final class VMOperations implements
 	@Delegate
 	private final ConstantOperations constantOperations;
 	@Delegate
-	private final ValueOperations valueOperations;
+	private final ObjectOperations objectOperations;
 
 	public VMOperations(VirtualMachine vm) {
 		MemoryManager memoryManager = vm.getMemoryManager();
@@ -85,6 +85,6 @@ public final class VMOperations implements
 		methodHandleOperations = new DefaultMethodHandleOperations(symbols, threadManager, linkResolver, this);
 		invokeDynamicOperations = new DefaultInvokeDynamicOperations(symbols, threadManager, stringPool, runtimeResolver, vm.getClassStorage(), memoryManager, this);
 		constantOperations = new DefaultConstantOperations(memoryManager, threadManager, stringPool, this);
-		valueOperations = new DefaultValueOperations(symbols, this, vm.getThreadManager());
+		objectOperations = new DefaultObjectOperations(symbols, this, vm.getThreadManager(), vm.getLinkResolver());
 	}
 }

@@ -71,4 +71,8 @@ public final class VMCallInsnNode extends DelegatingInsnNode<MethodInsnNode> {
 	public void setJavaClass(JavaClass javaClass) {
 		this.javaClass = javaClass;
 	}
+
+	public boolean isInterface() {
+		return delegate.itf;
+	}
 }

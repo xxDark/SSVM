@@ -465,6 +465,21 @@ public final class DefaultClassOperations implements ClassOperations {
 			ops.throwException(symbols.java_lang_ClassNotFoundException(), internalName);
 		}
 		JavaClass klass;
+		if(dimensions > 0) {
+			if (internalName.charAt(dimensions) != 'L') {
+				// Primitive array
+				klass = lookupPrimitiveOrNull(internalName.charAt(dimensions));
+				if (klass == null) {
+					ops.throwException(symbols.java_lang_ClassNotFoundException(), internalName);
+					return null;
+				}
+
+				while (dimensions-- != 0) {
+					klass = klass.newArrayClass();
+				}
+				return klass;
+			}
+		}
 		String trueName = dimensions == 0 ? internalName : internalName.substring(dimensions + 1, internalName.length() - 1);
 		try (CloseableLock lock = data.lock()) {
 			klass = data.getClass(trueName);

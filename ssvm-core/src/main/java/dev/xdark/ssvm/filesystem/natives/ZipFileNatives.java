@@ -6,10 +6,13 @@ import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.*;
 import dev.xdark.ssvm.filesystem.FileManager;
 import dev.xdark.ssvm.filesystem.ZipFile;
+import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.symbol.Symbols;
+import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.value.ArrayValue;
+import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 
@@ -240,6 +243,45 @@ public class ZipFileNatives {
 				}
 				return Result.ABORT;
 			});
+
+			// TODO: We can remove this entire invoker if we properly implement the inflater natives
+			//  but until then this bypasses the need to do that.
+			if (vm.getJvmVersion() > 8) {
+				InstanceClass baisClass = (InstanceClass) vm.findBootstrapClass("java/io/ByteArrayInputStream");
+				vmi.setInvoker(zf, "getInputStream", "(Ljava/util/zip/ZipEntry;)Ljava/io/InputStream;", ctx -> {
+					VMOperations ops = vm.getOperations();
+					MemoryManager mem = vm.getMemoryManager();
+					ThreadManager threadManager = vm.getThreadManager();
+
+					// Get the current zip file
+					Locals locals = ctx.getLocals();
+					ObjectValue _this = locals.loadReference(0);
+					long handle = getJdk9ZipFileHandle(ctx, _this);
+					ZipFile zipFile = fileManager.getZipFile(handle);
+					if (zipFile == null)
+						ops.throwException(symbols.java_lang_IllegalStateException(), "zip closed");
+
+					try {
+						// Get the entry bytes
+						String entryName = ops.toString(ops.getReference((ObjectValue) locals.loadReference(1), "name", "Ljava/lang/String;"));
+						ZipEntry entry = zipFile.getEntry(entryName);
+						byte[] manifestBytes = zipFile.readEntry(entry);
+						ArrayValue vmManifestBytes = ops.toVMBytes(manifestBytes);
+
+						// Wrap into 'new ByteArrayInputStream(bytes)' and pass that as the return value
+						InstanceValue bais = mem.newInstance(baisClass);
+						Locals baisLocals = threadManager.currentThreadStorage().newLocals(2);
+						baisLocals.setReference(0, bais);
+						baisLocals.setReference(1, vmManifestBytes);
+						ops.invokeVoid(bais.getJavaClass().getMethod("<init>", "([B)V"), baisLocals);
+						ctx.setResult(bais);
+					} catch (IOException ex) {
+						ops.throwException(symbols.java_io_IOException(), ex.getMessage());
+					}
+
+					return Result.ABORT;
+				});
+			}
 		}
 	}
 

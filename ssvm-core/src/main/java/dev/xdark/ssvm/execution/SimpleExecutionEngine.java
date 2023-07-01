@@ -17,7 +17,6 @@ import org.objectweb.asm.Opcodes;
  */
 public class SimpleExecutionEngine implements ExecutionEngine {
 
-	private static final MethodInvoker FALLBACK = new InterpretedInvoker();
 	private final VirtualMachine vm;
 
 	public SimpleExecutionEngine(VirtualMachine vm) {
@@ -52,7 +51,7 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 		try {
 			MethodInvoker invoker = vmi.getInvoker(jm);
 			if (invoker == null) {
-				invoker = FALLBACK;
+				invoker = InterpretedInvoker.INSTANCE;
 			}
 			Result result = invoker.intercept(ctx);
 			if (result == Result.ABORT) {

@@ -19,7 +19,7 @@ import java.util.zip.ZipEntry;
  */
 public abstract class BasicZipFile implements ZipFile {
 
-	private final int rawHandle;
+	private final long rawHandle;
 	private final Map<ZipEntry, byte[]> contents = new HashMap<>();
 	private final Map<Handle, ZipEntry> handles = new HashMap<>();
 	private Map<String, ZipEntry> names;
@@ -27,7 +27,7 @@ public abstract class BasicZipFile implements ZipFile {
 	/**
 	 * @param rawHandle Raw zip handle.
 	 */
-	protected BasicZipFile(int rawHandle) {
+	protected BasicZipFile(long rawHandle) {
 		this.rawHandle = rawHandle;
 	}
 
@@ -98,19 +98,17 @@ public abstract class BasicZipFile implements ZipFile {
 			handle.set(value);
 		} while (handles.containsKey(handle));
 		handles.put(handle.copy(), entry);
-		return (long) value << 32L | rawHandle & 0xffffffffL;
+		return (rawHandle & 0xFFFFFFFF00000000L) | value;
 	}
 
 	@Override
 	public synchronized ZipEntry getEntry(long handle) {
-		handle >>= 32;
-		return handles.get(Handle.threadLocal((int) handle));
+		return handles.get(Handle.threadLocal(handle));
 	}
 
 	@Override
 	public synchronized boolean freeHandle(long handle) {
-		handle >>= 32;
-		return handles.remove(Handle.threadLocal((int) handle)) != null;
+		return handles.remove(Handle.threadLocal(handle)) != null;
 	}
 
 	@Override

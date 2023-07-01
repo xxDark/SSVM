@@ -3,10 +3,7 @@ package dev.xdark.ssvm.filesystem.natives;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
-import dev.xdark.ssvm.execution.InterpretedInvoker;
-import dev.xdark.ssvm.execution.Locals;
-import dev.xdark.ssvm.execution.PanicException;
-import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.execution.*;
 import dev.xdark.ssvm.filesystem.FileManager;
 import dev.xdark.ssvm.filesystem.ZipFile;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
@@ -279,11 +276,7 @@ public class ZipFileNatives {
 			// We should have opened a file handle.
 			// We want to move it from a standard input to a zip file in the file manager.
 			ObjectValue _this = ctx.getLocals().loadReference(0);
-			ObjectValue res = ops.getReference(_this, zf, "res", "Ljava/util/zip/ZipFile$CleanableResource;");
-			ObjectValue zsrc = ops.getReference(res, "zsrc", "Ljava/util/zip/ZipFile$Source;");
-			ObjectValue zfile = ops.getReference(zsrc, "zfile", "Ljava/io/RandomAccessFile;");
-			ObjectValue fd = ops.getReference(zfile, "fd", "Ljava/io/FileDescriptor;");
-			long handle = ops.getLong(fd, "handle");
+			long handle = getJdk9ZipFileHandle(ctx, _this);
 			try {
 				fileManager.transferInputToZip(handle, java.util.zip.ZipFile.OPEN_READ);
 			} catch (IOException ex) {
@@ -293,5 +286,15 @@ public class ZipFileNatives {
 			return Result.ABORT;
 		});
 		return hooked;
+	}
+
+	public static long getJdk9ZipFileHandle(ExecutionContext<?> ctx, ObjectValue zip) {
+		VMOperations ops = ctx.getVM().getOperations();
+		InstanceClass zf = ctx.getSymbols().java_util_zip_ZipFile();
+		ObjectValue res = ops.getReference(zip, zf, "res", "Ljava/util/zip/ZipFile$CleanableResource;");
+		ObjectValue zsrc = ops.getReference(res, "zsrc", "Ljava/util/zip/ZipFile$Source;");
+		ObjectValue zfile = ops.getReference(zsrc, "zfile", "Ljava/io/RandomAccessFile;");
+		ObjectValue fd = ops.getReference(zfile, "fd", "Ljava/io/FileDescriptor;");
+		return ops.getLong(fd, "handle");
 	}
 }

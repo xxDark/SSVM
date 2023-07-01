@@ -274,18 +274,18 @@ public class HostFileManager implements FileManager {
 
 	@Override
 	public synchronized ZipFile getZipFile(long handle) {
-		return zipFiles.get(Handle.threadLocal((int) handle));
+		return zipFiles.get(Handle.threadLocal(handle));
 	}
 
 	@Override
 	public synchronized ZipEntry getZipEntry(long handle) {
-		ZipFile zf = zipFiles.get(Handle.threadLocal((int) handle));
+		ZipFile zf = zipFiles.get(Handle.threadLocal(handle));
 		return zf == null ? null : zf.getEntry(handle);
 	}
 
 	@Override
 	public synchronized boolean freeZipEntry(long handle) {
-		ZipFile zf = zipFiles.get(Handle.threadLocal((int) handle));
+		ZipFile zf = zipFiles.get(Handle.threadLocal(handle));
 		return zf != null && zf.freeHandle(handle);
 	}
 

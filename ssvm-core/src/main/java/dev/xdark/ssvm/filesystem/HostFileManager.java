@@ -3,13 +3,7 @@ package dev.xdark.ssvm.filesystem;
 import dev.xdark.ssvm.io.Handle;
 import dev.xdark.ssvm.util.IOUtil;
 
-import java.io.File;
-import java.io.FileDescriptor;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -158,7 +152,8 @@ public class HostFileManager implements FileManager {
 		switch (mode) {
 			case READ: {
 				long fd = newFD();
-				FileInputStream in = new FileInputStream(path);
+				InputStream in = new BufferedInputStream(new FileInputStream(path));
+				in.mark(Integer.MAX_VALUE);
 				Handle h = Handle.of(fd);
 				inputs.put(h, in);
 				return fd;

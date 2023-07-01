@@ -18,8 +18,12 @@ import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 
-import java.io.*;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.zip.ZipFile;
 
 /**
  * Initializes multiple classes:
@@ -237,7 +241,7 @@ public class GenericFileSystemNatives {
 				}
 				return Result.ABORT;
 			});
-			vmi.setInvoker(raf, "readBytes", "([BII)I",ctx -> readBytes(ctx, vm, fileManager));
+			vmi.setInvoker(raf, "readBytes", "([BII)I", ctx -> readBytes(ctx, vm, fileManager));
 			vmi.setInvoker(raf, "seek0", "(J)V", ctx -> {
 				Locals locals = ctx.getLocals();
 				InstanceValue _this = locals.loadReference(0);
@@ -265,7 +269,20 @@ public class GenericFileSystemNatives {
 				try {
 					int fmMode = FileManager.READ;
 					if (mode == 2) fmMode = FileManager.ACCESS_READ | FileManager.ACCESS_WRITE;
-					long handle = fileManager.open(path, fmMode);
+
+					// TODO: Temporary hack
+					//  - The context check here is so that we can determine if this is being done from a ZipFile constructor
+					//  - We want to open this as a zip file in our file manager so other Jar/ZipFileNatives hooks function correctly
+					//  - However, this is obviously a huge hack. I'm not sure how we should best approach this.
+					long handle;
+					if (ctx.getVM().getThreadManager().currentOsThread().getBacktrace().at(9).getMethod().toString().contains("java/util/zip/ZipFile.<init>")) {
+						// Zip file modes are different
+						fmMode = ZipFile.OPEN_READ;
+						handle = fileManager.openZipFile(path, fmMode);
+					} else {
+						handle = fileManager.open(path, fmMode);
+					}
+
 					ObjectValue _fd = ops.getReference(_this, fos, "fd", "Ljava/io/FileDescriptor;");
 					ops.putLong(_fd, fd, "handle", handle);
 				} catch (FileNotFoundException ex) {

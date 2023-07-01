@@ -38,6 +38,7 @@ public class ZipFileNatives {
 		vmi.setInvoker(zf, "initIDs", "()V", MethodInvoker.noop());
 		if (vmi.setInvoker(zf, "open", "(Ljava/lang/String;IJZ)J", ctx -> {
 			// Old-style zip file implementation.
+			// This method only exists in JDK 8 and below. Later versions migrated to using RandomAccessFile.
 			Locals locals = ctx.getLocals();
 			VMOperations ops = vm.getOperations();
 			ObjectValue path = locals.loadReference(0);

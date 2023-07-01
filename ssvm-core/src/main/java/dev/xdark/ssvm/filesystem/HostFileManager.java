@@ -22,6 +22,7 @@ import java.util.zip.ZipEntry;
  */
 public class HostFileManager implements FileManager {
 
+	protected final Map<Handle, String> inputPaths = new HashMap<>();
 	protected final Map<Handle, InputStream> inputs = new HashMap<>();
 	protected final Map<Handle, OutputStream> outputs = new HashMap<>();
 	protected final Map<Handle, ZipFile> zipFiles = new HashMap<>();
@@ -91,6 +92,7 @@ public class HostFileManager implements FileManager {
 	@Override
 	public synchronized boolean close(long handle) throws IOException {
 		Handle h = Handle.threadLocal(handle);
+		inputPaths.remove(h);
 		InputStream in = inputs.remove(h);
 		if (in != null) {
 			in.close();
@@ -155,6 +157,7 @@ public class HostFileManager implements FileManager {
 				InputStream in = new BufferedInputStream(new FileInputStream(path));
 				in.mark(Integer.MAX_VALUE);
 				Handle h = Handle.of(fd);
+				inputPaths.put(h, path);
 				inputs.put(h, in);
 				return fd;
 			}
@@ -257,6 +260,16 @@ public class HostFileManager implements FileManager {
 		ZipFile zf = new SimpleZipFile(fd, new java.util.zip.ZipFile(new File(path), mode));
 		zipFiles.put(Handle.of(fd), zf);
 		return fd;
+	}
+
+	@Override
+	public void transferInputToZip(long handle, int mode) throws IOException {
+		Handle h = Handle.of(handle);
+		if (inputs.remove(h) == null) throw new IOException("Cannot transfer, handle was not open prior");
+		String path = inputPaths.get(h);
+		if (path == null) throw new IOException("Cannot transfer, handle was not associated with a file path prior");
+		ZipFile zf = new SimpleZipFile((int) handle, new java.util.zip.ZipFile(new File(path), mode));
+		zipFiles.put(h, zf);
 	}
 
 	@Override

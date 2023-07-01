@@ -3,6 +3,7 @@ package dev.xdark.ssvm.filesystem.natives;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
+import dev.xdark.ssvm.execution.InterpretedInvoker;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.Result;
@@ -36,27 +37,7 @@ public class ZipFileNatives {
 		Symbols symbols = vm.getSymbols();
 		InstanceClass zf = symbols.java_util_zip_ZipFile();
 		vmi.setInvoker(zf, "initIDs", "()V", MethodInvoker.noop());
-		if (vmi.setInvoker(zf, "open", "(Ljava/lang/String;IJZ)J", ctx -> {
-			// Old-style zip file implementation.
-			// This method only exists in JDK 8 and below. Later versions migrated to using RandomAccessFile.
-			Locals locals = ctx.getLocals();
-			VMOperations ops = vm.getOperations();
-			ObjectValue path = locals.loadReference(0);
-			ops.checkNotNull(path);
-			String zipPath = ops.readUtf8(path);
-			int mode = locals.loadInt(1);
-			// last file modification & usemmap are ignored.
-			try {
-				long handle = fileManager.openZipFile(zipPath, mode);
-				if (handle == 0L) {
-					ops.throwException(symbols.java_io_IOException(), zipPath);
-				}
-				ctx.setResult(handle);
-			} catch (IOException ex) {
-				ops.throwException(symbols.java_io_IOException(), ex.getMessage());
-			}
-			return Result.ABORT;
-		})) {
+		if (hookZip(vm, fileManager)) {
 			vmi.setInvoker(zf, "getTotal", "(J)I", ctx -> {
 				ZipFile zip = fileManager.getZipFile(ctx.getLocals().loadLong(0));
 				if (zip == null) {
@@ -263,5 +244,54 @@ public class ZipFileNatives {
 				return Result.ABORT;
 			});
 		}
+	}
+
+	private static boolean hookZip(VirtualMachine vm, FileManager fileManager) {
+		boolean hooked = false;
+		VMOperations ops = vm.getOperations();
+		VMInterface vmi = vm.getInterface();
+		Symbols symbols = vm.getSymbols();
+		InstanceClass zf = symbols.java_util_zip_ZipFile();
+		hooked |= vmi.setInvoker(zf, "open", "(Ljava/lang/String;IJZ)J", ctx -> {
+			// Old-style zip file implementation.
+			// This method only exists in JDK 8 and below. Later versions migrated to using RandomAccessFile.
+			Locals locals = ctx.getLocals();
+			ObjectValue path = locals.loadReference(0);
+			ops.checkNotNull(path);
+			String zipPath = ops.readUtf8(path);
+			int mode = locals.loadInt(1);
+			// last file modification & usemmap are ignored.
+			try {
+				long handle = fileManager.openZipFile(zipPath, mode);
+				if (handle == 0L) {
+					ops.throwException(symbols.java_io_IOException(), zipPath);
+				}
+				ctx.setResult(handle);
+			} catch (IOException ex) {
+				ops.throwException(symbols.java_io_IOException(), ex.getMessage());
+			}
+			return Result.ABORT;
+		});
+		hooked |= vmi.setInvoker(zf, "<init>", "(Ljava/io/File;ILjava/nio/charset/Charset;)V", ctx -> {
+			// Interpret the method
+			InterpretedInvoker.INSTANCE.intercept(ctx);
+
+			// We should have opened a file handle.
+			// We want to move it from a standard input to a zip file in the file manager.
+			ObjectValue _this = ctx.getLocals().loadReference(0);
+			ObjectValue res = ops.getReference(_this, zf, "res", "Ljava/util/zip/ZipFile$CleanableResource;");
+			ObjectValue zsrc = ops.getReference(res, "zsrc", "Ljava/util/zip/ZipFile$Source;");
+			ObjectValue zfile = ops.getReference(zsrc, "zfile", "Ljava/io/RandomAccessFile;");
+			ObjectValue fd = ops.getReference(zfile, "fd", "Ljava/io/FileDescriptor;");
+			long handle = ops.getLong(fd, "handle");
+			try {
+				fileManager.transferInputToZip(handle, java.util.zip.ZipFile.OPEN_READ);
+			} catch (IOException ex) {
+				ops.throwException(symbols.java_io_IOException(), ex.getMessage());
+			}
+
+			return Result.ABORT;
+		});
+		return hooked;
 	}
 }

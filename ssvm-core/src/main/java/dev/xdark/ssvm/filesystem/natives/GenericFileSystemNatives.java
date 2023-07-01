@@ -269,20 +269,7 @@ public class GenericFileSystemNatives {
 				try {
 					int fmMode = FileManager.READ;
 					if (mode == 2) fmMode = FileManager.ACCESS_READ | FileManager.ACCESS_WRITE;
-
-					// TODO: Temporary hack
-					//  - The context check here is so that we can determine if this is being done from a ZipFile constructor
-					//  - We want to open this as a zip file in our file manager so other Jar/ZipFileNatives hooks function correctly
-					//  - However, this is obviously a huge hack. I'm not sure how we should best approach this.
-					long handle;
-					if (ctx.getVM().getThreadManager().currentOsThread().getBacktrace().at(9).getMethod().toString().contains("java/util/zip/ZipFile.<init>")) {
-						// Zip file modes are different
-						fmMode = ZipFile.OPEN_READ;
-						handle = fileManager.openZipFile(path, fmMode);
-					} else {
-						handle = fileManager.open(path, fmMode);
-					}
-
+					long handle = fileManager.open(path, fmMode);
 					ObjectValue _fd = ops.getReference(_this, fos, "fd", "Ljava/io/FileDescriptor;");
 					ops.putLong(_fd, fd, "handle", handle);
 				} catch (FileNotFoundException ex) {

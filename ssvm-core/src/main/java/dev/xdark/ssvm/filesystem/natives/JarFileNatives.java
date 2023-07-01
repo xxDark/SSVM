@@ -31,34 +31,52 @@ public class JarFileNatives {
 		Symbols symbols = vm.getSymbols();
 		InstanceClass zf = symbols.java_util_zip_ZipFile();
 		InstanceClass jf = symbols.java_util_jar_JarFile();
-		vmi.setInvoker(jf, "getMetaInfEntryNames", "()[Ljava/lang/String;", ctx -> {
-			VMOperations ops = vm.getOperations();
+		if (vm.getJvmVersion() <= 8) {
+			vmi.setInvoker(jf, "getMetaInfEntryNames", "()[Ljava/lang/String;", ctx -> {
+				VMOperations ops = vm.getOperations();
+				ObjectValue _this = ctx.getLocals().loadReference(0);
 
-			long handle;
-			ObjectValue _this = ctx.getLocals().loadReference(0);
-			if (vm.getJvmVersion() <= 8) {
-				// Directly has file handle as a field
-				handle = ops.getLong(_this, zf, "jzfile");
-			} else {
+				// Directly has file handle as a field in JDK 8
+				long handle = ops.getLong(_this, zf, "jzfile");
+
+				ZipFile zip = fileManager.getZipFile(handle);
+				if (zip == null) {
+					ops.throwException(symbols.java_lang_IllegalStateException(), "zip closed");
+				}
+				ObjectValue[] paths = zip.stream()
+						.map(ZipEntry::getName)
+						.filter(name -> name.toUpperCase(Locale.ENGLISH).startsWith("META-INF/"))
+						.map(ops::newUtf8)
+						.toArray(ObjectValue[]::new);
+				ctx.setResult(ops.toVMReferences(paths));
+
+				return Result.ABORT;
+			});
+		} else {
+			vmi.setInvoker(jf, "getMetaInfEntryNames", "()[Ljava/lang/String;", ctx -> {
+				VMOperations ops = vm.getOperations();
+				ObjectValue _this = ctx.getLocals().loadReference(0);
+
+				// JDK 9+ has lots of indirection to get the file handle...
 				// ZipFile.res --> CleanableResource.zsrc --> Source.zfile --> RandomAccessFile.fd --> FileDescriptor.handle
 				ObjectValue res = ops.getReference(_this, zf, "res", "Ljava/util/zip/ZipFile$CleanableResource;");
 				ObjectValue zsrc = ops.getReference(res, "zsrc", "Ljava/util/zip/ZipFile$Source;");
-				ObjectValue zfile = ops.getReference(zsrc, "zfile", "Ljava/io/RandomAccessFile;");
-				ObjectValue fd = ops.getReference(zfile, "fd", "Ljava/io/FileDescriptor;");
-				handle = ops.getLong(fd, "handle");
-			}
 
-			ZipFile zip = fileManager.getZipFile(handle);
-			if (zip == null) {
-				ops.throwException(symbols.java_lang_IllegalStateException(), "zip closed");
-			}
-			ObjectValue[] paths = zip.stream()
-				.map(ZipEntry::getName)
-				.filter(name -> name.toUpperCase(Locale.ENGLISH).startsWith("META-INF/"))
-				.map(ops::newUtf8)
-				.toArray(ObjectValue[]::new);
-			ctx.setResult(ops.toVMReferences(paths));
-			return Result.ABORT;
-		});
+				// zsrc tracks which meta-inf names are found as offsets
+				ObjectValue metanames = ops.getReference(zsrc, "metanames", "[I");
+				if (metanames.isNull()) {
+					ObjectValue[] paths = new ObjectValue[0];
+					ctx.setResult(ops.toVMReferences(paths));
+					return Result.ABORT;
+				}
+
+				// TODO: Read offsets in 'metanames' (can use built in methods in zsrc) and map to String[]
+				//       and return that array.
+
+				ObjectValue[] paths = new ObjectValue[0];
+				ctx.setResult(ops.toVMReferences(paths));
+				return Result.ABORT;
+			});
+		}
 	}
 }

@@ -247,7 +247,10 @@ public class GenericFileSystemNatives {
 					try {
 						long pos = locals.loadLong(1);
 						in.reset();
-						in.skip(pos);
+						int skipped = 0;
+						while (skipped < pos) {
+							skipped += in.skip(pos - skipped);
+						}
 					} catch (IOException ex) {
 						ops.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
 					}

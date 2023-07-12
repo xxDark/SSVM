@@ -103,6 +103,19 @@ public class FileSystemNativeDispatcherNatives {
 		VMOperations ops = vm.getOperations();
 		VMInterface vmi = vm.getInterface();
 		vmi.setInvoker(windowsDispatcher, "initIDs", "()V", MethodInvoker.noop());
+		vmi.setInvoker(windowsDispatcher, "CreateFile0", "(JIIJII)J", ctx -> {
+			// TODO: How to get string from NativeBuffer at address 'lpFileName'?
+			// LPCWSTR lpFileName = jlong_to_ptr(lpFileName);
+			return Result.ABORT;
+		});
+		/*
+		 private static native long CreateFile0(long lpFileName,
+                                           int dwDesiredAccess,
+                                           int dwShareMode,
+                                           long lpSecurityAttributes,
+                                           int dwCreationDisposition,
+                                           int dwFlagsAndAttributes)
+		 */
 
 		InstanceClass winPath = (InstanceClass) vm.findBootstrapClass("sun/nio/fs/WindowsPath");
 		JavaField winPathString = winPath.getField("path", "Ljava/lang/String;");

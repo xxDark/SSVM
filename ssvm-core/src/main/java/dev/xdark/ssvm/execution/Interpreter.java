@@ -29,7 +29,8 @@ public class Interpreter {
 		VMInterface vmi = ctx.getVM().getInterface();
 		MethodNode mn = jm.getNode();
 		InsnList instructions = mn.instructions;
-		List<InstructionInterceptor> interceptors = vmi.getInterceptors();
+		List<InstructionInterceptor> interceptors = vmi.getInstructionInterceptors();
+		vmi.onMethodEnter(ctx);
 		exec:
 		while (true) {
 			try {
@@ -55,6 +56,7 @@ public class Interpreter {
 				handleExceptionCaught(ctx, ex);
 			}
 		}
+		vmi.onMethodExit(ctx);
 	}
 
 	private static void handleExceptionCaught(ExecutionContext<?> ctx, VMException ex) {

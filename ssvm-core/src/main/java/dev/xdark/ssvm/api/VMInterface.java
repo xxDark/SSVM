@@ -1,8 +1,9 @@
 package dev.xdark.ssvm.api;
 
 import dev.xdark.ssvm.asm.Modifier;
+import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
-import dev.xdark.ssvm.execution.InterpretedInvoker;
+import dev.xdark.ssvm.execution.Interpreter;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -20,13 +21,15 @@ import java.util.Map;
  * @author xDark
  */
 public final class VMInterface {
-
-	private static final MethodInvoker FALLBACK_INVOKER = new InterpretedInvoker();
 	private static final int MAX_INSNS = 1024;
 	private final InstructionProcessor[] processors = new InstructionProcessor[MAX_INSNS];
 	private final Map<JavaMethod, MethodInvoker> invokerMap = new HashMap<>();
-	private final List<InstructionInterceptor> interceptors = new ArrayList<>();
-	private final List<InstructionInterceptor> interceptorsView = Collections.unmodifiableList(interceptors);
+	private final List<MethodEnterListener> methodEnters = new ArrayList<>();
+	private final List<MethodExitListener> methodExits = new ArrayList<>();
+	private final List<MethodEnterListener> methodEntersView = Collections.unmodifiableList(methodEnters);
+	private final List<MethodExitListener> methodExitsView  = Collections.unmodifiableList(methodExits);
+	private final List<InstructionInterceptor> instructionInterceptors = new ArrayList<>();
+	private final List<InstructionInterceptor> instructionInterceptorsView = Collections.unmodifiableList(instructionInterceptors);
 
 	public VMInterface() {
 		Arrays.fill(processors, new UnknownInstructionProcessor());
@@ -104,6 +107,27 @@ public final class VMInterface {
 		return true;
 	}
 
+	/**
+	 * Called by {@link Interpreter} when a method starts execution.
+	 *
+	 * @param ctx Context of the method being executed.
+	 */
+	public void onMethodEnter(ExecutionContext<?> ctx) {
+		for (MethodEnterListener listener : methodEnters) {
+			listener.handle(ctx);
+		}
+	}
+
+	/**
+	 * Called by {@link Interpreter} when a method finishes execution.
+	 *
+	 * @param ctx Context of the method being executed.
+	 */
+	public void onMethodExit(ExecutionContext<?> ctx) {
+		for (MethodExitListener listener : methodExits) {
+			listener.handle(ctx);
+		}
+	}
 
 	/**
 	 * Registers instruction interceptor.
@@ -111,7 +135,7 @@ public final class VMInterface {
 	 * @param interceptor Interceptor to register.
 	 */
 	public void registerInstructionInterceptor(InstructionInterceptor interceptor) {
-		interceptors.add(interceptor);
+		instructionInterceptors.add(interceptor);
 	}
 
 	/**
@@ -120,13 +144,63 @@ public final class VMInterface {
 	 * @param interceptor Interceptor to remove.
 	 */
 	public void removeInstructionInterceptor(InstructionInterceptor interceptor) {
-		interceptors.remove(interceptor);
+		instructionInterceptors.remove(interceptor);
+	}
+
+	/**
+	 * Registers a method enter listener.
+	 *
+	 * @param listener Listener to register.
+	 */
+	public void registerMethodEnterListener(MethodEnterListener listener) {
+		methodEnters.add(listener);
+	}
+
+	/**
+	 * Registers a method exit listener.
+	 *
+	 * @param listener Listener to register.
+	 */
+	public void registerMethodExitListener(MethodExitListener listener) {
+		methodExits.add(listener);
+	}
+
+	/**
+	 * Removes a method enter listener.
+	 *
+	 * @param listener Listener to remove.
+	 */
+	public void removeMethodEnterListener(MethodEnterListener listener) {
+		methodEnters.remove(listener);
+	}
+
+	/**
+	 * Removes a method exit listener.
+	 *
+	 * @param listener Listener to remove.
+	 */
+	public void removeMethodExitListener(MethodExitListener listener) {
+		methodExits.remove(listener);
 	}
 
 	/**
 	 * @return Instruction interceptors.
 	 */
-	public List<InstructionInterceptor> getInterceptors() {
-		return interceptorsView;
+	public List<InstructionInterceptor> getInstructionInterceptors() {
+		return instructionInterceptorsView;
+	}
+
+	/**
+	 * @return Method enter listeners.
+	 */
+	public List<MethodEnterListener> getMethodEnterListeners() {
+		return methodEntersView;
+	}
+
+	/**
+	 * @return Method exit listeners.
+	 */
+	public List<MethodExitListener> getMethodExitListeners() {
+		return methodExitsView;
 	}
 }

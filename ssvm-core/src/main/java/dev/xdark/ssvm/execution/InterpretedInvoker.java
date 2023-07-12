@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.execution;
 
 import dev.xdark.ssvm.api.MethodInvoker;
+import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import org.objectweb.asm.Opcodes;
 
@@ -16,21 +17,14 @@ public final class InterpretedInvoker implements MethodInvoker {
 	public Result intercept(ExecutionContext<?> ctx) {
 		JavaMethod method = ctx.getMethod();
 		int access = method.getModifiers();
+		VMInterface vmi = ctx.getVM().getInterface();
 		if ((access & Opcodes.ACC_NATIVE) != 0) {
-			throwLinkageError(ctx);
+			vmi.handleLinkageError(ctx);
 		}
 		if ((access & Opcodes.ACC_ABSTRACT) != 0) {
-			throwAbstractError(ctx);
+			vmi.handleAbstractMethodError(ctx);
 		}
 		Interpreter.execute(ctx);
 		return Result.ABORT;
-	}
-
-	private static void throwLinkageError(ExecutionContext<?> ctx) {
-		ctx.getOperations().throwException(ctx.getSymbols().java_lang_UnsatisfiedLinkError(), ctx.getMethod().toString());
-	}
-
-	private static void throwAbstractError(ExecutionContext<?> ctx) {
-		ctx.getOperations().throwException(ctx.getSymbols().java_lang_AbstractMethodError(), ctx.getMethod().toString());
 	}
 }

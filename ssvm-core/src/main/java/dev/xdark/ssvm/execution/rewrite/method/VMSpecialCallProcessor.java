@@ -16,7 +16,8 @@ public final class VMSpecialCallProcessor extends AbstractVMCallProcessor {
 	protected JavaMethod resolveMethod(VMCallInsnNode insn, ExecutionContext<?> ctx) {
 		MethodInsnNode callInfo = insn.getDelegate();
 		InstanceClass klass = (InstanceClass) ctx.getOperations().findClass(ctx.getOwner(), callInfo.owner, true);
-		JavaMethod method = ctx.getLinkResolver().resolveVirtualMethod(klass, callInfo.name, callInfo.desc);
+		JavaMethod method = insn.isInterface() ? ctx.getLinkResolver().resolveInterfaceMethod(klass, callInfo.name, callInfo.desc) :
+				ctx.getLinkResolver().resolveVirtualMethod(klass, callInfo.name, callInfo.desc);
 		insn.setResolved(method);
 		return method;
 	}

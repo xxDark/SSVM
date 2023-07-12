@@ -21,7 +21,7 @@ public class SimpleZipFile extends BasicZipFile {
 	 * @param rawHandle Raw zip handle.
 	 * @param handle    Zip file.
 	 */
-	public SimpleZipFile(int rawHandle, ZipFile handle) {
+	public SimpleZipFile(long rawHandle, ZipFile handle) {
 		super(rawHandle);
 		this.handle = handle;
 	}

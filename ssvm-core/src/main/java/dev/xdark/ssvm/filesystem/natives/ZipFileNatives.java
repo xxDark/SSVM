@@ -3,15 +3,16 @@ package dev.xdark.ssvm.filesystem.natives;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
-import dev.xdark.ssvm.execution.Locals;
-import dev.xdark.ssvm.execution.PanicException;
-import dev.xdark.ssvm.execution.Result;
+import dev.xdark.ssvm.execution.*;
 import dev.xdark.ssvm.filesystem.FileManager;
 import dev.xdark.ssvm.filesystem.ZipFile;
+import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.symbol.Symbols;
+import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.value.ArrayValue;
+import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
 
@@ -36,26 +37,7 @@ public class ZipFileNatives {
 		Symbols symbols = vm.getSymbols();
 		InstanceClass zf = symbols.java_util_zip_ZipFile();
 		vmi.setInvoker(zf, "initIDs", "()V", MethodInvoker.noop());
-		if (vmi.setInvoker(zf, "open", "(Ljava/lang/String;IJZ)J", ctx -> {
-			// Old-style zip file implementation.
-			Locals locals = ctx.getLocals();
-			VMOperations ops = vm.getOperations();
-			ObjectValue path = locals.loadReference(0);
-			ops.checkNotNull(path);
-			String zipPath = ops.readUtf8(path);
-			int mode = locals.loadInt(1);
-			// last file modification & usemmap are ignored.
-			try {
-				long handle = fileManager.openZipFile(zipPath, mode);
-				if (handle == 0L) {
-					ops.throwException(symbols.java_io_IOException(), zipPath);
-				}
-				ctx.setResult(handle);
-			} catch (IOException ex) {
-				ops.throwException(symbols.java_io_IOException(), ex.getMessage());
-			}
-			return Result.ABORT;
-		})) {
+		if (hookZip(vm, fileManager)) {
 			vmi.setInvoker(zf, "getTotal", "(J)I", ctx -> {
 				ZipFile zip = fileManager.getZipFile(ctx.getLocals().loadLong(0));
 				if (zip == null) {
@@ -261,6 +243,100 @@ public class ZipFileNatives {
 				}
 				return Result.ABORT;
 			});
+
+			// TODO: We can remove this entire invoker if we properly implement the inflater natives
+			//  but until then this bypasses the need to do that.
+			if (vm.getJvmVersion() > 8) {
+				InstanceClass baisClass = (InstanceClass) vm.findBootstrapClass("java/io/ByteArrayInputStream");
+				vmi.setInvoker(zf, "getInputStream", "(Ljava/util/zip/ZipEntry;)Ljava/io/InputStream;", ctx -> {
+					VMOperations ops = vm.getOperations();
+					MemoryManager mem = vm.getMemoryManager();
+					ThreadManager threadManager = vm.getThreadManager();
+
+					// Get the current zip file
+					Locals locals = ctx.getLocals();
+					ObjectValue _this = locals.loadReference(0);
+					long handle = getJdk9ZipFileHandle(ctx, _this);
+					ZipFile zipFile = fileManager.getZipFile(handle);
+					if (zipFile == null)
+						ops.throwException(symbols.java_lang_IllegalStateException(), "zip closed");
+
+					try {
+						// Get the entry bytes
+						String entryName = ops.toString(ops.getReference((ObjectValue) locals.loadReference(1), "name", "Ljava/lang/String;"));
+						ZipEntry entry = zipFile.getEntry(entryName);
+						byte[] manifestBytes = zipFile.readEntry(entry);
+						ArrayValue vmManifestBytes = ops.toVMBytes(manifestBytes);
+
+						// Wrap into 'new ByteArrayInputStream(bytes)' and pass that as the return value
+						InstanceValue bais = mem.newInstance(baisClass);
+						Locals baisLocals = threadManager.currentThreadStorage().newLocals(2);
+						baisLocals.setReference(0, bais);
+						baisLocals.setReference(1, vmManifestBytes);
+						ops.invokeVoid(bais.getJavaClass().getMethod("<init>", "([B)V"), baisLocals);
+						ctx.setResult(bais);
+					} catch (IOException ex) {
+						ops.throwException(symbols.java_io_IOException(), ex.getMessage());
+					}
+
+					return Result.ABORT;
+				});
+			}
 		}
+	}
+
+	private static boolean hookZip(VirtualMachine vm, FileManager fileManager) {
+		boolean hooked = false;
+		VMOperations ops = vm.getOperations();
+		VMInterface vmi = vm.getInterface();
+		Symbols symbols = vm.getSymbols();
+		InstanceClass zf = symbols.java_util_zip_ZipFile();
+		hooked |= vmi.setInvoker(zf, "open", "(Ljava/lang/String;IJZ)J", ctx -> {
+			// Old-style zip file implementation.
+			// This method only exists in JDK 8 and below. Later versions migrated to using RandomAccessFile.
+			Locals locals = ctx.getLocals();
+			ObjectValue path = locals.loadReference(0);
+			ops.checkNotNull(path);
+			String zipPath = ops.readUtf8(path);
+			int mode = locals.loadInt(1);
+			// last file modification & usemmap are ignored.
+			try {
+				long handle = fileManager.openZipFile(zipPath, mode);
+				if (handle == 0L) {
+					ops.throwException(symbols.java_io_IOException(), zipPath);
+				}
+				ctx.setResult(handle);
+			} catch (IOException ex) {
+				ops.throwException(symbols.java_io_IOException(), ex.getMessage());
+			}
+			return Result.ABORT;
+		});
+		hooked |= vmi.setInvoker(zf, "<init>", "(Ljava/io/File;ILjava/nio/charset/Charset;)V", ctx -> {
+			// Interpret the method
+			InterpretedInvoker.INSTANCE.intercept(ctx);
+
+			// We should have opened a file handle.
+			// We want to move it from a standard input to a zip file in the file manager.
+			ObjectValue _this = ctx.getLocals().loadReference(0);
+			long handle = getJdk9ZipFileHandle(ctx, _this);
+			try {
+				fileManager.transferInputToZip(handle, java.util.zip.ZipFile.OPEN_READ);
+			} catch (IOException ex) {
+				ops.throwException(symbols.java_io_IOException(), ex.getMessage());
+			}
+
+			return Result.ABORT;
+		});
+		return hooked;
+	}
+
+	public static long getJdk9ZipFileHandle(ExecutionContext<?> ctx, ObjectValue zip) {
+		VMOperations ops = ctx.getVM().getOperations();
+		InstanceClass zf = ctx.getSymbols().java_util_zip_ZipFile();
+		ObjectValue res = ops.getReference(zip, zf, "res", "Ljava/util/zip/ZipFile$CleanableResource;");
+		ObjectValue zsrc = ops.getReference(res, "zsrc", "Ljava/util/zip/ZipFile$Source;");
+		ObjectValue zfile = ops.getReference(zsrc, "zfile", "Ljava/io/RandomAccessFile;");
+		ObjectValue fd = ops.getReference(zfile, "fd", "Ljava/io/FileDescriptor;");
+		return ops.getLong(fd, "handle");
 	}
 }

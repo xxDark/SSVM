@@ -21,7 +21,6 @@ import java.util.Map;
  */
 public final class VMInterface {
 
-	private static final MethodInvoker FALLBACK_INVOKER = new InterpretedInvoker();
 	private static final int MAX_INSNS = 1024;
 	private final InstructionProcessor[] processors = new InstructionProcessor[MAX_INSNS];
 	private final Map<JavaMethod, MethodInvoker> invokerMap = new HashMap<>();

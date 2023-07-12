@@ -3,11 +3,13 @@ package dev.xdark.ssvm.filesystem.natives;
 import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
+import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.filesystem.FileManager;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.MemoryManager;
+import dev.xdark.ssvm.mirror.member.JavaField;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.operation.VMOperations;
@@ -20,6 +22,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.zip.ZipFile;
 
 /**
  * Initializes multiple classes:
@@ -41,6 +45,7 @@ public class GenericFileSystemNatives {
 	 */
 	public void init(VirtualMachine vm, FileManager fileManager) {
 		VMInterface vmi = vm.getInterface();
+		VMOperations ops = vm.getOperations();
 		InstanceClass fd = vm.getSymbols().java_io_FileDescriptor();
 
 		MethodInvoker set = ctx -> {
@@ -53,7 +58,6 @@ public class GenericFileSystemNatives {
 		}
 		if (lateinit) {
 			vmi.setInvoker(fd, "initIDs", "()V", ctx -> {
-				VMOperations ops = vm.getOperations();
 				InstanceValue in = (InstanceValue) ops.getReference(fd, "in", "Ljava/io/FileDescriptor;");
 				ops.putLong(in, fd, "handle", mapVMStream(vm, fileManager, 0));
 				InstanceValue out = (InstanceValue) ops.getReference(fd, "out", "Ljava/io/FileDescriptor;");
@@ -89,7 +93,6 @@ public class GenericFileSystemNatives {
 			if (out == null) {
 				return Result.ABORT;
 			}
-			VMOperations ops = vm.getOperations();
 			byte[] bytes = ops.toJavaBytes(locals.loadReference(1));
 			int off = locals.loadInt(2);
 			int len = locals.loadInt(3);
@@ -118,7 +121,6 @@ public class GenericFileSystemNatives {
 		vmi.setInvoker(fos, "open0", "(Ljava/lang/String;Z)V", ctx -> {
 			Locals locals = ctx.getLocals();
 			InstanceValue _this = locals.loadReference(0);
-			VMOperations ops = vm.getOperations();
 			String path = ops.readUtf8(locals.loadReference(1));
 			boolean append = locals.loadInt(2) != 0;
 			try {
@@ -145,37 +147,10 @@ public class GenericFileSystemNatives {
 		});
 		InstanceClass fis = (InstanceClass) vm.findBootstrapClass("java/io/FileInputStream");
 		vmi.setInvoker(fis, "initIDs", "()V", MethodInvoker.noop());
-		vmi.setInvoker(fis, "readBytes", "([BII)I", ctx -> {
-			Locals locals = ctx.getLocals();
-			InstanceValue _this = locals.loadReference(0);
-			long handle = getFileStreamHandle(vm, _this);
-			InputStream in = fileManager.getFdIn(handle);
-			if (in == null) {
-				ctx.setResult(-1);
-			} else {
-				try {
-					int off = locals.loadInt(2);
-					int len = locals.loadInt(3);
-					byte[] bytes = new byte[len];
-					int read = in.read(bytes);
-					if (read > 0) {
-						ArrayValue vmBuffer = locals.loadReference(1);
-						MemoryManager memoryManager = vm.getMemoryManager();
-						int start = memoryManager.arrayBaseOffset(byte.class) + off;
-						MemoryData data = vmBuffer.getMemory().getData();
-						data.write(start, bytes, 0, read);
-					}
-					ctx.setResult(read);
-				} catch (IOException ex) {
-					vm.getOperations().throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
-				}
-			}
-			return Result.ABORT;
-		});
+		vmi.setInvoker(fis, "readBytes", "([BII)I", ctx -> readBytes(ctx, vm, fileManager));
 		vmi.setInvoker(fis, "read0", "()I", ctx -> {
 			Locals locals = ctx.getLocals();
 			InstanceValue _this = locals.loadReference(0);
-			VMOperations ops = vm.getOperations();
 			long handle = getFileStreamHandle(vm, _this);
 			InputStream in = fileManager.getFdIn(handle);
 			if (in == null) {
@@ -192,7 +167,6 @@ public class GenericFileSystemNatives {
 		vmi.setInvoker(fis, "skip0", "(J)J", ctx -> {
 			Locals locals = ctx.getLocals();
 			InstanceValue _this = locals.loadReference(0);
-			VMOperations ops = vm.getOperations();
 			long handle = getFileStreamHandle(vm, _this);
 			InputStream in = fileManager.getFdIn(handle);
 			if (in == null) {
@@ -209,7 +183,6 @@ public class GenericFileSystemNatives {
 		vmi.setInvoker(fis, "open0", "(Ljava/lang/String;)V", ctx -> {
 			Locals locals = ctx.getLocals();
 			InstanceValue _this = locals.loadReference(0);
-			VMOperations ops = vm.getOperations();
 			String path = ops.readUtf8(locals.loadReference(1));
 			try {
 				long handle = fileManager.open(path, FileManager.READ);
@@ -249,6 +222,64 @@ public class GenericFileSystemNatives {
 			}
 			return Result.ABORT;
 		});
+
+		InstanceClass raf = (InstanceClass) vm.findBootstrapClass("java/io/RandomAccessFile");
+		if (raf != null) {
+			JavaField pathField = raf.getField("path", "Ljava/lang/String;");
+			vmi.setInvoker(raf, "initIDs", "()V", MethodInvoker.noop());
+			vmi.setInvoker(raf, "length", "()J", ctx -> {
+				Locals locals = ctx.getLocals();
+				InstanceValue _this = locals.loadReference(0);
+				String pathLiteral = ops.toString(vm.getMemoryManager().readReference(_this, pathField.getOffset()));
+				try {
+					long size = fileManager.getAttributes(pathLiteral, BasicFileAttributes.class).size();
+					ctx.setResult(size);
+				} catch (FileNotFoundException ex) {
+					ops.throwException(vm.getSymbols().java_io_FileNotFoundException(), ex.getMessage());
+				} catch (IOException ex) {
+					ops.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
+				}
+				return Result.ABORT;
+			});
+			vmi.setInvoker(raf, "readBytes", "([BII)I", ctx -> readBytes(ctx, vm, fileManager));
+			vmi.setInvoker(raf, "seek0", "(J)V", ctx -> {
+				Locals locals = ctx.getLocals();
+				InstanceValue _this = locals.loadReference(0);
+				long handle = getFileStreamHandle(vm, _this);
+				InputStream in = fileManager.getFdIn(handle);
+				if (in != null) {
+					try {
+						long pos = locals.loadLong(1);
+						in.reset();
+						int skipped = 0;
+						while (skipped < pos) {
+							skipped += in.skip(pos - skipped);
+						}
+					} catch (IOException ex) {
+						ops.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
+					}
+				}
+				return Result.ABORT;
+			});
+			vmi.setInvoker(raf, "open0", "(Ljava/lang/String;I)V", ctx -> {
+				Locals locals = ctx.getLocals();
+				InstanceValue _this = locals.loadReference(0);
+				String path = ops.readUtf8(locals.loadReference(1));
+				int mode = locals.loadInt(2);
+				try {
+					int fmMode = FileManager.READ;
+					if (mode == 2) fmMode = FileManager.ACCESS_READ | FileManager.ACCESS_WRITE;
+					long handle = fileManager.open(path, fmMode);
+					ObjectValue _fd = ops.getReference(_this, fos, "fd", "Ljava/io/FileDescriptor;");
+					ops.putLong(_fd, fd, "handle", handle);
+				} catch (FileNotFoundException ex) {
+					ops.throwException(vm.getSymbols().java_io_FileNotFoundException(), ex.getMessage());
+				} catch (IOException ex) {
+					ops.throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
+				}
+				return Result.ABORT;
+			});
+		}
 	}
 
 	private static long mapVMStream(VirtualMachine vm, FileManager fileManager, int d) {
@@ -260,7 +291,37 @@ public class GenericFileSystemNatives {
 		return 0L;
 	}
 
+	private static Result readBytes(ExecutionContext<?> ctx, VirtualMachine vm, FileManager fileManager) {
+		// Both FileInputStream/RandomAccessFile declare this method in the exact same way and should be treated similarly
+		Locals locals = ctx.getLocals();
+		InstanceValue _this = locals.loadReference(0);
+		long handle = getFileStreamHandle(vm, _this);
+		InputStream in = fileManager.getFdIn(handle);
+		if (in == null) {
+			ctx.setResult(-1);
+		} else {
+			try {
+				int off = locals.loadInt(2);
+				int len = locals.loadInt(3);
+				byte[] bytes = new byte[len];
+				int read = in.read(bytes);
+				if (read > 0) {
+					ArrayValue vmBuffer = locals.loadReference(1);
+					MemoryManager memoryManager = vm.getMemoryManager();
+					int start = memoryManager.arrayBaseOffset(byte.class) + off;
+					MemoryData data = vmBuffer.getMemory().getData();
+					data.write(start, bytes, 0, read);
+				}
+				ctx.setResult(read);
+			} catch (IOException ex) {
+				vm.getOperations().throwException(vm.getSymbols().java_io_IOException(), ex.getMessage());
+			}
+		}
+		return Result.ABORT;
+	}
+
 	private static long getFileStreamHandle(VirtualMachine vm, InstanceValue fs) {
+		// Both FileInputStream/RandomAccessFile declare this method in the exact same way
 		JavaMethod getFD = vm.getRuntimeResolver().resolveVirtualMethod(fs, "getFD", "()Ljava/io/FileDescriptor;");
 		Locals locals = vm.getThreadStorage().newLocals(getFD);
 		locals.setReference(0, fs);

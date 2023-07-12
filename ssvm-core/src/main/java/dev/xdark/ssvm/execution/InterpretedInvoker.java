@@ -11,6 +11,7 @@ import org.objectweb.asm.Opcodes;
  * @author xDark
  */
 public final class InterpretedInvoker implements MethodInvoker {
+	public static final InterpretedInvoker INSTANCE = new InterpretedInvoker();
 
 	@Override
 	public Result intercept(ExecutionContext<?> ctx) {

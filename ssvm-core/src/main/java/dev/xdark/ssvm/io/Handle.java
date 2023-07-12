@@ -51,6 +51,11 @@ public final class Handle {
 		return Long.hashCode(value);
 	}
 
+	@Override
+	public String toString() {
+		return String.valueOf(value);
+	}
+
 	/**
 	 * Returns thread-local handle.
 	 *

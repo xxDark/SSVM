@@ -218,6 +218,14 @@ public interface FileManager {
 	long openZipFile(String path, int mode) throws IOException;
 
 	/**
+	 * Transfers a handle from {@link #open(String, int)} to being a treated as if it were opened with {@link #openZipFile(String, int)}.
+	 * @param handle Handle to migrate.
+	 * @param mode The mode in which the file is to be opened.
+	 * @throws IOException If any I/O error occurs.
+	 */
+	void transferInputToZip(long handle, int mode) throws IOException;
+
+	/**
 	 * @param handle Zip file handle.
 	 * @return zip file by it's handle or {@code null},
 	 * if not found.

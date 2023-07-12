@@ -3,13 +3,7 @@ package dev.xdark.ssvm.filesystem;
 import dev.xdark.ssvm.io.Handle;
 import dev.xdark.ssvm.util.IOUtil;
 
-import java.io.File;
-import java.io.FileDescriptor;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -28,6 +22,7 @@ import java.util.zip.ZipEntry;
  */
 public class HostFileManager implements FileManager {
 
+	protected final Map<Handle, String> inputPaths = new HashMap<>();
 	protected final Map<Handle, InputStream> inputs = new HashMap<>();
 	protected final Map<Handle, OutputStream> outputs = new HashMap<>();
 	protected final Map<Handle, ZipFile> zipFiles = new HashMap<>();
@@ -97,6 +92,7 @@ public class HostFileManager implements FileManager {
 	@Override
 	public synchronized boolean close(long handle) throws IOException {
 		Handle h = Handle.threadLocal(handle);
+		inputPaths.remove(h);
 		InputStream in = inputs.remove(h);
 		if (in != null) {
 			in.close();
@@ -158,8 +154,10 @@ public class HostFileManager implements FileManager {
 		switch (mode) {
 			case READ: {
 				long fd = newFD();
-				FileInputStream in = new FileInputStream(path);
+				InputStream in = new BufferedInputStream(new FileInputStream(path));
+				in.mark(Integer.MAX_VALUE);
 				Handle h = Handle.of(fd);
+				inputPaths.put(h, path);
 				inputs.put(h, in);
 				return fd;
 			}
@@ -265,19 +263,29 @@ public class HostFileManager implements FileManager {
 	}
 
 	@Override
+	public void transferInputToZip(long handle, int mode) throws IOException {
+		Handle h = Handle.of(handle);
+		if (inputs.remove(h) == null) throw new IOException("Cannot transfer, handle was not open prior");
+		String path = inputPaths.get(h);
+		if (path == null) throw new IOException("Cannot transfer, handle was not associated with a file path prior");
+		ZipFile zf = new SimpleZipFile((int) handle, new java.util.zip.ZipFile(new File(path), mode));
+		zipFiles.put(h, zf);
+	}
+
+	@Override
 	public synchronized ZipFile getZipFile(long handle) {
-		return zipFiles.get(Handle.threadLocal((int) handle));
+		return zipFiles.get(Handle.threadLocal(handle));
 	}
 
 	@Override
 	public synchronized ZipEntry getZipEntry(long handle) {
-		ZipFile zf = zipFiles.get(Handle.threadLocal((int) handle));
+		ZipFile zf = zipFiles.get(Handle.threadLocal(handle));
 		return zf == null ? null : zf.getEntry(handle);
 	}
 
 	@Override
 	public synchronized boolean freeZipEntry(long handle) {
-		ZipFile zf = zipFiles.get(Handle.threadLocal((int) handle));
+		ZipFile zf = zipFiles.get(Handle.threadLocal(handle));
 		return zf != null && zf.freeHandle(handle);
 	}
 

@@ -116,6 +116,9 @@ public class SimpleFileManager implements FileManager {
 	}
 
 	@Override
+	public void transferInputToZip(long handle, int mode) throws IOException {}
+
+	@Override
 	public ZipFile getZipFile(long handle) {
 		return null;
 	}

@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Interface to configure/adjust VM.
@@ -30,6 +31,8 @@ public final class VMInterface {
 	private final List<MethodExitListener> methodExitsView  = Collections.unmodifiableList(methodExits);
 	private final List<InstructionInterceptor> instructionInterceptors = new ArrayList<>();
 	private final List<InstructionInterceptor> instructionInterceptorsView = Collections.unmodifiableList(instructionInterceptors);
+	private Consumer<ExecutionContext<?>> linkageErrorHandler = VMInterface::handleLinkageError0;
+	private Consumer<ExecutionContext<?>> abstractMethodHandler = VMInterface::handleAbstractMethodError0;
 
 	public VMInterface() {
 		Arrays.fill(processors, new UnknownInstructionProcessor());
@@ -202,5 +205,29 @@ public final class VMInterface {
 	 */
 	public List<MethodExitListener> getMethodExitListeners() {
 		return methodExitsView;
+	}
+
+	/**
+	 * @param ctx Context of the native method not linked.
+	 */
+	public void handleLinkageError(ExecutionContext<?> ctx) {
+		linkageErrorHandler.accept(ctx);
+	}
+
+	/**
+	 * @param ctx Context of the abstract method that was attempted to be invoked.
+	 */
+	public void handleAbstractMethodError(ExecutionContext<?> ctx) {
+		abstractMethodHandler.accept(ctx);
+	}
+
+	// Default impl for handling linkage errors is to throw UnsatisfiedLinkError
+	private static void handleLinkageError0(ExecutionContext<?> ctx) {
+		ctx.getOperations().throwException(ctx.getSymbols().java_lang_UnsatisfiedLinkError(), ctx.getMethod().toString());
+	}
+
+	// Default impl for handling abstract method errors is to throw AbstractMethodError
+	private static void handleAbstractMethodError0(ExecutionContext<?> ctx) {
+		ctx.getOperations().throwException(ctx.getSymbols().java_lang_AbstractMethodError(), ctx.getMethod().toString());
 	}
 }

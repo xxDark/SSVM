@@ -208,6 +208,21 @@ public final class VMInterface {
 	}
 
 	/**
+	 * @param linkageErrorHandler Handler of linkage errors.
+	 *                            Consumes an execution context of the method that is unlinked.
+	 */
+	public void setLinkageErrorHandler(Consumer<ExecutionContext<?>> linkageErrorHandler) {
+		this.linkageErrorHandler = linkageErrorHandler;
+	}
+	/**
+	 * @param abstractMethodHandler Handler of abstract method errors.
+	 *                              Consumes an execution context of the method that is abstract.
+	 */
+	public void setAbstractMethodHandler(Consumer<ExecutionContext<?>> abstractMethodHandler) {
+		this.abstractMethodHandler = abstractMethodHandler;
+	}
+
+	/**
 	 * @param ctx Context of the native method not linked.
 	 */
 	public void handleLinkageError(ExecutionContext<?> ctx) {

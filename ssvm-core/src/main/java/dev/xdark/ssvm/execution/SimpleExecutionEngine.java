@@ -47,6 +47,7 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 			}
 			vm.getOperations().monitorEnter(lock);
 		}
+		vmi.onMethodEnter(ctx);
 		vm.getMethodEnter().invoke(ctx);
 		boolean doCleanup = true;
 		try {
@@ -75,6 +76,7 @@ public class SimpleExecutionEngine implements ExecutionEngine {
 					}
 				} finally {
 					try {
+						vmi.onMethodExit(ctx);
 						vm.getMethodExit().invoke(ctx);
 					} finally {
 						backtrace.pop();

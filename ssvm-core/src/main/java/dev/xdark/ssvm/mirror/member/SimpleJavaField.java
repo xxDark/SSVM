@@ -105,7 +105,7 @@ public final class SimpleJavaField implements JavaField {
 	@Override
 	public String toString() {
 		FieldNode node = this.node;
-		return getOwner().getInternalName() + '.' + node.name + node.desc;
+		return getOwner().getInternalName() + '.' + node.name + ' ' + node.desc;
 	}
 
 	private void resolveFieldType() {

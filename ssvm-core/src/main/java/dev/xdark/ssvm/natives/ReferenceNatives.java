@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Result;
@@ -32,5 +33,17 @@ public class ReferenceNatives {
 			ctx.setResult(check == locals.loadReference(1) ? 1 : 0);
 			return Result.ABORT;
 		});
+		vmi.setInvoker(jc, "getAndClearReferencePendingList", "()Ljava/lang/ref/Reference;", ctx -> {
+			// There is only one usage of this method I as of JDK 17, and it does a null check.
+			// So we can cut corners and skip actually implementing this.
+			ctx.setResult(ctx.getMemoryManager().nullValue());
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "hasReferencePendingList", "()Z", ctx -> {
+			// See above
+			ctx.setResult(0);
+			return Result.ABORT;
+		});
+		vmi.setInvoker(jc, "waitForReferencePendingList", "()V", MethodInvoker.noop());
 	}
 }

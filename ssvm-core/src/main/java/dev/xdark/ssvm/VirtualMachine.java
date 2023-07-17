@@ -612,7 +612,10 @@ public class VirtualMachine implements VMEventCollection {
 			if (unsafeConstants != null) {
 				MemoryAllocator memoryAllocator = this.memoryAllocator;
 				ops.initialize(unsafeConstants);
-				ops.putInt(unsafeConstants, "ADDRESS_SIZE", memoryAllocator.addressSize());
+				if (unsafeConstants.getField("ADDRESS_SIZE", "I") != null)
+					ops.putInt(unsafeConstants, "ADDRESS_SIZE", memoryAllocator.addressSize());
+				else if (unsafeConstants.getField("ADDRESS_SIZE0", "I") != null) // Renamed in later JDK's
+					ops.putInt(unsafeConstants, "ADDRESS_SIZE0", memoryAllocator.addressSize());
 				ops.putInt(unsafeConstants, "PAGE_SIZE", memoryAllocator.pageSize());
 				ops.putBoolean(unsafeConstants, "BIG_ENDIAN", memoryAllocator.getByteOrder() == ByteOrder.BIG_ENDIAN);
 			}

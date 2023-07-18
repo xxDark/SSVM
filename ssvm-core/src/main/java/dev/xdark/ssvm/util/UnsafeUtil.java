@@ -20,6 +20,7 @@ public class UnsafeUtil {
 	private final Unsafe UNSAFE;
 	public final int ARRAY_BYTE_BASE_OFFSET;
 	private final long STRING_CHARS_OFFSET;
+	private final long STRING_BYTES_OFFSET;
 	private final MethodHandle NEW_STRING_FROM_CHARS;
 
 	/**
@@ -44,6 +45,15 @@ public class UnsafeUtil {
 	public char[] getChars(String str) {
 		long offset = STRING_CHARS_OFFSET;
 		return offset == -1L ? str.toCharArray() : (char[]) UNSAFE.getObject(str, offset);
+	}
+
+	/**
+	 * @param str String to get bytes from.
+	 * @return string bytes.
+	 */
+	public byte[] getBytes(String str) {
+		long offset = STRING_BYTES_OFFSET;
+		return offset == -1L ? str.getBytes() : (byte[]) UNSAFE.getObject(str, offset);
 	}
 
 	/**
@@ -76,14 +86,18 @@ public class UnsafeUtil {
 			}
 			ARRAY_BYTE_BASE_OFFSET = unsafe.arrayBaseOffset(byte[].class);
 			long charsOffset = -1;
+			long bytesOffset = -1;
 			try {
 				Field field = String.class.getDeclaredField("value");
 				if (char[].class == field.getType()) {
 					charsOffset = unsafe.objectFieldOffset(field);
+				} else if (byte[].class == field.getType()) {
+					bytesOffset = unsafe.objectFieldOffset(field);
 				}
 			} catch (NoSuchFieldException ignored) {
 			}
 			STRING_CHARS_OFFSET = charsOffset;
+			STRING_BYTES_OFFSET = bytesOffset;
 			MethodHandle newString;
 			try {
 				Class<?> sharedSecrets = Class.forName("sun.misc.SharedSecrets");

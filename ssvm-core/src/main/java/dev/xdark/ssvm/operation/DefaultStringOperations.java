@@ -35,9 +35,18 @@ public final class DefaultStringOperations implements StringOperations {
 
 	@Override
 	public InstanceValue newUtf8(String value) {
-		if (jvmVersion >= 9)
-			return newUtf8FromBytes(toBytes(value));
-		return newUtf8FromChars(toChars(value));
+		InstanceValue strInstance;
+		if (jvmVersion >= 9) {
+			// Need to also assign the 'coder' value to strings that are not LATIN1
+			ArrayValue array = toBytes(value);
+			strInstance = newUtf8FromBytes(array);
+			if (array.getLength() > value.length()) {
+				ops.putByte(strInstance, "coder", (byte) 1);
+			}
+		} else {
+			strInstance = newUtf8FromChars(toChars(value));
+		}
+		return strInstance;
 	}
 
 	@Override
@@ -117,7 +126,7 @@ public final class DefaultStringOperations implements StringOperations {
 
 	@Override
 	public ArrayValue toBytes(String value) {
-		byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+		byte[] bytes = UnsafeUtil.getBytes(value);
 		return ops.toVMBytes(bytes);
 	}
 }

@@ -50,6 +50,8 @@ subprojects {
 
     test {
         useJUnitPlatform()
+
+        jvmArgs+= ['-Djava.file.encoding=UTF-8']
     }
 
     publishing {

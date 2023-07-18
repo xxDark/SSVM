@@ -68,10 +68,10 @@ subprojects {
     }
 
     ext {
-        asm = 'org.ow2.asm:asm:9.3'
-        asm_tree = 'org.ow2.asm:asm-tree:9.3'
+        asm = 'org.ow2.asm:asm:9.5'
+        asm_tree = 'org.ow2.asm:asm-tree:9.5'
         cafedude = 'com.github.Col-E:CAFED00D:1.10.2'
         slf4j_api = 'org.slf4j:slf4j-api:1.7.36'
-        jlinker = 'com.github.xxDark:jlinker:1.0.5'
+        jlinker = 'com.github.xxDark:jlinker:1.0.7'
     }
 }

@@ -16,6 +16,10 @@ import dev.xdark.ssvm.util.IOUtil;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.jetbrains.annotations.NotNull;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.commons.ClassRemapper;
+import org.objectweb.asm.commons.SimpleRemapper;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -38,6 +42,8 @@ import static dev.xdark.ssvm.util.Unchecked.supplier;
  * @see SupplyingClassLoader
  */
 public class SupplyingClassLoaderInstaller {
+	private static int loaderIndex;
+
 	/**
 	 * @param path
 	 * 		Root directory to pull data from.
@@ -225,13 +231,14 @@ public class SupplyingClassLoaderInstaller {
 		if (loaderStream == null)
 			throw new FileNotFoundException(loaderName);
 
-		// Define the class in the VM
-		byte[] bytes = IOUtil.readAll(loaderStream);
+		// Define the class in the VM with a unique name so that multiple installs can be done.
+		String uniqueName = loaderName + loaderIndex++;
+		byte[] bytes = map(IOUtil.readAll(loaderStream), loaderName, uniqueName);
 		ObjectValue nullV = vm.getMemoryManager().nullValue();
-		String sourceName = SupplyingClassLoader.class.getSimpleName() + ".java";
+		String sourceName = uniqueName.substring(uniqueName.lastIndexOf('/') + 1) + ".java";
 		InstanceValue loader = ClassLoaderUtils.systemClassLoader(vm);
 		VMOperations operations = vm.getOperations();
-		InstanceClass loaderClass = operations.defineClass(loader, loaderName, bytes, 0, bytes.length, nullV, sourceName, 0);
+		InstanceClass loaderClass = operations.defineClass(loader, uniqueName, bytes, 0, bytes.length, nullV, sourceName, 0);
 
 		// Register invoker for the class's native provide methods to use the provided functions.
 		VMInterface vmi = vm.getInterface();
@@ -242,6 +249,13 @@ public class SupplyingClassLoaderInstaller {
 
 		// Yield the loader type.
 		return new Helper(vm, loaderClass);
+	}
+
+	private static byte[] map(byte[] bytes, String fromName, String toName) {
+		ClassWriter writer = new ClassWriter(0);
+		ClassReader reader = new ClassReader(bytes);
+		reader.accept(new ClassRemapper(writer, new SimpleRemapper(fromName.replace('.', '/'), toName.replace('.', '/'))), 0);
+		return writer.toByteArray();
 	}
 
 	@NotNull

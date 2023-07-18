@@ -23,6 +23,8 @@ public interface Symbols {
 
 	InstanceClass java_lang_System();
 
+	InstanceClass java_lang_Runtime();
+
 	InstanceClass java_lang_Throwable();
 
 	InstanceClass java_lang_Error();

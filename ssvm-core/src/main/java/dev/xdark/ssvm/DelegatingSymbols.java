@@ -48,6 +48,11 @@ final class DelegatingSymbols implements Symbols {
 	}
 
 	@Override
+	public InstanceClass java_lang_Runtime() {
+		return symbols.java_lang_Runtime();
+	}
+
+	@Override
 	public InstanceClass java_lang_Throwable() {
 		return symbols.java_lang_Throwable();
 	}

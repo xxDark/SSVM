@@ -25,6 +25,7 @@ final class InitializedSymbols implements Symbols {
 	private final InstanceClass java_lang_Thread;
 	private final InstanceClass java_lang_ThreadGroup;
 	private final InstanceClass java_lang_System;
+	private final InstanceClass java_lang_Runtime;
 	private final InstanceClass java_lang_Throwable;
 	private final InstanceClass java_lang_Error;
 	private final InstanceClass java_lang_Exception;
@@ -119,6 +120,7 @@ final class InitializedSymbols implements Symbols {
 		java_lang_Thread = (InstanceClass) vm.findBootstrapClass("java/lang/Thread");
 		java_lang_ThreadGroup = (InstanceClass) vm.findBootstrapClass("java/lang/ThreadGroup");
 		java_lang_System = (InstanceClass) vm.findBootstrapClass("java/lang/System");
+		java_lang_Runtime = (InstanceClass) vm.findBootstrapClass("java/lang/Runtime");
 		java_lang_Throwable = (InstanceClass) vm.findBootstrapClass("java/lang/Throwable");
 		java_lang_Error = (InstanceClass) vm.findBootstrapClass("java/lang/Error");
 		java_lang_Exception = (InstanceClass) vm.findBootstrapClass("java/lang/Exception");
@@ -240,6 +242,11 @@ final class InitializedSymbols implements Symbols {
 	@Override
 	public InstanceClass java_lang_System() {
 		return java_lang_System;
+	}
+
+	@Override
+	public InstanceClass java_lang_Runtime() {
+		return java_lang_Runtime;
 	}
 
 	@Override

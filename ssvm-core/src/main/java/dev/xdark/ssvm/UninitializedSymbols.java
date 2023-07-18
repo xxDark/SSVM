@@ -56,6 +56,11 @@ final class UninitializedSymbols implements Symbols {
 	}
 
 	@Override
+	public InstanceClass java_lang_Runtime() {
+		return uninitialized();
+	}
+
+	@Override
 	public InstanceClass java_lang_Throwable() {
 		return uninitialized();
 	}

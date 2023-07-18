@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.natives;
 
 import dev.xdark.ssvm.VirtualMachine;
+import dev.xdark.ssvm.api.MethodInvoker;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
@@ -21,7 +22,7 @@ public class RuntimeNatives {
 	 */
 	public void init(VirtualMachine vm) {
 		VMInterface vmi = vm.getInterface();
-		InstanceClass runtime = (InstanceClass) vm.findBootstrapClass("java/lang/Runtime");
+		InstanceClass runtime = vm.getSymbols().java_lang_Runtime();
 		vmi.setInvoker(runtime, "availableProcessors", "()I", ctx -> {
 			ctx.setResult(Runtime.getRuntime().availableProcessors());
 			return Result.ABORT;
@@ -40,5 +41,6 @@ public class RuntimeNatives {
 			ctx.setResult(statistics == null ? 0L : statistics.maxSpace());
 			return Result.ABORT;
 		});
+		vmi.setInvoker(runtime, "gc", "()V", MethodInvoker.noop());
 	}
 }

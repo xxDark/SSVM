@@ -162,7 +162,9 @@ public class SupplyingClassLoaderInstaller {
 	 * @return Supplier that pulls classes and files from the given maps.
 	 */
 	public static DataSupplier supplyFromMaps(Map<String, byte[]> classes, Map<String, byte[]> resources) {
-		return supplyFromFunctions(className -> classes.get(className.replace('.', '/')),
+		return supplyFromFunctions(className -> {
+					return classes.get(className.replace('.', '/'));
+				},
 				resourceName -> {
 					if (resourceName.startsWith("/"))
 						resourceName = resourceName.substring(1);
@@ -182,8 +184,8 @@ public class SupplyingClassLoaderInstaller {
 												   Function<String, byte[]> resourceProvider) {
 		return new DataSupplier() {
 			@Override
-			public byte[] getClass(String internalName) {
-				return classProvider.apply(internalName);
+			public byte[] getClass(String className) {
+				return classProvider.apply(className);
 			}
 
 			@Override
@@ -199,7 +201,7 @@ public class SupplyingClassLoaderInstaller {
 	public static DataSupplier supplyNothing() {
 		return new DataSupplier() {
 			@Override
-			public byte[] getClass(String internalName) {
+			public byte[] getClass(String className) {
 				return null;
 			}
 
@@ -283,13 +285,13 @@ public class SupplyingClassLoaderInstaller {
 	 */
 	public interface DataSupplier {
 		/**
-		 * @param internalName
-		 * 		Internal class name, such as {@code com/example/Foo}
-		 * 		or {@code com/example/Foo$Bar} for an inner class.
+		 * @param className
+		 * 		Class name, such as {@code com.example.Foo}
+		 * 		or {@code com.example.Foo$Bar} for an inner class.
 		 *
 		 * @return Raw bytes of class, or {@code null} if not found.
 		 */
-		byte[] getClass(String internalName);
+		byte[] getClass(String className);
 
 		/**
 		 * @param resourcePath
@@ -310,10 +312,10 @@ public class SupplyingClassLoaderInstaller {
 			DataSupplier current = this;
 			return new DataSupplier() {
 				@Override
-				public byte[] getClass(String internalName) {
-					byte[] classFile = current.getClass(internalName);
+				public byte[] getClass(String className) {
+					byte[] classFile = current.getClass(className);
 					if (classFile == null)
-						classFile = other.getClass(internalName);
+						classFile = other.getClass(className);
 					return classFile;
 				}
 
@@ -338,10 +340,10 @@ public class SupplyingClassLoaderInstaller {
 			DataSupplier current = this;
 			return new DataSupplier() {
 				@Override
-				public byte[] getClass(String internalName) {
-					byte[] classFile = other.getClass(internalName);
+				public byte[] getClass(String className) {
+					byte[] classFile = other.getClass(className);
 					if (classFile == null)
-						classFile = current.getClass(internalName);
+						classFile = current.getClass(className);
 					return classFile;
 				}
 

@@ -40,7 +40,7 @@ public class SsvmRunner {
         );
 
         // Invoke the 'main' method
-        InstanceClass mainClassInstance = helper.loadClass("com/example/ProgramName");
+        InstanceClass mainClassInstance = helper.loadClass("com.example.ProgramName");
         ArrayValue argsValue = memoryManager
                 .newArray(vm.getSymbols().java_lang_String().getArrayClass(), 0);
 

@@ -20,10 +20,19 @@ public final class InterpretedInvoker implements MethodInvoker {
 		VMInterface vmi = ctx.getVM().getInterface();
 		if ((access & Opcodes.ACC_NATIVE) != 0) {
 			vmi.handleLinkageError(ctx);
+
+			// The linkage error handling should throw before we get here, unless it is overridden by a user.
+			// In that case we still want to abort.
+			return Result.ABORT;
 		}
 		if ((access & Opcodes.ACC_ABSTRACT) != 0) {
 			vmi.handleAbstractMethodError(ctx);
+
+			// The abstract method error handling should throw before we get here, unless it is overridden by a user.
+			// In that case we still want to abort.
+			return Result.ABORT;
 		}
+
 		Interpreter.execute(ctx);
 		return Result.ABORT;
 	}

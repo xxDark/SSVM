@@ -28,6 +28,11 @@ final class DelegatingSymbols implements Symbols {
 	}
 
 	@Override
+	public InstanceClass java_lang_CharSequence() {
+		return symbols.java_lang_CharSequence();
+	}
+
+	@Override
 	public InstanceClass java_lang_ClassLoader() {
 		return symbols.java_lang_ClassLoader();
 	}

@@ -41,6 +41,11 @@ final class UninitializedSymbols implements Symbols {
 	}
 
 	@Override
+	public InstanceClass java_lang_CharSequence() {
+		return uninitialized();
+	}
+
+	@Override
 	public InstanceClass java_lang_ClassLoader() {
 		return uninitialized();
 	}

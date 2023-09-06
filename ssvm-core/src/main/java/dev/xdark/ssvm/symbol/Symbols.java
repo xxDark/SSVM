@@ -15,6 +15,8 @@ public interface Symbols {
 
 	InstanceClass java_lang_String();
 
+	InstanceClass java_lang_CharSequence();
+
 	InstanceClass java_lang_ClassLoader();
 
 	InstanceClass java_lang_Thread();

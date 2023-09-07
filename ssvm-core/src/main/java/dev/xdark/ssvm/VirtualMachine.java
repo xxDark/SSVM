@@ -1,5 +1,6 @@
 package dev.xdark.ssvm;
 
+import dev.xdark.ssvm.api.SimpleVMInterface;
 import dev.xdark.ssvm.api.VMInterface;
 import dev.xdark.ssvm.classloading.BootClassFinder;
 import dev.xdark.ssvm.classloading.ClassDefiner;
@@ -93,7 +94,7 @@ public class VirtualMachine implements VMEventCollection {
 	private volatile InstanceValue mainThreadGroup;
 
 	public VirtualMachine() {
-		vmInterface = new VMInterface();
+		vmInterface = createVMInterface();
 		DelegatingSymbols delegatingSymbols = new DelegatingSymbols();
 		delegatingSymbols.setSymbols(new UninitializedSymbols(this));
 		symbols = delegatingSymbols;
@@ -123,6 +124,10 @@ public class VirtualMachine implements VMEventCollection {
 		reflection = new Reflection(this);
 		jvmti = new JVMTI(this);
 		operations = new VMOperations(this);
+	}
+
+	protected VMInterface createVMInterface() {
+		return new SimpleVMInterface();
 	}
 
 	protected MemoryAllocator createMemoryAllocator() {

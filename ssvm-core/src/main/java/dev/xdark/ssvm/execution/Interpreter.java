@@ -18,6 +18,7 @@ import java.util.List;
  */
 @UtilityClass
 public class Interpreter {
+	private static int maxIterations = Integer.MAX_VALUE - 1;
 
 	/**
 	 * Processes {@link ExecutionContext}.
@@ -30,9 +31,14 @@ public class Interpreter {
 		MethodNode mn = jm.getNode();
 		InsnList instructions = mn.instructions;
 		List<InstructionInterceptor> interceptors = vmi.getInstructionInterceptors();
+		int iter = 0;
 		exec:
 		while (true) {
 			try {
+				if (iter++ >= maxIterations) {
+					handleMaxIterations(ctx);
+					break;
+				}
 				int pos = ctx.getInsnPosition();
 				ctx.setInsnPosition(pos + 1);
 				AbstractInsnNode insn = instructions.get(pos);
@@ -55,6 +61,24 @@ public class Interpreter {
 				handleExceptionCaught(ctx, ex);
 			}
 		}
+	}
+
+	/**
+	 * @param maxIterations Max number of instructions to interpret/iterate over before aborting.
+	 */
+	public static void setMaxIterations(int maxIterations) {
+		Interpreter.maxIterations = maxIterations;
+	}
+
+	/**
+	 * @return Max number of instructions to interpret/iterate over before aborting.
+	 */
+	public static int getMaxIterations() {
+		return maxIterations;
+	}
+
+	private static void handleMaxIterations(ExecutionContext<?> ctx) {
+		ctx.getVM().getInterface().handleMaxInterations(ctx);
 	}
 
 	private static void handleExceptionCaught(ExecutionContext<?> ctx, VMException ex) {

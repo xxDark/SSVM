@@ -156,6 +156,12 @@ public interface VMInterface {
 	void setAbstractMethodHandler(Consumer<ExecutionContext<?>> abstractMethodHandler);
 
 	/**
+	 * @param maxIterationsHandler Handler of methods hitting the max number of instruction iterations.
+	 *                             Consumes an execution context of that method, likely in a while-true loop.
+	 */
+	void setMaxIterationsHandler(Consumer<ExecutionContext<?>> maxIterationsHandler);
+
+	/**
 	 * @param ctx Context of the native method not linked.
 	 */
 	void handleLinkageError(ExecutionContext<?> ctx);
@@ -164,4 +170,9 @@ public interface VMInterface {
 	 * @param ctx Context of the abstract method that was attempted to be invoked.
 	 */
 	void handleAbstractMethodError(ExecutionContext<?> ctx);
+
+	/**
+	 * @param ctx Context of the native method that interpreted {@link Interpreter#getMaxIterations() the maximum number of allowed iterations}.
+	 */
+	void handleMaxInterations(ExecutionContext<?> ctx);
 }

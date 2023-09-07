@@ -120,6 +120,11 @@ public class DelegatingVMInterface implements VMInterface {
 	}
 
 	@Override
+	public void setMaxIterationsHandler(Consumer<ExecutionContext<?>> maxIterationsHandler) {
+		delegate.setMaxIterationsHandler(maxIterationsHandler);
+	}
+
+	@Override
 	public void handleLinkageError(ExecutionContext<?> ctx) {
 		delegate.handleLinkageError(ctx);
 	}
@@ -127,5 +132,10 @@ public class DelegatingVMInterface implements VMInterface {
 	@Override
 	public void handleAbstractMethodError(ExecutionContext<?> ctx) {
 		delegate.handleAbstractMethodError(ctx);
+	}
+
+	@Override
+	public void handleMaxInterations(ExecutionContext<?> ctx) {
+		delegate.handleMaxInterations(ctx);
 	}
 }

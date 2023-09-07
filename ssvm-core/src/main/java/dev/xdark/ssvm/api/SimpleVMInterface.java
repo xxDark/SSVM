@@ -26,6 +26,7 @@ public class SimpleVMInterface implements VMInterface {
 	private final List<InstructionInterceptor> instructionInterceptorsView = Collections.unmodifiableList(instructionInterceptors);
 	private Consumer<ExecutionContext<?>> linkageErrorHandler = SimpleVMInterface::handleLinkageError0;
 	private Consumer<ExecutionContext<?>> abstractMethodHandler = SimpleVMInterface::handleAbstractMethodError0;
+	private Consumer<ExecutionContext<?>> maxIterationsHandler = SimpleVMInterface::handleMaxIterations0;
 
 	public SimpleVMInterface() {
 		Arrays.fill(processors, new UnknownInstructionProcessor());
@@ -136,6 +137,11 @@ public class SimpleVMInterface implements VMInterface {
 	}
 
 	@Override
+	public void setMaxIterationsHandler(Consumer<ExecutionContext<?>> maxIterationsHandler) {
+		this.maxIterationsHandler = maxIterationsHandler;
+	}
+
+	@Override
 	public void handleLinkageError(ExecutionContext<?> ctx) {
 		linkageErrorHandler.accept(ctx);
 	}
@@ -143,6 +149,11 @@ public class SimpleVMInterface implements VMInterface {
 	@Override
 	public void handleAbstractMethodError(ExecutionContext<?> ctx) {
 		abstractMethodHandler.accept(ctx);
+	}
+
+	@Override
+	public void handleMaxInterations(ExecutionContext<?> ctx) {
+		maxIterationsHandler.accept(ctx);
 	}
 
 	// Default impl for handling linkage errors is to throw UnsatisfiedLinkError
@@ -153,5 +164,10 @@ public class SimpleVMInterface implements VMInterface {
 	// Default impl for handling abstract method errors is to throw AbstractMethodError
 	private static void handleAbstractMethodError0(ExecutionContext<?> ctx) {
 		ctx.getOperations().throwException(ctx.getSymbols().java_lang_AbstractMethodError(), ctx.getMethod().toString());
+	}
+
+	// Default impl for handling max iteration is to throw IllegalStateException
+	private static void handleMaxIterations0(ExecutionContext<?> ctx) {
+		ctx.getOperations().throwException(ctx.getSymbols().java_lang_IllegalStateException(), ctx.getMethod().toString());
 	}
 }

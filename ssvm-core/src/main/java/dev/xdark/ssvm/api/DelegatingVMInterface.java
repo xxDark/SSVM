@@ -138,4 +138,9 @@ public class DelegatingVMInterface implements VMInterface {
 	public void handleMaxInterations(ExecutionContext<?> ctx) {
 		delegate.handleMaxInterations(ctx);
 	}
+
+	@Override
+	public VMInterface copy() {
+		return delegate.copy();
+	}
 }

@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.thread.backtrace;
 
+import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.ExecutionRequest;
 import dev.xdark.ssvm.util.CloseableUtil;
@@ -18,9 +19,11 @@ public final class SimpleBacktrace implements Backtrace {
 
 	private static final int RESERVED_FRAMES = 12;
 	private final List<ExecutionContext<?>> frames;
+	private final VirtualMachine vm;
 	private int frame;
 
-	public SimpleBacktrace(int frameCount) {
+	public SimpleBacktrace(VirtualMachine vm, int frameCount) {
+		this.vm = vm;
 		frames = Arrays.asList(new ExecutionContext[Math.max(frameCount, RESERVED_FRAMES + 4)]);
 	}
 
@@ -33,7 +36,7 @@ public final class SimpleBacktrace implements Backtrace {
 		}
 		SimpleExecutionContext<R> ctx = (SimpleExecutionContext<R>) frames.get(frameIndex);
 		if (ctx == null) {
-			ctx = new SimpleExecutionContext<>();
+			ctx = new SimpleExecutionContext<>(vm);
 			frames.set(frameIndex, ctx);
 		}
 		ctx.init(request.getMethod(), request.getStack(), request.getLocals(), request.getResultSink());

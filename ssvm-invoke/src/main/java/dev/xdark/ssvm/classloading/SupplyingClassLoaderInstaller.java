@@ -403,6 +403,14 @@ public class SupplyingClassLoaderInstaller {
 		}
 
 		/**
+		 * @return The class-loader instance used to load classes into the VM.
+		 */
+		public InstanceValue getClassLoaderInstance() {
+			init(); // Ensure loaded
+			return loaderInstance;
+		}
+
+		/**
 		 * Initialize the {@link SupplyingClassLoader} inside the {@link VirtualMachine}.
 		 */
 		private void init() {

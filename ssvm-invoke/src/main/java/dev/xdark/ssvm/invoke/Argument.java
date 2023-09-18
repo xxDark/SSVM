@@ -2,6 +2,7 @@ package dev.xdark.ssvm.invoke;
 
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.value.ObjectValue;
+import org.objectweb.asm.Type;
 
 /**
  * Method argument.
@@ -18,6 +19,11 @@ public interface Argument {
 	 * @return The amount of slots occupied by this argument.
 	 */
 	int store(Locals locals, int index);
+
+	/**
+	 * @return Argument value type.
+	 */
+	Type getType();
 
 	/**
 	 * {@literal long} argument.

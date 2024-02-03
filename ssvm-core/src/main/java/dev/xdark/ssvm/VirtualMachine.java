@@ -135,6 +135,8 @@ public class VirtualMachine implements VMEventCollection {
 	}
 
 	public VirtualMachine() {
+		properties = createSystemProperties();
+		env = createEnvironmentVariables();
 		vmInterface = createVMInterface();
 		DelegatingSymbols delegatingSymbols = new DelegatingSymbols();
 		delegatingSymbols.setSymbols(new UninitializedSymbols(this));
@@ -159,9 +161,6 @@ public class VirtualMachine implements VMEventCollection {
 		classStorage = createClassStorage();
 		linkResolver = new LinkResolver(this);
 		runtimeResolver = new RuntimeResolver(this, linkResolver);
-		// After this point all components are created, only utilities are left.
-		properties = createSystemProperties();
-		env = createEnvironmentVariables();
 		reflection = new Reflection(this);
 		jvmti = new JVMTI(this);
 		operations = new VMOperations(this);

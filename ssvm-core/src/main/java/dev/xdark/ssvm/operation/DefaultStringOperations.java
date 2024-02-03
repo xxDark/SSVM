@@ -53,9 +53,11 @@ public final class DefaultStringOperations implements StringOperations {
 	public InstanceValue newUtf8FromBytes(ArrayValue value) {
 		InstanceClass jc = symbols.java_lang_String();
 		InstanceValue wrapper = memoryManager.newInstance(jc);
-		JavaField charValue = jc.getField("value", "[B");
-		if (charValue != null) {
-			memoryManager.writeValue(wrapper, charValue.getOffset(), value);
+		JavaField bytesValue = jc.getField("value", "[B");
+		if (bytesValue != null) {
+			// We can write the bytes directly to the field since later versions of String
+			// store their contents as a byte array.
+			memoryManager.writeValue(wrapper, bytesValue.getOffset(), value);
 		} else {
 			InstanceClass cs = symbols.java_nio_charset_StandardCharsets();
 			ObjectValue utf8 = ops.getReference(cs, "UTF_8", "Ljava/nio/charset/Charset;");

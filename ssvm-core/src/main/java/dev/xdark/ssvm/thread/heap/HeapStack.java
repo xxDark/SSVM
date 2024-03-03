@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.thread.heap;
 
 import dev.xdark.ssvm.execution.Locals;
+import dev.xdark.ssvm.execution.LocalsWithMemory;
 import dev.xdark.ssvm.execution.Stack;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.ReferenceMap;
@@ -265,7 +266,7 @@ public final class HeapStack implements Stack, SafeCloseable {
 			return;
 		}
 		long pointer = this.pointer - count * 8L;
-		region().read(pointer, ((HeapLocals) locals).region(), 0L, count * 8);
+		region().read(pointer, ((LocalsWithMemory) locals).region(), 0L, count * 8);
 		this.pointer = pointer;
 	}
 
@@ -275,7 +276,7 @@ public final class HeapStack implements Stack, SafeCloseable {
 			return;
 		}
 		long pointer = this.pointer - count * 8L;
-		region().read(pointer, ((HeapLocals) locals).region(), dst * 8L, count * 8);
+		region().read(pointer, ((LocalsWithMemory) locals).region(), dst * 8L, count * 8);
 		this.pointer = pointer;
 	}
 

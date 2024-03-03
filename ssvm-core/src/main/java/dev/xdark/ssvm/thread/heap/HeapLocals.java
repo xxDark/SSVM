@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.thread.heap;
 
 import dev.xdark.ssvm.execution.Locals;
+import dev.xdark.ssvm.execution.LocalsWithMemory;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
 import dev.xdark.ssvm.memory.management.ReferenceMap;
 import dev.xdark.ssvm.thread.ThreadMemoryData;
@@ -12,13 +13,15 @@ import dev.xdark.ssvm.value.ObjectValue;
  *
  * @author xDark
  */
-final class HeapLocals implements Locals, SafeCloseable {
+final class HeapLocals implements LocalsWithMemory, SafeCloseable {
 	private final ReferenceMap referenceMap;
 	ThreadMemoryData threadMemoryData;
 
 	/**
-	 * @param referenceMap     Reference map.
-	 * @param threadMemoryData Memory data.
+	 * @param referenceMap
+	 * 		Reference map.
+	 * @param threadMemoryData
+	 * 		Memory data.
 	 */
 	HeapLocals(ReferenceMap referenceMap, ThreadMemoryData threadMemoryData) {
 		this.referenceMap = referenceMap;
@@ -77,7 +80,7 @@ final class HeapLocals implements Locals, SafeCloseable {
 
 	@Override
 	public void copyFrom(Locals locals, int srcOffset, int destOffset, int length) {
-		MemoryData from = ((HeapLocals) locals).region();
+		MemoryData from = ((LocalsWithMemory) locals).region();
 		from.read(srcOffset * 8L, region(), destOffset * 8L, length * 8);
 	}
 
@@ -91,11 +94,13 @@ final class HeapLocals implements Locals, SafeCloseable {
 		threadMemoryData.reclaim();
 	}
 
-	MemoryData region() {
+	@Override
+	public MemoryData region() {
 		return threadMemoryData.data();
 	}
 
-	void reset(ThreadMemoryData data) {
+	@Override
+	public void reset(ThreadMemoryData data) {
 		threadMemoryData = data;
 	}
 }

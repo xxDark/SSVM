@@ -53,10 +53,22 @@ public class Interpreter {
 				if (insn.getOpcode() == -1 || !AsmUtil.isValid(insn)) {
 					continue;
 				}
+
+				Locals locals = ctx.getLocals();
+				Stack stack = ctx.getStack();
+				if (stack instanceof ContextAwareStack)
+					((ContextAwareStack) stack).preInterpret(ctx);
+				if (locals instanceof ContextAwareLocals)
+					((ContextAwareLocals) locals).preInterpret(ctx);
+
 				InstructionProcessor<AbstractInsnNode> processor = vmi.getProcessor(insn);
-				if (processor.execute(insn, ctx) == Result.ABORT) {
+				if (processor.execute(insn, ctx) == Result.ABORT)
 					break;
-				}
+
+				if (stack instanceof ContextAwareStack)
+					((ContextAwareStack) stack).postInterpret(ctx);
+				if (locals instanceof ContextAwareLocals)
+					((ContextAwareLocals) locals).postInterpret(ctx);
 			} catch (VMException ex) {
 				handleExceptionCaught(ctx, ex);
 			}

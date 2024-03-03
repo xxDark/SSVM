@@ -1,10 +1,6 @@
 package dev.xdark.ssvm.thread.heap;
 
-import dev.xdark.ssvm.execution.EmptyLocals;
-import dev.xdark.ssvm.execution.EmptyStack;
-import dev.xdark.ssvm.execution.Locals;
-import dev.xdark.ssvm.execution.PanicException;
-import dev.xdark.ssvm.execution.Stack;
+import dev.xdark.ssvm.execution.*;
 import dev.xdark.ssvm.memory.allocation.MemoryAllocator;
 import dev.xdark.ssvm.memory.allocation.MemoryBlock;
 import dev.xdark.ssvm.memory.allocation.MemoryData;
@@ -24,12 +20,17 @@ public final class HeapThreadStorage implements ThreadStorage {
 	private final MemoryAllocator allocator;
 	private final MemoryBlock block;
 	private final MemoryData memory;
+	private final StackDecorator stackDecorator;
+	private final LocalsDecorator localsDecorator;
 	private long pointer;
 
-	public HeapThreadStorage(MemoryManager manager, MemoryAllocator allocator, MemoryBlock block) {
+	public HeapThreadStorage(MemoryManager manager, MemoryAllocator allocator, MemoryBlock block,
+							 StackDecorator stackDecorator, LocalsDecorator localsDecorator) {
 		this.manager = manager;
 		this.allocator = allocator;
 		this.block = block;
+		this.stackDecorator = stackDecorator;
+		this.localsDecorator = localsDecorator;
 		memory = block.getData();
 	}
 
@@ -40,7 +41,11 @@ public final class HeapThreadStorage implements ThreadStorage {
 		}
 		HeapComponent hc = pollComponent();
 		doAllocate(hc, size *= VALUE_SCALE);
-		return hc.makeStack(size);
+		Stack stack = hc.makeStack(size);
+		StackDecorator decorator = stackDecorator;
+		if (decorator != null)
+			stack = decorator.decorateStack(stack);
+		return stack;
 	}
 
 	@Override
@@ -50,7 +55,11 @@ public final class HeapThreadStorage implements ThreadStorage {
 		}
 		HeapComponent hc = pollComponent();
 		doAllocate(hc, size *= VALUE_SCALE);
-		return hc.makeLocals(size);
+		Locals locals = hc.makeLocals(size);
+		LocalsDecorator decorator = localsDecorator;
+		if (decorator != null)
+			locals = decorator.decorateLocals(locals);
+		return locals;
 	}
 
 	@Override

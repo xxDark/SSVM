@@ -12,10 +12,7 @@ import dev.xdark.ssvm.classloading.RuntimeBootClassFinder;
 import dev.xdark.ssvm.classloading.SimpleClassDefiner;
 import dev.xdark.ssvm.classloading.SimpleClassLoaders;
 import dev.xdark.ssvm.classloading.SimpleClassStorage;
-import dev.xdark.ssvm.execution.ExecutionEngine;
-import dev.xdark.ssvm.execution.Locals;
-import dev.xdark.ssvm.execution.PanicException;
-import dev.xdark.ssvm.execution.SimpleExecutionEngine;
+import dev.xdark.ssvm.execution.*;
 import dev.xdark.ssvm.filesystem.FileManager;
 import dev.xdark.ssvm.filesystem.SimpleFileManager;
 import dev.xdark.ssvm.inject.InjectedClassLayout;
@@ -60,6 +57,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 public class VirtualMachine implements VMEventCollection {
 
@@ -94,6 +92,26 @@ public class VirtualMachine implements VMEventCollection {
 	private volatile InstanceValue mainThreadGroup;
 
 	public VirtualMachine() {
+		this(null);
+	}
+
+	/**
+	 * Constructor for running some logic operating on {@code this}
+	 * before the VM internals are initialized.
+	 * <p/>
+	 * This allows sub-classes to set field values <i>(though non-final)</i>
+	 * which can then be used in the {@code createX} method implementations.
+	 * The consumer allows us to act on {@code this} <i>"before the super
+	 * constructor call".</i>
+	 *
+	 * @param consumer
+	 * 		Consumer to run before the VM internals are initialized.
+	 * @param <V>
+	 * 		Self type.
+	 */
+	@SuppressWarnings("unchecked")
+	public <V extends VirtualMachine> VirtualMachine(Consumer<V> consumer) {
+		if (consumer != null) consumer.accept((V) this);
 		properties = createSystemProperties();
 		env = createEnvironmentVariables();
 		vmInterface = createVMInterface();
@@ -283,6 +301,28 @@ public class VirtualMachine implements VMEventCollection {
 	 */
 	public JVMTIEnv newJvmtiEnv() {
 		return jvmti.create();
+	}
+
+	/**
+	 * Allows for modifying {@link Stack} values created by the VM.
+	 * <p/>
+	 * To be used in {@link ThreadStorage} implementations.
+	 *
+	 * @return Decorator for created stacks.
+	 */
+	public @Nullable StackDecorator getStackDecorator() {
+		return null;
+	}
+
+	/**
+	 * Allows for modifying {@link Locals} values created by the VM.
+	 * <p/>
+	 * To be used in {@link ThreadStorage} implementations.
+	 *
+	 * @return Decorator for created locals.
+	 */
+	public @Nullable LocalsDecorator getLocalDecorator() {
+		return null;
 	}
 
 	/**

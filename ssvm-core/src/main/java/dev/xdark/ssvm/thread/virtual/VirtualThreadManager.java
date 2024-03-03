@@ -292,7 +292,8 @@ public final class VirtualThreadManager implements ThreadManager {
 		}
 		Backtrace backtrace = new SimpleBacktrace(1024);
 		MemoryAllocator memoryAllocator = vm.getMemoryAllocator();
-		ThreadStorage storage = new HeapThreadStorage(vm.getMemoryManager(), memoryAllocator, memoryAllocator.allocateHeap(stackSize));
+		ThreadStorage storage = new HeapThreadStorage(vm.getMemoryManager(), memoryAllocator,
+				memoryAllocator.allocateHeap(stackSize), vm.getStackDecorator(), vm.getLocalDecorator());
 		return new VirtualOSThread(backtrace, storage);
 	}
 

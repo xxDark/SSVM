@@ -106,8 +106,18 @@ public final class HeapStack implements Stack, SafeCloseable {
 	}
 
 	@Override
+	public long peekLong(int topOffset) {
+		return peekCategory2(topOffset);
+	}
+
+	@Override
 	public double peekDouble() {
 		return Double.longBitsToDouble(peekCategory2());
+	}
+
+	@Override
+	public double peekDouble(int topOffset) {
+		return Double.longBitsToDouble(peekCategory2(topOffset));
 	}
 
 	@Override
@@ -116,8 +126,18 @@ public final class HeapStack implements Stack, SafeCloseable {
 	}
 
 	@Override
+	public int peekInt(int topOffset) {
+		return (int) peekCategory1(topOffset);
+	}
+
+	@Override
 	public float peekFloat() {
 		return Float.intBitsToFloat((int) peekCategory1());
+	}
+
+	@Override
+	public float peekFloat(int topOffset) {
+		return Float.intBitsToFloat((int) peekCategory1(topOffset));
 	}
 
 	@Override
@@ -126,13 +146,28 @@ public final class HeapStack implements Stack, SafeCloseable {
 	}
 
 	@Override
+	public char peekChar(int topOffset) {
+		return (char) peekCategory1(topOffset);
+	}
+
+	@Override
 	public short peekShort() {
 		return (short) peekCategory1();
 	}
 
 	@Override
+	public short peekShort(int topOffset) {
+		return (short) peekCategory1(topOffset);
+	}
+
+	@Override
 	public byte peekByte() {
 		return (byte) peekCategory1();
+	}
+
+	@Override
+	public byte peekByte(int topOffset) {
+		return (byte) peekCategory1(topOffset);
 	}
 
 	@Override
@@ -313,6 +348,10 @@ public final class HeapStack implements Stack, SafeCloseable {
 		return region().readLong(pointer - 8L);
 	}
 
+	private long peekCategory1(int topOffset) {
+		return region().readLong(pointer - 8L - (8L * topOffset));
+	}
+
 	private long popCategory1() {
 		long value = peekCategory1();
 		movePointer(-1);
@@ -321,6 +360,10 @@ public final class HeapStack implements Stack, SafeCloseable {
 
 	private long peekCategory2() {
 		return region().readLong(pointer - 16L);
+	}
+
+	private long peekCategory2(int topOffset) {
+		return region().readLong(pointer - 16L - (8L * topOffset));
 	}
 
 	private long popCategory2() {

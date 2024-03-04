@@ -118,9 +118,21 @@ public interface Stack extends ValueSink {
 	long peekLong();
 
 	/**
+	 * @param topOffset Offset from top, 0 being the top.
+	 * @return long value.
+	 */
+	long peekLong(int topOffset);
+
+	/**
 	 * @return double value.
 	 */
 	double peekDouble();
+
+	/**
+	 * @param topOffset Offset from top, 0 being the top.
+	 * @return double value.
+	 */
+	double peekDouble(int topOffset);
 
 	/**
 	 * @return int value.
@@ -128,9 +140,21 @@ public interface Stack extends ValueSink {
 	int peekInt();
 
 	/**
+	 * @param topOffset Offset from top, 0 being the top.
+	 * @return int value.
+	 */
+	int peekInt(int topOffset);
+
+	/**
 	 * @return float value.
 	 */
 	float peekFloat();
+
+	/**
+	 * @param topOffset Offset from top, 0 being the top.
+	 * @return float value.
+	 */
+	float peekFloat(int topOffset);
 
 	/**
 	 * @return char value.
@@ -138,14 +162,32 @@ public interface Stack extends ValueSink {
 	char peekChar();
 
 	/**
+	 * @param topOffset Offset from top, 0 being the top.
+	 * @return char value.
+	 */
+	char peekChar(int topOffset);
+
+	/**
 	 * @return short value.
 	 */
 	short peekShort();
 
 	/**
+	 * @param topOffset Offset from top, 0 being the top.
+	 * @return short value.
+	 */
+	short peekShort(int topOffset);
+
+	/**
 	 * @return byte value.
 	 */
 	byte peekByte();
+
+	/**
+	 * @param topOffset Offset from top, 0 being the top.
+	 * @return byte value.
+	 */
+	byte peekByte(int topOffset);
 
 	/**
 	 * Duplicates value on the stack.

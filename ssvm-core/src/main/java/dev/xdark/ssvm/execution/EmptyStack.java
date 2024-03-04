@@ -100,7 +100,17 @@ public final class EmptyStack implements Stack {
 	}
 
 	@Override
+	public long peekLong(int topOffset) {
+		return panicEmpty();
+	}
+
+	@Override
 	public double peekDouble() {
+		return panicEmpty();
+	}
+
+	@Override
+	public double peekDouble(int topOffset) {
 		return panicEmpty();
 	}
 
@@ -110,7 +120,17 @@ public final class EmptyStack implements Stack {
 	}
 
 	@Override
+	public int peekInt(int topOffset) {
+		return panicEmpty();
+	}
+
+	@Override
 	public float peekFloat() {
+		return panicEmpty();
+	}
+
+	@Override
+	public float peekFloat(int topOffset) {
 		return panicEmpty();
 	}
 
@@ -120,12 +140,27 @@ public final class EmptyStack implements Stack {
 	}
 
 	@Override
+	public char peekChar(int topOffset) {
+		return panicEmpty();
+	}
+
+	@Override
 	public short peekShort() {
 		return panicEmpty();
 	}
 
 	@Override
+	public short peekShort(int topOffset) {
+		return panicEmpty();
+	}
+
+	@Override
 	public byte peekByte() {
+		return panicEmpty();
+	}
+
+	@Override
+	public byte peekByte(int topOffset) {
 		return panicEmpty();
 	}
 

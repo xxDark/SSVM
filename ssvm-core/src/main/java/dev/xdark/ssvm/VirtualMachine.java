@@ -60,6 +60,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 public class VirtualMachine implements VMEventCollection {
 
@@ -94,6 +95,26 @@ public class VirtualMachine implements VMEventCollection {
 	private volatile InstanceValue mainThreadGroup;
 
 	public VirtualMachine() {
+		this(null);
+	}
+
+	/**
+	 * Constructor for running some logic operating on {@code this}
+	 * before the VM internals are initialized.
+	 * <p/>
+	 * This allows sub-classes to set field values <i>(though non-final)</i>
+	 * which can then be used in the {@code createX} method implementations.
+	 * The consumer allows us to act on {@code this} <i>"before the super
+	 * constructor call".</i>
+	 *
+	 * @param consumer
+	 * 		Consumer to run before the VM internals are initialized.
+	 * @param <V>
+	 * 		Self type.
+	 */
+	@SuppressWarnings("unchecked")
+	public <V extends VirtualMachine> VirtualMachine(Consumer<V> consumer) {
+		if (consumer != null) consumer.accept((V) this);
 		properties = createSystemProperties();
 		env = createEnvironmentVariables();
 		vmInterface = createVMInterface();

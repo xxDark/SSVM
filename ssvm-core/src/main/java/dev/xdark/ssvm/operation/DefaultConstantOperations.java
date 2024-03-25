@@ -66,7 +66,9 @@ public final class DefaultConstantOperations implements ConstantOperations {
 				return ops.linkMethodHandleConstant(ctx.getMethod().getOwner(), (Handle) value);
 			}
 			if (value instanceof ConstantDynamic) {
-
+				ExecutionContext<?> ctx = threadManager.currentOsThread().getBacktrace().peek();
+				Assertions.notNull(ctx, "cannot be called without call frame");
+				return ops.linkDynamic((ConstantDynamic) value, ctx.getMethod().getOwner());
 			}
 		}
 		throw new PanicException("Unsupported constant " + value + " " + value.getClass());

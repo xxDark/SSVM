@@ -105,17 +105,29 @@ public final class DefaultInvokeDynamicOperations implements InvokeDynamicOperat
 		}
 
 		InstanceClass natives = symbols.java_lang_invoke_MethodHandleNatives();
-		JavaMethod method = natives.getMethod("linkDynamicConstant", "(Ljava/lang/Object;ILjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
-		Locals linkArgs = threadManager.currentOsThread().getStorage().newLocals(method);
+		JavaMethod method = natives.getMethod("linkDynamicConstant", "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+		Locals linkArgs;
+		if (method == null) {
+			method = natives.getMethod("linkDynamicConstant", "(Ljava/lang/Object;ILjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
 
-		linkArgs.setReference(0, caller.getOop());
-		linkArgs.setInt(1, 0); // condy index
-		linkArgs.setReference(2, bsm);
-		linkArgs.setReference(3, stringPool.intern(node.getName()));
-		linkArgs.setReference(4, ops.findClass(caller, node.getDescriptor(), false).getOop());
-		linkArgs.setReference(5, bsmArgs);
+			linkArgs = threadManager.currentOsThread().getStorage().newLocals(method);
 
-        return (InstanceValue) ops.invokeReference(method, linkArgs);
+			linkArgs.setReference(0, caller.getOop());
+			linkArgs.setInt(1, 0); // condy index
+			linkArgs.setReference(2, bsm);
+			linkArgs.setReference(3, stringPool.intern(node.getName()));
+			linkArgs.setReference(4, ops.findClass(caller, node.getDescriptor(), false).getOop());
+			linkArgs.setReference(5, bsmArgs);
+		} else {
+			linkArgs = threadManager.currentOsThread().getStorage().newLocals(method);
+			linkArgs.setReference(0, caller.getOop());
+			linkArgs.setReference(1, bsm);
+			linkArgs.setReference(2, stringPool.intern(node.getName()));
+			linkArgs.setReference(3, ops.findClass(caller, node.getDescriptor(), false).getOop());
+			linkArgs.setReference(4, bsmArgs);
+		}
+
+		return (InstanceValue) ops.invokeReference(method, linkArgs);
 	}
 
 	@Override

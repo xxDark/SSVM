@@ -9,6 +9,7 @@ import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.util.Assertions;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.RequiredArgsConstructor;
+import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Type;
 
@@ -63,6 +64,11 @@ public final class DefaultConstantOperations implements ConstantOperations {
 				ExecutionContext<?> ctx = threadManager.currentOsThread().getBacktrace().peek();
 				Assertions.notNull(ctx, "cannot be called without call frame");
 				return ops.linkMethodHandleConstant(ctx.getMethod().getOwner(), (Handle) value);
+			}
+			if (value instanceof ConstantDynamic) {
+				ExecutionContext<?> ctx = threadManager.currentOsThread().getBacktrace().peek();
+				Assertions.notNull(ctx, "cannot be called without call frame");
+				return ops.linkDynamic((ConstantDynamic) value, ctx.getMethod().getOwner());
 			}
 		}
 		throw new PanicException("Unsupported constant " + value + " " + value.getClass());

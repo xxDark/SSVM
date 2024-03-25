@@ -19,6 +19,7 @@ import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.sink.ValueSink;
 import lombok.RequiredArgsConstructor;
+import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -87,6 +88,46 @@ public final class DefaultInvokeDynamicOperations implements InvokeDynamicOperat
 
 		ops.invokeVoid(method, linkArgs);
 		return (InstanceValue) appendix.getReference(0);
+	}
+
+	@Override
+	public InstanceValue linkDynamic(ConstantDynamic node, InstanceClass caller) {
+		Symbols symbols = this.symbols;
+		Handle bootstrap = node.getBootstrapMethod();
+		VMOperations ops = this.ops;
+
+		InstanceValue bsm = ops.linkMethodHandleConstant(caller, bootstrap);
+
+		ArrayValue bsmArgs = ops.allocateArray(symbols.java_lang_Object(), node.getBootstrapMethodArgumentCount());
+		for (int i = 0; i < node.getBootstrapMethodArgumentCount(); i++) {
+			Object arg = node.getBootstrapMethodArgument(i);
+			bsmArgs.setReference(i, forInvokeDynamicCall(caller, arg));
+		}
+
+		InstanceClass natives = symbols.java_lang_invoke_MethodHandleNatives();
+		JavaMethod method = natives.getMethod("linkDynamicConstant", "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+		Locals linkArgs;
+		if (method == null) {
+			method = natives.getMethod("linkDynamicConstant", "(Ljava/lang/Object;ILjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+
+			linkArgs = threadManager.currentOsThread().getStorage().newLocals(method);
+
+			linkArgs.setReference(0, caller.getOop());
+			linkArgs.setInt(1, 0); // condy index
+			linkArgs.setReference(2, bsm);
+			linkArgs.setReference(3, stringPool.intern(node.getName()));
+			linkArgs.setReference(4, ops.findClass(caller, node.getDescriptor(), false).getOop());
+			linkArgs.setReference(5, bsmArgs);
+		} else {
+			linkArgs = threadManager.currentOsThread().getStorage().newLocals(method);
+			linkArgs.setReference(0, caller.getOop());
+			linkArgs.setReference(1, bsm);
+			linkArgs.setReference(2, stringPool.intern(node.getName()));
+			linkArgs.setReference(3, ops.findClass(caller, node.getDescriptor(), false).getOop());
+			linkArgs.setReference(4, bsmArgs);
+		}
+
+		return (InstanceValue) ops.invokeReference(method, linkArgs);
 	}
 
 	@Override
@@ -202,6 +243,9 @@ public final class DefaultInvokeDynamicOperations implements InvokeDynamicOperat
 		}
 		if (arg instanceof Handle) {
 			return ops.linkMethodHandleConstant(caller, (Handle) arg);
+		}
+		if (arg instanceof ConstantDynamic) {
+			return ops.linkDynamic((ConstantDynamic) arg, caller);
 		}
 		throw new UnsupportedOperationException(Objects.toString(arg));
 	}

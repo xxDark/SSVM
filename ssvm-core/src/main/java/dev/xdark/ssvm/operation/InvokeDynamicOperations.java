@@ -6,6 +6,7 @@ import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.sink.ValueSink;
+import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 
 /**
@@ -47,6 +48,15 @@ public interface InvokeDynamicOperations {
 	 * @return Linked method handle or call site.
 	 */
 	InstanceValue linkCall(InvokeDynamicInsnNode insn, InstanceClass caller);
+
+	/**
+	 * Links {@link org.objectweb.asm.ConstantDynamic}.
+	 *
+	 * @param node   Node to link.
+	 * @param caller Method caller.
+	 * @return Resulting constant.
+	 */
+	InstanceValue linkDynamic(ConstantDynamic node, InstanceClass caller);
 
 	/**
 	 * Invokes linked dynamic call.

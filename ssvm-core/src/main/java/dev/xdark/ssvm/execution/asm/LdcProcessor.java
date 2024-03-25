@@ -1,16 +1,13 @@
 package dev.xdark.ssvm.execution.asm;
 
-import dev.xdark.ssvm.asm.ConstantDoubleInsnNode;
-import dev.xdark.ssvm.asm.ConstantFloatInsnNode;
-import dev.xdark.ssvm.asm.ConstantIntInsnNode;
-import dev.xdark.ssvm.asm.ConstantLongInsnNode;
-import dev.xdark.ssvm.asm.ConstantReferenceInsnNode;
+import dev.xdark.ssvm.asm.*;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
 import dev.xdark.ssvm.execution.Result;
 import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.value.ObjectValue;
 import dev.xdark.ssvm.value.Value;
+import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.LdcInsnNode;
 
@@ -42,6 +39,10 @@ public final class LdcProcessor implements InstructionProcessor<LdcInsnNode> {
 				list.set(insn, new ConstantIntInsnNode(insn, (char) cst));
 			} else if (cst instanceof String) {
 				list.set(insn, new ConstantReferenceInsnNode(insn, ctx.getVM().getStringPool().intern((String) cst)));
+			} else if (cst instanceof ConstantDynamic) {
+				ConstantDynamic dynamic = (ConstantDynamic) cst;
+				list.set(insn, new ConstantDynamicInsnNode(insn,
+						ctx.getOperations().linkDynamic(dynamic, ctx.getOwner()), dynamic));
 			} else {
 				ObjectValue ref = ctx.getOperations().referenceValue(cst);
 				list.set(insn, new ConstantReferenceInsnNode(insn, ref));

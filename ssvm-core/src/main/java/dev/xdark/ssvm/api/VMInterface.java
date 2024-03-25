@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.api;
 
+import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.asm.Modifier;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.InstructionProcessor;
@@ -175,4 +176,13 @@ public interface VMInterface {
 	 * @param ctx Context of the native method that interpreted {@link Interpreter#getMaxIterations() the maximum number of allowed iterations}.
 	 */
 	void handleMaxInterations(ExecutionContext<?> ctx);
+
+	/**
+	 * Copying this interface may be viable when combined with {@link VirtualMachine#toBuilder()} to create basic
+	 * <i>"scopes"</i>. Each scope can have its own set of listeners and interceptors, while not polluting other
+	 * {@link VMInterface} instances.
+	 *
+	 * @return Copy of this interface.
+	 */
+	VMInterface copy();
 }

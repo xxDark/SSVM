@@ -34,21 +34,48 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class VirtualThreadManager implements ThreadManager {
 	private static final VirtualJavaThread SENTINEL = new VirtualJavaThread(null, null);
 	// Mapping between eetop and Java thread
-	private final Map<Handle, VirtualJavaThread> javaThreads = new HashMap<>();
+	private final Map<Handle, VirtualJavaThread> javaThreads;
 	// Attached threads
-	private final Map<Thread, VirtualJavaThread> foreignThreads = new IdentityHashMap<>();
+	private final Map<Thread, VirtualJavaThread> foreignThreads;
 	// All threads so far
-	private final List<VirtualJavaThread> allThreads = new LinkedList<>();
+	private final List<VirtualJavaThread> allThreads;
 	// Threads for scheduling
-	private final Queue<VirtualJavaThread> scheduled = new PriorityQueue<>(Comparator.comparingInt(t -> t.getOsThread().getPriority()));
-	// TODO this is stupid
-	private final List<VirtualJavaThread> asleep = new ArrayList<>();
-	private final Object threadLock = new Object[0];
+	private final Queue<VirtualJavaThread> scheduled;
+	// All asleep threads - TODO this is stupid
+	private final List<VirtualJavaThread> asleep;
+	private final Object threadLock;
 	private final VirtualMachine vm;
 	private VirtualJavaThread currentThread;
 
+	/**
+	 * Constructor for copying, where we want to replace the 'vm' field with a new value.
+	 *
+	 * @param vm New VM we want to operate within.
+	 * @param vtm Old instance to shallow-copy from.
+	 */
+	private VirtualThreadManager(VirtualMachine vm, VirtualThreadManager vtm) {
+		this.vm = vm;
+		this.javaThreads = vtm.javaThreads;
+		this.foreignThreads = vtm.foreignThreads;
+		this.allThreads = vtm.allThreads;
+		this.scheduled = vtm.scheduled;
+		this.asleep = vtm.asleep;
+		this.threadLock = vtm.threadLock;
+	}
+
 	public VirtualThreadManager(VirtualMachine vm) {
 		this.vm = vm;
+		threadLock = new Object[0];
+		javaThreads = new HashMap<>();
+		foreignThreads = new IdentityHashMap<>();
+		allThreads = new LinkedList<>();
+		scheduled = new PriorityQueue<>(Comparator.comparingInt(t -> t.getOsThread().getPriority()));
+		asleep = new ArrayList<>();
+	}
+
+	@Override
+	public VirtualThreadManager copyForVm(VirtualMachine newVm) {
+		return new VirtualThreadManager(newVm, this);
 	}
 
 	@Override
@@ -290,7 +317,7 @@ public final class VirtualThreadManager implements ThreadManager {
 			// TODO configurable, like Java's -Xss flag.
 			stackSize = 1024L * 1024L;
 		}
-		Backtrace backtrace = new SimpleBacktrace(1024);
+		Backtrace backtrace = new SimpleBacktrace(vm, 1024);
 		MemoryAllocator memoryAllocator = vm.getMemoryAllocator();
 		ThreadStorage storage = new HeapThreadStorage(vm.getMemoryManager(), memoryAllocator, memoryAllocator.allocateHeap(stackSize));
 		return new VirtualOSThread(backtrace, storage);

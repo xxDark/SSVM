@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.thread;
 
+import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.thread.backtrace.Backtrace;
 import dev.xdark.ssvm.value.InstanceValue;
 
@@ -12,7 +13,6 @@ import java.util.List;
  * @see OSThread
  */
 public interface ThreadManager {
-
 	/**
 	 * Starts the thread, assigns new OS thread to
 	 * the {@code oop} instance.
@@ -148,4 +148,10 @@ public interface ThreadManager {
 	 * @return Java thread or {@code null}, if thread is not alive.
 	 */
 	JavaThread getThread(InstanceValue oop);
+
+	/**
+	 * @param newVm New VM for the copied thread manager to reside in.
+	 * @return Copy of thread manager.
+	 */
+	ThreadManager copyForVm(VirtualMachine newVm);
 }

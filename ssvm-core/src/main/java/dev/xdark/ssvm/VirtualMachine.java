@@ -94,6 +94,47 @@ public class VirtualMachine implements VMEventCollection {
 	private volatile InstanceValue systemThreadGroup;
 	private volatile InstanceValue mainThreadGroup;
 
+	/*
+	 * Constructor for copying, see VirtualMachineBuilder
+	 */
+	VirtualMachine(VMInterface vmInterface, MemoryAllocator memoryAllocator, ObjectSynchronizer objectSynchronizer,
+				   MemoryManager memoryManager, ClassDefiner classDefiner, ThreadManager threadManager,
+				   FileManager fileManager, NativeLibraryManager nativeLibraryManager, TimeManager timeManager,
+				   ManagementInterface managementInterface, StringPool stringPool, ClassLoaders classLoaders,
+				   ExecutionEngine executionEngine, MirrorFactory mirrorFactory, BootClassFinder bootClassFinder,
+				   ClassStorage classStorage, LinkResolver linkResolver, RuntimeResolver runtimeResolver,
+				   Map<String, String> properties, Map<String, String> env, Reflection reflection, JVMTI jvmti,
+				   VMOperations operations, Symbols symbols, Primitives primitives, InstanceValue systemThreadGroup,
+				   InstanceValue mainThreadGroup) {
+		this.vmInterface = vmInterface;
+		this.memoryAllocator = memoryAllocator;
+		this.objectSynchronizer = objectSynchronizer;
+		this.memoryManager = memoryManager;
+		this.classDefiner = classDefiner;
+		this.threadManager = threadManager.copyForVm(this);
+		this.fileManager = fileManager;
+		this.nativeLibraryManager = nativeLibraryManager;
+		this.timeManager = timeManager;
+		this.managementInterface = managementInterface;
+		this.stringPool = stringPool;
+		this.classLoaders = classLoaders;
+		this.executionEngine = executionEngine;
+		this.mirrorFactory = mirrorFactory;
+		this.bootClassFinder = bootClassFinder;
+		this.classStorage = classStorage;
+		this.linkResolver = linkResolver;
+		this.runtimeResolver = runtimeResolver;
+		this.properties = properties;
+		this.env = env;
+		this.reflection = reflection;
+		this.jvmti = jvmti;
+		this.operations = operations;
+		this.symbols = symbols;
+		this.primitives = primitives;
+		this.systemThreadGroup = systemThreadGroup;
+		this.mainThreadGroup = mainThreadGroup;
+	}
+
 	public VirtualMachine() {
 		this(null);
 	}
@@ -144,6 +185,13 @@ public class VirtualMachine implements VMEventCollection {
 		reflection = new Reflection(this);
 		jvmti = new JVMTI(this);
 		operations = new VMOperations(this);
+	}
+
+	/**
+	 * @return New builder with values copied from this VM.
+	 */
+	public VirtualMachineBuilder toBuilder() {
+		return new VirtualMachineBuilder(this);
 	}
 
 	protected VMInterface createVMInterface() {
@@ -297,6 +345,13 @@ public class VirtualMachine implements VMEventCollection {
 	 */
 	public VMInterface getInterface() {
 		return vmInterface;
+	}
+
+	/**
+	 * @return JVMTI manager.
+	 */
+	public JVMTI getJvmti() {
+		return jvmti;
 	}
 
 	/**

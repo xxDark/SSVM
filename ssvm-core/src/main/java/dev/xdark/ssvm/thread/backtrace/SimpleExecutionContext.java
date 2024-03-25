@@ -1,5 +1,6 @@
 package dev.xdark.ssvm.thread.backtrace;
 
+import dev.xdark.ssvm.VirtualMachine;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.Stack;
@@ -12,12 +13,22 @@ import dev.xdark.ssvm.value.sink.ValueSink;
 
 final class SimpleExecutionContext<R extends ValueSink> implements ExecutionContext<R>, SafeCloseable {
 
+	private final VirtualMachine vm;
 	private JavaMethod method;
 	private Stack stack;
 	private Locals locals;
 	private R sink;
 	private int insnPosition;
 	private int lineNumber = -1;
+
+	SimpleExecutionContext(VirtualMachine vm) {
+		this.vm = vm;
+	}
+
+	@Override
+	public VirtualMachine getVM() {
+		return vm;
+	}
 
 	@Override
 	public JavaMethod getMethod() {

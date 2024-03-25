@@ -16,28 +16,51 @@ import java.util.function.Consumer;
  */
 public class SimpleVMInterface implements VMInterface {
 	private static final int MAX_INSNS = 1024;
-	private final InstructionProcessor[] processors = new InstructionProcessor[MAX_INSNS];
-	private final Map<JavaMethod, MethodInvoker> invokerMap = new HashMap<>();
-	private final List<MethodEnterListener> methodEnters = new ArrayList<>();
-	private final List<MethodExitListener> methodExits = new ArrayList<>();
-	private final List<MethodEnterListener> methodEntersView = Collections.unmodifiableList(methodEnters);
-	private final List<MethodExitListener> methodExitsView = Collections.unmodifiableList(methodExits);
-	private final List<InstructionInterceptor> instructionInterceptors = new ArrayList<>();
-	private final List<InstructionInterceptor> instructionInterceptorsView = Collections.unmodifiableList(instructionInterceptors);
+	private final InstructionProcessor[] processors;
+	private final Map<JavaMethod, MethodInvoker> invokerMap;
+	private final List<MethodEnterListener> methodEnters;
+	private final List<MethodExitListener> methodExits;
+	private final List<MethodEnterListener> methodEntersView;
+	private final List<MethodExitListener> methodExitsView;
+	private final List<InstructionInterceptor> instructionInterceptors;
+	private final List<InstructionInterceptor> instructionInterceptorsView;
 	private Consumer<ExecutionContext<?>> linkageErrorHandler = SimpleVMInterface::handleLinkageError0;
 	private Consumer<ExecutionContext<?>> abstractMethodHandler = SimpleVMInterface::handleAbstractMethodError0;
 	private Consumer<ExecutionContext<?>> maxIterationsHandler = SimpleVMInterface::handleMaxIterations0;
 
+	private SimpleVMInterface(InstructionProcessor<?>[] processors, Map<JavaMethod, MethodInvoker> invokerMap,
+							  List<MethodEnterListener> methodEnters, List<MethodExitListener> methodExits,
+							  List<InstructionInterceptor> instructionInterceptors) {
+		this.processors = processors;
+		this.invokerMap = invokerMap;
+		this.methodEnters = methodEnters;
+		this.methodExits = methodExits;
+		this.instructionInterceptors = instructionInterceptors;
+
+		methodEntersView = Collections.unmodifiableList(methodEnters);
+		methodExitsView = Collections.unmodifiableList(methodExits);
+		instructionInterceptorsView = Collections.unmodifiableList(instructionInterceptors);
+	}
+
 	public SimpleVMInterface() {
+		this(new InstructionProcessor[MAX_INSNS],
+				new HashMap<>(),
+				new ArrayList<>(),
+				new ArrayList<>(),
+				new ArrayList<>()
+		);
+
 		Arrays.fill(processors, new UnknownInstructionProcessor());
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <I extends AbstractInsnNode> InstructionProcessor<I> getProcessor(I insn) {
 		return processors[insn.getOpcode()];
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <I extends AbstractInsnNode> InstructionProcessor<I> getProcessor(int opcode) {
 		return processors[opcode];
 	}
@@ -154,6 +177,16 @@ public class SimpleVMInterface implements VMInterface {
 	@Override
 	public void handleMaxInterations(ExecutionContext<?> ctx) {
 		maxIterationsHandler.accept(ctx);
+	}
+
+	@Override
+	public VMInterface copy() {
+		SimpleVMInterface copy = new SimpleVMInterface(processors, new HashMap<>(invokerMap),
+				new ArrayList<>(methodEnters), new ArrayList<>(methodExits),
+				new ArrayList<>(instructionInterceptors)
+		);
+		System.arraycopy(processors, 0, copy.processors, 0, Math.min(processors.length, copy.processors.length));
+		return copy;
 	}
 
 	// Default impl for handling linkage errors is to throw UnsatisfiedLinkError
